@@ -1,0 +1,219 @@
+[gd_scene load_steps=2 format=3 uid="uid://cetpkcrnqh0pi"]
+
+[ext_resource type="Script" path="res://PanelContainer.gd" id="1_dih7n"]
+
+[node name="Main" type="PanelContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_dih7n")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = " Godot Valet"
+
+[node name="GodotPathHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="GodotPathLabel" type="Label" parent="VBoxContainer/GodotPathHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Godot Path:"
+horizontal_alignment = 2
+
+[node name="ExportPathLineEdit" type="LineEdit" parent="VBoxContainer/GodotPathHBoxContainer"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+text = "C:\\Program Files\\Godot 4\\Godot_v4.0.2-stable_win64.exe"
+
+[node name="ProjectPathHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="ProjectPathLabel" type="Label" parent="VBoxContainer/ProjectPathHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Project Path:"
+horizontal_alignment = 2
+
+[node name="ProjectPathLineEdit" type="LineEdit" parent="VBoxContainer/ProjectPathHBoxContainer"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="ProjectNameHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="ProjectNameLabel" type="Label" parent="VBoxContainer/ProjectNameHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Project Name:"
+horizontal_alignment = 2
+
+[node name="ProjectNameLineEdit" type="LineEdit" parent="VBoxContainer/ProjectNameHBoxContainer"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="ProjectVersionHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="ProjectVersionLabel" type="Label" parent="VBoxContainer/ProjectVersionHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Project Version:"
+horizontal_alignment = 2
+
+[node name="ProjectVersionLineEdit" type="LineEdit" parent="VBoxContainer/ProjectVersionHBoxContainer"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+text = "v0.0.1"
+
+[node name="ExportPresetHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="ExportPresetLabel" type="Label" parent="VBoxContainer/ExportPresetHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Export Preset:"
+horizontal_alignment = 2
+
+[node name="ExportPresetLineEdit" type="LineEdit" parent="VBoxContainer/ExportPresetHBoxContainer"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+tooltip_text = "\"Windows Desktop\", \"Linux/X11\", \"Web\", \"All\""
+text = "All"
+
+[node name="ReleaseTypeHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="ReleaseTypeLabel" type="Label" parent="VBoxContainer/ReleaseTypeHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Release Type:"
+horizontal_alignment = 2
+
+[node name="ReleaseTypeLineEdit" type="LineEdit" parent="VBoxContainer/ReleaseTypeHBoxContainer"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+tooltip_text = "Release, Debug, Pack (source)"
+text = "Release"
+
+[node name="PackageTypeHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="PackageTypeLabel" type="Label" parent="VBoxContainer/PackageTypeHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Package Type:"
+horizontal_alignment = 2
+
+[node name="PackageTypeLineEdit" type="LineEdit" parent="VBoxContainer/PackageTypeHBoxContainer"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+text = "Zip"
+
+[node name="ItchNameHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="ItchNameLabel" type="Label" parent="VBoxContainer/ItchNameHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Itch Name:"
+horizontal_alignment = 2
+
+[node name="ItchNameLineEdit" type="LineEdit" parent="VBoxContainer/ItchNameHBoxContainer"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="ExportPathHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="ExportButton" type="Button" parent="VBoxContainer/ExportPathHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+text = "Export"
+
+[node name="ExportPathLineEdit" type="LineEdit" parent="VBoxContainer/ExportPathHBoxContainer"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="GenerateExportPathButton" type="Button" parent="VBoxContainer/ExportPathHBoxContainer"]
+layout_mode = 2
+text = "Generate"
+
+[node name="OpenExportPathFolderButton" type="Button" parent="VBoxContainer/ExportPathHBoxContainer"]
+layout_mode = 2
+text = "Open Folder"
+
+[node name="ButlerCommandHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="PublishButton" type="Button" parent="VBoxContainer/ButlerCommandHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+text = "Publish"
+
+[node name="ButlerCommandLineEdit" type="LineEdit" parent="VBoxContainer/ButlerCommandHBoxContainer"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="GenerateButlerCommandButton" type="Button" parent="VBoxContainer/ButlerCommandHBoxContainer"]
+layout_mode = 2
+text = "Generate"
+
+[node name="OutputVBoxContainer" type="VBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="OutputLabel" type="Label" parent="VBoxContainer/OutputVBoxContainer"]
+layout_mode = 2
+text = "Output:"
+
+[node name="OutputTextEdit" type="TextEdit" parent="VBoxContainer/OutputVBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+wrap_mode = 1
+
+[node name="ErrorsHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="ErrorsLabel" type="Label" parent="VBoxContainer/ErrorsHBoxContainer"]
+layout_mode = 2
+text = "ERRORS: "
+
+[node name="ErrorCountLabel" type="Label" parent="VBoxContainer/ErrorsHBoxContainer"]
+layout_mode = 2
+text = "0"
+
+[connection signal="pressed" from="VBoxContainer/ExportPathHBoxContainer/ExportButton" to="." method="_on_export_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/ExportPathHBoxContainer/GenerateExportPathButton" to="." method="_on_generate_path_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/ExportPathHBoxContainer/OpenExportPathFolderButton" to="." method="_on_open_folder_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/ButlerCommandHBoxContainer/PublishButton" to="." method="_on_publish_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/ButlerCommandHBoxContainer/GenerateButlerCommandButton" to="." method="_on_generate_butler_path_button_pressed"]
