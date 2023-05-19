@@ -20,6 +20,11 @@ config/icon="res://icon.svg"
 Signals="*res://singletons/project/signals.gd"
 Files="*res://singletons/files.gd"
 
+[display]
+
+window/size/viewport_width=1200
+window/size/viewport_height=700
+
 [filesystem]
 
 import/blender/enabled=false
