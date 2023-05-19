@@ -15,25 +15,32 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_dih7n")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
 layout_mode = 2
 
-[node name="LoadProjectHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+[node name="LoadProjectHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="LoadProjectLabel" type="Label" parent="VBoxContainer/LoadProjectHBoxContainer"]
+[node name="LoadProjectLabel" type="Label" parent="MarginContainer/VBoxContainer/LoadProjectHBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
-text = "Project:"
+text = "Itch Project Name:"
 horizontal_alignment = 2
 
-[node name="LoadProjectOptionButton" type="OptionButton" parent="VBoxContainer/LoadProjectHBoxContainer"]
+[node name="LoadProjectOptionButton" type="OptionButton" parent="MarginContainer/VBoxContainer/LoadProjectHBoxContainer"]
 custom_minimum_size = Vector2(500, 32)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
 
-[node name="DeleteProjectButton" type="TextureButton" parent="VBoxContainer/LoadProjectHBoxContainer"]
+[node name="DeleteProjectButton" type="TextureButton" parent="MarginContainer/VBoxContainer/LoadProjectHBoxContainer"]
 custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
 tooltip_text = "Delete"
@@ -41,7 +48,7 @@ texture_normal = ExtResource("2_uukxy")
 texture_pressed = ExtResource("3_oxvp5")
 texture_hover = ExtResource("4_t35ek")
 
-[node name="EditProjectButton" type="TextureButton" parent="VBoxContainer/LoadProjectHBoxContainer"]
+[node name="EditProjectButton" type="TextureButton" parent="MarginContainer/VBoxContainer/LoadProjectHBoxContainer"]
 custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
 tooltip_text = "Edit"
@@ -49,91 +56,112 @@ texture_normal = ExtResource("5_hdhw3")
 texture_pressed = ExtResource("6_u3qo7")
 texture_hover = ExtResource("6_u3qo7")
 
-[node name="NewProjectButton" type="Button" parent="VBoxContainer/LoadProjectHBoxContainer"]
+[node name="NewProjectButton" type="Button" parent="MarginContainer/VBoxContainer/LoadProjectHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "New Project"
 
-[node name="GodotPathHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+[node name="GodotPathHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="GodotPathLabel" type="Label" parent="VBoxContainer/GodotPathHBoxContainer"]
+[node name="GodotPathLabel" type="Label" parent="MarginContainer/VBoxContainer/GodotPathHBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "Godot Path:"
 horizontal_alignment = 2
 
-[node name="ExportPathLineEdit" type="LineEdit" parent="VBoxContainer/GodotPathHBoxContainer"]
+[node name="ExportPathLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/GodotPathHBoxContainer"]
 custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
 text = "C:\\Program Files\\Godot 4\\Godot_v4.0.2-stable_win64.exe"
 
-[node name="ProjectPathHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+[node name="EmptyButton" type="Button" parent="MarginContainer/VBoxContainer/GodotPathHBoxContainer"]
+self_modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 
-[node name="ProjectPathLabel" type="Label" parent="VBoxContainer/ProjectPathHBoxContainer"]
+[node name="ProjectPathHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ProjectPathLabel" type="Label" parent="MarginContainer/VBoxContainer/ProjectPathHBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "Project Path:"
 horizontal_alignment = 2
 
-[node name="ProjectPathLineEdit" type="LineEdit" parent="VBoxContainer/ProjectPathHBoxContainer"]
+[node name="ProjectPathLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ProjectPathHBoxContainer"]
 custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
 
-[node name="ProjectVersionHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+[node name="OpenProjectFolderButton" type="Button" parent="MarginContainer/VBoxContainer/ProjectPathHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Open Folder"
+
+[node name="ProjectVersionHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="ProjectVersionLabel" type="Label" parent="VBoxContainer/ProjectVersionHBoxContainer"]
+[node name="ProjectVersionLabel" type="Label" parent="MarginContainer/VBoxContainer/ProjectVersionHBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "Project Version:"
 horizontal_alignment = 2
 
-[node name="ProjectVersionLineEdit" type="LineEdit" parent="VBoxContainer/ProjectVersionHBoxContainer"]
+[node name="ProjectVersionLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ProjectVersionHBoxContainer"]
 custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
 text = "v0.0.1"
 
-[node name="ExportPresetHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+[node name="EmptyButton" type="Button" parent="MarginContainer/VBoxContainer/ProjectVersionHBoxContainer"]
+self_modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 
-[node name="ExportPresetLabel" type="Label" parent="VBoxContainer/ExportPresetHBoxContainer"]
+[node name="ExportPresetHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ExportPresetLabel" type="Label" parent="MarginContainer/VBoxContainer/ExportPresetHBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "Export Preset:"
 horizontal_alignment = 2
 
-[node name="WindowsCheckBox" type="CheckBox" parent="VBoxContainer/ExportPresetHBoxContainer"]
+[node name="WindowsCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/ExportPresetHBoxContainer"]
 layout_mode = 2
 button_pressed = true
 text = "Windows"
 
-[node name="LinuxCheckBox" type="CheckBox" parent="VBoxContainer/ExportPresetHBoxContainer"]
+[node name="LinuxCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/ExportPresetHBoxContainer"]
 layout_mode = 2
 button_pressed = true
 text = "Linux"
 
-[node name="WebCheckBox" type="CheckBox" parent="VBoxContainer/ExportPresetHBoxContainer"]
+[node name="WebCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/ExportPresetHBoxContainer"]
 layout_mode = 2
 button_pressed = true
 text = "Web"
 
-[node name="ReleaseTypeHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
-layout_mode = 2
-
-[node name="ReleaseTypeLabel" type="Label" parent="VBoxContainer/ReleaseTypeHBoxContainer"]
+[node name="EmptyButton" type="Button" parent="MarginContainer/VBoxContainer/ExportPresetHBoxContainer"]
+self_modulate = Color(1, 1, 1, 0)
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
-text = "Release Type:"
+
+[node name="ExportTypeHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ExportTypeLabel" type="Label" parent="MarginContainer/VBoxContainer/ExportTypeHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Export Type:"
 horizontal_alignment = 2
 
-[node name="ReleaseTypeOptionButton" type="OptionButton" parent="VBoxContainer/ReleaseTypeHBoxContainer"]
+[node name="ExportTypeOptionButton" type="OptionButton" parent="MarginContainer/VBoxContainer/ExportTypeHBoxContainer"]
 custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -145,16 +173,21 @@ popup/item_0/id = 0
 popup/item_1/text = "Debug"
 popup/item_1/id = 1
 
-[node name="PackageTypeHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+[node name="EmptyButton" type="Button" parent="MarginContainer/VBoxContainer/ExportTypeHBoxContainer"]
+self_modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 
-[node name="PackageTypeLabel" type="Label" parent="VBoxContainer/PackageTypeHBoxContainer"]
+[node name="PackageTypeHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="PackageTypeLabel" type="Label" parent="MarginContainer/VBoxContainer/PackageTypeHBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "Package Type:"
 horizontal_alignment = 2
 
-[node name="PackageTypeOptionButton" type="OptionButton" parent="VBoxContainer/PackageTypeHBoxContainer"]
+[node name="PackageTypeOptionButton" type="OptionButton" parent="MarginContainer/VBoxContainer/PackageTypeHBoxContainer"]
 custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -167,104 +200,140 @@ popup/item_1/id = 1
 popup/item_2/text = "Zip + Clean"
 popup/item_2/id = 2
 
-[node name="ItchNameHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
-layout_mode = 2
-
-[node name="ItchNameLabel" type="Label" parent="VBoxContainer/ItchNameHBoxContainer"]
+[node name="EmptyButton" type="Button" parent="MarginContainer/VBoxContainer/PackageTypeHBoxContainer"]
+self_modulate = Color(1, 1, 1, 0)
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
-text = "Itch Name:"
+
+[node name="ItchNameHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ItchNameLabel" type="Label" parent="MarginContainer/VBoxContainer/ItchNameHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Itch User Name:"
 horizontal_alignment = 2
 
-[node name="ItchNameLineEdit" type="LineEdit" parent="VBoxContainer/ItchNameHBoxContainer"]
+[node name="ItchNameLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ItchNameHBoxContainer"]
 custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
 
-[node name="ExportPathHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+[node name="EmptyButton" type="Button" parent="MarginContainer/VBoxContainer/ItchNameHBoxContainer"]
+self_modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 
-[node name="ExportButton" type="Button" parent="VBoxContainer/ExportPathHBoxContainer"]
+[node name="ExportPathHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ExportButton" type="Button" parent="MarginContainer/VBoxContainer/ExportPathHBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 0
 text = "Export"
 
-[node name="ExportPathLineEdit" type="LineEdit" parent="VBoxContainer/ExportPathHBoxContainer"]
-custom_minimum_size = Vector2(500, 0)
+[node name="ExportPreviewTextEdit" type="TextEdit" parent="MarginContainer/VBoxContainer/ExportPathHBoxContainer"]
+custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 0
 
-[node name="OpenExportPathFolderButton" type="Button" parent="VBoxContainer/ExportPathHBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ExportPathHBoxContainer"]
 layout_mode = 2
+
+[node name="PreviewExportPathButton" type="Button" parent="MarginContainer/VBoxContainer/ExportPathHBoxContainer/VBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+size_flags_vertical = 0
+text = "Preview"
+
+[node name="OpenExportPathFolderButton" type="Button" parent="MarginContainer/VBoxContainer/ExportPathHBoxContainer/VBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+size_flags_vertical = 0
 text = "Open Folder"
 
-[node name="ButlerCommandHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+[node name="ButlerCommandHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="PublishButton" type="Button" parent="VBoxContainer/ButlerCommandHBoxContainer"]
+[node name="PublishButton" type="Button" parent="MarginContainer/VBoxContainer/ButlerCommandHBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 0
 text = "Publish"
 
-[node name="ButlerCommandLineEdit" type="LineEdit" parent="VBoxContainer/ButlerCommandHBoxContainer"]
-custom_minimum_size = Vector2(500, 0)
+[node name="ButlerPreviewTextEdit" type="TextEdit" parent="MarginContainer/VBoxContainer/ButlerCommandHBoxContainer"]
+custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 0
 
-[node name="SaveProjectHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+[node name="PreviewButlerCommandButton" type="Button" parent="MarginContainer/VBoxContainer/ButlerCommandHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+size_flags_vertical = 0
+text = "Preview"
+
+[node name="SaveProjectHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 alignment = 2
 
-[node name="SaveSettingsButton" type="Button" parent="VBoxContainer/SaveProjectHBoxContainer"]
+[node name="SaveSettingsButton" type="Button" parent="MarginContainer/VBoxContainer/SaveProjectHBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 0
 text = "Save Settings"
 
-[node name="OutputVBoxContainer" type="VBoxContainer" parent="VBoxContainer"]
+[node name="OutputVBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="OutputLabel" type="Label" parent="VBoxContainer/OutputVBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/OutputVBoxContainer"]
 layout_mode = 2
+
+[node name="OutputLabel" type="Label" parent="MarginContainer/VBoxContainer/OutputVBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 0
 text = "Output:"
 
-[node name="OutputTextEdit" type="TextEdit" parent="VBoxContainer/OutputVBoxContainer"]
+[node name="OutputTextEdit" type="TextEdit" parent="MarginContainer/VBoxContainer/OutputVBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
 wrap_mode = 1
 
-[node name="IssuesHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+[node name="EmptyButton2" type="Button" parent="MarginContainer/VBoxContainer/OutputVBoxContainer/HBoxContainer"]
+self_modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 
-[node name="ErrorsLabel" type="Label" parent="VBoxContainer/IssuesHBoxContainer"]
+[node name="IssuesHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ErrorsLabel" type="Label" parent="MarginContainer/VBoxContainer/IssuesHBoxContainer"]
 layout_mode = 2
 text = "ERRORS: "
 
-[node name="ErrorCountLabel" type="Label" parent="VBoxContainer/IssuesHBoxContainer"]
+[node name="ErrorCountLabel" type="Label" parent="MarginContainer/VBoxContainer/IssuesHBoxContainer"]
 layout_mode = 2
 text = "0"
 
-[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/IssuesHBoxContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/IssuesHBoxContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 50
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/IssuesHBoxContainer/MarginContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/IssuesHBoxContainer/MarginContainer"]
 layout_mode = 2
 
-[node name="WarningsLabel" type="Label" parent="VBoxContainer/IssuesHBoxContainer/MarginContainer/HBoxContainer"]
+[node name="WarningsLabel" type="Label" parent="MarginContainer/VBoxContainer/IssuesHBoxContainer/MarginContainer/HBoxContainer"]
 layout_mode = 2
 text = "WARNINGS: "
 
-[node name="WarningsCountLabel" type="Label" parent="VBoxContainer/IssuesHBoxContainer/MarginContainer/HBoxContainer"]
+[node name="WarningsCountLabel" type="Label" parent="MarginContainer/VBoxContainer/IssuesHBoxContainer/MarginContainer/HBoxContainer"]
 layout_mode = 2
 text = "0"
 
@@ -273,13 +342,16 @@ initial_position = 1
 size = Vector2i(361, 100)
 ok_button_text = "Yes"
 
-[connection signal="item_selected" from="VBoxContainer/LoadProjectHBoxContainer/LoadProjectOptionButton" to="." method="_on_load_project_option_button_item_selected"]
-[connection signal="pressed" from="VBoxContainer/LoadProjectHBoxContainer/DeleteProjectButton" to="." method="_on_delete_project_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/LoadProjectHBoxContainer/EditProjectButton" to="." method="_on_edit_project_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/LoadProjectHBoxContainer/NewProjectButton" to="." method="_on_new_project_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/ExportPathHBoxContainer/ExportButton" to="." method="_on_export_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/ExportPathHBoxContainer/OpenExportPathFolderButton" to="." method="_on_open_folder_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/ButlerCommandHBoxContainer/PublishButton" to="." method="_on_publish_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/SaveProjectHBoxContainer/SaveSettingsButton" to="." method="_on_save_settings_button_pressed"]
+[connection signal="item_selected" from="MarginContainer/VBoxContainer/LoadProjectHBoxContainer/LoadProjectOptionButton" to="." method="_on_load_project_option_button_item_selected"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/LoadProjectHBoxContainer/DeleteProjectButton" to="." method="_on_delete_project_button_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/LoadProjectHBoxContainer/EditProjectButton" to="." method="_on_edit_project_button_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/LoadProjectHBoxContainer/NewProjectButton" to="." method="_on_new_project_button_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/ProjectPathHBoxContainer/OpenProjectFolderButton" to="." method="_on_open_project_folder_button_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/ExportPathHBoxContainer/ExportButton" to="." method="_on_export_button_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/ExportPathHBoxContainer/VBoxContainer/PreviewExportPathButton" to="." method="_on_generate_export_path_button_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/ExportPathHBoxContainer/VBoxContainer/OpenExportPathFolderButton" to="." method="_on_open_export_path_folder_button_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/ButlerCommandHBoxContainer/PublishButton" to="." method="_on_publish_button_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/ButlerCommandHBoxContainer/PreviewButlerCommandButton" to="." method="_on_preview_butler_command_button_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/SaveProjectHBoxContainer/SaveSettingsButton" to="." method="_on_save_settings_button_pressed"]
 [connection signal="canceled" from="ConfirmationDialog" to="." method="_on_confirmation_dialog_canceled"]
 [connection signal="confirmed" from="ConfirmationDialog" to="." method="_on_confirmation_dialog_confirmed"]

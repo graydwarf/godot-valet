@@ -1,4 +1,4 @@
 extends Node
 
 signal CreateNewProject
-signal SaveSettings
+signal ProjectRenamed

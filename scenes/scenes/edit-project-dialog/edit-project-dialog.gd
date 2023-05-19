@@ -9,10 +9,11 @@ func SaveProject():
 		return
 		
 	if FileAccess.file_exists("user://" + newProjectName + ".cfg"):
-		OS.alert("Project already exists! Edit the existing one")
+		OS.alert("Project already exists!")
 		return
+	
+	Signals.emit_signal("ProjectRenamed", _projectNameLineEdit.text)
 		
-	Signals.emit_signal("SaveSettings", _projectNameLineEdit.text)
 	queue_free()
 
 func SetProjectName(projectName):
