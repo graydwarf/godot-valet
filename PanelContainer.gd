@@ -2,7 +2,6 @@ extends PanelContainer
 
 @onready var _godotPathLineEdit = $VBoxContainer/GodotPathHBoxContainer/ExportPathLineEdit
 @onready var _projectPathLineEdit = $VBoxContainer/ProjectPathHBoxContainer/ProjectPathLineEdit
-@onready var _projectNameLineEdit = $VBoxContainer/ProjectNameHBoxContainer/ProjectNameLineEdit
 @onready var _projectVersionLineEdit = $VBoxContainer/ProjectVersionHBoxContainer/ProjectVersionLineEdit
 @onready var _windowsCheckBox = $VBoxContainer/ExportPresetHBoxContainer/WindowsCheckBox
 @onready var _linuxCheckBox = $VBoxContainer/ExportPresetHBoxContainer/LinuxCheckBox
@@ -14,12 +13,14 @@ extends PanelContainer
 @onready var _outputTextEdit = $VBoxContainer/OutputVBoxContainer/OutputTextEdit
 @onready var _errorCountLabel = $VBoxContainer/IssuesHBoxContainer/ErrorCountLabel
 @onready var _warningCountLabel = $VBoxContainer/IssuesHBoxContainer/MarginContainer/HBoxContainer/WarningsCountLabel
-@onready var _cleanupCheckbox = $VBoxContainer/CleanupCheckBox
 @onready var _packageTypeOptionButton = $VBoxContainer/PackageTypeHBoxContainer/PackageTypeOptionButton
+@onready var _loadProjectOptionButton = $VBoxContainer/LoadProjectHBoxContainer/LoadProjectOptionButton
+@onready var _deleteConfirmationDialog = $ConfirmationDialog
 
-var _listOfPresetTypes = ["Windows Desktop", "Linux/X11", "Web"]
+#var _listOfPresetTypes = ["Windows Desktop", "Linux/X11", "Web"]
 var _listOfItchPublishTypes = ["windows", "html5", "linux"]
 
+var _solutionName = "godot-valet"
 var _godotPathText = ""
 var _projectPathText = ""
 var _projectNameText = ""
@@ -29,30 +30,144 @@ var _releaseTypeText = ""
 var _exportPathText = ""
 var _butlerCommandText = ""
 var _itchProfileNameText = ""
-	
+var _selectedProjectName = ""
+
 func _ready():
+	InitSignals()
 	InitProjectSettings()
 
-func LoadConfigSettings():
-	if !FileAccess.file_exists("res://local_settings.cfg"):
+func InitSignals():
+	Signals.connect("CreateNewProject", CreateNewProject)
+	Signals.connect("SaveSettings", SaveSettings)
+
+# projectName should be valid at this point
+func CreateNewProject(projectName):
+	ResetFields()
+	SaveSettings(projectName)
+	_loadProjectOptionButton.add_item(projectName)
+	_loadProjectOptionButton.select(_loadProjectOptionButton.item_count - 1)
+
+# Don't fields that are likely to be the same as other projects.
+# godot path, itch name
+func ResetFields():
+	_projectPathLineEdit.text = ""
+	_projectVersionLineEdit.text = "v0.0.1"
+	_windowsCheckBox.button_pressed = true
+	_linuxCheckBox.button_pressed = true
+	_webCheckBox.button_pressed = true
+	_releaseTypeDdl.text = "Release"
+	_exportPathLineEdit.text = ""
+
+func SaveValetSettings():
+	var config = ConfigFile.new()
+	var err = config.load("user://" + _solutionName + ".cfg")
+	if err != OK:
+		OS.alert("Error: " + str(err) + " - while opening: " + _solutionName + ".cfg")
+		return
+		
+	config.set_value("Settings", "selected_project_name", _loadProjectOptionButton.text)
+
+func CreateNewValetSettingsFile():
+	var config = ConfigFile.new()
+	_selectedProjectName = ""
+	config.set_value("Settings", "selected_project_name", _selectedProjectName)
+	var err = config.save("user://" + _solutionName + ".cfg")
+
+	if err != OK:
+		OS.alert("An error occurred while saving the valet configuration file.")
+	
+func LoadValetSettings():
+	if !FileAccess.file_exists("user://" + _solutionName + ".cfg"):
+		CreateNewValetSettingsFile()
 		return
 		
 	var config = ConfigFile.new()
-	var err = config.load("res://local_settings.cfg")
+	var err = config.load("user://" + _solutionName + ".cfg")
+	if err != OK:
+		OS.alert("Error: " + str(err) + " - while opening: " + _solutionName + ".cfg")
+		return
+		
+	_selectedProjectName = config.get_value("Settings", "selected_project_name", "")
+
+func LoadConfigSettings():
+	var allResourceFiles = Files.GetFilesFromPath("user://")
+	var loadedConfigurationFile = false
+	for resourceFile in allResourceFiles:
+		if resourceFile == "export_presets.cfg" || resourceFile == "godot-valet.cfg":
+			continue
+
+		if !resourceFile.ends_with(".cfg"):
+			continue
+
+		var projectName = resourceFile.trim_suffix(".cfg")
+		
+		_loadProjectOptionButton.add_item(projectName)
+		
+		loadedConfigurationFile = true
+	
+	# Did we load a config file?
+	if !loadedConfigurationFile:
+		# No. Create a new default one.
+		var newProjectName = "New Project"
+		SaveSettings(newProjectName)
+		_loadProjectOptionButton.text = newProjectName
+		SaveValetSettings()
+	else:
+		# We loaded a config file. Select it.
+		var selectedIndex = FindSelectedProjectIndexByName(_selectedProjectName)
+		LoadProjectByIndex(selectedIndex)
+		_loadProjectOptionButton.select(selectedIndex)
+
+func SaveSettings(projectName):
+	var config = ConfigFile.new()
+
+	config.set_value("ProjectSettings", "project_name", _loadProjectOptionButton.text)
+	config.set_value("ProjectSettings", "godot_path", _godotPathLineEdit.text)
+	config.set_value("ProjectSettings", "project_path", _projectPathLineEdit.text)
+	config.set_value("ProjectSettings", "project_version", _projectVersionLineEdit.text)
+	config.set_value("ProjectSettings", "windows_preset_checked", _windowsCheckBox.button_pressed)
+	config.set_value("ProjectSettings", "linux_preset_checked", _linuxCheckBox.button_pressed)
+	config.set_value("ProjectSettings", "web_preset_checked", _webCheckBox.button_pressed)
+	config.set_value("ProjectSettings", "release_type", _releaseTypeDdl.text)
+	config.set_value("ProjectSettings", "package_type", _packageTypeOptionButton.text)
+	config.set_value("ProjectSettings", "itch_profile_name", _itchProfileNameLineEdit.text)
+
+	# Save the config file.
+	var err = config.save("user://" + projectName + ".cfg")
+
+	if err != OK:
+		_outputTextEdit.text = ("An error occurred while saving the config file.")
+
+func FindSelectedProjectIndexByName(selectedProjectName):
+	if selectedProjectName == "":
+		return 0
+		
+	for itemIndex in _loadProjectOptionButton.item_count:
+		var projectName = _loadProjectOptionButton.get_item_text(itemIndex)
+		if projectName == selectedProjectName:
+			return itemIndex
+		
+func LoadProjectByIndex(index):
+	var projectName = _loadProjectOptionButton.get_item_text(index)
+	var config = ConfigFile.new()
+	var err = config.load("user://" + projectName + ".cfg")
 	if err == OK:
 		_godotPathLineEdit.text = config.get_value("ProjectSettings", "godot_path", "")
 		_projectPathLineEdit.text = config.get_value("ProjectSettings", "project_path", "")
-		#_projectNameLineEdit.text = config.get_value("ProjectSettings", "project_name", "New Project")
 		_projectVersionLineEdit.text = config.get_value("ProjectSettings", "project_version", "v0.0.1")
-		_windowsCheckBox.button_pressed = str_to_var(config.get_value("ProjectSettings", "windows_preset_checked", true))
-		_linuxCheckBox.button_pressed = str_to_var(config.get_value("ProjectSettings", "linux_preset_checked", true))
-		_webCheckBox.button_pressed = str_to_var(config.get_value("ProjectSettings", "web_preset_checked", true))
+		_windowsCheckBox.button_pressed = config.get_value("ProjectSettings", "windows_preset_checked", true)
+		_linuxCheckBox.button_pressed = config.get_value("ProjectSettings", "linux_preset_checked", true)
+		_webCheckBox.button_pressed = config.get_value("ProjectSettings", "web_preset_checked", true)
+		_packageTypeOptionButton.text = config.get_value("ProjectSettings", "package_type", "Zip")
 		_releaseTypeDdl.text = config.get_value("ProjectSettings", "release_type", "Release")
 		_itchProfileNameLineEdit.text = config.get_value("ProjectSettings", "itch_profile_name", "")
 	else:
-		print("Failed to load local settings.")
+		OS.alert("Failed to load settings for: " + projectName)
 		
+	# save project as selected
+	
 func InitProjectSettings():
+	LoadValetSettings()
 	LoadConfigSettings()
 	GroomFieldText()
 	PopulateExportPath()
@@ -324,7 +439,7 @@ func PublishToButler():
 	if _exportPresetText == "all":
 		for publishType in _listOfItchPublishTypes:
 			var butlerArguments = GetButlerArguments(publishType)
-			var projectPath = _exportPathText + "\\" + publishType + "\\" + _releaseTypeText + "\\" + _projectNameText + ".zip"
+			#var projectPath = _exportPathText + "\\" + publishType + "\\" + _releaseTypeText + "\\" + _projectNameText + ".zip"
 			exitCode = OS.execute("butler", butlerArguments, output)
 	else:
 		# need to convert butlerArguments from string to array
@@ -342,42 +457,28 @@ func PublishToButler():
 func OpenExportPathFolder():
 	OS.shell_open(_exportPathText)
 
-func SaveProjectSettings():
-	var config = ConfigFile.new()
-
-	config.set_value("ProjectSettings", "godot_path", _godotPathLineEdit.text)
-	config.set_value("ProjectSettings", "project_path", _projectPathLineEdit.text)
-	config.set_value("ProjectSettings", "project_name", _projectNameLineEdit.text)
-	config.set_value("ProjectSettings", "project_version", _projectVersionLineEdit.text)
-	config.set_value("ProjectSettings", "windows_preset_checked", str(_windowsCheckBox.button_pressed))
-	config.set_value("ProjectSettings", "linux_preset_checked", str(_linuxCheckBox.button_pressed))
-	config.set_value("ProjectSettings", "web_preset_checked", str(_webCheckBox.button_pressed))
-	config.set_value("ProjectSettings", "release_type", _releaseTypeDdl.text)
-	config.set_value("ProjectSettings", "itch_profile_name",_itchProfileNameLineEdit.text )
-
-	# Save the config file.
-	var err = config.save("user://" + _projectNameLineEdit + ".cfg")
-
-	if err != OK:
-		_outputTextEdit.text = ("An error occurred while saving the config file.")
-
 func OpenNewProjectDialog():
 	var newProjectDialog = load("res://scenes/scenes/new-project-dialog/new-project-dialog.tscn").instantiate()
 	add_child(newProjectDialog)
-	
-func _on_generate_path_button_pressed():
-	GroomFieldText()
-	var exportPath = GetGeneratedExportPath()
-	_exportPathLineEdit.text = exportPath
-	_exportPathLineEdit.text = exportPath
+
+func OpenEditProjectDialog():
+	var editProjectDialog = load("res://scenes/scenes/edit-project-dialog/edit-project-dialog.tscn").instantiate()
+	add_child(editProjectDialog)
+	editProjectDialog.SetProjectName(_loadProjectOptionButton.text)
+		
+func DisplayDeleteProjectConfirmationDialog():
+	_deleteConfirmationDialog.dialog_text = "Are you sure you want to delete this project?\n " + _loadProjectOptionButton.text
+	_deleteConfirmationDialog.position = Vector2(400, 200)
+	_deleteConfirmationDialog.show()
+
+func DeleteProject():
+	var projectName = _loadProjectOptionButton.text
+	_loadProjectOptionButton.remove_item(projectName)
+	DirAccess.remove_absolute("user://" + projectName + ".cfg")
 
 func _on_publish_button_pressed():
 	PublishToButler()
 
-func _on_generate_butler_path_button_pressed():
-	var butlerCommand = GetGeneratedButlerCommand()
-	_butlerCommandLineEdit.text = butlerCommand
-	
 func _on_open_folder_button_pressed():
 	OpenExportPathFolder()
 
@@ -388,4 +489,20 @@ func _on_new_project_button_pressed():
 	OpenNewProjectDialog()
 
 func _on_save_settings_button_pressed():
-	SaveProjectSettings()
+	SaveSettings(_loadProjectOptionButton.text)
+
+func _on_delete_project_button_pressed():
+	DisplayDeleteProjectConfirmationDialog()
+
+func _on_confirmation_dialog_canceled():
+	pass # Replace with function body.
+
+func _on_confirmation_dialog_confirmed():
+	DeleteProject()
+
+func _on_load_project_option_button_item_selected(index):
+	LoadProjectByIndex(index)
+	SaveSettings(_loadProjectOptionButton.text)
+
+func _on_edit_project_button_pressed():
+	OpenEditProjectDialog()

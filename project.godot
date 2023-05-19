@@ -17,6 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+Signals="*res://singletons/project/signals.gd"
 Files="*res://singletons/files.gd"
 
 [filesystem]

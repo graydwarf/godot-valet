@@ -1,7 +1,19 @@
-[gd_scene format=3 uid="uid://dobfm3jkl3p4c"]
+[gd_scene load_steps=2 format=3 uid="uid://1vl6l8p3xbr4"]
 
-[node name="NewProjectDialog" type="ColorRect"]
+[ext_resource type="Script" path="res://scenes/scenes/new-project-dialog/new-project-dialog.gd" id="1_lqlwj"]
+
+[node name="Panel" type="Panel"]
+self_modulate = Color(0, 0, 0, 0.494118)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_lqlwj")
+
+[node name="NewProjectDialog" type="ColorRect" parent="."]
 custom_minimum_size = Vector2(400, 150)
+layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -17,41 +29,44 @@ size_flags_horizontal = 4
 size_flags_vertical = 4
 color = Color(0.196078, 0.196078, 0.196078, 1)
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="VBoxContainer" type="VBoxContainer" parent="NewProjectDialog"]
 layout_mode = 2
 offset_right = 400.0
 offset_bottom = 150.0
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="NewProjectDialog/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
 alignment = 1
 
-[node name="ProjectNameLabel" type="Label" parent="VBoxContainer/HBoxContainer"]
+[node name="ProjectNameLabel" type="Label" parent="NewProjectDialog/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 text = "Project Name:  "
 
-[node name="ProjectNameLineEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer"]
+[node name="ProjectNameLineEdit" type="LineEdit" parent="NewProjectDialog/VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
 size_flags_vertical = 4
 caret_blink = true
 caret_blink_interval = 0.5
 
-[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="NewProjectDialog/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/margin_bottom = 20
 
-[node name="ButtonHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer"]
+[node name="ButtonHBoxContainer" type="HBoxContainer" parent="NewProjectDialog/VBoxContainer/MarginContainer"]
 layout_mode = 2
 alignment = 1
 
-[node name="CancelButton" type="Button" parent="VBoxContainer/MarginContainer/ButtonHBoxContainer"]
+[node name="CancelButton" type="Button" parent="NewProjectDialog/VBoxContainer/MarginContainer/ButtonHBoxContainer"]
 custom_minimum_size = Vector2(125, 0)
 layout_mode = 2
 text = "CANCEL"
 
-[node name="SaveButton" type="Button" parent="VBoxContainer/MarginContainer/ButtonHBoxContainer"]
+[node name="SaveButton" type="Button" parent="NewProjectDialog/VBoxContainer/MarginContainer/ButtonHBoxContainer"]
 custom_minimum_size = Vector2(125, 0)
 layout_mode = 2
 text = "SAVE"
+
+[connection signal="pressed" from="NewProjectDialog/VBoxContainer/MarginContainer/ButtonHBoxContainer/CancelButton" to="." method="_on_cancel_button_pressed"]
+[connection signal="pressed" from="NewProjectDialog/VBoxContainer/MarginContainer/ButtonHBoxContainer/SaveButton" to="." method="_on_save_button_pressed"]

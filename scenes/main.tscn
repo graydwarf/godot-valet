@@ -1,6 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://cetpkcrnqh0pi"]
+[gd_scene load_steps=7 format=3 uid="uid://cetpkcrnqh0pi"]
 
 [ext_resource type="Script" path="res://PanelContainer.gd" id="1_dih7n"]
+[ext_resource type="Texture2D" uid="uid://b46qasa75w20b" path="res://assets/delete.png" id="2_uukxy"]
+[ext_resource type="Texture2D" uid="uid://dg6vps3p7eehm" path="res://assets/delete-pressed.png" id="3_oxvp5"]
+[ext_resource type="Texture2D" uid="uid://buvhlng8eu172" path="res://assets/delete-hover.png" id="4_t35ek"]
+[ext_resource type="Texture2D" uid="uid://bavgbtmpc8ox7" path="res://assets/edit-project-pencil.png" id="5_hdhw3"]
+[ext_resource type="Texture2D" uid="uid://l3f70tyyehdg" path="res://assets/edit-project-pencil-hover.png" id="6_u3qo7"]
 
 [node name="Main" type="PanelContainer"]
 anchors_preset = 15
@@ -13,10 +18,6 @@ script = ExtResource("1_dih7n")
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 2
 
-[node name="TitleLabel" type="Label" parent="VBoxContainer"]
-layout_mode = 2
-text = " Godot Valet"
-
 [node name="LoadProjectHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2
 
@@ -27,10 +28,26 @@ text = "Project:"
 horizontal_alignment = 2
 
 [node name="LoadProjectOptionButton" type="OptionButton" parent="VBoxContainer/LoadProjectHBoxContainer"]
-custom_minimum_size = Vector2(500, 0)
+custom_minimum_size = Vector2(500, 32)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
+
+[node name="DeleteProjectButton" type="TextureButton" parent="VBoxContainer/LoadProjectHBoxContainer"]
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+tooltip_text = "Delete"
+texture_normal = ExtResource("2_uukxy")
+texture_pressed = ExtResource("3_oxvp5")
+texture_hover = ExtResource("4_t35ek")
+
+[node name="EditProjectButton" type="TextureButton" parent="VBoxContainer/LoadProjectHBoxContainer"]
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+tooltip_text = "Edit"
+texture_normal = ExtResource("5_hdhw3")
+texture_pressed = ExtResource("6_u3qo7")
+texture_hover = ExtResource("6_u3qo7")
 
 [node name="NewProjectButton" type="Button" parent="VBoxContainer/LoadProjectHBoxContainer"]
 layout_mode = 2
@@ -181,10 +198,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
 
-[node name="GenerateExportPathButton" type="Button" parent="VBoxContainer/ExportPathHBoxContainer"]
-layout_mode = 2
-text = "Generate"
-
 [node name="OpenExportPathFolderButton" type="Button" parent="VBoxContainer/ExportPathHBoxContainer"]
 layout_mode = 2
 text = "Open Folder"
@@ -204,10 +217,6 @@ custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-
-[node name="GenerateButlerCommandButton" type="Button" parent="VBoxContainer/ButlerCommandHBoxContainer"]
-layout_mode = 2
-text = "Generate"
 
 [node name="SaveProjectHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2
@@ -259,10 +268,18 @@ text = "WARNINGS: "
 layout_mode = 2
 text = "0"
 
+[node name="ConfirmationDialog" type="ConfirmationDialog" parent="."]
+initial_position = 1
+size = Vector2i(361, 100)
+ok_button_text = "Yes"
+
+[connection signal="item_selected" from="VBoxContainer/LoadProjectHBoxContainer/LoadProjectOptionButton" to="." method="_on_load_project_option_button_item_selected"]
+[connection signal="pressed" from="VBoxContainer/LoadProjectHBoxContainer/DeleteProjectButton" to="." method="_on_delete_project_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/LoadProjectHBoxContainer/EditProjectButton" to="." method="_on_edit_project_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/LoadProjectHBoxContainer/NewProjectButton" to="." method="_on_new_project_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/ExportPathHBoxContainer/ExportButton" to="." method="_on_export_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/ExportPathHBoxContainer/GenerateExportPathButton" to="." method="_on_generate_path_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/ExportPathHBoxContainer/OpenExportPathFolderButton" to="." method="_on_open_folder_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/ButlerCommandHBoxContainer/PublishButton" to="." method="_on_publish_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/ButlerCommandHBoxContainer/GenerateButlerCommandButton" to="." method="_on_generate_butler_path_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/SaveProjectHBoxContainer/SaveSettingsButton" to="." method="_on_save_settings_button_pressed"]
+[connection signal="canceled" from="ConfirmationDialog" to="." method="_on_confirmation_dialog_canceled"]
+[connection signal="confirmed" from="ConfirmationDialog" to="." method="_on_confirmation_dialog_confirmed"]
