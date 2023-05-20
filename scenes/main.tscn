@@ -58,7 +58,7 @@ size_flags_vertical = 0
 [node name="DeleteProjectButton" type="TextureButton" parent="MarginContainer/VBoxContainer/LoadProjectHBoxContainer"]
 custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
-tooltip_text = "Delete"
+tooltip_text = "Delete Project Configuration"
 texture_normal = ExtResource("2_uukxy")
 texture_pressed = ExtResource("4_t35ek")
 texture_hover = ExtResource("4_t35ek")
@@ -66,14 +66,14 @@ texture_hover = ExtResource("4_t35ek")
 [node name="EditProjectNameButton" type="TextureButton" parent="MarginContainer/VBoxContainer/LoadProjectHBoxContainer"]
 custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
-tooltip_text = "Edit Configuration Name"
+tooltip_text = "Edit Project Configuration Name"
 texture_normal = ExtResource("5_hdhw3")
 texture_pressed = ExtResource("6_u3qo7")
 texture_hover = ExtResource("6_u3qo7")
 
 [node name="NewProjectButton" type="TextureButton" parent="MarginContainer/VBoxContainer/LoadProjectHBoxContainer"]
 layout_mode = 2
-tooltip_text = "New Project"
+tooltip_text = "New Project Configuration"
 texture_normal = ExtResource("6_ii7l4")
 texture_pressed = ExtResource("7_tc4lb")
 texture_hover = ExtResource("7_tc4lb")
@@ -98,6 +98,7 @@ text = "C:\\Program Files\\Godot 4\\Godot_v4.0.2-stable_win64.exe"
 [node name="LaunchGodotProjectManagerButton" type="TextureButton" parent="MarginContainer/VBoxContainer/GodotPathHBoxContainer"]
 custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
+tooltip_text = "Open Godot Project Manager"
 texture_normal = ExtResource("8_s7o0n")
 texture_pressed = ExtResource("9_qdijb")
 texture_hover = ExtResource("9_qdijb")
@@ -410,6 +411,7 @@ file_mode = 2
 access = 2
 
 [node name="Timer" type="Timer" parent="."]
+wait_time = 0.1
 one_shot = true
 
 [connection signal="item_selected" from="MarginContainer/VBoxContainer/LoadProjectHBoxContainer/LoadProjectOptionButton" to="." method="_on_load_project_option_button_item_selected"]

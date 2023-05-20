@@ -17,31 +17,67 @@ tracks/0/keys = {
 "update": 0,
 "values": [0.0]
 }
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("CenterContainer/VBoxContainer/CenterContainer/Control/Sprite2D2:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("CenterContainer/VBoxContainer/CenterContainer/Control/Sprite2D3:rotation")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
 
 [sub_resource type="Animation" id="Animation_l4ckw"]
 resource_name = "Spin"
-length = 3.0
+length = 5.0
 loop_mode = 1
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("CenterContainer/VBoxContainer/CenterContainer/Control:rotation")
+tracks/0/path = NodePath("CenterContainer/VBoxContainer/CenterContainer/Control/Sprite2D:rotation")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(),
-"transitions": PackedFloat32Array(),
+"times": PackedFloat32Array(0, 3),
+"transitions": PackedFloat32Array(1, 1),
 "update": 0,
-"values": []
+"values": [0.0, 6.28319]
 }
 tracks/1/type = "value"
 tracks/1/imported = false
 tracks/1/enabled = true
-tracks/1/path = NodePath("CenterContainer/VBoxContainer/CenterContainer/Control/Sprite2D:rotation")
+tracks/1/path = NodePath("CenterContainer/VBoxContainer/CenterContainer/Control/Sprite2D2:rotation")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
-"times": PackedFloat32Array(0, 3),
+"times": PackedFloat32Array(0, 4),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [0.0, 6.28319]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("CenterContainer/VBoxContainer/CenterContainer/Control/Sprite2D3:rotation")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 5),
 "transitions": PackedFloat32Array(1, 1),
 "update": 0,
 "values": [0.0, 6.28319]
@@ -86,7 +122,18 @@ size_flags_vertical = 3
 [node name="Control" type="Control" parent="CenterContainer/VBoxContainer/CenterContainer"]
 layout_mode = 2
 
+[node name="Sprite2D3" type="Sprite2D" parent="CenterContainer/VBoxContainer/CenterContainer/Control"]
+self_modulate = Color(1, 0.709804, 0, 1)
+scale = Vector2(0.8, 0.8)
+texture = ExtResource("2_kl753")
+
+[node name="Sprite2D2" type="Sprite2D" parent="CenterContainer/VBoxContainer/CenterContainer/Control"]
+self_modulate = Color(0.619608, 0.313726, 1, 0.776471)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("2_kl753")
+
 [node name="Sprite2D" type="Sprite2D" parent="CenterContainer/VBoxContainer/CenterContainer/Control"]
+self_modulate = Color(0.364706, 0.364706, 0.364706, 0.780392)
 texture = ExtResource("2_kl753")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]

@@ -228,27 +228,29 @@ func ExportPreset(presetFullName):
 	
 	if exportType == "invalid" || extensionType == "invalid":
 		return
-	
+
 	var exportOption = "--export-" + exportType
-	
+
 	var releaseProfileName = GetItchReleaseProfileName(presetFullName)
 
 	var exportPath = _projectPathLineEdit.text + "\\exports\\" + _projectVersionLineEdit.text + "\\" + releaseProfileName + "\\" + exportType
 
 	if !DirAccess.dir_exists_absolute(exportPath):
 		DirAccess.make_dir_recursive_absolute(exportPath)
-	
+
 	var output = []
 	var args = ['--headless', '"--path "' + _projectPathLineEdit.text, exportOption, presetFullName, exportPath + "\\" + _loadProjectOptionButton.text + extensionType]
 	var readStdeer = true
-	var openConsole = true
-	
-	var exitCode = OS.execute(_godotPathLineEdit.text, args, output, readStdeer, openConsole) 
-	
-	_outputTextEdit.text = "Exit code: " + str(exitCode)
-	_outputTextEdit.text += "\n"
-	_outputTextEdit.text += "Output: " + str(output).replace("\\r\\n", "\n")
+	var openConsole = false
+	OS.execute(_godotPathLineEdit.text, args, output, readStdeer, openConsole) 
 
+	_outputTextEdit.text += "\nExport Output: \n"
+	var groomedOutput = str(output).replace("\\r\\n", "\n")
+	call_deferred("SetOutputText", groomedOutput)
+
+func SetOutputText(value):
+	_outputTextEdit.text = value
+	
 func GetItchReleaseProfileName(presetFullName):
 	var itchPublishType = ""
 	if presetFullName == "Linux/X11":
@@ -262,7 +264,7 @@ func GetItchReleaseProfileName(presetFullName):
 func ExportProject():
 	ClearOutput()
 	StartBusyBackground("Exporting...")
-	await get_tree().create_timer(0.1).timeout
+	await get_tree().create_timer(0.5).timeout
 	var thread = Thread.new()
 	thread.start(ExportProjectThread)
 
@@ -272,21 +274,17 @@ func ExportProjectThread():
 		OS.alert("Invalid export configuration")
 		return
 	
-	#var thread = Thread.new()
-	
 	if _packageTypeOptionButton.text == "Zip":
-		#thread.start(ExportWithZip)
-		call_deferred("ExportWithZip")
+		ExportWithZip()
 	elif _packageTypeOptionButton.text == "Zip + Clean":
-		var isCleaningUp = true
-		call_deferred("ExportWithZipWithCleanup")
+		ExportWithZipWithCleanup()
 	elif _packageTypeOptionButton.text == "No Zip":
-		call_deferred("ExportWithoutZip")
+		ExportWithoutZip()
 	
-	call_deferred("CountErrors")
-	call_deferred("CountWarnings")
-	call_deferred("ClearBusyBackground")
-	$Timer.start()
+	CountErrors()
+	CountWarnings()
+	ClearBusyBackground()
+	#$Timer.start()
 	
 func StartBusyBackground(busyDoingWhat):
 	_busyBackground = load("res://scenes/scenes/busy-background-blocker/busy_background_blocker_color_rect.tscn").instantiate()
@@ -721,7 +719,7 @@ func _on_publish_to_itch_button_pressed():
 func _on_timer_timeout():
 	_testCount += 1
 	print(str(_testCount))
-	if _testCount == 100:
+	if _testCount == 25:
 		OS.alert("Done")
 	else:
 		ExportProject()
