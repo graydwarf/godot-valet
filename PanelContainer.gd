@@ -21,7 +21,7 @@ extends PanelContainer
 var _solutionName = "godot-valet-solution"
 var _selectedProjectName = ""
 var _busyBackground
-var _testCount = 0
+
 func _ready():
 	InitSignals()
 	InitProjectSettings()
@@ -244,12 +244,12 @@ func ExportPreset(presetFullName):
 	var openConsole = false
 	OS.execute(_godotPathLineEdit.text, args, output, readStdeer, openConsole) 
 
-	_outputTextEdit.text += "\nExport Output: \n"
 	var groomedOutput = str(output).replace("\\r\\n", "\n")
 	call_deferred("SetOutputText", groomedOutput)
 
-func SetOutputText(value):
-	_outputTextEdit.text = value
+func SetOutputText(outputAsStr, outputHeader = "Output"):
+	_outputTextEdit.text += "\n" + outputHeader + "\n"
+	_outputTextEdit.text = outputAsStr
 	
 func GetItchReleaseProfileName(presetFullName):
 	var itchPublishType = ""
@@ -447,14 +447,17 @@ func GetExportPreview():
 		packageType = ""
 	
 	if _windowsCheckBox.button_pressed:
-		exportPreview += _projectPathLineEdit.text.to_lower() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "windows" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + packageType + "\n"
+		exportPreview += GetFormattedProjectPath() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "windows" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + packageType + "\n"
 	if _linuxCheckBox.button_pressed:
-		exportPreview += _projectPathLineEdit.text.to_lower() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "linux" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + packageType + "\n"
+		exportPreview += GetFormattedProjectPath() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "linux" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + packageType + "\n"
 	if _webCheckBox.button_pressed:
-		exportPreview += _projectPathLineEdit.text.to_lower() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "html5" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + packageType
+		exportPreview += GetFormattedProjectPath() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "html5" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + packageType
 		
 	return exportPreview
 
+func GetFormattedProjectPath():
+	return _projectPathLineEdit.text.trim_prefix(" ").trim_suffix(" ").to_lower().replace("/", "\\")
+	
 func GetButlerPreview():
 	if !FormValidationCheckIsSuccess():
 		return ""
@@ -465,13 +468,27 @@ func GetButlerPreview():
 		
 	var butlerPreview = ""
 	if _windowsCheckBox.button_pressed:
-		butlerPreview += "butler push " + _projectPathLineEdit.text.to_lower() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "windows" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + ".zip " + _itchProfileNameLineEdit.text.to_lower() + "/" + _loadProjectOptionButton.text.to_lower() + ":windows" + "\n"
+		butlerPreview += "butler push " + GetFormattedProjectPath() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "windows" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + ".zip " + _itchProfileNameLineEdit.text.to_lower() + "/" + _loadProjectOptionButton.text.to_lower() + ":windows" + "\n"
 	if _linuxCheckBox.button_pressed:
-		butlerPreview += "butler push " + _projectPathLineEdit.text.to_lower() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "linux" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + ".zip " + _itchProfileNameLineEdit.text.to_lower() + "/" + _loadProjectOptionButton.text.to_lower() + ":linux" + "\n"
+		butlerPreview += "butler push " + GetFormattedProjectPath() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "linux" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + ".zip " + _itchProfileNameLineEdit.text.to_lower() + "/" + _loadProjectOptionButton.text.to_lower() + ":linux" + "\n"
 	if _webCheckBox.button_pressed:
-		butlerPreview += "butler push " + _projectPathLineEdit.text.to_lower() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "html5" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + ".zip " + _itchProfileNameLineEdit.text.to_lower() + "/" + _loadProjectOptionButton.text.to_lower() + ":html5"
+		butlerPreview += "butler push " + GetFormattedProjectPath() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "html5" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + ".zip " + _itchProfileNameLineEdit.text.to_lower() + "/" + _loadProjectOptionButton.text.to_lower() + ":html5"
 		
 	return butlerPreview
+
+func GetButlerPushCommand(presetName):
+	if !FormValidationCheckIsSuccess():
+		return []
+	elif _packageTypeOptionButton.text == "No Zip":
+		_butlerPreviewTextEdit.text = ""
+	elif presetName == "windows":
+		return ["push", GetFormattedProjectPath() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "windows" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + ".zip", _itchProfileNameLineEdit.text.to_lower() + "/" + _loadProjectOptionButton.text.to_lower() + ":windows"]
+	elif presetName == "linux":
+		return ["push", GetFormattedProjectPath() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "linux" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + ".zip", _itchProfileNameLineEdit.text.to_lower() + "/" + _loadProjectOptionButton.text.to_lower() + ":linux"]
+	elif presetName == "web":
+		return ["push", GetFormattedProjectPath() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "html5" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + ".zip", _itchProfileNameLineEdit.text.to_lower() + "/" + _loadProjectOptionButton.text.to_lower() + ":html5"]
+
+	return []
 	
 # Example: butler push ...\godot-valet\exports\v0.0.1\godot-valet.zip poplava/godot-valet:windows
 func GetButlerArguments(publishType):
@@ -481,7 +498,7 @@ func GetButlerArguments(publishType):
 	# Build Path: ...\godot-valet\exports\v0.0.1\godot-valet.zip
 	# Surround with \" in case path has spaces
 	var buildPath = "\""
-	buildPath += "ASDASD"
+	buildPath += GetButlerPushCommand(publishType)
 	buildPath += "\\"
 	buildPath += publishType
 	buildPath += "\\"
@@ -509,25 +526,41 @@ func PublishToButler():
 		OS.alert("Invalid publish configuration")
 		return
 	
-#	var output = []
-#	var exitCode = 0
-#	if _exportPresetText == "all":
-#		for publishType in _listOfItchPublishTypes:
-#			var butlerArguments = GetButlerArguments(publishType)
-#			#var projectPath = _exportPathText + "\\" + publishType + "\\" + _releaseTypeText + "\\" + _projectNameText + ".zip"
-#			exitCode = OS.execute("butler", butlerArguments, output)
-#	else:
-#		# need to convert butlerArguments from string to array
-##		var butlerCommand = GetButlerPathForPublishType(GetItchReleaseProfileName(_exportPresetText))
-##		var exportPath = _exportPathText + "\\" + GetItchReleaseProfileName(_exportPresetText) + "\\" + _releaseTypeText + "\\" + _projectNameText + ".zip"
-##		exitCode = OS.execute("CMD.exe", ["/C", "cd " + exportPath + " && " + butlerCommand], output)
-#		pass
-#
-#	_outputTextEdit.text = "\n\n"
-#	_outputTextEdit.text = "------------------ Butler ------------------"
-#	_outputTextEdit.text = "Exit code: " + str(exitCode)
-#	_outputTextEdit.text += "\n"
-#	_outputTextEdit.text += "Output: " + str(output).replace("\\r\\n", "\n")
+	var output = []
+	var exitCode = 0
+	var butlerCommand = []
+	
+	if _windowsCheckBox.button_pressed:
+		butlerCommand = GetButlerPushCommand("windows")
+		exitCode = OS.execute("butler", butlerCommand, output, true)
+	if _linuxCheckBox.button_pressed:
+		butlerCommand = GetButlerPushCommand("linux")
+		exitCode = OS.execute("butler", butlerCommand, output, true)
+	if _webCheckBox.button_pressed:
+		butlerCommand = GetButlerPushCommand("html5")
+		exitCode = OS.execute("butler", butlerCommand, output, true)
+
+	var results = []
+	results.append("------------------ Butler ------------------")
+	results.append("Exit code: " + str(exitCode))
+	
+	var regex = RegEx.new()
+	regex.compile("For channel `(.+?)`: last build is (\\d+),|Pushing (.+?) MiB|Re-used (.+?)% of old, added (.+?) KiB fresh data|(\\d+\\.\\d+ KiB) patch \\((.+)% savings\\)|Build is now processing, should be up in a bit\\.|Use the `(.+?)` for more information\\.|ERROR: (.+)")
+
+	var butlerOutput = ""
+	for line in output:
+		butlerOutput += line + "\n"
+		
+	for result in regex.search_all(butlerOutput):
+		results.push_back(result.get_string())
+	
+	butlerOutput = ""
+	for result in results:
+		butlerOutput += result + "\n"
+	call_deferred("WriteButlerOutput", butlerOutput)
+	
+func WriteButlerOutput(value):
+	_outputTextEdit.text += "Output: " + value.replace("\\r\\n", "\n")
 	
 func OpenRootExportPath():
 	var rootExportPath = _projectPathLineEdit.text + "\\exports\\" + _projectVersionLineEdit.text
@@ -569,50 +602,83 @@ func DeleteProject():
 
 func ClearOutput():
 	_outputTextEdit.text = ""
-	
-func EditProjectWithConsole():
-	ClearOutput()
-	var thread = Thread.new()
-	thread.start(EditProjectInEditorWithConsole)
 
-func EditProjectInEditorWithConsole():
+func DisplayOutput(output):
+	var groomedOutput = str(output).replace("\\r\\n", "\n")
+	call_deferred("SetOutputText", groomedOutput)
+	
+func RunProjectWithConsoleThread():
+	var output = []
+	var godotArguments = ["/C", "\"" + _godotPathLineEdit.text + "\"  --path " + _projectPathLineEdit.text]
+	OS.execute("CMD.exe", godotArguments, output, true, true)
+	DisplayOutput(output)
+	
+	#_outputTextEdit.text += "Output: " + str(output).replace("\\r\\n", "\n")
+	
+func EditProjectInEditorWithConsoleThread():
 	var output = []
 	var godotArguments = ["/C", "\"" + _godotPathLineEdit.text + "\" --editor --verbose --debug --path " + _projectPathLineEdit.text]
 	OS.execute("CMD.exe", godotArguments, output, true, true)
-	_outputTextEdit.text += "Output: " + str(output).replace("\\r\\n", "\n")
-	
-func EditProject():
-	ClearOutput()
-	var thread = Thread.new()
-	thread.start(EditProjectInGodotEditor)
+	DisplayOutput(output)
 
-func EditProjectInGodotEditor():
+
+func EditProjectInGodotEditorThread():
 	var output = []
 	var godotArguments = ["--verbose", "--path " + _projectPathLineEdit.text, "--editor"]
 	OS.execute(_godotPathLineEdit.text, godotArguments, output)
-	_outputTextEdit.text += "Output: " + str(output).replace("\\r\\n", "\n")
+	DisplayOutput(output)
+
+func StartProjectThread():
+	var output = []
+	var godotArguments = ["--path " + _projectPathLineEdit.text]
+	OS.execute(_godotPathLineEdit.text, godotArguments, output)
+	DisplayOutput(output)
+
+func RunGodotProjectManagerThread():
+	var output = []
+	var godotArguments = ["--project-manager"]
+	OS.execute(_godotPathLineEdit.text, godotArguments, output)
+	DisplayOutput(output)
+	
+func RunProjectWithConsole():
+	var projectFile = Files.FindFirstFileWithExtension(GetFormattedProjectPath(), ".godot")
+	if projectFile == null || !FileAccess.file_exists(projectFile):
+		OS.alert("Did not find a project (.godot) file in the specified project path")
+		return
+		
+	ClearOutput()
+	var thread = Thread.new()
+	thread.start(RunProjectWithConsoleThread)
+	
+func EditProjectWithConsole():
+	var projectFile = Files.FindFirstFileWithExtension(GetFormattedProjectPath(), ".godot")
+	if projectFile == null || !FileAccess.file_exists(projectFile):
+		OS.alert("Did not find a project (.godot) file in the specified project path")
+		return
+		
+	ClearOutput()
+	var thread = Thread.new()
+	thread.start(EditProjectInEditorWithConsoleThread)
+	
+func EditProject():
+	var projectFile = Files.FindFirstFileWithExtension(GetFormattedProjectPath(), ".godot")
+	if projectFile == null || !FileAccess.file_exists(projectFile):
+		OS.alert("Did not find a project (.godot) file in the specified project path")
+		return
+		
+	ClearOutput()
+	var thread = Thread.new()
+	thread.start(EditProjectInGodotEditorThread)
 	
 func RunProject():
 	ClearOutput()
 	var thread = Thread.new()
-	thread.start(StartProject)
-
-func StartProject():
-	var output = []
-	var godotArguments = ["--path " + _projectPathLineEdit.text]
-	OS.execute(_godotPathLineEdit.text, godotArguments, output)
-	_outputTextEdit.text += "Output: " + str(output).replace("\\r\\n", "\n")
+	thread.start(StartProjectThread)
 
 func OpenGodotProjectManager():
 	ClearOutput()
 	var thread = Thread.new()
-	thread.start(RunGodotProjectManager)
-
-func RunGodotProjectManager():
-	var output = []
-	var godotArguments = ["--project-manager"]
-	OS.execute(_godotPathLineEdit.text, godotArguments, output)
-	_outputTextEdit.text += "Output: " + str(output).replace("\\r\\n", "\n")
+	thread.start(RunGodotProjectManagerThread)
 	
 func _on_export_button_pressed():
 	ExportProject()
@@ -716,11 +782,5 @@ func _on_launch_godot_project_manager_button_pressed():
 func _on_publish_to_itch_button_pressed():
 	PublishToButler()
 
-func _on_timer_timeout():
-	_testCount += 1
-	print(str(_testCount))
-	if _testCount == 25:
-		OS.alert("Done")
-	else:
-		ExportProject()
-
+func _on_run_project_with_console_button_pressed():
+	RunProjectWithConsole()

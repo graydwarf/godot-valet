@@ -20,6 +20,26 @@ func CopySourceToDestinationRecursive(sourcePath: String, destinationPath: Strin
 
 			sourceName = sourceDirectory.get_next()
 
+func FindFirstFileWithExtension(path, extension):
+	if !DirAccess.dir_exists_absolute(path):
+		return null
+		
+	var dir = DirAccess.open(path)
+	dir.list_dir_begin()
+
+	while true:
+		var file = dir.get_next()
+		if file.get_extension().length() == 0:
+			continue
+		if file.begins_with("."):
+			continue
+		if file.ends_with(extension):
+			return file
+
+	dir.list_dir_end()
+
+	return null
+	
 func GetFilesFromPath(path):
 	var files = []
 	if !DirAccess.dir_exists_absolute(path):

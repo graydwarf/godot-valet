@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://cetpkcrnqh0pi"]
+[gd_scene load_steps=24 format=3 uid="uid://cetpkcrnqh0pi"]
 
 [ext_resource type="Script" path="res://PanelContainer.gd" id="1_dih7n"]
 [ext_resource type="Texture2D" uid="uid://b46qasa75w20b" path="res://assets/delete.png" id="2_uukxy"]
@@ -17,6 +17,8 @@
 [ext_resource type="Texture2D" uid="uid://2j4h7w3uolm2" path="res://assets/run-project-hover-button.png" id="9_tpgmq"]
 [ext_resource type="Texture2D" uid="uid://ckyv0q2pvt252" path="res://assets/edit-project-with-console-pencil.png" id="9_tpmpk"]
 [ext_resource type="Texture2D" uid="uid://bipq7byv1ewpv" path="res://assets/edit-project-with-console-pencil-hover-button.png" id="11_c8h26"]
+[ext_resource type="Texture2D" uid="uid://da8ybnf2u3v3l" path="res://assets/run-project-with-console-button.png" id="12_ye4kl"]
+[ext_resource type="Texture2D" uid="uid://by5agiy2g8f02" path="res://assets/run-project-with-console-hover-button.png" id="13_asprc"]
 [ext_resource type="Texture2D" uid="uid://rlooc3fo04k" path="res://assets/export-button.png" id="19_6bxsx"]
 [ext_resource type="Texture2D" uid="uid://gn4u6fpqnv5k" path="res://assets/export-hover-button.png" id="20_cdw60"]
 [ext_resource type="Texture2D" uid="uid://dyhpf87ybm5o5" path="res://assets/publish-to-itch-hover-button.png" id="21_ccqw0"]
@@ -66,7 +68,7 @@ texture_hover = ExtResource("4_t35ek")
 [node name="EditProjectNameButton" type="TextureButton" parent="MarginContainer/VBoxContainer/LoadProjectHBoxContainer"]
 custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
-tooltip_text = "Edit Project Configuration Name"
+tooltip_text = "Edit Project Configuration"
 texture_normal = ExtResource("5_hdhw3")
 texture_pressed = ExtResource("6_u3qo7")
 texture_hover = ExtResource("6_u3qo7")
@@ -121,10 +123,17 @@ tooltip_text = "Path to the project folder."
 
 [node name="RunProjectButton" type="TextureButton" parent="MarginContainer/VBoxContainer/ProjectPathHBoxContainer"]
 layout_mode = 2
-tooltip_text = "Open Folder"
+tooltip_text = "Run Project"
 texture_normal = ExtResource("8_hi7u8")
 texture_pressed = ExtResource("9_tpgmq")
 texture_hover = ExtResource("9_tpgmq")
+
+[node name="RunProjectWithConsoleButton" type="TextureButton" parent="MarginContainer/VBoxContainer/ProjectPathHBoxContainer"]
+layout_mode = 2
+tooltip_text = "Run Project"
+texture_normal = ExtResource("12_ye4kl")
+texture_pressed = ExtResource("13_asprc")
+texture_hover = ExtResource("13_asprc")
 
 [node name="EditProjectButton" type="TextureButton" parent="MarginContainer/VBoxContainer/ProjectPathHBoxContainer"]
 layout_mode = 2
@@ -313,7 +322,7 @@ texture_hover = ExtResource("20_cdw60")
 [node name="OpenExportPathFolderButton" type="TextureButton" parent="MarginContainer/VBoxContainer/ExportPathHBoxContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 0
-tooltip_text = "Open Folder"
+tooltip_text = "Open Export Folder"
 texture_normal = ExtResource("6_p1viu")
 texture_pressed = ExtResource("7_3s0bx")
 texture_hover = ExtResource("7_3s0bx")
@@ -410,10 +419,6 @@ ok_button_text = "Select Current Folder"
 file_mode = 2
 access = 2
 
-[node name="Timer" type="Timer" parent="."]
-wait_time = 0.1
-one_shot = true
-
 [connection signal="item_selected" from="MarginContainer/VBoxContainer/LoadProjectHBoxContainer/LoadProjectOptionButton" to="." method="_on_load_project_option_button_item_selected"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/LoadProjectHBoxContainer/DeleteProjectButton" to="." method="_on_delete_project_button_pressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/LoadProjectHBoxContainer/EditProjectNameButton" to="." method="_on_edit_project_name_button_pressed"]
@@ -421,6 +426,7 @@ one_shot = true
 [connection signal="pressed" from="MarginContainer/VBoxContainer/GodotPathHBoxContainer/LaunchGodotProjectManagerButton" to="." method="_on_launch_godot_project_manager_button_pressed"]
 [connection signal="text_changed" from="MarginContainer/VBoxContainer/ProjectPathHBoxContainer/ProjectPathLineEdit" to="." method="_on_project_path_line_edit_text_changed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/ProjectPathHBoxContainer/RunProjectButton" to="." method="_on_run_project_button_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/ProjectPathHBoxContainer/RunProjectWithConsoleButton" to="." method="_on_run_project_with_console_button_pressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/ProjectPathHBoxContainer/EditProjectButton" to="." method="_on_edit_project_button_pressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/ProjectPathHBoxContainer/EditProjectWithConsoleButton" to="." method="_on_edit_project_with_console_button_pressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/ProjectPathHBoxContainer/SelectProjectFolderButton" to="." method="_on_select_project_folder_button_pressed"]
@@ -438,4 +444,3 @@ one_shot = true
 [connection signal="canceled" from="ConfirmationDialog" to="." method="_on_confirmation_dialog_canceled"]
 [connection signal="confirmed" from="ConfirmationDialog" to="." method="_on_confirmation_dialog_confirmed"]
 [connection signal="dir_selected" from="SelectFolderFileDialog" to="." method="_on_select_folder_file_dialog_dir_selected"]
-[connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]
