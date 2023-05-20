@@ -18,11 +18,7 @@ extends PanelContainer
 
 @onready var _deleteConfirmationDialog = $ConfirmationDialog
 
-#var _listOfPresetTypes = ["Windows Desktop", "Linux/X11", "Web"]
-#var _listOfItchPublishTypes = ["windows", "html5", "linux"]
-
 var _solutionName = "godot-valet-solution"
-
 var _selectedProjectName = ""
 
 func _ready():
@@ -51,6 +47,8 @@ func ResetFields():
 	_exportTypeOptionButton.text = "Release"
 	_packageTypeOptionButton.text = "Zip"
 	_exportPreviewTextEdit.text = ""
+	_butlerPreviewTextEdit.text = ""
+	_itchProfileNameLineEdit.text = ""
 
 func SaveValetSettings():
 	var config = ConfigFile.new()
@@ -81,7 +79,7 @@ func LoadValetSettings():
 
 	_selectedProjectName = config.get_value("Settings", "selected_project_name", "")
 
-func LoadConfigSettings():
+func LoadConfigSettings(newProjectName = ""):
 	var allResourceFiles = Files.GetFilesFromPath("user://")
 	var loadedConfigurationFile = false
 	for resourceFile in allResourceFiles:
@@ -100,15 +98,24 @@ func LoadConfigSettings():
 	# Did we load a config file?
 	if !loadedConfigurationFile:
 		# No. Create a new default one.
-		var newProjectName = "New Project"
+		newProjectName = "New Project"
 		CreateNewSettingsFile(newProjectName)
 		_loadProjectOptionButton.text = newProjectName
 		SaveValetSettings()
 	else:
 		# We loaded a config file. Select it.
+		if newProjectName != "":
+			_selectedProjectName = newProjectName
+
 		var selectedIndex = FindProjectIndexByName(_selectedProjectName)
+			
+		if selectedIndex == null:
+			selectedIndex = 0
+			
 		LoadProjectByIndex(selectedIndex)
 		_loadProjectOptionButton.select(selectedIndex)
+		GenerateButlerPreview()
+		GenerateExportPreview()
 
 func ProjectRenamed(projectName):
 	if FileAccess.file_exists("user://" + _loadProjectOptionButton.text + ".cfg"):
@@ -117,12 +124,12 @@ func ProjectRenamed(projectName):
 			OS.alert("Error renaming project")
 	else:
 		OS.alert("Project does not exist.")
+		
 	_loadProjectOptionButton.clear()
-	LoadConfigSettings()
-	#_loadProjectOptionButton.text = projectName
+	LoadConfigSettings(projectName)
 
-func SaveSettings(projectName):
-	CreateNewSettingsFile(projectName)
+func SaveSettings():
+	CreateNewSettingsFile(_loadProjectOptionButton.text)
 	SaveValetSettings()
 	
 func CreateNewSettingsFile(projectName):
@@ -155,6 +162,9 @@ func FindProjectIndexByName(projectName):
 			return itemIndex
 		
 func LoadProjectByIndex(index):
+	if _loadProjectOptionButton.item_count == 0:
+		return
+		
 	var projectName = _loadProjectOptionButton.get_item_text(index)
 	var config = ConfigFile.new()
 	var err = config.load("user://" + projectName + ".cfg")
@@ -228,7 +238,7 @@ func ExportPreset(presetFullName):
 		DirAccess.make_dir_recursive_absolute(exportPath)
 	
 	var output = []
-	var args = ['"--path "' + _projectPathLineEdit.text, exportOption, presetFullName, exportPath + "\\" + _loadProjectOptionButton.text + extensionType]
+	var args = ['--headless', '"--path "' + _projectPathLineEdit.text, exportOption, presetFullName, exportPath + "\\" + _loadProjectOptionButton.text + extensionType]
 	var readStdeer = true
 	var openConsole = true
 	
@@ -249,6 +259,10 @@ func GetItchReleaseProfileName(presetFullName):
 	return itchPublishType
 	
 func ExportProject():
+	if !FormValidationCheckIsSuccess():
+		OS.alert("Invalid export configuration")
+		return
+		
 	if _packageTypeOptionButton.text == "Zip":
 		ExportWithZip()
 	elif _packageTypeOptionButton.text == "Zip + Clean":
@@ -382,8 +396,26 @@ func GetExportPath(presetType):
 		butlerPreview += _projectPathLineEdit.text + "\\exports\\" + _projectVersionLineEdit.text + "\\" + presetType + "\\" + _exportTypeOptionButton.text + "\\" + _loadProjectOptionButton.text + _packageTypeOptionButton.text
 		
 	return butlerPreview
+
+func FormValidationCheckIsSuccess():
+	if _projectPathLineEdit.text.to_lower().trim_prefix(" ").trim_suffix(" ") == "":
+		return false
+	
+	if _projectVersionLineEdit.text.to_lower().trim_prefix(" ").trim_suffix(" ") == "":
+		return false
+		
+	if _exportTypeOptionButton.text == "":
+		return false
+		
+	if _packageTypeOptionButton.text == "":
+		return false
+	
+	return true
 	
 func GetExportPreview():
+	if !FormValidationCheckIsSuccess():
+		return ""
+
 	var exportPreview = ""
 	var packageType = _packageTypeOptionButton.text.to_lower()
 	if packageType == "zip" || packageType == "zip + clean":
@@ -401,6 +433,13 @@ func GetExportPreview():
 	return exportPreview
 
 func GetButlerPreview():
+	if !FormValidationCheckIsSuccess():
+		return ""
+
+	if _packageTypeOptionButton.text == "No Zip":
+		_butlerPreviewTextEdit.text = ""
+		return ""
+		
 	var butlerPreview = ""
 	if _windowsCheckBox.button_pressed:
 		butlerPreview += "butler push " + _projectPathLineEdit.text.to_lower() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "windows" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + ".zip " + _itchProfileNameLineEdit.text.to_lower() + "/" + _loadProjectOptionButton.text.to_lower() + ":windows" + "\n"
@@ -442,7 +481,11 @@ func GetButlerArguments(publishType):
 	return butlerArguments
 
 # butler push godot-valet.zip poplava/godot-valet:windows
-#func PublishToButler():
+func PublishToButler():
+	if !FormValidationCheckIsSuccess():
+		OS.alert("Invalid publish configuration")
+		return
+	
 #	var output = []
 #	var exitCode = 0
 #	if _exportPresetText == "all":
@@ -463,17 +506,26 @@ func GetButlerArguments(publishType):
 #	_outputTextEdit.text += "\n"
 #	_outputTextEdit.text += "Output: " + str(output).replace("\\r\\n", "\n")
 	
-#func OpenExportPathFolder():
-#	OS.shell_open(_exportPathLineEdit.text)
+func OpenRootExportPath():
+	var rootExportPath = _projectPathLineEdit.text + "\\exports\\" + _projectVersionLineEdit.text
+	var err = OS.shell_open(rootExportPath)
+	if err == 7:
+		OS.alert("Unable to open export folder. Did you export yet?")
 
 func OpenProjectPathFolder():
-	OS.shell_open(_projectPathLineEdit.text)
-	
+	var err = OS.shell_open(_projectPathLineEdit.text)
+	if err == 7:
+		OS.alert("Unable to open project folder. Did it get moved or renamed?")
+		
 func OpenNewProjectDialog():
 	var newProjectDialog = load("res://scenes/scenes/new-project-dialog/new-project-dialog.tscn").instantiate()
 	add_child(newProjectDialog)
 
 func OpenEditProjectDialog():
+	if _loadProjectOptionButton.item_count == 0:
+		OpenNewProjectDialog()
+		return
+		
 	var editProjectDialog = load("res://scenes/scenes/edit-project-dialog/edit-project-dialog.tscn").instantiate()
 	add_child(editProjectDialog)
 	editProjectDialog.SetProjectName(_loadProjectOptionButton.text)
@@ -484,42 +536,85 @@ func DisplayDeleteProjectConfirmationDialog():
 	_deleteConfirmationDialog.show()
 
 func DeleteProject():
+	ResetFields()
 	var projectName = _loadProjectOptionButton.text
 	var projectIndex = FindProjectIndexByName(projectName)
 	_loadProjectOptionButton.remove_item(projectIndex)
 	DirAccess.remove_absolute("user://" + projectName + ".cfg")
+	if _loadProjectOptionButton.item_count >= 1:
+		_loadProjectOptionButton.select(0)
 
-func _on_publish_button_pressed():
-	#PublishToButler()
-	pass
+func ClearOutput():
+	_outputTextEdit.text = ""
+	
+func EditProjectWithConsole():
+	ClearOutput()
+	var thread = Thread.new()
+	thread.start(EditProjectInEditorWithConsole)
 
-#func _on_open_folder_button_pressed():
-#	OpenExportPathFolder()
+func EditProjectInEditorWithConsole():
+	var output = []
+	var godotArguments = ["/C", "\"" + _godotPathLineEdit.text + "\" --editor --path " + _projectPathLineEdit.text]
+	OS.execute("CMD.exe", godotArguments, output, true, true)
+	_outputTextEdit.text += "Output: " + str(output).replace("\\r\\n", "\n")
+	
+func EditProject():
+	ClearOutput()
+	var thread = Thread.new()
+	thread.start(EditProjectInGodotEditor)
 
+func EditProjectInGodotEditor():
+	var output = []
+	var godotArguments = ["--verbose", "--path " + _projectPathLineEdit.text, "--editor"]
+	OS.execute(_godotPathLineEdit.text, godotArguments, output)
+	_outputTextEdit.text += "Output: " + str(output).replace("\\r\\n", "\n")
+	
+func RunProject():
+	ClearOutput()
+	var thread = Thread.new()
+	thread.start(StartProject)
+
+func StartProject():
+	var output = []
+	var godotArguments = ["--path " + _projectPathLineEdit.text]
+	OS.execute(_godotPathLineEdit.text, godotArguments, output)
+	_outputTextEdit.text += "Output: " + str(output).replace("\\r\\n", "\n")
+
+func OpenGodotProjectManager():
+	ClearOutput()
+	var thread = Thread.new()
+	thread.start(RunGodotProjectManager)
+
+func RunGodotProjectManager():
+	var output = []
+	var godotArguments = ["--project-manager"]
+	OS.execute(_godotPathLineEdit.text, godotArguments, output)
+	_outputTextEdit.text += "Output: " + str(output).replace("\\r\\n", "\n")
+	
 func _on_export_button_pressed():
 	ExportProject()
 
 func _on_new_project_button_pressed():
 	OpenNewProjectDialog()
 
-func _on_save_settings_button_pressed():
-	SaveSettings(_loadProjectOptionButton.text)
-
 func _on_delete_project_button_pressed():
 	DisplayDeleteProjectConfirmationDialog()
 
-func _on_confirmation_dialog_canceled():
-	pass # Replace with function body.
-
 func _on_confirmation_dialog_confirmed():
 	DeleteProject()
+	LoadProjectByIndex(0)
+	GenerateButlerPreview()
+	GenerateExportPreview()
+	SaveSettings()
 
 func _on_load_project_option_button_item_selected(index):
 	LoadProjectByIndex(index)
-	SaveSettings(_loadProjectOptionButton.text)
+	GenerateButlerPreview()
+	GenerateExportPreview()
+	SaveSettings()
 
 func _on_edit_project_button_pressed():
-	OpenEditProjectDialog()
+	EditProject()
 
 func _on_open_project_folder_button_pressed():
 	OpenProjectPathFolder()
@@ -529,3 +624,71 @@ func _on_preview_butler_command_button_pressed():
 
 func _on_preview_export_path_button_pressed():
 	GenerateExportPreview()
+
+func _on_open_export_path_folder_button_pressed():
+	OpenRootExportPath()
+
+func _on_project_path_line_edit_text_changed(_new_text):
+	GenerateExportPreview()
+	GenerateButlerPreview()
+	SaveSettings()
+
+func _on_project_version_line_edit_text_changed(_new_text):
+	GenerateExportPreview()
+	GenerateButlerPreview()
+	SaveSettings()
+
+func _on_windows_check_box_pressed():
+	GenerateExportPreview()
+	GenerateButlerPreview()
+	SaveSettings()
+
+func _on_linux_check_box_pressed():
+	GenerateExportPreview()
+	GenerateButlerPreview()
+	SaveSettings()
+
+func _on_web_check_box_pressed():
+	GenerateExportPreview()
+	GenerateButlerPreview()
+	SaveSettings()
+
+func _on_export_type_option_button_item_selected(_index):
+	GenerateExportPreview()
+	GenerateButlerPreview()
+	SaveSettings()
+
+func _on_package_type_option_button_item_selected(_index):
+	GenerateExportPreview()
+	GenerateButlerPreview()
+	SaveSettings()
+
+func _on_itch_name_line_edit_text_changed(_new_text):
+	GenerateExportPreview()
+	GenerateButlerPreview()
+	SaveSettings()
+
+func _on_select_project_folder_button_pressed():
+	$SelectFolderFileDialog.position = Vector2(200, 200)
+	$SelectFolderFileDialog.show()
+
+func _on_select_folder_file_dialog_dir_selected(dir):
+	_projectPathLineEdit.text = dir
+	GenerateExportPreview()
+	GenerateButlerPreview()
+	SaveSettings()
+
+func _on_run_project_button_pressed():
+	RunProject()
+
+func _on_edit_project_name_button_pressed():
+	OpenEditProjectDialog()
+
+func _on_edit_project_with_console_button_pressed():
+	EditProjectWithConsole()
+
+func _on_launch_godot_project_manager_button_pressed():
+	OpenGodotProjectManager()
+
+func _on_publish_to_itch_button_pressed():
+	PublishToButler()

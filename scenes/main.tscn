@@ -1,11 +1,26 @@
-[gd_scene load_steps=7 format=3 uid="uid://cetpkcrnqh0pi"]
+[gd_scene load_steps=22 format=3 uid="uid://cetpkcrnqh0pi"]
 
 [ext_resource type="Script" path="res://PanelContainer.gd" id="1_dih7n"]
 [ext_resource type="Texture2D" uid="uid://b46qasa75w20b" path="res://assets/delete.png" id="2_uukxy"]
-[ext_resource type="Texture2D" uid="uid://dg6vps3p7eehm" path="res://assets/delete-pressed.png" id="3_oxvp5"]
 [ext_resource type="Texture2D" uid="uid://buvhlng8eu172" path="res://assets/delete-hover.png" id="4_t35ek"]
 [ext_resource type="Texture2D" uid="uid://bavgbtmpc8ox7" path="res://assets/edit-project-pencil.png" id="5_hdhw3"]
+[ext_resource type="Texture2D" uid="uid://cpbgj8cbstlyi" path="res://assets/new-project-button.png" id="6_ii7l4"]
+[ext_resource type="Texture2D" uid="uid://dupqnev8b73sc" path="res://assets/open-folder.png" id="6_p1viu"]
 [ext_resource type="Texture2D" uid="uid://l3f70tyyehdg" path="res://assets/edit-project-pencil-hover.png" id="6_u3qo7"]
+[ext_resource type="Texture2D" uid="uid://bynyo67m7t0pr" path="res://assets/open-folder-pressed.png" id="7_3s0bx"]
+[ext_resource type="Texture2D" uid="uid://bc6k11fyle18e" path="res://assets/new-project-hover-button.png" id="7_tc4lb"]
+[ext_resource type="Texture2D" uid="uid://bcjxv260x71qr" path="res://assets/run-project-button.png" id="8_hi7u8"]
+[ext_resource type="Texture2D" uid="uid://rtrktu6lgddq" path="res://assets/select-folder-dialog.png" id="8_qylx6"]
+[ext_resource type="Texture2D" uid="uid://djbhg3o3bmva8" path="res://assets/open-godot-project-manager-button.png" id="8_s7o0n"]
+[ext_resource type="Texture2D" uid="uid://bjien5r58t8it" path="res://assets/select-folder-dialog-hover-button.png" id="9_d0s17"]
+[ext_resource type="Texture2D" uid="uid://b0yfomcm8rkj4" path="res://assets/open-godot-project-manager-hover-button.png" id="9_qdijb"]
+[ext_resource type="Texture2D" uid="uid://2j4h7w3uolm2" path="res://assets/run-project-hover-button.png" id="9_tpgmq"]
+[ext_resource type="Texture2D" uid="uid://ckyv0q2pvt252" path="res://assets/edit-project-with-console-pencil.png" id="9_tpmpk"]
+[ext_resource type="Texture2D" uid="uid://bipq7byv1ewpv" path="res://assets/edit-project-with-console-pencil-hover-button.png" id="11_c8h26"]
+[ext_resource type="Texture2D" uid="uid://rlooc3fo04k" path="res://assets/export-button.png" id="19_6bxsx"]
+[ext_resource type="Texture2D" uid="uid://gn4u6fpqnv5k" path="res://assets/export-hover-button.png" id="20_cdw60"]
+[ext_resource type="Texture2D" uid="uid://dyhpf87ybm5o5" path="res://assets/publish-to-itch-hover-button.png" id="21_ccqw0"]
+[ext_resource type="Texture2D" uid="uid://cgjh8ytrcvykd" path="res://assets/publish-to-itch-button.png" id="22_vv4ux"]
 
 [node name="Main" type="PanelContainer"]
 anchors_preset = 15
@@ -45,21 +60,23 @@ custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
 tooltip_text = "Delete"
 texture_normal = ExtResource("2_uukxy")
-texture_pressed = ExtResource("3_oxvp5")
+texture_pressed = ExtResource("4_t35ek")
 texture_hover = ExtResource("4_t35ek")
 
-[node name="EditProjectButton" type="TextureButton" parent="MarginContainer/VBoxContainer/LoadProjectHBoxContainer"]
+[node name="EditProjectNameButton" type="TextureButton" parent="MarginContainer/VBoxContainer/LoadProjectHBoxContainer"]
 custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
-tooltip_text = "Edit"
+tooltip_text = "Edit Configuration Name"
 texture_normal = ExtResource("5_hdhw3")
 texture_pressed = ExtResource("6_u3qo7")
 texture_hover = ExtResource("6_u3qo7")
 
-[node name="NewProjectButton" type="Button" parent="MarginContainer/VBoxContainer/LoadProjectHBoxContainer"]
-custom_minimum_size = Vector2(140, 0)
+[node name="NewProjectButton" type="TextureButton" parent="MarginContainer/VBoxContainer/LoadProjectHBoxContainer"]
 layout_mode = 2
-text = "New Project"
+tooltip_text = "New Project"
+texture_normal = ExtResource("6_ii7l4")
+texture_pressed = ExtResource("7_tc4lb")
+texture_hover = ExtResource("7_tc4lb")
 
 [node name="GodotPathHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -75,12 +92,15 @@ custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
+tooltip_text = "Path to the appropriate godot version you want to build/export with."
 text = "C:\\Program Files\\Godot 4\\Godot_v4.0.2-stable_win64.exe"
 
-[node name="EmptyButton" type="Button" parent="MarginContainer/VBoxContainer/GodotPathHBoxContainer"]
-self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(140, 0)
+[node name="LaunchGodotProjectManagerButton" type="TextureButton" parent="MarginContainer/VBoxContainer/GodotPathHBoxContainer"]
+custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
+texture_normal = ExtResource("8_s7o0n")
+texture_pressed = ExtResource("9_qdijb")
+texture_hover = ExtResource("9_qdijb")
 
 [node name="ProjectPathHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -96,11 +116,42 @@ custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
+tooltip_text = "Path to the project folder."
 
-[node name="OpenProjectFolderButton" type="Button" parent="MarginContainer/VBoxContainer/ProjectPathHBoxContainer"]
-custom_minimum_size = Vector2(140, 0)
+[node name="RunProjectButton" type="TextureButton" parent="MarginContainer/VBoxContainer/ProjectPathHBoxContainer"]
 layout_mode = 2
-text = "Open Folder"
+tooltip_text = "Open Folder"
+texture_normal = ExtResource("8_hi7u8")
+texture_pressed = ExtResource("9_tpgmq")
+texture_hover = ExtResource("9_tpgmq")
+
+[node name="EditProjectButton" type="TextureButton" parent="MarginContainer/VBoxContainer/ProjectPathHBoxContainer"]
+layout_mode = 2
+tooltip_text = "Edit Project"
+texture_normal = ExtResource("5_hdhw3")
+texture_pressed = ExtResource("6_u3qo7")
+texture_hover = ExtResource("6_u3qo7")
+
+[node name="EditProjectWithConsoleButton" type="TextureButton" parent="MarginContainer/VBoxContainer/ProjectPathHBoxContainer"]
+layout_mode = 2
+tooltip_text = "Edit Project w/Console"
+texture_normal = ExtResource("9_tpmpk")
+texture_pressed = ExtResource("11_c8h26")
+texture_hover = ExtResource("11_c8h26")
+
+[node name="SelectProjectFolderButton" type="TextureButton" parent="MarginContainer/VBoxContainer/ProjectPathHBoxContainer"]
+layout_mode = 2
+tooltip_text = "Select Folder"
+texture_normal = ExtResource("8_qylx6")
+texture_pressed = ExtResource("9_d0s17")
+texture_hover = ExtResource("9_d0s17")
+
+[node name="OpenProjectFolderButton" type="TextureButton" parent="MarginContainer/VBoxContainer/ProjectPathHBoxContainer"]
+layout_mode = 2
+tooltip_text = "Open Folder"
+texture_normal = ExtResource("6_p1viu")
+texture_pressed = ExtResource("7_3s0bx")
+texture_hover = ExtResource("7_3s0bx")
 
 [node name="ProjectVersionHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -116,11 +167,12 @@ custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
+tooltip_text = "The version can be whatever you want as long as long as it results in a valid export path. Needs to be non empty."
 text = "v0.0.1"
 
 [node name="EmptyButton" type="Button" parent="MarginContainer/VBoxContainer/ProjectVersionHBoxContainer"]
 self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(140, 0)
+custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
 
 [node name="ExportPresetHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
@@ -134,16 +186,19 @@ horizontal_alignment = 2
 
 [node name="WindowsCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/ExportPresetHBoxContainer"]
 layout_mode = 2
+tooltip_text = "\"Windows Desktop\""
 button_pressed = true
 text = "Windows"
 
 [node name="LinuxCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/ExportPresetHBoxContainer"]
 layout_mode = 2
+tooltip_text = "\"Linux/X11\""
 button_pressed = true
 text = "Linux"
 
 [node name="WebCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/ExportPresetHBoxContainer"]
 layout_mode = 2
+tooltip_text = "\"Web\""
 button_pressed = true
 text = "Web"
 
@@ -166,7 +221,7 @@ custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-tooltip_text = "Release, Debug, Pack (source)"
+tooltip_text = "Export with the debug option enabled?"
 item_count = 2
 popup/item_0/text = "Release"
 popup/item_0/id = 0
@@ -175,7 +230,7 @@ popup/item_1/id = 1
 
 [node name="EmptyButton" type="Button" parent="MarginContainer/VBoxContainer/ExportTypeHBoxContainer"]
 self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(140, 0)
+custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
 
 [node name="PackageTypeHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
@@ -192,6 +247,7 @@ custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
+tooltip_text = "Zip or not and optionally cleanup the files after copying them to the .zip package."
 item_count = 3
 popup/item_0/text = "No Zip"
 popup/item_0/id = 0
@@ -202,7 +258,7 @@ popup/item_2/id = 2
 
 [node name="EmptyButton" type="Button" parent="MarginContainer/VBoxContainer/PackageTypeHBoxContainer"]
 self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(140, 0)
+custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
 
 [node name="ItchNameHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
@@ -219,21 +275,22 @@ custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
+tooltip_text = "Your itch account name for publishing to itch.io with butler."
 
 [node name="EmptyButton" type="Button" parent="MarginContainer/VBoxContainer/ItchNameHBoxContainer"]
 self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(140, 0)
+custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
 
 [node name="ExportPathHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="ExportButton" type="Button" parent="MarginContainer/VBoxContainer/ExportPathHBoxContainer"]
+[node name="ExportLabel" type="Label" parent="MarginContainer/VBoxContainer/ExportPathHBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
-size_flags_horizontal = 0
 size_flags_vertical = 0
-text = "Export"
+text = "Export Preview:"
+horizontal_alignment = 2
 
 [node name="ExportPreviewTextEdit" type="TextEdit" parent="MarginContainer/VBoxContainer/ExportPathHBoxContainer"]
 custom_minimum_size = Vector2(0, 100)
@@ -244,27 +301,31 @@ editable = false
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ExportPathHBoxContainer"]
 layout_mode = 2
 
-[node name="PreviewExportPathButton" type="Button" parent="MarginContainer/VBoxContainer/ExportPathHBoxContainer/VBoxContainer"]
-custom_minimum_size = Vector2(140, 0)
+[node name="OpenExportPathFolderButton" type="TextureButton" parent="MarginContainer/VBoxContainer/ExportPathHBoxContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 0
-text = "Preview"
+tooltip_text = "Open Folder"
+texture_normal = ExtResource("6_p1viu")
+texture_pressed = ExtResource("7_3s0bx")
+texture_hover = ExtResource("7_3s0bx")
 
-[node name="OpenExportPathFolderButton" type="Button" parent="MarginContainer/VBoxContainer/ExportPathHBoxContainer/VBoxContainer"]
-custom_minimum_size = Vector2(140, 0)
+[node name="ExportButton" type="TextureButton" parent="MarginContainer/VBoxContainer/ExportPathHBoxContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 0
-text = "Open Folder"
+tooltip_text = "Export Project"
+texture_normal = ExtResource("19_6bxsx")
+texture_pressed = ExtResource("20_cdw60")
+texture_hover = ExtResource("20_cdw60")
 
 [node name="ButlerCommandHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="PublishButton" type="Button" parent="MarginContainer/VBoxContainer/ButlerCommandHBoxContainer"]
+[node name="PublishLabel" type="Label" parent="MarginContainer/VBoxContainer/ButlerCommandHBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
-size_flags_horizontal = 0
 size_flags_vertical = 0
-text = "Publish"
+text = "Publish Preview:"
+horizontal_alignment = 2
 
 [node name="ButlerPreviewTextEdit" type="TextEdit" parent="MarginContainer/VBoxContainer/ButlerCommandHBoxContainer"]
 custom_minimum_size = Vector2(0, 100)
@@ -272,22 +333,16 @@ layout_mode = 2
 size_flags_horizontal = 3
 editable = false
 
-[node name="PreviewButlerCommandButton" type="Button" parent="MarginContainer/VBoxContainer/ButlerCommandHBoxContainer"]
-custom_minimum_size = Vector2(140, 0)
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ButlerCommandHBoxContainer"]
+layout_mode = 2
+
+[node name="PublishToItchButton" type="TextureButton" parent="MarginContainer/VBoxContainer/ButlerCommandHBoxContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 0
-text = "Preview"
-
-[node name="SaveProjectHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
-layout_mode = 2
-alignment = 2
-
-[node name="SaveSettingsButton" type="Button" parent="MarginContainer/VBoxContainer/SaveProjectHBoxContainer"]
-custom_minimum_size = Vector2(140, 0)
-layout_mode = 2
-size_flags_horizontal = 0
-size_flags_vertical = 0
-text = "Save Settings"
+tooltip_text = "Publish Project"
+texture_normal = ExtResource("22_vv4ux")
+texture_pressed = ExtResource("21_ccqw0")
+texture_hover = ExtResource("21_ccqw0")
 
 [node name="OutputVBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -297,9 +352,11 @@ size_flags_vertical = 3
 layout_mode = 2
 
 [node name="OutputLabel" type="Label" parent="MarginContainer/VBoxContainer/OutputVBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 size_flags_vertical = 0
 text = "Output:"
+horizontal_alignment = 2
 
 [node name="OutputTextEdit" type="TextEdit" parent="MarginContainer/VBoxContainer/OutputVBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(0, 100)
@@ -310,8 +367,9 @@ wrap_mode = 1
 
 [node name="EmptyButton2" type="Button" parent="MarginContainer/VBoxContainer/OutputVBoxContainer/HBoxContainer"]
 self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(140, 0)
+custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
+size_flags_vertical = 0
 
 [node name="IssuesHBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -344,16 +402,35 @@ initial_position = 1
 size = Vector2i(361, 100)
 ok_button_text = "Yes"
 
+[node name="SelectFolderFileDialog" type="FileDialog" parent="."]
+initial_position = 2
+title = "Open a Directory"
+size = Vector2i(600, 500)
+ok_button_text = "Select Current Folder"
+file_mode = 2
+access = 2
+
 [connection signal="item_selected" from="MarginContainer/VBoxContainer/LoadProjectHBoxContainer/LoadProjectOptionButton" to="." method="_on_load_project_option_button_item_selected"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/LoadProjectHBoxContainer/DeleteProjectButton" to="." method="_on_delete_project_button_pressed"]
-[connection signal="pressed" from="MarginContainer/VBoxContainer/LoadProjectHBoxContainer/EditProjectButton" to="." method="_on_edit_project_button_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/LoadProjectHBoxContainer/EditProjectNameButton" to="." method="_on_edit_project_name_button_pressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/LoadProjectHBoxContainer/NewProjectButton" to="." method="_on_new_project_button_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/GodotPathHBoxContainer/LaunchGodotProjectManagerButton" to="." method="_on_launch_godot_project_manager_button_pressed"]
+[connection signal="text_changed" from="MarginContainer/VBoxContainer/ProjectPathHBoxContainer/ProjectPathLineEdit" to="." method="_on_project_path_line_edit_text_changed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/ProjectPathHBoxContainer/RunProjectButton" to="." method="_on_run_project_button_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/ProjectPathHBoxContainer/EditProjectButton" to="." method="_on_edit_project_button_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/ProjectPathHBoxContainer/EditProjectWithConsoleButton" to="." method="_on_edit_project_with_console_button_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/ProjectPathHBoxContainer/SelectProjectFolderButton" to="." method="_on_select_project_folder_button_pressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/ProjectPathHBoxContainer/OpenProjectFolderButton" to="." method="_on_open_project_folder_button_pressed"]
-[connection signal="pressed" from="MarginContainer/VBoxContainer/ExportPathHBoxContainer/ExportButton" to="." method="_on_export_button_pressed"]
-[connection signal="pressed" from="MarginContainer/VBoxContainer/ExportPathHBoxContainer/VBoxContainer/PreviewExportPathButton" to="." method="_on_preview_export_path_button_pressed"]
+[connection signal="text_changed" from="MarginContainer/VBoxContainer/ProjectVersionHBoxContainer/ProjectVersionLineEdit" to="." method="_on_project_version_line_edit_text_changed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/ExportPresetHBoxContainer/WindowsCheckBox" to="." method="_on_windows_check_box_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/ExportPresetHBoxContainer/LinuxCheckBox" to="." method="_on_linux_check_box_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/ExportPresetHBoxContainer/WebCheckBox" to="." method="_on_web_check_box_pressed"]
+[connection signal="item_selected" from="MarginContainer/VBoxContainer/ExportTypeHBoxContainer/ExportTypeOptionButton" to="." method="_on_export_type_option_button_item_selected"]
+[connection signal="item_selected" from="MarginContainer/VBoxContainer/PackageTypeHBoxContainer/PackageTypeOptionButton" to="." method="_on_package_type_option_button_item_selected"]
+[connection signal="text_changed" from="MarginContainer/VBoxContainer/ItchNameHBoxContainer/ItchNameLineEdit" to="." method="_on_itch_name_line_edit_text_changed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/ExportPathHBoxContainer/VBoxContainer/OpenExportPathFolderButton" to="." method="_on_open_export_path_folder_button_pressed"]
-[connection signal="pressed" from="MarginContainer/VBoxContainer/ButlerCommandHBoxContainer/PublishButton" to="." method="_on_publish_button_pressed"]
-[connection signal="pressed" from="MarginContainer/VBoxContainer/ButlerCommandHBoxContainer/PreviewButlerCommandButton" to="." method="_on_preview_butler_command_button_pressed"]
-[connection signal="pressed" from="MarginContainer/VBoxContainer/SaveProjectHBoxContainer/SaveSettingsButton" to="." method="_on_save_settings_button_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/ExportPathHBoxContainer/VBoxContainer/ExportButton" to="." method="_on_export_button_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/ButlerCommandHBoxContainer/VBoxContainer/PublishToItchButton" to="." method="_on_publish_to_itch_button_pressed"]
 [connection signal="canceled" from="ConfirmationDialog" to="." method="_on_confirmation_dialog_canceled"]
 [connection signal="confirmed" from="ConfirmationDialog" to="." method="_on_confirmation_dialog_confirmed"]
+[connection signal="dir_selected" from="SelectFolderFileDialog" to="." method="_on_select_folder_file_dialog_dir_selected"]
