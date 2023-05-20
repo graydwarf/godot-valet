@@ -20,7 +20,8 @@ extends PanelContainer
 
 var _solutionName = "godot-valet-solution"
 var _selectedProjectName = ""
-
+var _busyBackground
+var _testCount = 0
 func _ready():
 	InitSignals()
 	InitProjectSettings()
@@ -28,7 +29,7 @@ func _ready():
 func InitSignals():
 	Signals.connect("CreateNewProject", CreateNewProject)
 	Signals.connect("ProjectRenamed", ProjectRenamed)
-
+	
 # projectName should be valid at this point
 func CreateNewProject(projectName):
 	ResetFields()
@@ -259,21 +260,42 @@ func GetItchReleaseProfileName(presetFullName):
 	return itchPublishType
 	
 func ExportProject():
+	ClearOutput()
+	StartBusyBackground("Exporting...")
+	await get_tree().create_timer(0.1).timeout
+	var thread = Thread.new()
+	thread.start(ExportProjectThread)
+
+# Can't debug in here.
+func ExportProjectThread():
 	if !FormValidationCheckIsSuccess():
 		OS.alert("Invalid export configuration")
 		return
-		
+	
+	#var thread = Thread.new()
+	
 	if _packageTypeOptionButton.text == "Zip":
-		ExportWithZip()
+		#thread.start(ExportWithZip)
+		call_deferred("ExportWithZip")
 	elif _packageTypeOptionButton.text == "Zip + Clean":
 		var isCleaningUp = true
-		ExportWithZip(isCleaningUp)
+		call_deferred("ExportWithZipWithCleanup")
 	elif _packageTypeOptionButton.text == "No Zip":
-		ExportWithoutZip()
-		
-	CountErrors()
-	CountWarnings()
-
+		call_deferred("ExportWithoutZip")
+	
+	call_deferred("CountErrors")
+	call_deferred("CountWarnings")
+	call_deferred("ClearBusyBackground")
+	$Timer.start()
+	
+func StartBusyBackground(busyDoingWhat):
+	_busyBackground = load("res://scenes/scenes/busy-background-blocker/busy_background_blocker_color_rect.tscn").instantiate()
+	add_child(_busyBackground)
+	_busyBackground.SetBusyDoingWhatLabel(busyDoingWhat)
+	
+func ClearBusyBackground():
+	_busyBackground.queue_free()
+	
 func ExportWithoutZip():
 	if _windowsCheckBox.button_pressed:
 		var presetFullName = "Windows Desktop"
@@ -294,6 +316,9 @@ func ExportWithoutZip():
 		ExportPreset(presetFullName)
 		RenameHomePageToIndex(presetFullName)
 
+func ExportWithZipWithCleanup():
+	ExportWithZip(true)
+	
 func ExportWithZip(isCleaningUp = false):
 	if _windowsCheckBox.button_pressed:
 		var presetFullName = "Windows Desktop"
@@ -554,7 +579,7 @@ func EditProjectWithConsole():
 
 func EditProjectInEditorWithConsole():
 	var output = []
-	var godotArguments = ["/C", "\"" + _godotPathLineEdit.text + "\" --editor --path " + _projectPathLineEdit.text]
+	var godotArguments = ["/C", "\"" + _godotPathLineEdit.text + "\" --editor --verbose --debug --path " + _projectPathLineEdit.text]
 	OS.execute("CMD.exe", godotArguments, output, true, true)
 	_outputTextEdit.text += "Output: " + str(output).replace("\\r\\n", "\n")
 	
@@ -692,3 +717,12 @@ func _on_launch_godot_project_manager_button_pressed():
 
 func _on_publish_to_itch_button_pressed():
 	PublishToButler()
+
+func _on_timer_timeout():
+	_testCount += 1
+	print(str(_testCount))
+	if _testCount == 100:
+		OS.alert("Done")
+	else:
+		ExportProject()
+
