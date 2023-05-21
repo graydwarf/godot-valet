@@ -1,0 +1,67 @@
+[gd_scene load_steps=4 format=3 uid="uid://c3oxx1n4brdw5"]
+
+[ext_resource type="Texture2D" uid="uid://cpbgj8cbstlyi" path="res://assets/new-project-button.png" id="1_1y7bx"]
+[ext_resource type="Script" path="res://scenes/scenes/main.gd" id="1_3d6ah"]
+[ext_resource type="PackedScene" uid="uid://teuoson836gq" path="res://scenes/scenes/project-item/project-item.tscn" id="1_pki5j"]
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_3d6ah")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ProjectItem" parent="HBoxContainer/ScrollContainer/VBoxContainer" instance=ExtResource("1_pki5j")]
+layout_mode = 2
+
+[node name="ProjectItem2" parent="HBoxContainer/ScrollContainer/VBoxContainer" instance=ExtResource("1_pki5j")]
+layout_mode = 2
+
+[node name="ProjectItem3" parent="HBoxContainer/ScrollContainer/VBoxContainer" instance=ExtResource("1_pki5j")]
+layout_mode = 2
+
+[node name="ProjectItem4" parent="HBoxContainer/ScrollContainer/VBoxContainer" instance=ExtResource("1_pki5j")]
+layout_mode = 2
+
+[node name="ProjectItem5" parent="HBoxContainer/ScrollContainer/VBoxContainer" instance=ExtResource("1_pki5j")]
+layout_mode = 2
+
+[node name="ProjectItem6" parent="HBoxContainer/ScrollContainer/VBoxContainer" instance=ExtResource("1_pki5j")]
+layout_mode = 2
+
+[node name="ProjectItem7" parent="HBoxContainer/ScrollContainer/VBoxContainer" instance=ExtResource("1_pki5j")]
+layout_mode = 2
+
+[node name="ProjectItem8" parent="HBoxContainer/ScrollContainer/VBoxContainer" instance=ExtResource("1_pki5j")]
+layout_mode = 2
+
+[node name="ProjectItem9" parent="HBoxContainer/ScrollContainer/VBoxContainer" instance=ExtResource("1_pki5j")]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+
+[node name="Button" type="Button" parent="HBoxContainer/VBoxContainer"]
+layout_mode = 2
+text = "New Project"
+icon = ExtResource("1_1y7bx")
