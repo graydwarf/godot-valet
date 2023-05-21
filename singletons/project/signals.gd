@@ -6,3 +6,6 @@ signal ProjectRenamed
 
 # Project Management
 signal ProjectItemClicked
+
+# Godot Version Management
+signal NewGodotVersionAdded

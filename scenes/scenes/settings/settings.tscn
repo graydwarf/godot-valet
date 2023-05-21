@@ -1,0 +1,20 @@
+[gd_scene load_steps=2 format=3 uid="uid://cu055501rmqwg"]
+
+[ext_resource type="Script" path="res://scenes/scenes/settings/settings.gd" id="1_qsjpj"]
+
+[node name="Settings" type="ColorRect"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.882353)
+script = ExtResource("1_qsjpj")
+
+[node name="OpenGodotVersionManagerButton" type="Button" parent="."]
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0
+text = "Godot Version Manager"
+
+[connection signal="pressed" from="OpenGodotVersionManagerButton" to="." method="_on_open_godot_version_manager_button_pressed"]

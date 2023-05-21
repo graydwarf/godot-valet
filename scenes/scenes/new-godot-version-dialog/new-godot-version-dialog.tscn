@@ -1,0 +1,123 @@
+[gd_scene load_steps=4 format=3 uid="uid://de1xcadtdrj4e"]
+
+[ext_resource type="Texture2D" uid="uid://rtrktu6lgddq" path="res://assets/select-folder-dialog.png" id="1_4nn5x"]
+[ext_resource type="Script" path="res://scenes/scenes/new-godot-version-dialog/new-godot-version-dialog.gd" id="1_s3b1h"]
+[ext_resource type="Texture2D" uid="uid://bjien5r58t8it" path="res://assets/select-folder-dialog-hover-button.png" id="2_4w4dl"]
+
+[node name="NewGodotVersionDialog" type="ColorRect"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.882353)
+script = ExtResource("1_s3b1h")
+
+[node name="NewProjectDialog" type="ColorRect" parent="."]
+custom_minimum_size = Vector2(800, 120)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -60.0
+offset_right = 400.0
+offset_bottom = 60.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+color = Color(0.196078, 0.196078, 0.196078, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="NewProjectDialog"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="NewProjectDialog/MarginContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="NewProjectDialog/MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="GodotNameLabel" type="Label" parent="NewProjectDialog/MarginContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+text = "Godot Version Name:"
+horizontal_alignment = 2
+
+[node name="GodotNameLineEdit" type="LineEdit" parent="NewProjectDialog/MarginContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+tooltip_text = "Must result in a valid file name."
+caret_blink = true
+caret_blink_interval = 0.5
+
+[node name="ProjectPathHBoxContainer2" type="HBoxContainer" parent="NewProjectDialog/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="GodotPathLabel" type="Label" parent="NewProjectDialog/MarginContainer/VBoxContainer/ProjectPathHBoxContainer2"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+text = "Godot Path:"
+horizontal_alignment = 2
+
+[node name="GodotPathLineEdit" type="LineEdit" parent="NewProjectDialog/MarginContainer/VBoxContainer/ProjectPathHBoxContainer2"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+tooltip_text = "Path to the project folder."
+caret_blink = true
+caret_blink_interval = 0.5
+
+[node name="SelectProjectFolderButton" type="TextureButton" parent="NewProjectDialog/MarginContainer/VBoxContainer/ProjectPathHBoxContainer2"]
+layout_mode = 2
+tooltip_text = "Select Project Folder"
+texture_normal = ExtResource("1_4nn5x")
+texture_pressed = ExtResource("2_4w4dl")
+texture_hover = ExtResource("2_4w4dl")
+
+[node name="MarginContainer" type="MarginContainer" parent="NewProjectDialog/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="ButtonHBoxContainer" type="HBoxContainer" parent="NewProjectDialog/MarginContainer/VBoxContainer/MarginContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="CancelButton" type="Button" parent="NewProjectDialog/MarginContainer/VBoxContainer/MarginContainer/ButtonHBoxContainer"]
+custom_minimum_size = Vector2(125, 0)
+layout_mode = 2
+text = "CANCEL"
+
+[node name="SaveButton" type="Button" parent="NewProjectDialog/MarginContainer/VBoxContainer/MarginContainer/ButtonHBoxContainer"]
+custom_minimum_size = Vector2(125, 0)
+layout_mode = 2
+text = "SAVE"
+
+[node name="SelectGodotExeFileDialog" type="FileDialog" parent="."]
+title = "Open a File"
+position = Vector2i(200, 200)
+size = Vector2i(600, 500)
+ok_button_text = "Select"
+dialog_hide_on_ok = true
+file_mode = 0
+access = 2
+filters = PackedStringArray("*.exe")
+
+[connection signal="pressed" from="NewProjectDialog/MarginContainer/VBoxContainer/ProjectPathHBoxContainer2/SelectProjectFolderButton" to="." method="_on_select_project_folder_button_pressed"]
+[connection signal="pressed" from="NewProjectDialog/MarginContainer/VBoxContainer/MarginContainer/ButtonHBoxContainer/SaveButton" to="." method="_on_save_button_pressed"]
+[connection signal="canceled" from="SelectGodotExeFileDialog" to="." method="_on_select_godot_exe_file_dialog_canceled"]
+[connection signal="file_selected" from="SelectGodotExeFileDialog" to="." method="_on_file_dialog_file_selected"]

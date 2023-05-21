@@ -19,6 +19,9 @@ config/icon="res://icon.svg"
 
 Signals="*res://singletons/project/signals.gd"
 Files="*res://singletons/files.gd"
+Settings="*res://singletons/project/settings.gd"
+Common="*res://singletons/common.gd"
+Uuid="*res://singletons/uuid.gd"
 
 [display]
 

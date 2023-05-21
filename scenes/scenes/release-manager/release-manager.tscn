@@ -126,13 +126,6 @@ texture_normal = ExtResource("10_bb6jg")
 texture_pressed = ExtResource("11_1u28s")
 texture_hover = ExtResource("11_1u28s")
 
-[node name="EditProjectButton" type="TextureButton" parent="MarginContainer/VBoxContainer/ProjectPathHBoxContainer"]
-layout_mode = 2
-tooltip_text = "Edit Project"
-texture_normal = ExtResource("4_kx7fl")
-texture_pressed = ExtResource("5_n72ep")
-texture_hover = ExtResource("5_n72ep")
-
 [node name="EditProjectWithConsoleButton" type="TextureButton" parent="MarginContainer/VBoxContainer/ProjectPathHBoxContainer"]
 layout_mode = 2
 tooltip_text = "Edit Project w/Console"
@@ -417,7 +410,6 @@ access = 2
 [connection signal="pressed" from="MarginContainer/VBoxContainer/GodotPathHBoxContainer/LaunchGodotProjectManagerButton" to="." method="_on_launch_godot_project_manager_button_pressed"]
 [connection signal="text_changed" from="MarginContainer/VBoxContainer/ProjectPathHBoxContainer/ProjectPathLineEdit" to="." method="_on_project_path_line_edit_text_changed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/ProjectPathHBoxContainer/RunProjectButton" to="." method="_on_run_project_button_pressed"]
-[connection signal="pressed" from="MarginContainer/VBoxContainer/ProjectPathHBoxContainer/EditProjectButton" to="." method="_on_edit_project_button_pressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/ProjectPathHBoxContainer/EditProjectWithConsoleButton" to="." method="_on_edit_project_with_console_button_pressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/ProjectPathHBoxContainer/SelectProjectFolderButton" to="." method="_on_select_project_folder_button_pressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/ProjectPathHBoxContainer/OpenProjectFolderButton" to="." method="_on_open_project_folder_button_pressed"]

@@ -18,25 +18,16 @@ extends PanelContainer
 
 @onready var _deleteConfirmationDialog = $ConfirmationDialog
 
-var _solutionName = "godot-valet-solution"
+
 var _selectedProjectName = ""
 var _busyBackground
 
 func _ready():
 	InitSignals()
-	InitProjectSettings()
 
 func InitSignals():
-	Signals.connect("CreateNewProject", CreateNewProject)
 	Signals.connect("ProjectRenamed", ProjectRenamed)
 	
-# projectName should be valid at this point
-func CreateNewProject(projectName):
-	ResetFields()
-	CreateNewSettingsFile(projectName)
-	_loadProjectOptionButton.add_item(projectName)
-	_loadProjectOptionButton.select(_loadProjectOptionButton.item_count - 1)
-
 # Don't fields that are likely to be the same as other projects.
 # godot path, itch name
 func ResetFields():
@@ -51,72 +42,7 @@ func ResetFields():
 	_butlerPreviewTextEdit.text = ""
 	_itchProfileNameLineEdit.text = ""
 
-func SaveValetSettings():
-	var config = ConfigFile.new()
-	config.set_value("Settings", "selected_project_name", _loadProjectOptionButton.text)
-	var err = config.save("user://" + _solutionName + ".cfg")
 
-	if err != OK:
-		OS.alert("An error occurred while saving the valet configuration file.")
-		
-func CreateNewValetSettingsFile():
-	var config = ConfigFile.new()
-	config.set_value("Settings", "selected_project_name", "")
-	var err = config.save("user://" + _solutionName + ".cfg")
-
-	if err != OK:
-		OS.alert("An error occurred while saving the valet configuration file.")
-	
-func LoadValetSettings():
-	if !FileAccess.file_exists("user://" + _solutionName + ".cfg"):
-		CreateNewValetSettingsFile()
-		return
-		
-	var config = ConfigFile.new()
-	var err = config.load("user://" + _solutionName + ".cfg")
-	if err != OK:
-		OS.alert("Error: " + str(err) + " - while opening: " + _solutionName + ".cfg")
-		return
-
-	_selectedProjectName = config.get_value("Settings", "selected_project_name", "")
-
-func LoadConfigSettings(newProjectName = ""):
-	var allResourceFiles = Files.GetFilesFromPath("user://")
-	var loadedConfigurationFile = false
-	for resourceFile in allResourceFiles:
-		if resourceFile == "export_presets.cfg" || resourceFile == "godot-valet-solution.cfg":
-			continue
-
-		if !resourceFile.ends_with(".cfg"):
-			continue
-
-		var projectName = resourceFile.trim_suffix(".cfg")
-		
-		_loadProjectOptionButton.add_item(projectName)
-		
-		loadedConfigurationFile = true
-	
-	# Did we load a config file?
-	if !loadedConfigurationFile:
-		# No. Create a new default one.
-		newProjectName = "New Project"
-		CreateNewSettingsFile(newProjectName)
-		_loadProjectOptionButton.text = newProjectName
-		SaveValetSettings()
-	else:
-		# We loaded a config file. Select it.
-		if newProjectName != "":
-			_selectedProjectName = newProjectName
-
-		var selectedIndex = FindProjectIndexByName(_selectedProjectName)
-			
-		if selectedIndex == null:
-			selectedIndex = 0
-			
-		LoadProjectByIndex(selectedIndex)
-		_loadProjectOptionButton.select(selectedIndex)
-		GenerateButlerPreview()
-		GenerateExportPreview()
 
 func ProjectRenamed(projectName):
 	if FileAccess.file_exists("user://" + _loadProjectOptionButton.text + ".cfg"):
@@ -133,7 +59,7 @@ func SaveSettings():
 	CreateNewSettingsFile(_loadProjectOptionButton.text)
 	SaveValetSettings()
 	
-func CreateNewSettingsFile(projectName):
+func CreateNewReleaseManagementSettingsFile(projectName):
 	var config = ConfigFile.new()
 
 	config.set_value("ProjectSettings", "project_name", _loadProjectOptionButton.text)
@@ -146,6 +72,7 @@ func CreateNewSettingsFile(projectName):
 	config.set_value("ProjectSettings", "export_type", _exportTypeOptionButton.text)
 	config.set_value("ProjectSettings", "package_type", _packageTypeOptionButton.text)
 	config.set_value("ProjectSettings", "itch_profile_name", _itchProfileNameLineEdit.text)
+	
 
 	# Save the config file.
 	var err = config.save("user://" + projectName + ".cfg")
@@ -184,9 +111,7 @@ func LoadProjectByIndex(index):
 		
 	# save project as selected
 	
-func InitProjectSettings():
-	LoadValetSettings()
-	LoadConfigSettings()
+
 
 func GenerateExportPreview():
 	_exportPreviewTextEdit.text = GetExportPreview()
@@ -455,8 +380,8 @@ func GetExportPreview():
 		
 	return exportPreview
 
-func GetFormattedProjectPath():
-	return _projectPathLineEdit.text.trim_prefix(" ").trim_suffix(" ").to_lower().replace("/", "\\")
+#func GetFormattedProjectPath():
+#	return _projectPathLineEdit.text.trim_prefix(" ").trim_suffix(" ").to_lower().replace("/", "\\")
 	
 func GetButlerPreview():
 	if !FormValidationCheckIsSuccess():
@@ -622,11 +547,7 @@ func EditProjectInEditorWithConsoleThread():
 	DisplayOutput(output)
 
 
-func EditProjectInGodotEditorThread():
-	var output = []
-	var godotArguments = ["--verbose", "--path " + _projectPathLineEdit.text, "--editor"]
-	OS.execute(_godotPathLineEdit.text, godotArguments, output)
-	DisplayOutput(output)
+
 
 func StartProjectThread():
 	var output = []
@@ -660,15 +581,15 @@ func EditProjectWithConsole():
 	var thread = Thread.new()
 	thread.start(EditProjectInEditorWithConsoleThread)
 	
-func EditProject():
-	var projectFile = Files.FindFirstFileWithExtension(GetFormattedProjectPath(), ".godot")
-	if projectFile == null || !FileAccess.file_exists(projectFile):
-		OS.alert("Did not find a project (.godot) file in the specified project path")
-		return
-		
-	ClearOutput()
-	var thread = Thread.new()
-	thread.start(EditProjectInGodotEditorThread)
+#func EditProject():
+#	var projectFile = Files.FindFirstFileWithExtension(GetFormattedProjectPath(), ".godot")
+#	if projectFile == null || !FileAccess.file_exists(projectFile):
+#		OS.alert("Did not find a project (.godot) file in the specified project path")
+#		return
+#
+#	ClearOutput()
+#	var thread = Thread.new()
+#	thread.start(EditProjectInGodotEditorThread)
 	
 func RunProject():
 	ClearOutput()
@@ -701,9 +622,6 @@ func _on_load_project_option_button_item_selected(index):
 	GenerateButlerPreview()
 	GenerateExportPreview()
 	SaveSettings()
-
-func _on_edit_project_button_pressed():
-	EditProject()
 
 func _on_open_project_folder_button_pressed():
 	OpenProjectPathFolder()
