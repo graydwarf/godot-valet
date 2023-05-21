@@ -1,17 +1,17 @@
-[gd_scene load_steps=4 format=3 uid="uid://de1xcadtdrj4e"]
+[gd_scene load_steps=4 format=3 uid="uid://bs3cejai31h0v"]
 
-[ext_resource type="Texture2D" uid="uid://rtrktu6lgddq" path="res://assets/select-folder-dialog.png" id="1_4nn5x"]
-[ext_resource type="Script" path="res://scenes/scenes/new-godot-version-dialog/new-godot-version-dialog.gd" id="1_s3b1h"]
-[ext_resource type="Texture2D" uid="uid://bjien5r58t8it" path="res://assets/select-folder-dialog-hover-button.png" id="2_4w4dl"]
+[ext_resource type="Script" path="res://scenes/create-godot-version-dialog/create-godot-version-dialog.gd" id="1_c7nj4"]
+[ext_resource type="Texture2D" uid="uid://rtrktu6lgddq" path="res://assets/select-folder-dialog.png" id="2_idpi3"]
+[ext_resource type="Texture2D" uid="uid://bjien5r58t8it" path="res://assets/select-folder-dialog-hover-button.png" id="3_qqxbk"]
 
-[node name="NewGodotVersionDialog" type="ColorRect"]
+[node name="CreateGodotVersionDialog" type="ColorRect"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.882353)
-script = ExtResource("1_s3b1h")
+script = ExtResource("1_c7nj4")
 
 [node name="NewProjectDialog" type="ColorRect" parent="."]
 custom_minimum_size = Vector2(800, 120)
@@ -49,13 +49,13 @@ layout_mode = 2
 layout_mode = 2
 alignment = 1
 
-[node name="GodotNameLabel" type="Label" parent="NewProjectDialog/MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="GodotVersionLabel" type="Label" parent="NewProjectDialog/MarginContainer/VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 text = "Godot Version Name:"
 horizontal_alignment = 2
 
-[node name="GodotNameLineEdit" type="LineEdit" parent="NewProjectDialog/MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="GodotVersionLineEdit" type="LineEdit" parent="NewProjectDialog/MarginContainer/VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -85,9 +85,9 @@ caret_blink_interval = 0.5
 [node name="SelectProjectFolderButton" type="TextureButton" parent="NewProjectDialog/MarginContainer/VBoxContainer/ProjectPathHBoxContainer2"]
 layout_mode = 2
 tooltip_text = "Select Project Folder"
-texture_normal = ExtResource("1_4nn5x")
-texture_pressed = ExtResource("2_4w4dl")
-texture_hover = ExtResource("2_4w4dl")
+texture_normal = ExtResource("2_idpi3")
+texture_pressed = ExtResource("3_qqxbk")
+texture_hover = ExtResource("3_qqxbk")
 
 [node name="MarginContainer" type="MarginContainer" parent="NewProjectDialog/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -111,13 +111,12 @@ text = "SAVE"
 title = "Open a File"
 position = Vector2i(200, 200)
 size = Vector2i(600, 500)
-ok_button_text = "Select"
-dialog_hide_on_ok = true
+ok_button_text = "Open"
 file_mode = 0
 access = 2
 filters = PackedStringArray("*.exe")
 
 [connection signal="pressed" from="NewProjectDialog/MarginContainer/VBoxContainer/ProjectPathHBoxContainer2/SelectProjectFolderButton" to="." method="_on_select_project_folder_button_pressed"]
+[connection signal="pressed" from="NewProjectDialog/MarginContainer/VBoxContainer/MarginContainer/ButtonHBoxContainer/CancelButton" to="." method="_on_cancel_button_pressed"]
 [connection signal="pressed" from="NewProjectDialog/MarginContainer/VBoxContainer/MarginContainer/ButtonHBoxContainer/SaveButton" to="." method="_on_save_button_pressed"]
-[connection signal="canceled" from="SelectGodotExeFileDialog" to="." method="_on_select_godot_exe_file_dialog_canceled"]
 [connection signal="file_selected" from="SelectGodotExeFileDialog" to="." method="_on_file_dialog_file_selected"]

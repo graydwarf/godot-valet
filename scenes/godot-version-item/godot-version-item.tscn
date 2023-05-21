@@ -1,15 +1,15 @@
-[gd_scene load_steps=3 format=3 uid="uid://blurfbkcnweiq"]
+[gd_scene load_steps=3 format=3 uid="uid://cwx44qpnwm6e2"]
 
-[ext_resource type="Script" path="res://scenes/scenes/godot-version-item/godot-version-item.gd" id="1_n3xg4"]
-[ext_resource type="Texture2D" uid="uid://ceogwhn6c1dtg" path="res://assets/project-image-placeholder.png" id="1_u06vk"]
+[ext_resource type="Script" path="res://scenes/godot-version-item/godot-version-item.gd" id="1_oshmt"]
+[ext_resource type="Texture2D" uid="uid://ceogwhn6c1dtg" path="res://assets/project-image-placeholder.png" id="2_cab5j"]
 
 [node name="GodotVersionItem" type="ColorRect"]
 custom_minimum_size = Vector2(0, 110)
 anchors_preset = 10
 anchor_right = 1.0
 grow_horizontal = 2
-color = Color(1, 1, 1, 0)
-script = ExtResource("1_n3xg4")
+color = Color(0, 0, 0, 0.5)
+script = ExtResource("1_oshmt")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -32,7 +32,7 @@ mouse_filter = 1
 color = Color(1, 1, 1, 0)
 
 [node name="Sprite2D" type="Sprite2D" parent="MarginContainer/HBoxContainer/ColorRect"]
-texture = ExtResource("1_u06vk")
+texture = ExtResource("2_cab5j")
 centered = false
 
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
@@ -59,3 +59,7 @@ theme_override_constants/margin_bottom = 5
 [node name="GodotPathLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer"]
 layout_mode = 2
 text = "C:\\Program Files\\Godot 4\\Godot_v4.0.2-stable_win64.exe"
+
+[connection signal="gui_input" from="." to="." method="_on_gui_input"]
+[connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
+[connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]

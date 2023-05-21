@@ -1,0 +1,141 @@
+[gd_scene load_steps=6 format=3 uid="uid://1nle1yb614lw"]
+
+[ext_resource type="Script" path="res://scenes/new-project-dialog/edit-project-dialog.gd" id="1_q75fr"]
+[ext_resource type="Texture2D" uid="uid://rtrktu6lgddq" path="res://assets/select-folder-dialog.png" id="2_8lut8"]
+[ext_resource type="Texture2D" uid="uid://bjien5r58t8it" path="res://assets/select-folder-dialog-hover-button.png" id="3_400an"]
+[ext_resource type="Texture2D" uid="uid://dupqnev8b73sc" path="res://assets/open-folder.png" id="4_vvamd"]
+[ext_resource type="Texture2D" uid="uid://bynyo67m7t0pr" path="res://assets/open-folder-pressed.png" id="5_hfl0x"]
+
+[node name="EditProjectDialog" type="ColorRect"]
+custom_minimum_size = Vector2(800, 150)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+color = Color(0.447059, 0.447059, 0.447059, 1)
+script = ExtResource("1_q75fr")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -394.0
+offset_top = -96.0
+offset_right = 394.0
+offset_bottom = 96.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer2" type="MarginContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="VBoxContainer/MarginContainer2"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Edit Project"
+horizontal_alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+alignment = 1
+
+[node name="ProjectNameLabel" type="Label" parent="VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+size_flags_horizontal = 2
+text = "Project Name:"
+horizontal_alignment = 2
+
+[node name="ProjectNameLineEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+caret_blink = true
+caret_blink_interval = 0.5
+
+[node name="GodotVersionHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+alignment = 1
+
+[node name="GodotVersionLabel" type="Label" parent="VBoxContainer/GodotVersionHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Godot Version:"
+horizontal_alignment = 2
+
+[node name="GodotVersionOptionButton" type="OptionButton" parent="VBoxContainer/GodotVersionHBoxContainer"]
+custom_minimum_size = Vector2(500, 32)
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="ProjectPathHBoxContainer2" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="ProjectPathLabel" type="Label" parent="VBoxContainer/ProjectPathHBoxContainer2"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Project Path:"
+horizontal_alignment = 2
+
+[node name="ProjectPathLineEdit" type="LineEdit" parent="VBoxContainer/ProjectPathHBoxContainer2"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 2
+size_flags_vertical = 0
+tooltip_text = "Path to the project folder."
+
+[node name="SelectProjectFolderButton" type="TextureButton" parent="VBoxContainer/ProjectPathHBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 2
+tooltip_text = "Select Project Folder"
+texture_normal = ExtResource("2_8lut8")
+texture_pressed = ExtResource("3_400an")
+texture_hover = ExtResource("3_400an")
+
+[node name="OpenProjectFolderButton" type="TextureButton" parent="VBoxContainer/ProjectPathHBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 2
+tooltip_text = "Open Project Folder"
+texture_normal = ExtResource("4_vvamd")
+texture_pressed = ExtResource("5_hfl0x")
+texture_hover = ExtResource("5_hfl0x")
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_bottom = 20
+
+[node name="ButtonHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="CancelButton" type="Button" parent="VBoxContainer/MarginContainer/ButtonHBoxContainer"]
+custom_minimum_size = Vector2(125, 0)
+layout_mode = 2
+text = "CANCEL"
+
+[node name="SaveButton" type="Button" parent="VBoxContainer/MarginContainer/ButtonHBoxContainer"]
+custom_minimum_size = Vector2(125, 0)
+layout_mode = 2
+text = "SAVE"
+
+[node name="FileDialog" type="FileDialog" parent="."]
+title = "Open a Directory"
+position = Vector2i(250, 150)
+size = Vector2i(600, 500)
+ok_button_text = "Select Current Folder"
+file_mode = 2
+access = 2
+
+[connection signal="pressed" from="VBoxContainer/ProjectPathHBoxContainer2/SelectProjectFolderButton" to="." method="_on_select_project_folder_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer/ButtonHBoxContainer/CancelButton" to="." method="_on_cancel_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer/ButtonHBoxContainer/SaveButton" to="." method="_on_save_button_pressed"]
+[connection signal="dir_selected" from="FileDialog" to="." method="_on_file_dialog_dir_selected"]

@@ -1,11 +1,13 @@
 extends Node
 
 # Release Management
-signal CreateNewProject
+signal CreateNewProject # might be dupe/dead
 signal ProjectRenamed
 
 # Project Management
-signal ProjectItemClicked
+signal ProjectItemSelected
+signal NewProjectCreated
 
 # Godot Version Management
 signal NewGodotVersionAdded
+signal GodotVersionItemClicked

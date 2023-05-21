@@ -1,4 +1,4 @@
-extends PanelContainer
+extends ColorRect
 
 @onready var _godotPathLineEdit = $MarginContainer/VBoxContainer/GodotPathHBoxContainer/ExportPathLineEdit
 @onready var _projectPathLineEdit = $MarginContainer/VBoxContainer/ProjectPathHBoxContainer/ProjectPathLineEdit
@@ -24,6 +24,7 @@ var _busyBackground
 
 func _ready():
 	InitSignals()
+	color = Game.GetDefaultBackgroundColor()
 
 func InitSignals():
 	Signals.connect("ProjectRenamed", ProjectRenamed)
@@ -212,7 +213,7 @@ func ExportProjectThread():
 	#$Timer.start()
 	
 func StartBusyBackground(busyDoingWhat):
-	_busyBackground = load("res://scenes/scenes/busy-background-blocker/busy_background_blocker_color_rect.tscn").instantiate()
+	_busyBackground = load("res://scenes/busy-background-blocker/busy_background_blocker_color_rect.tscn").instantiate()
 	add_child(_busyBackground)
 	_busyBackground.SetBusyDoingWhatLabel(busyDoingWhat)
 	
@@ -499,7 +500,7 @@ func OpenProjectPathFolder():
 		OS.alert("Unable to open project folder. Did it get moved or renamed?")
 		
 func OpenNewProjectDialog():
-	var newProjectDialog = load("res://scenes/scenes/new-project-dialog/new-project-dialog.tscn").instantiate()
+	var newProjectDialog = load("res://scenes/new-project-dialog/new-project-dialog.tscn").instantiate()
 	add_child(newProjectDialog)
 
 func OpenEditProjectDialog():
@@ -507,7 +508,7 @@ func OpenEditProjectDialog():
 		OpenNewProjectDialog()
 		return
 		
-	var editProjectDialog = load("res://scenes/scenes/edit-project-dialog/edit-project-dialog.tscn").instantiate()
+	var editProjectDialog = load("res://scenes/edit-project-dialog/edit-project-dialog.tscn").instantiate()
 	add_child(editProjectDialog)
 	editProjectDialog.SetProjectName(_loadProjectOptionButton.text)
 		

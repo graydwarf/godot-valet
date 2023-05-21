@@ -1,16 +1,23 @@
-extends Control
+extends ColorRect
 
-@onready var _projectItemContainer = $HBoxContainer/MarginContainer/ScrollContainer/VBoxContainer
-var _solutionName = "godot-valet-solution"
+@onready var _runProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RunProjectButton
+@onready var _editProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/EditProjectButton
+@onready var _changeProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ChangeProjectButton
+@onready var _removeProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RemoveProjectButton
+@onready var _projectItemContainer = $VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/ProjectItemContainer
+
+#var _solutionName = "godot-valet-solution"
 var _selectedProjectItem = null
 
 func _ready():
 	InitSignals()
+	color = Game.GetDefaultBackgroundColor()
 	InitProjectSettings()
 
 func InitProjectSettings():
 	#LoadValetSettings()
-	LoadConfigSettings()
+	var id = null
+	LoadProjectsIntoProjectContainer(id)
 
 func SaveValetSettings():
 	pass
@@ -42,26 +49,27 @@ func SaveValetSettings():
 #
 #	_selectedProjectName = config.get_value("Settings", "selected_project_name", "")
 
-func LoadConfigSettings(newProjectName = ""):
-	var allResourceFiles = Files.GetFilesFromPath("user://")
-	var loadedConfigurationFile = false
+func LoadProjectsIntoProjectContainer(id):
+	var allResourceFiles = Files.GetFilesFromPath("user://" + Game.GetProjectItemFolder())
 	for resourceFile in allResourceFiles:
-		if resourceFile == "export_presets.cfg" || resourceFile == "godot-valet-solution.cfg":
-			continue
-
 		if !resourceFile.ends_with(".cfg"):
 			continue
 
-		var projectName = resourceFile.trim_suffix(".cfg")
+		var projectId = resourceFile.trim_suffix(".cfg")
 		
-		var projectItem = load("res://scenes/scenes/project-item/project-item.tscn").instantiate()
+		var projectItem = load("res://scenes/project-item/project-item.tscn").instantiate()
 		_projectItemContainer.add_child(projectItem)
-		
+
+		if projectId == id:
+			var isSelected = true
+			ProjectItemSelected(projectItem, isSelected)
+			
 		var config = ConfigFile.new()
-		var err = config.load("user://" + projectName + ".cfg")
+		var err = config.load("user://" + Game.GetProjectItemFolder() + "/" + projectId + ".cfg")
 		if err == OK:
+			projectItem.SetProjectName(config.get_value("ProjectSettings", "project_name", "New Project"))
+			projectItem.SetGodotVersion(config.get_value("ProjectSettings", "godot_version", ""))
 			projectItem.SetProjectPath(config.get_value("ProjectSettings", "project_path", ""))
-			projectItem.SetGodotVersion(config.get_value("ProjectSettings", "godot_path", ""))
 			projectItem.SetProjectVersion(config.get_value("ProjectSettings", "project_version", "v0.0.1"))
 		
 		#loadedConfigurationFile = true
@@ -89,28 +97,61 @@ func LoadConfigSettings(newProjectName = ""):
 #		GenerateExportPreview()
 
 func InitSignals():
-	Signals.connect("ProjectItemClicked", ProjectItemClicked)
+	Signals.connect("ProjectItemSelected", ProjectItemSelected)
+	Signals.connect("NewProjectCreated", NewProjectCreated)
 
-func ProjectItemClicked(projectItem):
-	_selectedProjectItem = projectItem
-	EnableEditButtons()
+func NewProjectCreated(id):
+	ClearProjectContainer()
+	LoadProjectsIntoProjectContainer(id)
 
-func EnableEditButtons():
-	pass
+func ClearProjectContainer():
+	for child in _projectItemContainer.get_children():
+		child.queue_free()
+		
+func ProjectItemSelected(projectItem, isSelected):
+	if !isSelected:
+		DisableEditButtons()
+		_selectedProjectItem.UnselectProjectItem()
+		_selectedProjectItem = null
+	else:
+		_selectedProjectItem = projectItem
+		_selectedProjectItem.SelectProjectItem()
+		EnableEditButtons()
+
+func DisableEditButtons():
+	_runProjectButton.disabled = true
+	_editProjectButton.disabled = true
+	_changeProjectButton.disabled = true
+	_removeProjectButton.disabled = true
 	
+func EnableEditButtons():
+	_runProjectButton.disabled = false
+	_editProjectButton.disabled = false
+	_changeProjectButton.disabled = false
+	_removeProjectButton.disabled = false
+		
 # projectName should be valid at this point
 #func CreateNewProject(projectName):
 #	CreateNewSettingsFile(projectName)
 	#_loadProjectOptionButton.add_item(projectName)
 	#_loadProjectOptionButton.select(_loadProjectOptionButton.item_count - 1)
 
-func EditProject():
+func RunProject():
+	if !is_instance_valid(_selectedProjectItem):
+		return
+		
+	pass
 	
+func EditProject():
+	if !is_instance_valid(_selectedProjectItem):
+		return
+		
 	var projectFile = Files.FindFirstFileWithExtension(_selectedProjectItem.GetProjectPath(), ".godot")
 	if projectFile == null || !FileAccess.file_exists(projectFile):
 		OS.alert("Did not find a project (.godot) file in the specified project path")
 		return
-		
+	
+	EditProjectInGodotEditorThread()
 	var thread = Thread.new()
 	thread.start(EditProjectInGodotEditorThread)
 
@@ -119,19 +160,33 @@ func EditProjectInGodotEditorThread():
 	var godotArguments = ["--verbose", "--path " + _selectedProjectItem.GetProjectPath(), "--editor"]
 	OS.execute(_selectedProjectItem.GetGodotPath(), godotArguments, output)
 
-func OpenNewProjectDialog():
-	var newProjectDialog = load("res://scenes/scenes/new-project-dialog/new-project-dialog.tscn").instantiate()
-	add_child(newProjectDialog)
-
 func OpenSetting():
-	var settings = load("res://scenes/scenes/settings/settings.tscn").instantiate()
+	var settings = load("res://scenes/settings/settings.tscn").instantiate()
 	add_child(settings)
+
+func CreateEditProjectDialog():
+	return load("res://scenes/new-project-dialog/edit-project-dialog.tscn").instantiate()
+
+func ChangeProject():
+	var editProjectDialog = CreateEditProjectDialog()
+	add_child(editProjectDialog)
+	var id = null
+	if _selectedProjectItem != null:
+		id = _selectedProjectItem.GetId()
+		
+	editProjectDialog.ConfigureForSelectedProject(id)
 	
 func _on_new_project_button_pressed():
-	OpenNewProjectDialog()
+	ChangeProject()
 	
 func _on_edit_project_button_pressed():
 	EditProject()
 
 func _on_settings_button_pressed():
 	OpenSetting()
+
+func _on_run_project_button_pressed():
+	RunProject()
+
+func _on_change_project_button_pressed():
+	ChangeProject()

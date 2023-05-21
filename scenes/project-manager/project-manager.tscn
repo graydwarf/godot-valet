@@ -1,0 +1,113 @@
+[gd_scene load_steps=2 format=3 uid="uid://cac5k46l4b7xf"]
+
+[ext_resource type="Script" path="res://scenes/project-manager/project-manager.gd" id="1_1xf0t"]
+
+[node name="ProjectManager" type="ColorRect"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.419608, 0.419608, 0.419608, 1)
+script = ExtResource("1_1xf0t")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 2
+
+[node name="TitleLabel" type="Label" parent="VBoxContainer/MarginContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Project Manager"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer/HBoxContainer/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ProjectItemContainer" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MarginContainer2" type="MarginContainer" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer2"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+
+[node name="RunProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+tooltip_text = "Run Project"
+disabled = true
+text = "Run"
+
+[node name="EditProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Edit Project"
+disabled = true
+text = "Edit"
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="LineBreakColorRect" type="ColorRect" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/MarginContainer"]
+custom_minimum_size = Vector2(0, 4)
+layout_mode = 2
+color = Color(0.439216, 0.439216, 0.439216, 0.360784)
+
+[node name="NewProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "New Project"
+
+[node name="ChangeProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+disabled = true
+text = "Change Project"
+
+[node name="RemoveProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+disabled = true
+text = "Remove Project"
+
+[node name="SettingsButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Settings"
+text = "Settings"
+
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RunProjectButton" to="." method="_on_run_project_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/EditProjectButton" to="." method="_on_edit_project_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/NewProjectButton" to="." method="_on_new_project_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ChangeProjectButton" to="." method="_on_change_project_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RemoveProjectButton" to="." method="_on_new_project_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/SettingsButton" to="." method="_on_settings_button_pressed"]

@@ -1,6 +1,6 @@
-[gd_scene load_steps=6 format=3 uid="uid://ct545o28iuwo2"]
+[gd_scene load_steps=6 format=3]
 
-[ext_resource type="Script" path="res://scenes/scenes/busy-background-blocker/busy_background_blocker_color_rect.gd" id="1_q4ysb"]
+[ext_resource type="Script" path="res://scenes/busy-background-blocker/busy_background_blocker_color_rect.gd" id="1_q4ysb"]
 [ext_resource type="Texture2D" uid="uid://bqtp01cja5ax5" path="res://assets/busy-icon.png" id="2_kl753"]
 
 [sub_resource type="Animation" id="Animation_aixc8"]
