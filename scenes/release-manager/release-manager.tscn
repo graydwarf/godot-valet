@@ -318,6 +318,20 @@ texture_normal = ExtResource("20_xugys")
 texture_pressed = ExtResource("21_f038d")
 texture_hover = ExtResource("21_f038d")
 
+[node name="OutputVBoxContainer2" type="VBoxContainer" parent="VBoxContainer/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/VBoxContainer/OutputVBoxContainer2"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 2
+
+[node name="SaveButton" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer/OutputVBoxContainer2/HBoxContainer"]
+layout_mode = 2
+text = "Save"
+
 [node name="OutputVBoxContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -383,5 +397,5 @@ ok_button_text = "Select Current Folder"
 file_mode = 2
 access = 2
 
-[connection signal="text_changed" from="VBoxContainer/MarginContainer2/VBoxContainer/ItchProjectNameHBoxContainer/ItchProjectNameLineEdit" to="." method="_on_itch_project_name_line_edit_text_changed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/VBoxContainer/ExportPresetHBoxContainer/WindowsCheckBox" to="." method="_on_windows_check_box_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/VBoxContainer/OutputVBoxContainer2/HBoxContainer/SaveButton" to="." method="_on_save_button_pressed"]

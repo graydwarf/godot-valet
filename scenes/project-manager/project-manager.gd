@@ -21,8 +21,7 @@ func _ready():
 
 func InitProjectSettings():
 	#LoadValetSettings()
-	var id = null
-	LoadProjectsIntoProjectContainer(id)
+	LoadProjectsIntoProjectContainer()
 	LoadOpenGodotButtons()
 
 func ClearCustomButtonContainer():
@@ -84,7 +83,7 @@ func SaveValetSettings():
 #
 #	_selectedProjectName = config.get_value("Settings", "selected_project_name", "")
 
-func LoadProjectsIntoProjectContainer(id):
+func LoadProjectsIntoProjectContainer():
 	var allResourceFiles = Files.GetFilesFromPath("user://" + Game.GetProjectItemFolder())
 	for resourceFile in allResourceFiles:
 		if !resourceFile.ends_with(".cfg"):
@@ -95,9 +94,9 @@ func LoadProjectsIntoProjectContainer(id):
 		var projectItem = load("res://scenes/project-item/project-item.tscn").instantiate()
 		_projectItemContainer.add_child(projectItem)
 		
-		if projectId == id:
+		if _selectedProjectItem != null:
 			var isSelected = true
-			ProjectItemSelected(projectItem, isSelected)
+			ProjectItemSelected(_selectedProjectItem, isSelected)
 			
 		var config = ConfigFile.new()
 		var err = config.load("user://" + Game.GetProjectItemFolder() + "/" + projectId + ".cfg")
@@ -173,13 +172,21 @@ func InitSignals():
 	Signals.connect("ProjectItemSelected", ProjectItemSelected)
 	Signals.connect("ProjectSaved", ProjectSaved)
 	Signals.connect("GodotVersionManagerClosing", GodotVersionManagerClosing)
+	Signals.connect("NewGodotVersionAdded", NewGodotVersionAdded)
 
+func NewGodotVersionAdded():
+	ReloadProjectManager()
+	
 func GodotVersionManagerClosing():
 	LoadOpenGodotButtons()
 
-func ProjectSaved(projectId):
+func ReloadProjectManager():
 	ClearProjectContainer()
-	LoadProjectsIntoProjectContainer(projectId)
+	LoadProjectsIntoProjectContainer()
+	
+func ProjectSaved():
+	ReloadProjectManager()
+
 
 func ClearProjectContainer():
 	for child in _projectItemContainer.get_children():
@@ -286,11 +293,7 @@ func ChangeProject():
 		
 	var editProjectDialog = CreateEditProjectDialog()
 	add_child(editProjectDialog)
-	var id = null
-	if _selectedProjectItem != null:
-		id = _selectedProjectItem.GetProjectId()
-		
-	editProjectDialog.ConfigureForSelectedProject(id)
+	editProjectDialog.ConfigureForSelectedProject(_selectedProjectItem)
 
 func DeleteSelectedProject():
 	_projectItemContainer.remove_child(_selectedProjectItem)

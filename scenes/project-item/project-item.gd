@@ -17,6 +17,7 @@ var _webChecked = false
 var _exportType = ""
 var _packageType = ""
 var _itchProfileName = ""
+var _projectReleaseId = ""
 
 func _ready():
 	Signals.connect("ProjectItemSelected", ProjectItemSelected)
@@ -26,6 +27,9 @@ func SetGodotVersionId(value):
 	
 func SetProjectVersion(value):
 	_projectVersionLabel.text = value
+
+func SetProjectReleaseId(value):
+	_projectReleaseId = value
 	
 func SetProjectPath(value):
 	_projectPathLabel.text = value

@@ -70,8 +70,9 @@ func SaveSettings():
 	_selectedProjectItem.SetWebChecked(_webCheckBox.button_pressed)
 	_selectedProjectItem.SetExportType(_exportTypeOptionButton.text)
 	_selectedProjectItem.SetPackageType(_packageTypeOptionButton.text)
-	_selectedProjectItem.SetItchUserName(_itchProfileNameLineEdit.text)
-	_selectedProjectItem.SaveProject()
+	_selectedProjectItem.SetItchProfileName(_itchProfileNameLineEdit.text)
+	_selectedProjectItem.SaveProjectItem()
+	
 	# Need to redo for refactor.
 	#CreateNewSettingsFile(_loadProjectOptionButton.text)
 	#SaveValetSettings()
@@ -672,6 +673,5 @@ func _on_run_project_button_pressed():
 func _on_publish_to_itch_button_pressed():
 	PublishToButler()
 
-
-func _on_itch_project_name_line_edit_text_changed(new_text):
+func _on_save_button_pressed():
 	SaveSettings()

@@ -8,31 +8,21 @@ extends ColorRect
 
 var _projectId = null
 var _litOfGodotVersionIds = []
+var _selectedProjectItem = null
 
 func _ready():
 	color = Game.GetDefaultBackgroundColor()
 	LoadGodotVersion()
 
-func ConfigureForSelectedProject(id):
-	if id == null:
-		return
-	
-	LoadProjectById(id)
+func ConfigureForSelectedProject(selectedProjectItem):
+	_selectedProjectItem = selectedProjectItem
+	LoadProject()
 
-func LoadProjectById(projectId):
-	_projectId = projectId
+func LoadProject():
 	var config = ConfigFile.new()
-	var err = config.load("user://" + Game.GetProjectItemFolder() + "/" + projectId + ".cfg")
-	if err == OK:
-		_projectNameLineEdit.text = config.get_value("ProjectSettings", "project_name", "")
-		var godotVersionId = config.get_value("ProjectSettings", "godot_version_id", "")
-		var godotVersion = GetGodotVersion(godotVersionId)
-		
-		# Can happen if the version is deleted
-		if godotVersion != null:
-			_godotVersionOptionButton.text = godotVersion
-			
-		_projectPathLineEdit.text = config.get_value("ProjectSettings", "project_path", "")
+	_projectNameLineEdit.text = _selectedProjectItem.GetProjectName()
+	_projectPathLineEdit.text = _selectedProjectItem.GetProjectPath()
+	_godotVersionOptionButton.text = _selectedProjectItem.GetGodotVersion()
 
 func GetGodotVersion(godotVersionId):
 	var files = Files.GetFilesFromPath("user://godot-version-items")
@@ -66,14 +56,41 @@ func LoadGodotVersion():
 			_litOfGodotVersionIds.append(fileName)
 
 func SaveProjectSettings():
+	if _selectedProjectItem != null:
+		SaveExistingProjectItem()
+	else:
+		SaveNewProjectItem()
+
+func SaveExistingProjectItem():
 	var projectName = _projectNameLineEdit.text.trim_prefix(" ").trim_suffix(" ")
 	if projectName == "":
 		OS.alert("Invalid project name. Cancel to close.")
 		return
+	
+	_selectedProjectItem.SetProjectName(projectName)
+	_selectedProjectItem.SetProjectPath(_projectPathLineEdit.text)
 
+	var selectedIndex = _godotVersionOptionButton.selected
+	var godotVersionId = null
+	if selectedIndex >= 0:
+		godotVersionId = _litOfGodotVersionIds[selectedIndex]
+
+	_selectedProjectItem.SetGodotVersionId(godotVersionId)
+	_selectedProjectItem.SaveProjectItem()
+	Signals.emit_signal("ProjectSaved")
+	queue_free()
+	
+func SaveNewProjectItem():
+	var projectName = _projectNameLineEdit.text.trim_prefix(" ").trim_suffix(" ")
+	if projectName == "":
+		OS.alert("Invalid project name. Cancel to close.")
+		return
+	
+	_selectedProjectItem.SetProjectName(projectName)
+	
 	if _projectId == null:
 		_projectId = Common.GetId()
-	
+	_selectedProjectItem.SetProjectId(_projectId)
 	var selectedIndex = _godotVersionOptionButton.selected
 	var godotVersionId = null
 	if selectedIndex >= 0:
