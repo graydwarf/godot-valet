@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://blbvuvot3niby"]
+
+[ext_resource type="Script" path="res://scenes/nav-button/nav-button.gd" id="1_n3nv7"]
+
+[node name="Node2D" type="Button"]
+script = ExtResource("1_n3nv7")

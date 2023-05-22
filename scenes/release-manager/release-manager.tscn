@@ -1,20 +1,6 @@
-[gd_scene load_steps=22 format=3 uid="uid://dnh0www6opq0g"]
+[gd_scene load_steps=8 format=3 uid="uid://dnh0www6opq0g"]
 
 [ext_resource type="Script" path="res://scenes/release-manager/release-manager.gd" id="1_sdoj2"]
-[ext_resource type="Texture2D" uid="uid://b46qasa75w20b" path="res://assets/delete.png" id="2_vh8aa"]
-[ext_resource type="Texture2D" uid="uid://buvhlng8eu172" path="res://assets/delete-hover.png" id="3_ooht7"]
-[ext_resource type="Texture2D" uid="uid://bavgbtmpc8ox7" path="res://assets/edit-project-pencil.png" id="4_gna5v"]
-[ext_resource type="Texture2D" uid="uid://l3f70tyyehdg" path="res://assets/edit-project-pencil-hover.png" id="5_gje4s"]
-[ext_resource type="Texture2D" uid="uid://cpbgj8cbstlyi" path="res://assets/new-project-button.png" id="6_6vnu1"]
-[ext_resource type="Texture2D" uid="uid://bc6k11fyle18e" path="res://assets/new-project-hover-button.png" id="7_kl3hk"]
-[ext_resource type="Texture2D" uid="uid://djbhg3o3bmva8" path="res://assets/open-godot-project-manager-button.png" id="8_h7ugy"]
-[ext_resource type="Texture2D" uid="uid://b0yfomcm8rkj4" path="res://assets/open-godot-project-manager-hover-button.png" id="9_f5lmf"]
-[ext_resource type="Texture2D" uid="uid://bcjxv260x71qr" path="res://assets/run-project-button.png" id="10_wyq26"]
-[ext_resource type="Texture2D" uid="uid://2j4h7w3uolm2" path="res://assets/run-project-hover-button.png" id="11_ifcus"]
-[ext_resource type="Texture2D" uid="uid://ckyv0q2pvt252" path="res://assets/edit-project-with-console-pencil.png" id="12_bursq"]
-[ext_resource type="Texture2D" uid="uid://bipq7byv1ewpv" path="res://assets/edit-project-with-console-pencil-hover-button.png" id="13_kodu6"]
-[ext_resource type="Texture2D" uid="uid://rtrktu6lgddq" path="res://assets/select-folder-dialog.png" id="14_eb20r"]
-[ext_resource type="Texture2D" uid="uid://bjien5r58t8it" path="res://assets/select-folder-dialog-hover-button.png" id="15_8uepe"]
 [ext_resource type="Texture2D" uid="uid://dupqnev8b73sc" path="res://assets/open-folder.png" id="16_iy0sf"]
 [ext_resource type="Texture2D" uid="uid://bynyo67m7t0pr" path="res://assets/open-folder-pressed.png" id="17_wgal3"]
 [ext_resource type="Texture2D" uid="uid://rlooc3fo04k" path="res://assets/export-button.png" id="18_lfqwv"]
@@ -56,43 +42,51 @@ theme_override_constants/margin_bottom = 10
 [node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer2"]
 layout_mode = 2
 
-[node name="LoadProjectHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/VBoxContainer"]
+[node name="ProjectNameHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
 
-[node name="LoadProjectLabel" type="Label" parent="VBoxContainer/MarginContainer2/VBoxContainer/LoadProjectHBoxContainer"]
+[node name="ProjectNameLabel" type="Label" parent="VBoxContainer/MarginContainer2/VBoxContainer/ProjectNameHBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
-text = "Itch Project Name:"
+text = "Project Name:"
 horizontal_alignment = 2
 
-[node name="LoadProjectOptionButton" type="OptionButton" parent="VBoxContainer/MarginContainer2/VBoxContainer/LoadProjectHBoxContainer"]
-custom_minimum_size = Vector2(500, 32)
+[node name="ProjectNameLineEdit" type="LineEdit" parent="VBoxContainer/MarginContainer2/VBoxContainer/ProjectNameHBoxContainer"]
+custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
+tooltip_text = "Path to the appropriate godot version you want to build/export with."
+text = "New Project"
+editable = false
+caret_blink = true
+caret_blink_interval = 0.5
 
-[node name="DeleteProjectButton" type="TextureButton" parent="VBoxContainer/MarginContainer2/VBoxContainer/LoadProjectHBoxContainer"]
-custom_minimum_size = Vector2(32, 0)
+[node name="ProjectPathHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
-tooltip_text = "Delete Project Configuration"
-texture_normal = ExtResource("2_vh8aa")
-texture_pressed = ExtResource("3_ooht7")
-texture_hover = ExtResource("3_ooht7")
 
-[node name="EditProjectNameButton" type="TextureButton" parent="VBoxContainer/MarginContainer2/VBoxContainer/LoadProjectHBoxContainer"]
-custom_minimum_size = Vector2(32, 0)
+[node name="ProjectPathLabel" type="Label" parent="VBoxContainer/MarginContainer2/VBoxContainer/ProjectPathHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
-tooltip_text = "Edit Project Configuration"
-texture_normal = ExtResource("4_gna5v")
-texture_pressed = ExtResource("5_gje4s")
-texture_hover = ExtResource("5_gje4s")
+text = "Project Path:"
+horizontal_alignment = 2
 
-[node name="NewProjectButton" type="TextureButton" parent="VBoxContainer/MarginContainer2/VBoxContainer/LoadProjectHBoxContainer"]
+[node name="ProjectPathLineEdit" type="LineEdit" parent="VBoxContainer/MarginContainer2/VBoxContainer/ProjectPathHBoxContainer"]
+custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
-tooltip_text = "New Project Configuration"
-texture_normal = ExtResource("6_6vnu1")
-texture_pressed = ExtResource("7_kl3hk")
-texture_hover = ExtResource("7_kl3hk")
+size_flags_horizontal = 3
+size_flags_vertical = 0
+tooltip_text = "Path to the project folder."
+editable = false
+caret_blink = true
+caret_blink_interval = 0.5
+
+[node name="OpenProjectFolderButton" type="TextureButton" parent="VBoxContainer/MarginContainer2/VBoxContainer/ProjectPathHBoxContainer"]
+layout_mode = 2
+tooltip_text = "Open Project Folder"
+texture_normal = ExtResource("16_iy0sf")
+texture_pressed = ExtResource("17_wgal3")
+texture_hover = ExtResource("17_wgal3")
 
 [node name="GodotPathHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
@@ -110,62 +104,24 @@ size_flags_horizontal = 3
 size_flags_vertical = 0
 tooltip_text = "Path to the appropriate godot version you want to build/export with."
 text = "C:\\Program Files\\Godot 4\\Godot_v4.0.2-stable_win64.exe"
+editable = false
 caret_blink = true
 caret_blink_interval = 0.5
 
-[node name="LaunchGodotProjectManagerButton" type="TextureButton" parent="VBoxContainer/MarginContainer2/VBoxContainer/GodotPathHBoxContainer"]
-custom_minimum_size = Vector2(32, 0)
-layout_mode = 2
-tooltip_text = "Open Godot Project Manager"
-texture_normal = ExtResource("8_h7ugy")
-texture_pressed = ExtResource("9_f5lmf")
-texture_hover = ExtResource("9_f5lmf")
-
-[node name="ProjectPathHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/VBoxContainer"]
+[node name="ItchProjectNameHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
 
-[node name="ProjectPathLabel" type="Label" parent="VBoxContainer/MarginContainer2/VBoxContainer/ProjectPathHBoxContainer"]
+[node name="ItchProjectNameLabel" type="Label" parent="VBoxContainer/MarginContainer2/VBoxContainer/ItchProjectNameHBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
-text = "Project Path:"
+text = "Itch Project Name:"
 horizontal_alignment = 2
 
-[node name="ProjectPathLineEdit" type="LineEdit" parent="VBoxContainer/MarginContainer2/VBoxContainer/ProjectPathHBoxContainer"]
-custom_minimum_size = Vector2(500, 0)
+[node name="ItchProjectNameLineEdit" type="LineEdit" parent="VBoxContainer/MarginContainer2/VBoxContainer/ItchProjectNameHBoxContainer"]
+custom_minimum_size = Vector2(500, 32)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-tooltip_text = "Path to the project folder."
-caret_blink = true
-caret_blink_interval = 0.5
-
-[node name="RunProjectButton" type="TextureButton" parent="VBoxContainer/MarginContainer2/VBoxContainer/ProjectPathHBoxContainer"]
-layout_mode = 2
-tooltip_text = "Run Project"
-texture_normal = ExtResource("10_wyq26")
-texture_pressed = ExtResource("11_ifcus")
-texture_hover = ExtResource("11_ifcus")
-
-[node name="EditProjectWithConsoleButton" type="TextureButton" parent="VBoxContainer/MarginContainer2/VBoxContainer/ProjectPathHBoxContainer"]
-layout_mode = 2
-tooltip_text = "Edit Project w/Console"
-texture_normal = ExtResource("12_bursq")
-texture_pressed = ExtResource("13_kodu6")
-texture_hover = ExtResource("13_kodu6")
-
-[node name="SelectProjectFolderButton" type="TextureButton" parent="VBoxContainer/MarginContainer2/VBoxContainer/ProjectPathHBoxContainer"]
-layout_mode = 2
-tooltip_text = "Select Project Folder"
-texture_normal = ExtResource("14_eb20r")
-texture_pressed = ExtResource("15_8uepe")
-texture_hover = ExtResource("15_8uepe")
-
-[node name="OpenProjectFolderButton" type="TextureButton" parent="VBoxContainer/MarginContainer2/VBoxContainer/ProjectPathHBoxContainer"]
-layout_mode = 2
-tooltip_text = "Open Project Folder"
-texture_normal = ExtResource("16_iy0sf")
-texture_pressed = ExtResource("17_wgal3")
-texture_hover = ExtResource("17_wgal3")
 
 [node name="ProjectVersionHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
@@ -426,3 +382,6 @@ size = Vector2i(600, 500)
 ok_button_text = "Select Current Folder"
 file_mode = 2
 access = 2
+
+[connection signal="text_changed" from="VBoxContainer/MarginContainer2/VBoxContainer/ItchProjectNameHBoxContainer/ItchProjectNameLineEdit" to="." method="_on_itch_project_name_line_edit_text_changed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/VBoxContainer/ExportPresetHBoxContainer/WindowsCheckBox" to="." method="_on_windows_check_box_pressed"]

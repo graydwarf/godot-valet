@@ -8,6 +8,16 @@ var _selected = false
 var _projectId = ""
 var _godotVersionId = null
 
+# Release Management Vars
+var _itchProjectName = ""
+var _projectVersion = ""
+var _windowsChecked = false
+var _linuxChecked = false
+var _webChecked = false
+var _exportType = ""
+var _packageType = ""
+var _itchProfileName = ""
+
 func _ready():
 	Signals.connect("ProjectItemSelected", ProjectItemSelected)
 
@@ -25,11 +35,43 @@ func SetProjectName(value):
 	
 func SetGodotVersion(value):
 	_godotVersionLabel.text = value
+
+func SetItchProjectName(value):
+	_itchProjectName = value
+
+func SetWindowsChecked(value):
+	_windowsChecked = value
+
+func SetLinuxChecked(value):
+	_linuxChecked = value
+	
+func SetWebChecked(value):
+	_webChecked = value
+
+func SetExportType(value):
+	_exportType = value
+	
+func SetPackageType(value):
+	_packageType = value
+
+func SetItchProfileName(value):
+	_itchProfileName = value
 	
 func GetProjectVersion():
 	return _projectVersionLabel.text
 	
+func GetItchProjectName(value):
+	return _itchProjectName
+	
+# Strip off the file name
+# /project.godot
+func GetProjectPathBaseDir():
+	return _projectPathLabel.text.get_base_dir()
+
 func GetProjectPath():
+	return _projectPathLabel.text
+	
+func GetProjectPathWithProjectFile():
 	return _projectPathLabel.text
 	
 func GetGodotVersion():
@@ -78,7 +120,7 @@ func ShowSelectedColor():
 	color = Color(0.0, 0.0, 0.5, 0.2)
 
 func GetFormattedProjectPath():
-	return GetProjectPath().trim_prefix(" ").trim_suffix(" ").to_lower().replace("/", "\\")
+	return GetProjectPathBaseDir().to_lower().replace("/", "\\")
 
 func SelectProjectItem():
 	ShowSelectedColor()
@@ -87,6 +129,26 @@ func SelectProjectItem():
 func UnselectProjectItem():
 	RestoreDefaultColor()
 	_selected = false
+
+func SaveProjectItem():
+	var config = ConfigFile.new()
+
+	config.set_value("ProjectSettings", "project_name", _projectNameLabel.text)
+	config.set_value("ProjectSettings", "godot_version_id", _godotVersionId)
+	config.set_value("ProjectSettings", "project_path", _projectPathLabel.text)
+	config.set_value("ProjectSettings", "project_version", _projectVersion)
+	config.set_value("ProjectSettings", "windows_preset_checked", _windowsChecked)
+	config.set_value("ProjectSettings", "linux_preset_checked", _linuxChecked)
+	config.set_value("ProjectSettings", "web_preset_checked", _webChecked)
+	config.set_value("ProjectSettings", "export_type", _exportType)
+	config.set_value("ProjectSettings", "package_type", _packageType)
+	config.set_value("ProjectSettings", "itch_profile_name", _itchProfileName)
+	
+	# Save the config file.
+	var err = config.save("user://" + Game.GetProjectItemFolder() + "/" + _projectId + ".cfg")
+
+	if err != OK:
+		OS.alert("An error occurred while saving the config file.")
 	
 func _on_gui_input(event):
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:

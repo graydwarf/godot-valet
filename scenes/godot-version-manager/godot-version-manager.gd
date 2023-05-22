@@ -74,6 +74,7 @@ func _on_new_project_button_pressed():
 	OpenNewGodotVersionDialog()
 
 func _on_close_button_pressed():
+	Signals.emit_signal("GodotVersionManagerClosing")
 	queue_free()
 
 func _on_edit_button_pressed():
