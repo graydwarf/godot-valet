@@ -5,11 +5,15 @@ extends ColorRect
 @onready var _projectVersionLabel = $MarginContainer/HBoxContainer/VBoxContainer/MarginContainer3/ProjectVersionLabel
 
 var _selected = false
-var _id = ""
+var _projectId = ""
+var _godotVersionId = null
 
 func _ready():
 	Signals.connect("ProjectItemSelected", ProjectItemSelected)
 
+func SetGodotVersionId(value):
+	_godotVersionId = value
+	
 func SetProjectVersion(value):
 	_projectVersionLabel.text = value
 	
@@ -18,10 +22,10 @@ func SetProjectPath(value):
 	
 func SetProjectName(value):
 	_projectNameLabel.text = value
-
+	
 func SetGodotVersion(value):
 	_godotVersionLabel.text = value
-
+	
 func GetProjectVersion():
 	return _projectVersionLabel.text
 	
@@ -31,14 +35,17 @@ func GetProjectPath():
 func GetGodotVersion():
 	return _godotVersionLabel.text
 
+func GetGodotVersionId():
+	return _godotVersionId
+	
 func GetProjectName():
 	return _projectNameLabel.text
 	
-func SetId(value):
-	_id = value
+func SetProjectId(value):
+	_projectId = value
 
-func GetId():
-	return _id
+func GetProjectId():
+	return _projectId
 	
 func ProjectItemSelected(projectItem, _isSelected):
 	if projectItem == self:
@@ -46,6 +53,21 @@ func ProjectItemSelected(projectItem, _isSelected):
 	
 	UnselectProjectItem()
 
+func GetGodotPath(godotVersionId):
+	var files = Files.GetFilesFromPath("user://godot-version-items")
+	for file in files:
+		if !file.ends_with(".cfg"):
+			continue
+
+		var fileName = file.trim_suffix(".cfg")
+		if fileName != godotVersionId:
+			continue
+			
+		var config = ConfigFile.new()
+		var err = config.load("user://" + Game.GetGodotVersionItemFolder() + "/" + fileName + ".cfg")
+		if err == OK:
+			return config.get_value("GodotVersionSettings", "godot_path", "???")
+	
 func RestoreDefaultColor():
 	color = Color(0.0, 0.0, 0.0, 0.5)
 

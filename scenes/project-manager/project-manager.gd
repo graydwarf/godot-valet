@@ -2,6 +2,8 @@ extends ColorRect
 
 @onready var _runProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RunProjectButton
 @onready var _editProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/EditProjectButton
+@onready var _releaseProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ReleaseProjectButton
+
 @onready var _changeProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ChangeProjectButton
 @onready var _removeProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RemoveProjectButton
 @onready var _projectItemContainer = $VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/ProjectItemContainer
@@ -59,7 +61,7 @@ func LoadProjectsIntoProjectContainer(id):
 		
 		var projectItem = load("res://scenes/project-item/project-item.tscn").instantiate()
 		_projectItemContainer.add_child(projectItem)
-
+		
 		if projectId == id:
 			var isSelected = true
 			ProjectItemSelected(projectItem, isSelected)
@@ -67,8 +69,14 @@ func LoadProjectsIntoProjectContainer(id):
 		var config = ConfigFile.new()
 		var err = config.load("user://" + Game.GetProjectItemFolder() + "/" + projectId + ".cfg")
 		if err == OK:
+			projectItem.SetProjectId(projectId)
 			projectItem.SetProjectName(config.get_value("ProjectSettings", "project_name", "New Project"))
-			projectItem.SetGodotVersion(config.get_value("ProjectSettings", "godot_version", ""))
+			var godotVersionId = config.get_value("ProjectSettings", "godot_version_id", "")
+			var godotVersion = GetGodotVersionFromId(godotVersionId)
+			if godotVersion != null:
+				projectItem.SetGodotVersionId(godotVersionId)
+				projectItem.SetGodotVersion(godotVersion)
+
 			projectItem.SetProjectPath(config.get_value("ProjectSettings", "project_path", ""))
 			projectItem.SetProjectVersion(config.get_value("ProjectSettings", "project_version", "v0.0.1"))
 		
@@ -96,13 +104,28 @@ func LoadProjectsIntoProjectContainer(id):
 #		GenerateButlerPreview()
 #		GenerateExportPreview()
 
+func GetGodotVersionFromId(godotVersionId):
+	var files = Files.GetFilesFromPath("user://" + Game.GetGodotVersionItemFolder())
+	for file in files:
+		if !file.ends_with(".cfg"):
+			continue
+
+		var fileName = file.trim_suffix(".cfg")
+		if fileName != godotVersionId:
+			continue
+		
+		var config = ConfigFile.new()
+		var err = config.load("user://" + Game.GetGodotVersionItemFolder() + "/" + fileName + ".cfg")
+		if err == OK:
+			return config.get_value("ProjectSettings", "godot_version_id", "")
+		
 func InitSignals():
 	Signals.connect("ProjectItemSelected", ProjectItemSelected)
-	Signals.connect("NewProjectCreated", NewProjectCreated)
+	Signals.connect("ProjectSaved", ProjectSaved)
 
-func NewProjectCreated(id):
+func ProjectSaved(projectId):
 	ClearProjectContainer()
-	LoadProjectsIntoProjectContainer(id)
+	LoadProjectsIntoProjectContainer(projectId)
 
 func ClearProjectContainer():
 	for child in _projectItemContainer.get_children():
@@ -121,12 +144,15 @@ func ProjectItemSelected(projectItem, isSelected):
 func DisableEditButtons():
 	_runProjectButton.disabled = true
 	_editProjectButton.disabled = true
+	_releaseProjectButton.disabled = true
+	
 	_changeProjectButton.disabled = true
 	_removeProjectButton.disabled = true
 	
 func EnableEditButtons():
 	_runProjectButton.disabled = false
 	_editProjectButton.disabled = false
+	_releaseProjectButton.disabled = false
 	_changeProjectButton.disabled = false
 	_removeProjectButton.disabled = false
 		
@@ -158,7 +184,8 @@ func EditProject():
 func EditProjectInGodotEditorThread():
 	var output = []
 	var godotArguments = ["--verbose", "--path " + _selectedProjectItem.GetProjectPath(), "--editor"]
-	OS.execute(_selectedProjectItem.GetGodotPath(), godotArguments, output)
+	var pathToGodot = _selectedProjectItem.GetGodotPath()
+	OS.execute(pathToGodot, godotArguments, output)
 
 func OpenSetting():
 	var settings = load("res://scenes/settings/settings.tscn").instantiate()
@@ -167,17 +194,33 @@ func OpenSetting():
 func CreateEditProjectDialog():
 	return load("res://scenes/new-project-dialog/edit-project-dialog.tscn").instantiate()
 
+func CreateNewProject():
+	var editProjectDialog = CreateEditProjectDialog()
+	add_child(editProjectDialog)
+	
 func ChangeProject():
+	if _selectedProjectItem == null:
+		return
+		
 	var editProjectDialog = CreateEditProjectDialog()
 	add_child(editProjectDialog)
 	var id = null
 	if _selectedProjectItem != null:
-		id = _selectedProjectItem.GetId()
+		id = _selectedProjectItem.GetProjectId()
 		
 	editProjectDialog.ConfigureForSelectedProject(id)
+
+func DeleteSelectedProject():
+	_projectItemContainer.remove_child(_selectedProjectItem)
+	DirAccess.remove_absolute("user://" + Game.GetProjectItemFolder() + "/" + _selectedProjectItem.GetProjectId() + ".cfg")
+	_selectedProjectItem = null
+	DisableEditButtons()
+	
+func RemoveProject():
+	$DeleteConfirmationDialog.show()
 	
 func _on_new_project_button_pressed():
-	ChangeProject()
+	CreateNewProject()
 	
 func _on_edit_project_button_pressed():
 	EditProject()
@@ -190,3 +233,9 @@ func _on_run_project_button_pressed():
 
 func _on_change_project_button_pressed():
 	ChangeProject()
+
+func _on_remove_project_button_pressed():
+	RemoveProject()
+
+func _on_delete_confirmation_dialog_confirmed():
+	DeleteSelectedProject()

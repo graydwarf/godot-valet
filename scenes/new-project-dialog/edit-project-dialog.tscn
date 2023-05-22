@@ -41,19 +41,52 @@ theme_override_font_sizes/font_size = 20
 text = "Edit Project"
 horizontal_alignment = 1
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+[node name="ProjectPathHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="ProjectPathLabel" type="Label" parent="VBoxContainer/ProjectPathHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Project Path:"
+horizontal_alignment = 2
+
+[node name="ProjectPathLineEdit" type="LineEdit" parent="VBoxContainer/ProjectPathHBoxContainer"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 2
+size_flags_vertical = 0
+tooltip_text = "Path to the project folder."
+
+[node name="SelectProjectFolderButton" type="TextureButton" parent="VBoxContainer/ProjectPathHBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 2
+tooltip_text = "Select Project Folder"
+texture_normal = ExtResource("2_8lut8")
+texture_pressed = ExtResource("3_400an")
+texture_hover = ExtResource("3_400an")
+
+[node name="OpenProjectFolderButton" type="TextureButton" parent="VBoxContainer/ProjectPathHBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 2
+tooltip_text = "Open Project Folder"
+texture_normal = ExtResource("4_vvamd")
+texture_pressed = ExtResource("5_hfl0x")
+texture_hover = ExtResource("5_hfl0x")
+
+[node name="ProjectNameHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 0
 alignment = 1
 
-[node name="ProjectNameLabel" type="Label" parent="VBoxContainer/HBoxContainer"]
+[node name="ProjectNameLabel" type="Label" parent="VBoxContainer/ProjectNameHBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 size_flags_horizontal = 2
 text = "Project Name:"
 horizontal_alignment = 2
 
-[node name="ProjectNameLineEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer"]
+[node name="ProjectNameLineEdit" type="LineEdit" parent="VBoxContainer/ProjectNameHBoxContainer"]
 custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -76,38 +109,20 @@ custom_minimum_size = Vector2(500, 32)
 layout_mode = 2
 size_flags_vertical = 4
 
-[node name="ProjectPathHBoxContainer2" type="HBoxContainer" parent="VBoxContainer"]
+[node name="OptionsHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 0
 
-[node name="ProjectPathLabel" type="Label" parent="VBoxContainer/ProjectPathHBoxContainer2"]
+[node name="OptionsLabel" type="Label" parent="VBoxContainer/OptionsHBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
-text = "Project Path:"
+text = "Options:"
 horizontal_alignment = 2
 
-[node name="ProjectPathLineEdit" type="LineEdit" parent="VBoxContainer/ProjectPathHBoxContainer2"]
-custom_minimum_size = Vector2(500, 0)
+[node name="ExtractProjectNameCheckBox" type="CheckBox" parent="VBoxContainer/OptionsHBoxContainer"]
 layout_mode = 2
-size_flags_horizontal = 2
-size_flags_vertical = 0
-tooltip_text = "Path to the project folder."
-
-[node name="SelectProjectFolderButton" type="TextureButton" parent="VBoxContainer/ProjectPathHBoxContainer2"]
-layout_mode = 2
-size_flags_horizontal = 2
-tooltip_text = "Select Project Folder"
-texture_normal = ExtResource("2_8lut8")
-texture_pressed = ExtResource("3_400an")
-texture_hover = ExtResource("3_400an")
-
-[node name="OpenProjectFolderButton" type="TextureButton" parent="VBoxContainer/ProjectPathHBoxContainer2"]
-layout_mode = 2
-size_flags_horizontal = 2
-tooltip_text = "Open Project Folder"
-texture_normal = ExtResource("4_vvamd")
-texture_pressed = ExtResource("5_hfl0x")
-texture_hover = ExtResource("5_hfl0x")
+button_pressed = true
+text = "Extract Project Name"
 
 [node name="MarginContainer" type="MarginContainer" parent="VBoxContainer"]
 layout_mode = 2
@@ -128,14 +143,16 @@ layout_mode = 2
 text = "SAVE"
 
 [node name="FileDialog" type="FileDialog" parent="."]
-title = "Open a Directory"
+title = "Open a File"
 position = Vector2i(250, 150)
 size = Vector2i(600, 500)
-ok_button_text = "Select Current Folder"
-file_mode = 2
+ok_button_text = "Open"
+file_mode = 0
 access = 2
+filters = PackedStringArray("*.godot")
 
-[connection signal="pressed" from="VBoxContainer/ProjectPathHBoxContainer2/SelectProjectFolderButton" to="." method="_on_select_project_folder_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/ProjectPathHBoxContainer/SelectProjectFolderButton" to="." method="_on_select_project_folder_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/OptionsHBoxContainer/ExtractProjectNameCheckBox" to="." method="_on_extract_project_name_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer/ButtonHBoxContainer/CancelButton" to="." method="_on_cancel_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer/ButtonHBoxContainer/SaveButton" to="." method="_on_save_button_pressed"]
-[connection signal="dir_selected" from="FileDialog" to="." method="_on_file_dialog_dir_selected"]
+[connection signal="file_selected" from="FileDialog" to="." method="_on_file_dialog_file_selected"]

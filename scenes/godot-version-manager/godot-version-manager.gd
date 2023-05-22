@@ -1,5 +1,6 @@
 extends ColorRect
 
+@onready var _deleteConfirmationDialog = $DeleteConfirmationDialog
 @onready var _godotVersionItemContainer = $VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/GodotVersionItemContainer
 var _selectedGodotVersionItem
 
@@ -23,13 +24,27 @@ func NewGodotVersionAdded():
 	ClearVersionItems()
 	LoadGodotVersionItems()
 
+func RemoveSelectedVersionItem():
+	if !is_instance_valid(_selectedGodotVersionItem):
+		return
+	
+	$DeleteConfirmationDialog.show()
+
+func DeleteGodotVersionConfiguration():
+	_godotVersionItemContainer.remove_child(_selectedGodotVersionItem)
+	DirAccess.remove_absolute("user://" + Game.GetGodotVersionItemFolder() + "/" + _selectedGodotVersionItem.GetGodotVersionId() + ".cfg")
+	_selectedGodotVersionItem = null
+
+func DisplayDeleteProjectConfirmationDialog():
+	_deleteConfirmationDialog.show()
+	
 func EditSelectedGodotVersion():
 	if !is_instance_valid(_selectedGodotVersionItem):
 		return
 		
 	var editGodotVersionDialog = load("res://scenes/create-godot-version-dialog/create-godot-version-dialog.tscn").instantiate()
 	add_child(editGodotVersionDialog)
-	editGodotVersionDialog.SetId(_selectedGodotVersionItem.GetId())
+	editGodotVersionDialog.SetGodotVersionId(_selectedGodotVersionItem.GetGodotVersionId())
 	editGodotVersionDialog.SetGodotVersion(_selectedGodotVersionItem.GetGodotVersion())
 	editGodotVersionDialog.SetGodotPath(_selectedGodotVersionItem.GetGodotPath())
 	
@@ -49,7 +64,7 @@ func LoadGodotVersionItems():
 		if err == OK:
 			godotVersionItem.SetGodotVersion(config.get_value("GodotVersionSettings", "godot_version", ""))
 			godotVersionItem.SetGodotPath(config.get_value("GodotVersionSettings", "godot_path", ""))
-			godotVersionItem.SetId(fileName)
+			godotVersionItem.SetGodotVersionId(fileName)
 		
 func OpenNewGodotVersionDialog():
 	var newGodotVersionDialog = load("res://scenes/create-godot-version-dialog/create-godot-version-dialog.tscn").instantiate()
@@ -63,3 +78,13 @@ func _on_close_button_pressed():
 
 func _on_edit_button_pressed():
 	EditSelectedGodotVersion()
+
+func _on_remove_button_pressed():
+	RemoveSelectedVersionItem()
+
+func _on_confirmation_dialog_confirmed():
+	DeleteGodotVersionConfiguration()
+
+
+func _on_change_project_button_pressed():
+	pass # Replace with function body.

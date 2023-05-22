@@ -522,7 +522,8 @@ func DeleteProject():
 	var projectName = _loadProjectOptionButton.text
 	var projectIndex = FindProjectIndexByName(projectName)
 	_loadProjectOptionButton.remove_item(projectIndex)
-	DirAccess.remove_absolute("user://" + projectName + ".cfg")
+	# TODO: fix after refactors
+	#DirAccess.remove_absolute("user://" + Game.GetProjectItemFolder() + ".cfg")
 	if _loadProjectOptionButton.item_count >= 1:
 		_loadProjectOptionButton.select(0)
 

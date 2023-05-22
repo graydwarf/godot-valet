@@ -6,7 +6,8 @@ signal ProjectRenamed
 
 # Project Management
 signal ProjectItemSelected
-signal NewProjectCreated
+#signal NewProjectCreated
+signal ProjectSaved
 
 # Godot Version Management
 signal NewGodotVersionAdded

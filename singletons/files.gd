@@ -81,5 +81,16 @@ func DeleteAllFilesAndFolders(folderPath, isSendingToRecycle = true, listOfExist
 		
 		if error != 0:
 			errors.append(error)
-			
+
 	return errors
+
+func GetLinesFromFile(path):
+	var file = FileAccess.open(path, FileAccess.READ)
+	var listOfLines = []
+	if file != null:
+		while file.get_position() < file.get_length():
+			listOfLines.append(file.get_line())
+	else:
+		OS.alert("Failed to retrieve project name from the godot project file.")
+	
+	return listOfLines

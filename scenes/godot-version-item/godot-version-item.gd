@@ -5,16 +5,16 @@ extends ColorRect
 var _godotVersion = ""
 var _godotPath = ""
 var _selected = false
-var _id = ""
+var _godotVersionId = ""
 
 func _ready():
 	Signals.connect("GodotVersionItemClicked", GodotVersionItemClicked)
 
-func GetId():
-	return _id
+func GetGodotVersionId():
+	return _godotVersionId
 
-func SetId(value):
-	_id = value
+func SetGodotVersionId(value):
+	_godotVersionId = value
 	
 func GetGodotVersion():
 	return _godotVersion
@@ -33,7 +33,7 @@ func SetGodotPath(value):
 func GodotVersionItemClicked(godorVersionItem):
 	if godorVersionItem == self:
 		return
-	
+
 	RestoreDefaultColor()
 	_selected = false
 

@@ -33,6 +33,7 @@ text = "Version Manager"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2
+size_flags_vertical = 3
 
 [node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/HBoxContainer"]
 layout_mode = 2
@@ -70,10 +71,22 @@ text = "New Version"
 layout_mode = 2
 text = "Edit Version"
 
+[node name="RemoveButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+text = "Remove Version"
+
 [node name="CloseButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
 text = "Close"
 
+[node name="DeleteConfirmationDialog" type="ConfirmationDialog" parent="."]
+position = Vector2i(300, 250)
+size = Vector2i(600, 135)
+dialog_text = " Are you sure you want to delete this Godot Version configuration?"
+dialog_autowrap = true
+
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/NewVersionButton" to="." method="_on_new_project_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/EditButton" to="." method="_on_edit_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RemoveButton" to="." method="_on_remove_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/CloseButton" to="." method="_on_close_button_pressed"]
+[connection signal="confirmed" from="DeleteConfirmationDialog" to="." method="_on_confirmation_dialog_confirmed"]
