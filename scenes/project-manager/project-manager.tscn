@@ -63,19 +63,19 @@ layout_mode = 2
 [node name="RunProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
-tooltip_text = "Run Project"
+tooltip_text = "Runs the selected project without opening it in the Godot IDE."
 disabled = true
 text = "Run"
 
 [node name="EditProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
-tooltip_text = "Edit Project"
+tooltip_text = "Opens the selected project in an appropriate Godot IDE based on the version selected."
 disabled = true
 text = "Edit"
 
 [node name="ReleaseProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
-tooltip_text = "Edit Project"
+tooltip_text = "Opens the selected projects release configuration which supports exporting and publish to multiple platforms."
 disabled = true
 text = "Release"
 
@@ -92,17 +92,20 @@ color = Color(0.439216, 0.439216, 0.439216, 0.360784)
 [node name="NewProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
+tooltip_text = "Creates a new project management item. This does not create a new Godot project."
 text = "New Project"
 
 [node name="ChangeProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
+tooltip_text = "Opens the project configuration dialog for the selected project."
 disabled = true
 text = "Change Project"
 
 [node name="RemoveProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
+tooltip_text = "Permanently deletes the project template for the selected project. This does not delete any Godot project files."
 disabled = true
 text = "Remove Project"
 
@@ -131,13 +134,13 @@ color = Color(0.439216, 0.439216, 0.439216, 0.360784)
 
 [node name="SettingsButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
-tooltip_text = "Settings"
+tooltip_text = "Opens settings where you can configure things like Godot Versions."
 text = "Settings"
 
 [node name="DeleteConfirmationDialog" type="ConfirmationDialog" parent="."]
 position = Vector2i(300, 250)
 size = Vector2i(600, 135)
-dialog_text = " Are you sure you want to remove  the project configuration from the list?"
+dialog_text = " Are you sure you want to remove the project configuration from the list?"
 dialog_autowrap = true
 
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RunProjectButton" to="." method="_on_run_project_button_pressed"]

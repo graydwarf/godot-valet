@@ -29,7 +29,7 @@ func CreateNewGodotVersionSettingsFile():
 		
 	# New or are we saving?
 	var id = _godotVersionId
-	if _godotVersionId == "":
+	if id == "":
 		id = Common.GetId()
 		
 	# Save the config file.
@@ -39,7 +39,7 @@ func CreateNewGodotVersionSettingsFile():
 		OS.alert("An error occurred while saving the config file.")
 		return
 	
-	Signals.emit_signal("NewGodotVersionAdded")
+	Signals.emit_signal("GodotVersionsChanged")
 	queue_free()
 
 func GetGodotFileVersion(path):	
@@ -66,9 +66,6 @@ func SanityCheckPath(path):
 		isGoodLookingGodotBinary = false
 	
 	return isGoodLookingGodotBinary
-
-func _on_select_project_folder_button_pressed():
-	_selectGodotExeFileDialog.show()
 
 func _on_file_dialog_file_selected(path):
 	_godotPathLineEdit.text = path
@@ -103,5 +100,5 @@ func _on_use_file_version_check_box_pressed():
 			
 		GetGodotFileVersion(_godotPathLineEdit.text)
 
-func _on_confirmation_dialog_confirmed():
-	pass # Replace with function body.
+func _on_select_godot_path_button_pressed():
+	_selectGodotExeFileDialog.show()

@@ -1,8 +1,6 @@
-[gd_scene load_steps=4 format=3 uid="uid://bs3cejai31h0v"]
+[gd_scene load_steps=2 format=3 uid="uid://bs3cejai31h0v"]
 
 [ext_resource type="Script" path="res://scenes/create-godot-version-dialog/create-godot-version-dialog.gd" id="1_c7nj4"]
-[ext_resource type="Texture2D" uid="uid://rtrktu6lgddq" path="res://assets/select-folder-dialog.png" id="2_idpi3"]
-[ext_resource type="Texture2D" uid="uid://bjien5r58t8it" path="res://assets/select-folder-dialog-hover-button.png" id="3_qqxbk"]
 
 [node name="CreateGodotVersionDialog" type="ColorRect"]
 anchors_preset = 15
@@ -14,7 +12,7 @@ color = Color(0, 0, 0, 0.882353)
 script = ExtResource("1_c7nj4")
 
 [node name="NewProjectDialog" type="ColorRect" parent="."]
-custom_minimum_size = Vector2(800, 160)
+custom_minimum_size = Vector2(860, 160)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -63,12 +61,10 @@ tooltip_text = "Path to the project folder."
 caret_blink = true
 caret_blink_interval = 0.5
 
-[node name="SelectProjectFolderButton" type="TextureButton" parent="NewProjectDialog/MarginContainer/VBoxContainer/ProjectPathHBoxContainer2"]
+[node name="SelectGodotPathButton" type="Button" parent="NewProjectDialog/MarginContainer/VBoxContainer/ProjectPathHBoxContainer2"]
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
-tooltip_text = "Select Project Folder"
-texture_normal = ExtResource("2_idpi3")
-texture_pressed = ExtResource("3_qqxbk")
-texture_hover = ExtResource("3_qqxbk")
+text = "Select Path"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="NewProjectDialog/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -89,6 +85,12 @@ tooltip_text = "Must result in a valid file name."
 caret_blink = true
 caret_blink_interval = 0.5
 
+[node name="SelectGodotPathButton" type="Button" parent="NewProjectDialog/MarginContainer/VBoxContainer/HBoxContainer"]
+self_modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Select Path"
+
 [node name="UseFileVersionCheckBox" type="CheckBox" parent="NewProjectDialog/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 8
@@ -104,12 +106,12 @@ layout_mode = 2
 alignment = 2
 
 [node name="CancelButton" type="Button" parent="NewProjectDialog/MarginContainer/VBoxContainer/MarginContainer/ButtonHBoxContainer"]
-custom_minimum_size = Vector2(125, 0)
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "CANCEL"
 
 [node name="SaveButton" type="Button" parent="NewProjectDialog/MarginContainer/VBoxContainer/MarginContainer/ButtonHBoxContainer"]
-custom_minimum_size = Vector2(125, 0)
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "SAVE"
 
@@ -128,7 +130,7 @@ size = Vector2i(500, 200)
 dialog_text = "The path to your godot binary doesn't appear to be a stable version. We normally expect to see \"Godot_\" and \"-stable\" in the file name. This program launches godot using the path you provide. You might be using a beta version which is ok. Just calling it out to make sure you're aware."
 dialog_autowrap = true
 
-[connection signal="pressed" from="NewProjectDialog/MarginContainer/VBoxContainer/ProjectPathHBoxContainer2/SelectProjectFolderButton" to="." method="_on_select_project_folder_button_pressed"]
+[connection signal="pressed" from="NewProjectDialog/MarginContainer/VBoxContainer/ProjectPathHBoxContainer2/SelectGodotPathButton" to="." method="_on_select_godot_path_button_pressed"]
 [connection signal="pressed" from="NewProjectDialog/MarginContainer/VBoxContainer/UseFileVersionCheckBox" to="." method="_on_use_file_version_check_box_pressed"]
 [connection signal="pressed" from="NewProjectDialog/MarginContainer/VBoxContainer/MarginContainer/ButtonHBoxContainer/CancelButton" to="." method="_on_cancel_button_pressed"]
 [connection signal="pressed" from="NewProjectDialog/MarginContainer/VBoxContainer/MarginContainer/ButtonHBoxContainer/SaveButton" to="." method="_on_save_button_pressed"]

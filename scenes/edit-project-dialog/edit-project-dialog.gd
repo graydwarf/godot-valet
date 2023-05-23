@@ -22,7 +22,9 @@ func LoadProject():
 	var config = ConfigFile.new()
 	_projectNameLineEdit.text = _selectedProjectItem.GetProjectName()
 	_projectPathLineEdit.text = _selectedProjectItem.GetProjectPath()
-	_godotVersionOptionButton.text = _selectedProjectItem.GetGodotVersion()
+	var a = _selectedProjectItem.GetGodotVersion()
+	if a.find("???") == -1:
+		_godotVersionOptionButton.text = _selectedProjectItem.GetGodotVersion()
 
 func GetGodotVersion(godotVersionId):
 	var files = Files.GetFilesFromPath("user://godot-version-items")
@@ -86,18 +88,15 @@ func SaveNewProjectItem():
 		OS.alert("Invalid project name. Cancel to close.")
 		return
 	
-	_selectedProjectItem.SetProjectName(projectName)
+	if !FileAccess.file_exists(_projectPathLineEdit.text):
+		OS.alert("Project not found at specified path.")
+		return
+		
+	var	godotVersionId = _litOfGodotVersionIds[_godotVersionOptionButton.selected]
+	var projectId = Common.GetId()
 	
-	if _projectId == null:
-		_projectId = Common.GetId()
-	_selectedProjectItem.SetProjectId(_projectId)
-	var selectedIndex = _godotVersionOptionButton.selected
-	var godotVersionId = null
-	if selectedIndex >= 0:
-		godotVersionId = _litOfGodotVersionIds[selectedIndex]
-
-	SaveSettingsFile(_projectId, godotVersionId)
-	Signals.emit_signal("ProjectSaved", _projectId)
+	SaveSettingsFile(projectId, godotVersionId)
+	Signals.emit_signal("ProjectSaved")
 	queue_free()
 
 func SaveSettingsFile(projectId, godotVersionId):
@@ -123,15 +122,13 @@ func ProcessSelectedProject(path):
 	if _extractProjectNameCheckBox.button_pressed:
 		var linesInProjectFile = Files.GetLinesFromFile(_projectPathLineEdit.text)
 		for line in linesInProjectFile:
-			var projectNameFilter = "config/name="
+			var projectNameFilter = "config/name"
 			if line.begins_with(projectNameFilter):
-				line = line.right(projectNameFilter.length())
+				line = line.replace("config/name=\"", "")
 				line = line.left(-1)
 				_projectNameLineEdit.text = line
 				break
 
-
-	
 func _on_cancel_button_pressed():
 	queue_free()
 
@@ -151,3 +148,7 @@ func _on_extract_project_name_check_box_pressed():
 
 func _on_file_dialog_file_selected(path):
 	ProcessSelectedProject(path)
+
+func _on_godot_version_option_button_item_selected(index):
+	_godotVersionOptionButton.text = ""
+	_godotVersionOptionButton.text = _godotVersionOptionButton.select(index)

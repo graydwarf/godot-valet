@@ -9,6 +9,6 @@ signal ProjectItemSelected
 signal ProjectSaved
 
 # Godot Version Management
-signal NewGodotVersionAdded
+signal GodotVersionsChanged
 signal GodotVersionItemClicked
 signal GodotVersionManagerClosing

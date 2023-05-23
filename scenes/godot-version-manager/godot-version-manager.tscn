@@ -64,18 +64,22 @@ layout_mode = 2
 size_flags_horizontal = 8
 
 [node name="NewVersionButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "New Version"
 
 [node name="EditButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "Edit Version"
 
 [node name="RemoveButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "Remove Version"
 
 [node name="CloseButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "Close"
 
@@ -85,8 +89,13 @@ size = Vector2i(600, 135)
 dialog_text = " Are you sure you want to delete this Godot Version configuration?"
 dialog_autowrap = true
 
+[node name="DeleteUsedVersionConfirmationDialog" type="ConfirmationDialog" parent="."]
+position = Vector2i(300, 150)
+dialog_text = "One or more projects are using this Godot Version! Are you sure you want to remove it? This won't cause any immediate problems but you'll need to update any projects which reference this version to another in order for them to export, publish and launch correctly."
+
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/NewVersionButton" to="." method="_on_new_project_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/EditButton" to="." method="_on_edit_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RemoveButton" to="." method="_on_remove_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/CloseButton" to="." method="_on_close_button_pressed"]
 [connection signal="confirmed" from="DeleteConfirmationDialog" to="." method="_on_confirmation_dialog_confirmed"]
+[connection signal="confirmed" from="DeleteUsedVersionConfirmationDialog" to="." method="_on_delete_used_version_confirmation_dialog_confirmed"]

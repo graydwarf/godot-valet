@@ -178,9 +178,9 @@ func InitSignals():
 	Signals.connect("ProjectItemSelected", ProjectItemSelected)
 	Signals.connect("ProjectSaved", ProjectSaved)
 	Signals.connect("GodotVersionManagerClosing", GodotVersionManagerClosing)
-	Signals.connect("NewGodotVersionAdded", NewGodotVersionAdded)
+	Signals.connect("GodotVersionsChanged", GodotVersionsChanged)
 
-func NewGodotVersionAdded():
+func GodotVersionsChanged():
 	ReloadProjectManager()
 	
 func GodotVersionManagerClosing():
@@ -192,7 +192,6 @@ func ReloadProjectManager():
 	
 func ProjectSaved():
 	ReloadProjectManager()
-
 
 func ClearProjectContainer():
 	for child in _projectItemContainer.get_children():
@@ -287,9 +286,25 @@ func OpenSetting():
 	add_child(settings)
 
 func CreateEditProjectDialog():
-	return load("res://scenes/new-project-dialog/edit-project-dialog.tscn").instantiate()
+	return load("res://scenes/edit-project-dialog/edit-project-dialog.tscn").instantiate()
 
+func GodotVersionCreatedCheck():
+	var allResourceFiles = Files.GetFilesFromPath("user://godot-version-items")
+	for resourceFile in allResourceFiles:
+		if !resourceFile.ends_with(".cfg"):
+			continue
+		
+		# Found at least one version.
+		return true
+	
+	# No Godot Version items have been created yet.
+	return false
+			
 func CreateNewProject():
+	if !GodotVersionCreatedCheck():
+		OS.alert("Please setup a Godot Version before adding new projects. See 'Settings'.")
+		return
+		
 	var editProjectDialog = CreateEditProjectDialog()
 	add_child(editProjectDialog)
 	

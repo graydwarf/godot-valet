@@ -1,10 +1,6 @@
-[gd_scene load_steps=6 format=3 uid="uid://1nle1yb614lw"]
+[gd_scene load_steps=2 format=3 uid="uid://chfs468nnvicn"]
 
-[ext_resource type="Script" path="res://scenes/new-project-dialog/edit-project-dialog.gd" id="1_q75fr"]
-[ext_resource type="Texture2D" uid="uid://rtrktu6lgddq" path="res://assets/select-folder-dialog.png" id="2_8lut8"]
-[ext_resource type="Texture2D" uid="uid://bjien5r58t8it" path="res://assets/select-folder-dialog-hover-button.png" id="3_400an"]
-[ext_resource type="Texture2D" uid="uid://dupqnev8b73sc" path="res://assets/open-folder.png" id="4_vvamd"]
-[ext_resource type="Texture2D" uid="uid://bynyo67m7t0pr" path="res://assets/open-folder-pressed.png" id="5_hfl0x"]
+[ext_resource type="Script" path="res://scenes/edit-project-dialog/edit-project-dialog.gd" id="1_xd7bt"]
 
 [node name="EditProjectDialog" type="ColorRect"]
 custom_minimum_size = Vector2(800, 150)
@@ -16,7 +12,7 @@ grow_vertical = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 color = Color(0.447059, 0.447059, 0.447059, 1)
-script = ExtResource("1_q75fr")
+script = ExtResource("1_xd7bt")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 1
@@ -58,21 +54,15 @@ size_flags_horizontal = 2
 size_flags_vertical = 0
 tooltip_text = "Path to the project folder."
 
-[node name="SelectProjectFolderButton" type="TextureButton" parent="VBoxContainer/ProjectPathHBoxContainer"]
+[node name="SelectProjectFolderButton2" type="Button" parent="VBoxContainer/ProjectPathHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
-size_flags_horizontal = 2
-tooltip_text = "Select Project Folder"
-texture_normal = ExtResource("2_8lut8")
-texture_pressed = ExtResource("3_400an")
-texture_hover = ExtResource("3_400an")
+text = "Select Folder"
 
-[node name="OpenProjectFolderButton" type="TextureButton" parent="VBoxContainer/ProjectPathHBoxContainer"]
+[node name="OpenProjectFolderButton2" type="Button" parent="VBoxContainer/ProjectPathHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
-size_flags_horizontal = 2
-tooltip_text = "Open Project Folder"
-texture_normal = ExtResource("4_vvamd")
-texture_pressed = ExtResource("5_hfl0x")
-texture_hover = ExtResource("5_hfl0x")
+text = "Open Folder"
 
 [node name="ProjectNameHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2
@@ -126,6 +116,7 @@ text = "Extract Project Name"
 
 [node name="MarginContainer" type="MarginContainer" parent="VBoxContainer"]
 layout_mode = 2
+theme_override_constants/margin_left = 70
 theme_override_constants/margin_bottom = 20
 
 [node name="ButtonHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer"]
@@ -133,12 +124,12 @@ layout_mode = 2
 alignment = 1
 
 [node name="CancelButton" type="Button" parent="VBoxContainer/MarginContainer/ButtonHBoxContainer"]
-custom_minimum_size = Vector2(125, 0)
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "CANCEL"
 
 [node name="SaveButton" type="Button" parent="VBoxContainer/MarginContainer/ButtonHBoxContainer"]
-custom_minimum_size = Vector2(125, 0)
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "SAVE"
 
@@ -151,7 +142,8 @@ file_mode = 0
 access = 2
 filters = PackedStringArray("*.godot")
 
-[connection signal="pressed" from="VBoxContainer/ProjectPathHBoxContainer/SelectProjectFolderButton" to="." method="_on_select_project_folder_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/ProjectPathHBoxContainer/SelectProjectFolderButton2" to="." method="_on_select_project_folder_button_pressed"]
+[connection signal="item_selected" from="VBoxContainer/GodotVersionHBoxContainer/GodotVersionOptionButton" to="." method="_on_godot_version_option_button_item_selected"]
 [connection signal="pressed" from="VBoxContainer/OptionsHBoxContainer/ExtractProjectNameCheckBox" to="." method="_on_extract_project_name_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer/ButtonHBoxContainer/CancelButton" to="." method="_on_cancel_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer/ButtonHBoxContainer/SaveButton" to="." method="_on_save_button_pressed"]

@@ -11,7 +11,7 @@ func _ready():
 	
 func InitSignals():
 	Signals.connect("GodotVersionItemClicked", GodotVersionItemClicked)
-	Signals.connect("NewGodotVersionAdded", NewGodotVersionAdded)
+	Signals.connect("GodotVersionsChanged", GodotVersionsChanged)
 
 func GodotVersionItemClicked(godotVersionItem):
 	_selectedGodotVersionItem = godotVersionItem
@@ -20,7 +20,7 @@ func ClearVersionItems():
 	for child in _godotVersionItemContainer.get_children():
 		child.queue_free()
 		
-func NewGodotVersionAdded():
+func GodotVersionsChanged():
 	ClearVersionItems()
 	LoadGodotVersionItems()
 
@@ -30,10 +30,33 @@ func RemoveSelectedVersionItem():
 	
 	$DeleteConfirmationDialog.show()
 
+func IsGodotVersionInUse():
+	var projectsUsingThisGodotVersion = 0
+	var allResourceFiles = Files.GetFilesFromPath("user://" + Game.GetProjectItemFolder())
+	for resourceFile in allResourceFiles:
+		if !resourceFile.ends_with(".cfg"):
+			continue
+
+		var projectId = resourceFile.trim_suffix(".cfg")
+		var config = ConfigFile.new()
+		var err = config.load("user://" + Game.GetProjectItemFolder() + "/" + projectId + ".cfg")
+		if err == OK:
+			var godotVersionId = config.get_value("ProjectSettings", "godot_version_id", "")
+			if godotVersionId == _selectedGodotVersionItem.GetGodotVersionId():
+				projectsUsingThisGodotVersion += 1
+
+	# No existing projects are using this Godot Version
+	return true
+			
 func DeleteGodotVersionConfiguration():
+	if IsGodotVersionInUse():
+		$DeleteGodotVersionConfiguration.show()
+
+func DeleteGodotVersion():
 	_godotVersionItemContainer.remove_child(_selectedGodotVersionItem)
 	DirAccess.remove_absolute("user://" + Game.GetGodotVersionItemFolder() + "/" + _selectedGodotVersionItem.GetGodotVersionId() + ".cfg")
 	_selectedGodotVersionItem = null
+	Signals.emit_signal("GodotVersionsChanged")
 
 func DisplayDeleteProjectConfirmationDialog():
 	_deleteConfirmationDialog.show()
@@ -86,6 +109,8 @@ func _on_remove_button_pressed():
 func _on_confirmation_dialog_confirmed():
 	DeleteGodotVersionConfiguration()
 
-
 func _on_change_project_button_pressed():
 	pass # Replace with function body.
+
+func _on_delete_used_version_confirmation_dialog_confirmed():
+	DeleteGodotVersion()

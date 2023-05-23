@@ -60,7 +60,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
 tooltip_text = "Path to the appropriate godot version you want to build/export with."
-text = "New Project"
 editable = false
 caret_blink = true
 caret_blink_interval = 0.5
@@ -80,7 +79,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
 tooltip_text = "Path to the appropriate godot version you want to build/export with."
-text = "New Project"
 editable = false
 caret_blink = true
 caret_blink_interval = 0.5
@@ -150,7 +148,7 @@ custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-tooltip_text = "Path to the project folder."
+tooltip_text = "Path to where you want to export to."
 caret_blink = true
 caret_blink_interval = 0.5
 
@@ -168,7 +166,7 @@ custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-tooltip_text = "The version can be whatever you want as long as long as it results in a valid export path. Needs to be non empty."
+tooltip_text = "The version can be whatever you want as long as long as it results in a valid export path. Check 'Export Preview' to validate the path. "
 text = "v0.0.1"
 caret_blink = true
 caret_blink_interval = 0.5
@@ -208,7 +206,7 @@ custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-tooltip_text = "Zip or not and optionally cleanup the files after copying them to the .zip package."
+tooltip_text = "Optionally: Cleanup generated files after generating the Zip package. Writes over duplicate files."
 item_count = 3
 popup/item_0/text = "No Zip"
 popup/item_0/id = 0
@@ -231,7 +229,7 @@ custom_minimum_size = Vector2(500, 32)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-tooltip_text = "Must be valid file name. Recommend no spaces."
+tooltip_text = "The name of the zip file that gets uploaded to itch.io. Must be valid file name. "
 
 [node name="ItchProjectNameHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
@@ -247,6 +245,7 @@ custom_minimum_size = Vector2(500, 32)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
+tooltip_text = "The project name we'll upload to on itch as seen at the end of the projects itch url."
 
 [node name="ItchProfileNameHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
@@ -280,6 +279,7 @@ horizontal_alignment = 2
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 size_flags_horizontal = 3
+tooltip_text = "Shows a preview of the export commands that will run when the Export button is pressed."
 editable = false
 
 [node name="ButlerCommandHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
@@ -296,6 +296,7 @@ horizontal_alignment = 2
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 size_flags_horizontal = 3
+tooltip_text = "Shows a preview of the commands that will run with butler to upload your project exports."
 editable = false
 
 [node name="OutputHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
@@ -312,6 +313,7 @@ horizontal_alignment = 2
 [node name="OutputTabContainer" type="TabContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/OutputHBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+tooltip_text = "Will show output for exports and butler."
 
 [node name="ErrorCountVBoxContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
@@ -332,6 +334,7 @@ text = "ERRORS: "
 
 [node name="ErrorCountLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer"]
 layout_mode = 2
+tooltip_text = "Shows the total number of errors found across all outputs."
 text = "0"
 
 [node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer"]
@@ -347,6 +350,7 @@ text = "WARNINGS: "
 
 [node name="WarningsCountLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer/MarginContainer/HBoxContainer"]
 layout_mode = 2
+tooltip_text = "Shows the total number of warnings found across all outputs."
 text = "0"
 
 [node name="VBoxContainer2" type="VBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer"]
@@ -361,6 +365,7 @@ layout_mode = 2
 [node name="OpenProjectPathFolder" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
 custom_minimum_size = Vector2(0, 31)
 layout_mode = 2
+tooltip_text = "Opens folder to the specified project path."
 text = "Open Folder"
 
 [node name="InvisibleButton2" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
@@ -376,6 +381,7 @@ layout_mode = 2
 [node name="SelectExportPathButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
 custom_minimum_size = Vector2(0, 31)
 layout_mode = 2
+tooltip_text = "Select the folder to export to. Recommend 'exports' in your project directory. Add to.gitignore file."
 text = "Select Folder"
 
 [node name="InvisibleButton4" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
@@ -411,11 +417,13 @@ layout_mode = 2
 [node name="ExportProject" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
 custom_minimum_size = Vector2(0, 31)
 layout_mode = 2
-text = "Export Project"
+tooltip_text = "Exports all listed projects to the specified locations."
+text = "Export"
 
 [node name="OpenProjectFolder" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
 custom_minimum_size = Vector2(0, 31)
 layout_mode = 2
+tooltip_text = "Opens to the version directory for the specified export path. If no paths are listed, nothing will happen."
 text = "Open Folder"
 
 [node name="InvisibleButton9" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
@@ -426,6 +434,7 @@ layout_mode = 2
 [node name="PublishButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
 custom_minimum_size = Vector2(0, 31)
 layout_mode = 2
+tooltip_text = "Executes the listed commands one after the other with butler to upload your project."
 text = "Publish"
 
 [node name="InvisibleButton11" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
@@ -446,11 +455,13 @@ size_flags_vertical = 3
 
 [node name="SaveButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
 layout_mode = 2
+tooltip_text = "Saves the settings for this view."
 text = "Save Settings"
 
 [node name="CloseButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
+tooltip_text = "Closes the Release Manager view."
 text = "Close"
 
 [node name="SaveChangesConfirmationDialog" type="ConfirmationDialog" parent="."]
@@ -471,6 +482,7 @@ access = 2
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/WindowsCheckBox" to="." method="_on_windows_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/LinuxCheckBox" to="." method="_on_linux_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/WebCheckBox" to="." method="_on_web_check_box_pressed"]
+[connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer2/ExportPathLineEdit" to="." method="_on_export_path_line_edit_text_changed"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectVersionHBoxContainer/ProjectVersionLineEdit" to="." method="_on_project_version_line_edit_text_changed"]
 [connection signal="item_selected" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportTypeHBoxContainer/ExportTypeOptionButton" to="." method="_on_export_type_option_button_item_selected"]
 [connection signal="item_selected" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/PackageTypeHBoxContainer/PackageTypeOptionButton" to="." method="_on_package_type_option_button_item_selected"]
