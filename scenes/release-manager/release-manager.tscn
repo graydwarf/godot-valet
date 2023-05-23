@@ -298,6 +298,21 @@ layout_mode = 2
 size_flags_horizontal = 3
 editable = false
 
+[node name="OutputHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="OutputLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/OutputHBoxContainer"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_vertical = 0
+text = "Output:"
+horizontal_alignment = 2
+
+[node name="OutputTabContainer" type="TabContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/OutputHBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
 [node name="ErrorCountVBoxContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 
@@ -333,27 +348,6 @@ text = "WARNINGS: "
 [node name="WarningsCountLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer/MarginContainer/HBoxContainer"]
 layout_mode = 2
 text = "0"
-
-[node name="OutputVBoxContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/OutputVBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="OutputLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/OutputVBoxContainer/HBoxContainer"]
-custom_minimum_size = Vector2(150, 0)
-layout_mode = 2
-size_flags_vertical = 0
-text = "Output:"
-horizontal_alignment = 2
-
-[node name="OutputTextEdit" type="TextEdit" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/OutputVBoxContainer/HBoxContainer"]
-custom_minimum_size = Vector2(0, 65)
-layout_mode = 2
-size_flags_horizontal = 3
-wrap_mode = 1
 
 [node name="VBoxContainer2" type="VBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
@@ -448,6 +442,7 @@ layout_mode = 2
 self_modulate = Color(1, 1, 1, 0)
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
+size_flags_vertical = 3
 
 [node name="SaveButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
 layout_mode = 2

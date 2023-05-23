@@ -11,7 +11,6 @@ extends ColorRect
 @onready var _exportPreviewTextEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer/ExportPreviewTextEdit
 @onready var _itchProfileNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProfileNameHBoxContainer/ItchProfileNameLineEdit
 @onready var _itchProjectNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProjectNameHBoxContainer/ItchProjectNameLineEdit
-@onready var _outputTextEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/OutputVBoxContainer/HBoxContainer/OutputTextEdit
 @onready var _errorCountLabel = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer/ErrorCountLabel
 @onready var _warningCountLabel = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer/MarginContainer/HBoxContainer/WarningsCountLabel
 @onready var _packageTypeOptionButton = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/PackageTypeHBoxContainer/PackageTypeOptionButton
@@ -19,6 +18,7 @@ extends ColorRect
 @onready var _exportFileNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportFileNameHBoxContainer/ExportFileNameLineEdit
 @onready var _saveChangesConfirmationDialog = $SaveChangesConfirmationDialog
 @onready var _projectPathLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectPathHBoxContainer2/ProjectPathLineEdit
+@onready var _outputTabContainer = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/OutputHBoxContainer/OutputTabContainer
 
 var _busyBackground
 var _selectedProjectItem = null
@@ -122,11 +122,15 @@ func ExportPreset(presetFullName):
 	OS.execute(_godotPathLineEdit.text, args, output, readStdeer, openConsole) 
 
 	var groomedOutput = str(output).replace("\\r\\n", "\n")
-	call_deferred("SetOutputText", groomedOutput)
+	call_deferred("CreateOutputTab", groomedOutput, presetFullName)
 
-func SetOutputText(outputAsStr, outputHeader = "Output"):
-	_outputTextEdit.text += "\n" + outputHeader + "\n"
-	_outputTextEdit.text = outputAsStr
+func CreateOutputTab(outputAsStr, presetFullName = ""):
+	var outputTextEdit = TextEdit.new()
+	outputTextEdit.name = presetFullName
+	_outputTabContainer.add_child(outputTextEdit)
+	outputTextEdit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	outputTextEdit.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	outputTextEdit.text = outputAsStr
 	
 func GetItchReleaseProfileName(presetFullName):
 	var itchPublishType = ""
@@ -142,8 +146,9 @@ func ExportProject():
 	ClearOutput()
 	StartBusyBackground("Exporting...")
 	await get_tree().create_timer(0.5).timeout
-	var thread = Thread.new()
-	thread.start(ExportProjectThread)
+	#var thread = Thread.new()
+	#thread.start(ExportProjectThread)
+	ExportProjectThread()
 
 # Can't debug in here.
 func ExportProjectThread():
@@ -157,7 +162,12 @@ func ExportProjectThread():
 		ExportWithZipWithCleanup()
 	elif _packageTypeOptionButton.text == "No Zip":
 		ExportWithoutZip()
-	
+
+	# Deferring to make sure the _outputTabs/content get added before counting
+	call_deferred("CompleteExport")
+
+
+func CompleteExport():
 	CountErrors()
 	CountWarnings()
 	ClearBusyBackground()
@@ -237,9 +247,13 @@ func Cleanup(presetFullName, listOfExistingFilesToLeaveAlone):
 	var groomedExportPath = _exportPathLineEdit.text.replace("/", "\\")
 	var exportPath = groomedExportPath + "\\" + _projectVersionLineEdit.text + "\\" + releaseProfileName + "\\" + _exportTypeOptionButton.text
 	var isSendingToRecyle = true
-	var errors = Files.DeleteAllFilesAndFolders(exportPath, isSendingToRecyle, listOfExistingFilesToLeaveAlone)
-	for error in errors:
-		_outputTextEdit.text += "\\n ERROR: Cleanup - Code: #" + str(error)
+	var listOfErrors = Files.DeleteAllFilesAndFolders(exportPath, isSendingToRecyle, listOfExistingFilesToLeaveAlone)
+	var errors = ""
+	for error in listOfErrors:
+		errors += error + "\n"
+	
+	if errors != "":
+		OS.alert(errors)
 	
 func RenameHomePageToIndex(presetFullName):
 	var releaseProfileName = GetItchReleaseProfileName(presetFullName)
@@ -278,7 +292,10 @@ func CreateZipFile(zipFilePath, listOfFileNames : Array, listOfFilePaths : Array
 	return OK
 
 func CountErrors():
-	var output : String = _outputTextEdit.text
+	var output = ""
+	for child in _outputTabContainer.get_children():
+		output += child.text
+		
 	var errorCount = output.count("ERROR")
 	_errorCountLabel.text = str(errorCount)
 	if errorCount == 0:
@@ -287,7 +304,10 @@ func CountErrors():
 		_errorCountLabel.self_modulate = Color(1.0, 0.0, 0.0, 1.0)
 
 func CountWarnings():
-	var output : String = _outputTextEdit.text
+	var output = ""
+	for child in _outputTabContainer.get_children():
+		output += child.text
+		
 	var warningCount = output.count("WARNING")
 	_warningCountLabel.text = str(warningCount)
 	if warningCount == 0:
@@ -447,14 +467,15 @@ func PublishToItchUsingButler():
 	butlerOutput = ""
 	for result in results:
 		butlerOutput += result + "\n"
-	call_deferred("WriteButlerOutput", butlerOutput)
+	butlerOutput = butlerOutput.replace("\\r\\n", "\n")
+	call_deferred("CreateOutputTab", butlerOutput, "Butler")
 	
 	if _isDirty:
 		_isClosingReleaseManager = false
 		ShowSaveChangesDialog()
 	
-func WriteButlerOutput(value):
-	_outputTextEdit.text += "Output: " + value.replace("\\r\\n", "\n")
+#func WriteButlerOutput(value):
+#	_outputTextEdit.text += "Output: " + value.replace("\\r\\n", "\n")
 	
 func OpenRootExportPath():
 	var rootExportPath = _exportPathLineEdit.text + "\\" + _projectVersionLineEdit.text
@@ -471,7 +492,8 @@ func OpenProjectPathFolder():
 		OS.alert("Unable to open project folder. Did it get moved or renamed?")
 		
 func ClearOutput():
-	_outputTextEdit.text = ""
+	for child in _outputTabContainer.get_children():
+		child.queue_free()
 
 func DisplayOutput(output):
 	var groomedOutput = str(output).replace("\\r\\n", "\n")
@@ -633,7 +655,7 @@ func _on_save_changes_confirmation_dialog_canceled():
 func _on_publish_button_pressed():
 	PublishToItchUsingButler()
 
-func _on_export_file_name_line_edit_text_changed(new_text):
+func _on_export_file_name_line_edit_text_changed(_new_text):
 	GenerateExportPreview()
 	GenerateButlerPreview()
 	_isDirty = true
