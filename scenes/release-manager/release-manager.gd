@@ -1,138 +1,69 @@
 extends ColorRect
 
-@onready var _projectNameLineEdit = $VBoxContainer/MarginContainer2/VBoxContainer/ProjectNameHBoxContainer/ProjectNameLineEdit
-@onready var _projectPathLineEdit = $VBoxContainer/MarginContainer2/VBoxContainer/ProjectPathHBoxContainer/ProjectPathLineEdit
-@onready var _godotPathLineEdit = $VBoxContainer/MarginContainer2/VBoxContainer/GodotPathHBoxContainer/ExportPathLineEdit
-@onready var _projectVersionLineEdit = $VBoxContainer/MarginContainer2/VBoxContainer/ProjectVersionHBoxContainer/ProjectVersionLineEdit
-@onready var _windowsCheckBox = $VBoxContainer/MarginContainer2/VBoxContainer/ExportPresetHBoxContainer/WindowsCheckBox
-@onready var _linuxCheckBox = $VBoxContainer/MarginContainer2/VBoxContainer/ExportPresetHBoxContainer/LinuxCheckBox
-@onready var _webCheckBox = $VBoxContainer/MarginContainer2/VBoxContainer/ExportPresetHBoxContainer/WebCheckBox
-@onready var _exportTypeOptionButton = $VBoxContainer/MarginContainer2/VBoxContainer/ExportTypeHBoxContainer/ExportTypeOptionButton
-@onready var _exportPreviewTextEdit = $VBoxContainer/MarginContainer2/VBoxContainer/ExportPathHBoxContainer/ExportPreviewTextEdit
-@onready var _itchProfileNameLineEdit = $VBoxContainer/MarginContainer2/VBoxContainer/ItchProjectNameHBoxContainer/ItchProjectNameLineEdit
-@onready var _outputTextEdit = $VBoxContainer/MarginContainer2/VBoxContainer/OutputVBoxContainer/HBoxContainer/OutputTextEdit
-@onready var _errorCountLabel = $VBoxContainer/MarginContainer2/VBoxContainer/IssuesHBoxContainer/ErrorCountLabel
-@onready var _warningCountLabel = $VBoxContainer/MarginContainer2/VBoxContainer/IssuesHBoxContainer/MarginContainer/HBoxContainer/WarningsCountLabel
-@onready var _packageTypeOptionButton = $VBoxContainer/MarginContainer2/VBoxContainer/PackageTypeHBoxContainer/PackageTypeOptionButton
-@onready var _butlerPreviewTextEdit = $VBoxContainer/MarginContainer2/VBoxContainer/ButlerCommandHBoxContainer/ButlerPreviewTextEdit
+@onready var _projectNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectNameHBoxContainer/ProjectNameLineEdit
+@onready var _exportPathLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer2/ExportPathLineEdit
+@onready var _godotPathLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/GodotPathHBoxContainer/ExportPathLineEdit
+@onready var _projectVersionLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectVersionHBoxContainer/ProjectVersionLineEdit
+@onready var _windowsCheckBox = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/WindowsCheckBox
+@onready var _linuxCheckBox = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/LinuxCheckBox
+@onready var _webCheckBox = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/WebCheckBox
+@onready var _exportTypeOptionButton = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportTypeHBoxContainer/ExportTypeOptionButton
+@onready var _exportPreviewTextEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer/ExportPreviewTextEdit
+@onready var _itchProfileNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProfileNameHBoxContainer/ItchProfileNameLineEdit
+@onready var _itchProjectNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProjectNameHBoxContainer/ItchProjectNameLineEdit
+@onready var _outputTextEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/OutputVBoxContainer/HBoxContainer/OutputTextEdit
+@onready var _errorCountLabel = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer/ErrorCountLabel
+@onready var _warningCountLabel = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer/MarginContainer/HBoxContainer/WarningsCountLabel
+@onready var _packageTypeOptionButton = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/PackageTypeHBoxContainer/PackageTypeOptionButton
+@onready var _butlerPreviewTextEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ButlerCommandHBoxContainer/ButlerPreviewTextEdit
+@onready var _exportFileNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportFileNameHBoxContainer/ExportFileNameLineEdit
+@onready var _saveChangesConfirmationDialog = $SaveChangesConfirmationDialog
+@onready var _projectPathLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectPathHBoxContainer2/ProjectPathLineEdit
 
-@onready var _deleteConfirmationDialog = $ConfirmationDialog
-
-var _selectedProjectName = ""
 var _busyBackground
 var _selectedProjectItem = null
+var _isDirty = false
+var _isClosingReleaseManager = false
 
 func _ready():
 	InitSignals()
 	color = Game.GetDefaultBackgroundColor()
 
 func InitSignals():
-	#Signals.connect("ProjectRenamed", ProjectRenamed)
 	pass
 
 func ConfigureReleaseManagementForm(selectedProjectItem):
 	_selectedProjectItem = selectedProjectItem
+	_projectPathLineEdit.text = selectedProjectItem.GetFormattedProjectPath()
 	_projectNameLineEdit.text = selectedProjectItem.GetProjectName()
 	_godotPathLineEdit.text = selectedProjectItem.GetGodotPath(selectedProjectItem.GetGodotVersionId())
-	_projectPathLineEdit.text = selectedProjectItem.GetProjectPath()
+	_windowsCheckBox.button_pressed = selectedProjectItem.GetWindowsChecked()
+	_linuxCheckBox.button_pressed = selectedProjectItem.GetLinuxChecked()
+	_webCheckBox.button_pressed = selectedProjectItem.GetWebChecked()
+	_exportPathLineEdit.text = selectedProjectItem.GetExportPath()
+	_exportFileNameLineEdit.text = selectedProjectItem.GetExportFileName()
+	_projectVersionLineEdit.text = selectedProjectItem.GetProjectVersion()
+	_exportTypeOptionButton.text = selectedProjectItem.GetExportType()
+	_packageTypeOptionButton.text = selectedProjectItem.GetPackageType()
+	_itchProjectNameLineEdit.text = selectedProjectItem.GetItchProjectName()
+	_itchProfileNameLineEdit.text = selectedProjectItem.GetItchProfileName()
+	GenerateExportPreview()
+	GenerateButlerPreview()
 	
-# Don't fields that are likely to be the same as other projects.
-# godot path, itch name
-func ResetFields():
-	_projectPathLineEdit.text = ""
-	_projectVersionLineEdit.text = "v0.0.1"
-	_windowsCheckBox.button_pressed = true
-	_linuxCheckBox.button_pressed = true
-	_webCheckBox.button_pressed = true
-	_exportTypeOptionButton.text = "Release"
-	_packageTypeOptionButton.text = "Zip"
-	_exportPreviewTextEdit.text = ""
-	_butlerPreviewTextEdit.text = ""
-	_itchProfileNameLineEdit.text = ""
-
-#func ProjectRenamed(projectName):
-#	if FileAccess.file_exists("user://" + _loadProjectOptionButton.text + ".cfg"):
-#		var error = DirAccess.rename_absolute("user://" + _loadProjectOptionButton.text + ".cfg", "user://" + projectName + ".cfg")
-#		if error != OK:
-#			OS.alert("Error renaming project")
-#	else:
-#		OS.alert("Project does not exist.")
-		
-#	_loadProjectOptionButton.clear()
-	
-	#LoadConfigSettings(projectName)
-
 func SaveSettings():
-	_selectedProjectItem.SetItchProjectName(_itchProfileNameLineEdit.text)
-	_selectedProjectItem.SetProjectVersion(_projectVersionLineEdit.text)
 	_selectedProjectItem.SetWindowsChecked(_windowsCheckBox.button_pressed)
 	_selectedProjectItem.SetLinuxChecked(_linuxCheckBox.button_pressed)
 	_selectedProjectItem.SetWebChecked(_webCheckBox.button_pressed)
+	_selectedProjectItem.SetExportPath(_exportPathLineEdit.text)
+	_selectedProjectItem.SetProjectVersion(_projectVersionLineEdit.text)
+	_selectedProjectItem.SetExportFileName(_exportFileNameLineEdit.text)
+	_selectedProjectItem.SetItchProjectName(_itchProfileNameLineEdit.text)
 	_selectedProjectItem.SetExportType(_exportTypeOptionButton.text)
 	_selectedProjectItem.SetPackageType(_packageTypeOptionButton.text)
+	_selectedProjectItem.SetItchProjectName(_itchProjectNameLineEdit.text)
 	_selectedProjectItem.SetItchProfileName(_itchProfileNameLineEdit.text)
 	_selectedProjectItem.SaveProjectItem()
 	
-	# Need to redo for refactor.
-	#CreateNewSettingsFile(_loadProjectOptionButton.text)
-	#SaveValetSettings()
-	pass
-	
-func CreateNewReleaseManagementSettingsFile(projectName):
-	var config = ConfigFile.new()
-	
-	# Temp while we refactor
-	var projectId = -1
-	
-	config.set_value("ProjectSettings", "project_id", projectId)
-	config.set_value("ProjectSettings", "project_version", _projectVersionLineEdit.text)
-	config.set_value("ProjectSettings", "windows_preset_checked", _windowsCheckBox.button_pressed)
-	config.set_value("ProjectSettings", "linux_preset_checked", _linuxCheckBox.button_pressed)
-	config.set_value("ProjectSettings", "web_preset_checked", _webCheckBox.button_pressed)
-	config.set_value("ProjectSettings", "export_type", _exportTypeOptionButton.text)
-	config.set_value("ProjectSettings", "package_type", _packageTypeOptionButton.text)
-	config.set_value("ProjectSettings", "itch_profile_name", _itchProfileNameLineEdit.text)
-	
-
-	# Save the config file.
-	var err = config.save("user://" + projectName + ".cfg")
-
-	if err != OK:
-		_outputTextEdit.text = ("An error occurred while saving the config file.")
-
-#func FindProjectIndexByName(projectName):
-#	if projectName == "":
-#		return -1
-#
-#	for itemIndex in _loadProjectOptionButton.item_count:
-#		var itemName = _loadProjectOptionButton.get_item_text(itemIndex)
-#		if itemName == projectName:
-#			return itemIndex
-#
-#func LoadProjectByIndex(index):
-#	if _loadProjectOptionButton.item_count == 0:
-#		return
-#
-#	var projectName = _loadProjectOptionButton.get_item_text(index)
-#	var config = ConfigFile.new()
-#	var err = config.load("user://" + projectName + ".cfg")
-#	if err == OK:
-#		_godotPathLineEdit.text = config.get_value("ProjectSettings", "godot_path", "")
-#		_projectPathLineEdit.text = config.get_value("ProjectSettings", "project_path", "")
-#		_projectVersionLineEdit.text = config.get_value("ProjectSettings", "project_version", "v0.0.1")
-#		_windowsCheckBox.button_pressed = config.get_value("ProjectSettings", "windows_preset_checked", true)
-#		_linuxCheckBox.button_pressed = config.get_value("ProjectSettings", "linux_preset_checked", true)
-#		_webCheckBox.button_pressed = config.get_value("ProjectSettings", "web_preset_checked", true)
-#		_packageTypeOptionButton.text = config.get_value("ProjectSettings", "package_type", "Zip")
-#		_exportTypeOptionButton.text = config.get_value("ProjectSettings", "export_type", "Release")
-#		_itchProfileNameLineEdit.text = config.get_value("ProjectSettings", "itch_profile_name", "")
-#	else:
-#		OS.alert("Failed to load settings for: " + projectName)
-#
-#	# save project as selected
-	
-
-
 func GenerateExportPreview():
 	_exportPreviewTextEdit.text = GetExportPreview()
 
@@ -177,18 +108,18 @@ func ExportPreset(presetFullName):
 	var exportOption = "--export-" + exportType
 
 	var releaseProfileName = GetItchReleaseProfileName(presetFullName)
-
-	var exportPath = _projectPathLineEdit.text + "\\exports\\" + _projectVersionLineEdit.text + "\\" + releaseProfileName + "\\" + exportType
+	
+	var exportPath = GetFormattedExportPath() + "\\" + _projectVersionLineEdit.text + "\\" + releaseProfileName + "\\" + exportType
 
 	if !DirAccess.dir_exists_absolute(exportPath):
 		DirAccess.make_dir_recursive_absolute(exportPath)
 
 	var output = []
-	# Waiting for refactors
-	#var args = ['--headless', '"--path "' + _projectPathLineEdit.text, exportOption, presetFullName, exportPath + "\\" + _loadProjectOptionButton.text + extensionType]
-	#var readStdeer = true
-	#var openConsole = false
-	#OS.execute(_godotPathLineEdit.text, args, output, readStdeer, openConsole) 
+	
+	var args = ['--headless', '"--path "' + _projectPathLineEdit.text, exportOption, presetFullName, exportPath + "\\" + _exportFileNameLineEdit.text + extensionType]
+	var readStdeer = true
+	var openConsole = false
+	OS.execute(_godotPathLineEdit.text, args, output, readStdeer, openConsole) 
 
 	var groomedOutput = str(output).replace("\\r\\n", "\n")
 	call_deferred("SetOutputText", groomedOutput)
@@ -230,7 +161,9 @@ func ExportProjectThread():
 	CountErrors()
 	CountWarnings()
 	ClearBusyBackground()
-	#$Timer.start()
+	if _isDirty:
+		_isClosingReleaseManager = false
+		ShowSaveChangesDialog()
 	
 func StartBusyBackground(busyDoingWhat):
 	_busyBackground = load("res://scenes/busy-background-blocker/busy_background_blocker_color_rect.tscn").instantiate()
@@ -241,66 +174,68 @@ func ClearBusyBackground():
 	_busyBackground.queue_free()
 	
 func ExportWithoutZip():
-	# waiting for refactors
-	pass
-#	if _windowsCheckBox.button_pressed:
-#		var presetFullName = "Windows Desktop"
-#		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
-#		listOfExistingFilesToLeaveAlone.append(_loadProjectOptionButton.text + ".zip")
-#		ExportPreset(presetFullName)
-#
-#	if _linuxCheckBox.button_pressed:
-#		var presetFullName = "Linux/X11"
-#		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
-#		listOfExistingFilesToLeaveAlone.append(_loadProjectOptionButton.text + ".zip")
-#		ExportPreset(presetFullName)
-#
-#	if _webCheckBox.button_pressed:
-#		var presetFullName = "Web"
-#		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
-#		listOfExistingFilesToLeaveAlone.append(_loadProjectOptionButton.text + ".zip")
-#		ExportPreset(presetFullName)
-#		RenameHomePageToIndex(presetFullName)
+	if _windowsCheckBox.button_pressed:
+		var presetFullName = "Windows Desktop"
+		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
+		listOfExistingFilesToLeaveAlone.append(_exportFileNameLineEdit.text + ".zip")
+		ExportPreset(presetFullName)
+
+	if _linuxCheckBox.button_pressed:
+		var presetFullName = "Linux/X11"
+		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
+		listOfExistingFilesToLeaveAlone.append(_exportFileNameLineEdit.text + ".zip")
+		ExportPreset(presetFullName)
+
+	if _webCheckBox.button_pressed:
+		var presetFullName = "Web"
+		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
+		listOfExistingFilesToLeaveAlone.append(_exportFileNameLineEdit.text + ".zip")
+		ExportPreset(presetFullName)
+		RenameHomePageToIndex(presetFullName)
 
 func ExportWithZipWithCleanup():
 	ExportWithZip(true)
 	
 func ExportWithZip(isCleaningUp = false):
-	# Waiting for refactors
-#	if _windowsCheckBox.button_pressed:
-#		var presetFullName = "Windows Desktop"
-#		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
-#		listOfExistingFilesToLeaveAlone.append(_loadProjectOptionButton.text + ".zip")
-#		ExportPreset(presetFullName)
-#
-#	if _linuxCheckBox.button_pressed:
-#		var presetFullName = "Linux/X11"
-#		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
-#		listOfExistingFilesToLeaveAlone.append(_loadProjectOptionButton.text + ".zip")
-#		ExportPreset(presetFullName)
-#		ZipFiles(presetFullName)
-#		if isCleaningUp:
-#			Cleanup(presetFullName, listOfExistingFilesToLeaveAlone)
-#
-#	if _webCheckBox.button_pressed:
-#		var presetFullName = "Web"
-#		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
-#		listOfExistingFilesToLeaveAlone.append(_loadProjectOptionButton.text + ".zip")
-#		ExportPreset(presetFullName)
-#		RenameHomePageToIndex(presetFullName)
-#		ZipFiles(presetFullName)
-#		if isCleaningUp:
-#			Cleanup(presetFullName, listOfExistingFilesToLeaveAlone)
-	pass
-	
+	if _windowsCheckBox.button_pressed:
+		_busyBackground.SetBusyDoingWhatLabel("Exporting for Windows...")
+		var presetFullName = "Windows Desktop"
+		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
+		listOfExistingFilesToLeaveAlone.append(_exportFileNameLineEdit.text + ".zip")
+		ExportPreset(presetFullName)
+
+	if _linuxCheckBox.button_pressed:
+		_busyBackground.SetBusyDoingWhatLabel("Exporting for Linux...")
+		var presetFullName = "Linux/X11"
+		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
+		listOfExistingFilesToLeaveAlone.append(_exportFileNameLineEdit.text + ".zip")
+		ExportPreset(presetFullName)
+		ZipFiles(presetFullName)
+		if isCleaningUp:
+			_busyBackground.SetBusyDoingWhatLabel("Cleaning " + presetFullName + "...")
+			Cleanup(presetFullName, listOfExistingFilesToLeaveAlone)
+
+	if _webCheckBox.button_pressed:
+		_busyBackground.SetBusyDoingWhatLabel("Exporting for Web...")
+		var presetFullName = "Web"
+		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
+		listOfExistingFilesToLeaveAlone.append(_exportFileNameLineEdit.text + ".zip")
+		ExportPreset(presetFullName)
+		RenameHomePageToIndex(presetFullName)
+		ZipFiles(presetFullName)
+		if isCleaningUp:
+			Cleanup(presetFullName, listOfExistingFilesToLeaveAlone)
+
+# Get any existing files in the export path to ignore
 func GetExistingFiles(presetFullName):
 	var releaseProfileName = GetItchReleaseProfileName(presetFullName)
-	var exportPath = _projectPathLineEdit.text + "\\exports\\" + _projectVersionLineEdit.text + "\\" + releaseProfileName + "\\" + _exportTypeOptionButton.text
+	var exportPath = _exportPathLineEdit.text.replace("/", "\\") + "\\" + _projectVersionLineEdit.text + "\\" + releaseProfileName + "\\" + _exportTypeOptionButton.text
 	return Files.GetFilesFromPath(exportPath)
 
 func Cleanup(presetFullName, listOfExistingFilesToLeaveAlone):
 	var releaseProfileName = GetItchReleaseProfileName(presetFullName)
-	var exportPath = _projectPathLineEdit.text + "\\exports\\" + _projectVersionLineEdit.text + "\\" + releaseProfileName + "\\" + _exportTypeOptionButton.text
+	var groomedExportPath = _exportPathLineEdit.text.replace("/", "\\")
+	var exportPath = groomedExportPath + "\\" + _projectVersionLineEdit.text + "\\" + releaseProfileName + "\\" + _exportTypeOptionButton.text
 	var isSendingToRecyle = true
 	var errors = Files.DeleteAllFilesAndFolders(exportPath, isSendingToRecyle, listOfExistingFilesToLeaveAlone)
 	for error in errors:
@@ -308,21 +243,20 @@ func Cleanup(presetFullName, listOfExistingFilesToLeaveAlone):
 	
 func RenameHomePageToIndex(presetFullName):
 	var releaseProfileName = GetItchReleaseProfileName(presetFullName)
-	var exportPath = _projectPathLineEdit.text + "\\exports\\" + _projectVersionLineEdit.text + "\\" + releaseProfileName + "\\" + _exportTypeOptionButton.text
-	#waiting for refactors
-	#DirAccess.rename_absolute(exportPath + "\\" + _loadProjectOptionButton.text + ".html", exportPath + "\\" + "index.html")
+	var exportPath = _exportPathLineEdit.text + "\\" + _projectVersionLineEdit.text + "\\" + releaseProfileName + "\\" + _exportTypeOptionButton.text
+	DirAccess.rename_absolute(exportPath + "\\" + _exportFileNameLineEdit.text + ".html", exportPath + "\\" + "index.html")
 		
 func ZipFiles(presetFullName):
+	_busyBackground.SetBusyDoingWhatLabel("Zipping for " + presetFullName + "...")
 	var releaseProfileName = GetItchReleaseProfileName(presetFullName)
-	var exportPath = _projectPathLineEdit.text + "\\exports\\" + _projectVersionLineEdit.text + "\\" + releaseProfileName + "\\" + _exportTypeOptionButton.text
+	var exportPath = _exportPathLineEdit.text + "\\" + _projectVersionLineEdit.text + "\\" + releaseProfileName + "\\" + _exportTypeOptionButton.text
 	var listOfFileNames = Files.GetFilesFromPath(exportPath)
 	var listOfFilePaths = []
 	for fileName in listOfFileNames:
 		listOfFilePaths.append(exportPath + "\\" + fileName)
 	
-	#waiting for refactors	
-	#var zipFileName = _loadProjectOptionButton.text + ".zip" 
-	#CreateZipFile(exportPath + "\\" + zipFileName, listOfFileNames, listOfFilePaths)
+	var zipFileName = _exportFileNameLineEdit.text + ".zip" 
+	CreateZipFile(exportPath + "\\" + zipFileName, listOfFileNames, listOfFilePaths)
 	
 func CreateZipFile(zipFilePath, listOfFileNames : Array, listOfFilePaths : Array):
 	var writer := ZIPPacker.new()
@@ -362,20 +296,18 @@ func CountWarnings():
 		_warningCountLabel.self_modulate = Color(1.0, 1.0, 0.0, 1.0)
 
 func GetExportPath(presetType):
-	pass
-	#waiting for refactors
-#	var butlerPreview = ""
-#	if _windowsCheckBox.button_pressed:
-#		butlerPreview += _projectPathLineEdit.text + "\\exports\\" + _projectVersionLineEdit.text + "\\" + presetType + "\\" + _exportTypeOptionButton.text + "\\" + _loadProjectOptionButton.text + _packageTypeOptionButton.text + "\n"
-#	if _linuxCheckBox.button_pressed:
-#		butlerPreview += _projectPathLineEdit.text + "\\exports\\" + _projectVersionLineEdit.text + "\\" + presetType + "\\" + _exportTypeOptionButton.text + "\\" + _loadProjectOptionButton.text + _packageTypeOptionButton.text + "\n"
-#	if _webCheckBox.button_pressed:
-#		butlerPreview += _projectPathLineEdit.text + "\\exports\\" + _projectVersionLineEdit.text + "\\" + presetType + "\\" + _exportTypeOptionButton.text + "\\" + _loadProjectOptionButton.text + _packageTypeOptionButton.text
-#
-#	return butlerPreview
+	var butlerPreview = ""
+	if _windowsCheckBox.button_pressed:
+		butlerPreview += _exportPathLineEdit.text + "\\" + _projectVersionLineEdit.text + "\\" + presetType + "\\" + _exportTypeOptionButton.text + "\\" + _exportFileNameLineEdit.text + _packageTypeOptionButton.text + "\n"
+	if _linuxCheckBox.button_pressed:
+		butlerPreview += _exportPathLineEdit.text + "\\" + _projectVersionLineEdit.text + "\\" + presetType + "\\" + _exportTypeOptionButton.text + "\\" + _exportFileNameLineEdit.text + _packageTypeOptionButton.text + "\n"
+	if _webCheckBox.button_pressed:
+		butlerPreview += _exportPathLineEdit.text + "\\" + _projectVersionLineEdit.text + "\\" + presetType + "\\" + _exportTypeOptionButton.text + "\\" + _exportFileNameLineEdit.text + _packageTypeOptionButton.text
+
+	return butlerPreview
 
 func FormValidationCheckIsSuccess():
-	if _projectPathLineEdit.text.to_lower().trim_prefix(" ").trim_suffix(" ") == "":
+	if _exportPathLineEdit.text.to_lower().trim_prefix(" ").trim_suffix(" ") == "":
 		return false
 	
 	if _projectVersionLineEdit.text.to_lower().trim_prefix(" ").trim_suffix(" ") == "":
@@ -390,101 +322,96 @@ func FormValidationCheckIsSuccess():
 	return true
 	
 func GetExportPreview():
-	pass
-	#waiting for refactors
-#	if !FormValidationCheckIsSuccess():
-#		return ""
-#
-#	var exportPreview = ""
-#	var packageType = _packageTypeOptionButton.text.to_lower()
-#	if packageType == "zip" || packageType == "zip + clean":
-#		packageType = ".zip"
-#	else:
-#		packageType = ""
-#
-#	if _windowsCheckBox.button_pressed:
-#		exportPreview += GetFormattedProjectPath() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "windows" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + packageType + "\n"
-#	if _linuxCheckBox.button_pressed:
-#		exportPreview += GetFormattedProjectPath() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "linux" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + packageType + "\n"
-#	if _webCheckBox.button_pressed:
-#		exportPreview += GetFormattedProjectPath() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "html5" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + packageType
-#
-#	return exportPreview
+	if !FormValidationCheckIsSuccess():
+		return ""
 
-func GetFormattedProjectPath():
-#	return _projectPathLineEdit.text.trim_prefix(" ").trim_suffix(" ").to_lower().replace("/", "\\")
-	pass
+	var exportPreview = ""
+	var packageType = _packageTypeOptionButton.text.to_lower()
+	if packageType == "zip" || packageType == "zip + clean":
+		packageType = ".zip"
+	else:
+		packageType = ""
+	
+	if _windowsCheckBox.button_pressed:
+		exportPreview += GetFormattedExportPath() + "\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "windows" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _exportFileNameLineEdit.text + packageType + "\n"
+	if _linuxCheckBox.button_pressed:
+		exportPreview += GetFormattedExportPath() + "\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "linux" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _exportFileNameLineEdit.text + packageType + "\n"
+	if _webCheckBox.button_pressed:
+		exportPreview += GetFormattedExportPath() + "\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "html5" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _exportFileNameLineEdit.text + packageType
+
+	return exportPreview
+
+func GetFormattedExportPath():
+	return _exportPathLineEdit.text.trim_prefix(" ").trim_suffix(" ").to_lower().replace("/", "\\")
 	
 func GetButlerPreview():
-	#waiting for refactors
-	pass
-#	if !FormValidationCheckIsSuccess():
-#		return ""
-#
-#	if _packageTypeOptionButton.text == "No Zip":
-#		_butlerPreviewTextEdit.text = ""
-#		return ""
-#
-#	var butlerPreview = ""
-#	if _windowsCheckBox.button_pressed:
-#		butlerPreview += "butler push " + GetFormattedProjectPath() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "windows" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + ".zip " + _itchProfileNameLineEdit.text.to_lower() + "/" + _loadProjectOptionButton.text.to_lower() + ":windows" + "\n"
-#	if _linuxCheckBox.button_pressed:
-#		butlerPreview += "butler push " + GetFormattedProjectPath() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "linux" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + ".zip " + _itchProfileNameLineEdit.text.to_lower() + "/" + _loadProjectOptionButton.text.to_lower() + ":linux" + "\n"
-#	if _webCheckBox.button_pressed:
-#		butlerPreview += "butler push " + GetFormattedProjectPath() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "html5" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + ".zip " + _itchProfileNameLineEdit.text.to_lower() + "/" + _loadProjectOptionButton.text.to_lower() + ":html5"
-#
-#	return butlerPreview
+	if !FormValidationCheckIsSuccess():
+		return ""
+
+	if _packageTypeOptionButton.text == "No Zip":
+		_butlerPreviewTextEdit.text = ""
+		return ""
+
+	var butlerPreview = ""
+	if _windowsCheckBox.button_pressed:
+		butlerPreview += "butler push " + GetFormattedExportPath() + "\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "windows" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _exportFileNameLineEdit.text.to_lower() + ".zip " + _itchProfileNameLineEdit.text.to_lower() + "/" + _itchProjectNameLineEdit.text.to_lower() + ":windows" + "\n"
+	if _linuxCheckBox.button_pressed:
+		butlerPreview += "butler push " + GetFormattedExportPath() + "\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "linux" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _exportFileNameLineEdit.text.to_lower() + ".zip " + _itchProfileNameLineEdit.text.to_lower() + "/" + _itchProjectNameLineEdit.text.to_lower() + ":linux" + "\n"
+	if _webCheckBox.button_pressed:
+		butlerPreview += "butler push " + GetFormattedExportPath() + "\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "html5" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _exportFileNameLineEdit.text.to_lower() + ".zip " + _itchProfileNameLineEdit.text.to_lower() + "/" + _itchProjectNameLineEdit.text.to_lower() + ":html5"
+
+	return butlerPreview
 
 func GetButlerPushCommand(presetName):
 	#waiting for refactors
 	pass
-#	if !FormValidationCheckIsSuccess():
-#		return []
-#	elif _packageTypeOptionButton.text == "No Zip":
-#		_butlerPreviewTextEdit.text = ""
-#	elif presetName == "windows":
-#		return ["push", GetFormattedProjectPath() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "windows" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + ".zip", _itchProfileNameLineEdit.text.to_lower() + "/" + _loadProjectOptionButton.text.to_lower() + ":windows"]
-#	elif presetName == "linux":
-#		return ["push", GetFormattedProjectPath() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "linux" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + ".zip", _itchProfileNameLineEdit.text.to_lower() + "/" + _loadProjectOptionButton.text.to_lower() + ":linux"]
-#	elif presetName == "web":
-#		return ["push", GetFormattedProjectPath() + "\\exports\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "html5" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _loadProjectOptionButton.text.to_lower() + ".zip", _itchProfileNameLineEdit.text.to_lower() + "/" + _loadProjectOptionButton.text.to_lower() + ":html5"]
-#
-#	return []
+	if !FormValidationCheckIsSuccess():
+		return []
+	elif _packageTypeOptionButton.text == "No Zip":
+		_butlerPreviewTextEdit.text = ""
+	elif presetName == "windows":
+		return ["push", GetFormattedExportPath() + "\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "windows" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _projectNameLineEdit.text.to_lower() + ".zip", _itchProfileNameLineEdit.text.to_lower() + "/" + _exportFileNameLineEdit.text.to_lower() + ":windows"]
+	elif presetName == "linux":
+		return ["push", GetFormattedExportPath() + "\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "linux" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _projectNameLineEdit.text.to_lower() + ".zip", _itchProfileNameLineEdit.text.to_lower() + "/" + _exportFileNameLineEdit.text.to_lower() + ":linux"]
+	elif presetName == "web":
+		return ["push", GetFormattedExportPath() + "\\" + _projectVersionLineEdit.text.to_lower() + "\\" + "html5" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _projectNameLineEdit.text.to_lower() + ".zip", _itchProfileNameLineEdit.text.to_lower() + "/" + _exportFileNameLineEdit.text.to_lower() + ":html5"]
+
+	return []
 	
 # Example: butler push ...\godot-valet\exports\v0.0.1\godot-valet.zip poplava/godot-valet:windows
 func GetButlerArguments(publishType):
 	#waiting for refactors
 	pass
-#	var butlerArguments = []
-#	butlerArguments.append("push")
-#
-#	# Build Path: ...\godot-valet\exports\v0.0.1\godot-valet.zip
-#	# Surround with \" in case path has spaces
-#	var buildPath = "\""
-#	buildPath += GetButlerPushCommand(publishType)
-#	buildPath += "\\"
-#	buildPath += publishType
-#	buildPath += "\\"
-#	buildPath += _exportTypeOptionButton.text
-#	buildPath += "\\"
-#	buildPath += _loadProjectOptionButton.text
-#	buildPath += ".zip"
-#	buildPath += "\""
-#	butlerArguments.append(buildPath)
-#
-#	# Build Itch Config: poplava/godot-valet:windows
-#	var itchPublishInfo = ""
-#	itchPublishInfo += _itchProfileNameLineEdit.text
-#	itchPublishInfo += "/"
-#	itchPublishInfo += _loadProjectOptionButton.text
-#	itchPublishInfo += ":"
-#	itchPublishInfo += publishType
-#	butlerArguments.append(itchPublishInfo)
-#
-#	return butlerArguments
+	var butlerArguments = []
+	butlerArguments.append("push")
+
+	# Build Path: ...\godot-valet\exports\v0.0.1\godot-valet.zip
+	# Surround with \" in case path has spaces
+	var buildPath = "\""
+	buildPath += GetButlerPushCommand(publishType)
+	buildPath += "\\"
+	buildPath += publishType
+	buildPath += "\\"
+	buildPath += _exportTypeOptionButton.text
+	buildPath += "\\"
+	buildPath += _itchProjectNameLineEdit.text
+	buildPath += ".zip"
+	buildPath += "\""
+	butlerArguments.append(buildPath)
+
+	# Build Itch Config: poplava/godot-valet:windows
+	var itchPublishInfo = ""
+	itchPublishInfo += _itchProfileNameLineEdit.text
+	itchPublishInfo += "/"
+	itchPublishInfo += _exportFileNameLineEdit.text
+	itchPublishInfo += ":"
+	itchPublishInfo += publishType
+	butlerArguments.append(itchPublishInfo)
+
+	return butlerArguments
 
 # butler push godot-valet.zip poplava/godot-valet:windows
-func PublishToButler():
+func PublishToItchUsingButler():
 	if !FormValidationCheckIsSuccess():
 		OS.alert("Invalid publish configuration")
 		return
@@ -522,17 +449,24 @@ func PublishToButler():
 		butlerOutput += result + "\n"
 	call_deferred("WriteButlerOutput", butlerOutput)
 	
+	if _isDirty:
+		_isClosingReleaseManager = false
+		ShowSaveChangesDialog()
+	
 func WriteButlerOutput(value):
 	_outputTextEdit.text += "Output: " + value.replace("\\r\\n", "\n")
 	
 func OpenRootExportPath():
-	var rootExportPath = _projectPathLineEdit.text + "\\exports\\" + _projectVersionLineEdit.text
+	var rootExportPath = _exportPathLineEdit.text + "\\" + _projectVersionLineEdit.text
 	var err = OS.shell_open(rootExportPath)
 	if err == 7:
 		OS.alert("Unable to open export folder. Did you export yet?")
 
+func ShowSelectExportPathDialog():
+	$SelectFolderFileDialog.show()
+	
 func OpenProjectPathFolder():
-	var err = OS.shell_open(_projectPathLineEdit.text)
+	var err = OS.shell_open(_projectNameLineEdit.text)
 	if err == 7:
 		OS.alert("Unable to open project folder. Did it get moved or renamed?")
 		
@@ -542,42 +476,42 @@ func ClearOutput():
 func DisplayOutput(output):
 	var groomedOutput = str(output).replace("\\r\\n", "\n")
 	call_deferred("SetOutputText", groomedOutput)
-	
-func RunProjectWithConsoleThread():
-	var output = []
-	var godotArguments = ["/C", "\"" + _godotPathLineEdit.text + "\"  --path " + _projectPathLineEdit.text]
-	OS.execute("CMD.exe", godotArguments, output, true, true)
-	DisplayOutput(output)
+#
+#func RunProjectWithConsoleThread():
+#	var output = []
+#	var godotArguments = ["/C", "\"" + _godotPathLineEdit.text + "\"  --path " + _exportPathLineEdit.text]
+#	OS.execute("CMD.exe", godotArguments, output, true, true)
+#	DisplayOutput(output)
 	
 	#_outputTextEdit.text += "Output: " + str(output).replace("\\r\\n", "\n")
 	
-func EditProjectInEditorWithConsoleThread():
-	var output = []
-	var godotArguments = ["/C", "\"" + _godotPathLineEdit.text + "\" --editor --verbose --debug --path " + _projectPathLineEdit.text]
-	OS.execute("CMD.exe", godotArguments, output, true, true)
-	DisplayOutput(output)
+#func EditProjectInEditorWithConsoleThread():
+#	var output = []
+#	var godotArguments = ["/C", "\"" + _godotPathLineEdit.text + "\" --editor --verbose --debug --path " + _exportPathLineEdit.text]
+#	OS.execute("CMD.exe", godotArguments, output, true, true)
+#	DisplayOutput(output)
 
 
 	
-func RunProjectWithConsole():
-	var projectFile = Files.FindFirstFileWithExtension(GetFormattedProjectPath(), ".godot")
-	if projectFile == null || !FileAccess.file_exists(projectFile):
-		OS.alert("Did not find a project (.godot) file in the specified project path")
-		return
-		
-	ClearOutput()
-	var thread = Thread.new()
-	thread.start(RunProjectWithConsoleThread)
-	
-func EditProjectWithConsole():
-	var projectFile = Files.FindFirstFileWithExtension(GetFormattedProjectPath(), ".godot")
-	if projectFile == null || !FileAccess.file_exists(projectFile):
-		OS.alert("Did not find a project (.godot) file in the specified project path")
-		return
-		
-	ClearOutput()
-	var thread = Thread.new()
-	thread.start(EditProjectInEditorWithConsoleThread)
+#func RunProjectWithConsole():
+#	var projectFile = Files.FindFirstFileWithExtension(GetFormattedProjectPath(), ".godot")
+#	if projectFile == null || !FileAccess.file_exists(projectFile):
+#		OS.alert("Did not find a project (.godot) file in the specified project path")
+#		return
+#
+#	ClearOutput()
+#	var thread = Thread.new()
+#	thread.start(RunProjectWithConsoleThread)
+#
+#func EditProjectWithConsole():
+#	var projectFile = Files.FindFirstFileWithExtension(GetFormattedProjectPath(), ".godot")
+#	if projectFile == null || !FileAccess.file_exists(projectFile):
+#		OS.alert("Did not find a project (.godot) file in the specified project path")
+#		return
+#
+#	ClearOutput()
+#	var thread = Thread.new()
+#	thread.start(EditProjectInEditorWithConsoleThread)
 
 #func EditProject():
 #	var projectFile = Files.FindFirstFileWithExtension(GetFormattedProjectPath(), ".godot")
@@ -595,14 +529,12 @@ func EditProjectWithConsole():
 #	ClearOutput()
 #	var thread = Thread.new()
 #	thread.start(RunGodotProjectManagerThread)
+
+func ShowSaveChangesDialog():
+	_saveChangesConfirmationDialog.show()
 	
 func _on_export_button_pressed():
 	ExportProject()
-
-func _on_load_project_option_button_item_selected(index):
-	GenerateButlerPreview()
-	GenerateExportPreview()
-	SaveSettings()
 
 func _on_open_project_folder_button_pressed():
 	OpenProjectPathFolder()
@@ -617,61 +549,91 @@ func _on_open_export_path_folder_button_pressed():
 	OpenRootExportPath()
 
 func _on_project_path_line_edit_text_changed(_new_text):
+	_isDirty = true
 	GenerateExportPreview()
 	GenerateButlerPreview()
-	SaveSettings()
 
 func _on_project_version_line_edit_text_changed(_new_text):
+	_isDirty = true
 	GenerateExportPreview()
 	GenerateButlerPreview()
-	SaveSettings()
 
 func _on_windows_check_box_pressed():
+	_isDirty = true
 	GenerateExportPreview()
 	GenerateButlerPreview()
-	SaveSettings()
 
 func _on_linux_check_box_pressed():
+	_isDirty = true
 	GenerateExportPreview()
 	GenerateButlerPreview()
-	SaveSettings()
 
 func _on_web_check_box_pressed():
+	_isDirty = true
 	GenerateExportPreview()
 	GenerateButlerPreview()
-	SaveSettings()
 
 func _on_export_type_option_button_item_selected(_index):
+	_isDirty = true
 	GenerateExportPreview()
 	GenerateButlerPreview()
-	SaveSettings()
 
 func _on_package_type_option_button_item_selected(_index):
+	_isDirty = true
 	GenerateExportPreview()
 	GenerateButlerPreview()
-	SaveSettings()
 
 func _on_itch_name_line_edit_text_changed(_new_text):
+	_isDirty = true
 	GenerateExportPreview()
 	GenerateButlerPreview()
-	SaveSettings()
-
-func _on_select_project_folder_button_pressed():
-	$SelectFolderFileDialog.position = Vector2(200, 200)
-	$SelectFolderFileDialog.show()
 
 func _on_select_folder_file_dialog_dir_selected(dir):
-	_projectPathLineEdit.text = dir
+	_exportPathLineEdit.text = dir
 	GenerateExportPreview()
 	GenerateButlerPreview()
+
+func _on_save_button_pressed():	
 	SaveSettings()
+	_isDirty = false
 
-func _on_run_project_button_pressed():
-	pass
-	#RunProject()
+func _on_open_project_path_button_pressed():
+	OpenProjectPathFolder()
 
-func _on_publish_to_itch_button_pressed():
-	PublishToButler()
+func _on_export_project_pressed():
+	ExportProject()
 
-func _on_save_button_pressed():
+func _on_open_project_folder_pressed():
+	OpenRootExportPath()
+
+func _on_itch_project_name_line_edit_text_changed(_new_text):
+	GenerateExportPreview()
+	GenerateButlerPreview()
+	_isDirty = true
+
+func _on_select_export_path_button_pressed():
+	ShowSelectExportPathDialog()
+
+func _on_close_button_pressed():
+	if _isDirty:
+		_isClosingReleaseManager = true
+		ShowSaveChangesDialog()
+	else:
+		queue_free()
+
+func _on_save_changes_confirmation_dialog_confirmed():
 	SaveSettings()
+	if _isClosingReleaseManager:
+		queue_free()
+
+func _on_save_changes_confirmation_dialog_canceled():
+	if _isClosingReleaseManager:
+		queue_free()
+
+func _on_publish_button_pressed():
+	PublishToItchUsingButler()
+
+func _on_export_file_name_line_edit_text_changed(new_text):
+	GenerateExportPreview()
+	GenerateButlerPreview()
+	_isDirty = true

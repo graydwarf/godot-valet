@@ -1,6 +1,6 @@
 extends ColorRect
 @onready var _projectNameLabel = $MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer/ProjectNameLabel
-@onready var _godotVersionLabel = $MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer/GodotVersionLabel
+@onready var _godotVersionLabel = $MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer/HBoxContainer/GodotVersionLabel
 @onready var _projectPathLabel = $MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ProjectPathLabel
 @onready var _projectVersionLabel = $MarginContainer/HBoxContainer/VBoxContainer/MarginContainer3/ProjectVersionLabel
 
@@ -9,15 +9,17 @@ var _projectId = ""
 var _godotVersionId = null
 
 # Release Management Vars
-var _itchProjectName = ""
-var _projectVersion = ""
 var _windowsChecked = false
 var _linuxChecked = false
 var _webChecked = false
+var _exportPath = ""
+#var _projectVersion = ""
 var _exportType = ""
+var _exportFileName = ""
 var _packageType = ""
+var _itchProjectName = ""
 var _itchProfileName = ""
-var _projectReleaseId = ""
+
 
 func _ready():
 	Signals.connect("ProjectItemSelected", ProjectItemSelected)
@@ -27,12 +29,12 @@ func SetGodotVersionId(value):
 	
 func SetProjectVersion(value):
 	_projectVersionLabel.text = value
-
-func SetProjectReleaseId(value):
-	_projectReleaseId = value
 	
 func SetProjectPath(value):
 	_projectPathLabel.text = value
+
+func SetExportFileName(value):
+	_exportFileName = value
 	
 func SetProjectName(value):
 	_projectNameLabel.text = value
@@ -52,6 +54,9 @@ func SetLinuxChecked(value):
 func SetWebChecked(value):
 	_webChecked = value
 
+func SetExportPath(value):
+	_exportPath = value
+	
 func SetExportType(value):
 	_exportType = value
 	
@@ -60,12 +65,36 @@ func SetPackageType(value):
 
 func SetItchProfileName(value):
 	_itchProfileName = value
+
+func SetProjectId(value):
+	_projectId = value
 	
 func GetProjectVersion():
 	return _projectVersionLabel.text
 	
-func GetItchProjectName(value):
+func GetItchProjectName():
 	return _itchProjectName
+
+func GetWindowsChecked():
+	return _windowsChecked
+
+func GetLinuxChecked():
+	return _linuxChecked	
+
+func GetWebChecked():
+	return _webChecked	
+
+func GetExportType():
+	return _exportType
+
+func GetExportFileName():
+	return _exportFileName
+	
+func GetPackageType():
+	return _packageType
+
+func GetItchProfileName():
+	return _itchProfileName
 	
 # Strip off the file name
 # /project.godot
@@ -86,10 +115,10 @@ func GetGodotVersionId():
 	
 func GetProjectName():
 	return _projectNameLabel.text
-	
-func SetProjectId(value):
-	_projectId = value
 
+func GetExportPath():
+	return _exportPath
+	
 func GetProjectId():
 	return _projectId
 	
@@ -138,15 +167,18 @@ func SaveProjectItem():
 	var config = ConfigFile.new()
 
 	config.set_value("ProjectSettings", "project_name", _projectNameLabel.text)
+	config.set_value("ProjectSettings", "export_path", _exportPath)
 	config.set_value("ProjectSettings", "godot_version_id", _godotVersionId)
 	config.set_value("ProjectSettings", "project_path", _projectPathLabel.text)
-	config.set_value("ProjectSettings", "project_version", _projectVersion)
+	config.set_value("ProjectSettings", "export_file_name", _exportFileName)
+	config.set_value("ProjectSettings", "project_version", _projectVersionLabel.text)
 	config.set_value("ProjectSettings", "windows_preset_checked", _windowsChecked)
 	config.set_value("ProjectSettings", "linux_preset_checked", _linuxChecked)
 	config.set_value("ProjectSettings", "web_preset_checked", _webChecked)
 	config.set_value("ProjectSettings", "export_type", _exportType)
 	config.set_value("ProjectSettings", "package_type", _packageType)
 	config.set_value("ProjectSettings", "itch_profile_name", _itchProfileName)
+	config.set_value("ProjectSettings", "itch_project_name", _itchProjectName)
 	
 	# Save the config file.
 	var err = config.save("user://" + Game.GetProjectItemFolder() + "/" + _projectId + ".cfg")
