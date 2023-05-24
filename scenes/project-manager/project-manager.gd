@@ -235,8 +235,10 @@ func RunProject():
 	if !is_instance_valid(_selectedProjectItem):
 		return
 
-	_runProjectThread = Thread.new()
-	_runProjectThread.start(StartProjectThread)
+	#_runProjectThread = Thread.new()
+	#_runProjectThread.start(StartProjectThread)
+	
+	StartProjectThread()
 
 func _exit_tree():
 	if is_instance_valid(_runProjectThread):
@@ -251,7 +253,9 @@ func _exit_tree():
 func StartProjectThread():
 	var output = []
 	var godotArguments = ["--path", _selectedProjectItem.GetProjectPathBaseDir()]
-	OS.execute(_selectedProjectItem.GetGodotPath(_selectedProjectItem.GetGodotVersionId()), godotArguments, output)
+	var versionId = _selectedProjectItem.GetGodotVersionId()
+	var godotPath = _selectedProjectItem.GetGodotPath(versionId)
+	OS.execute(godotPath, godotArguments, output)
 	
 func EditProject():
 	if !is_instance_valid(_selectedProjectItem):
