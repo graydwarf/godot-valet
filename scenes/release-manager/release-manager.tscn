@@ -296,6 +296,22 @@ size_flags_horizontal = 3
 tooltip_text = "Shows a preview of the export commands that will run when the Export button is pressed."
 editable = false
 
+[node name="AutomateExportFileNameHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="AutomateExportFileNameLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/AutomateExportFileNameHBoxContainer"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "Unique Zip Names:"
+horizontal_alignment = 2
+
+[node name="AutoGenerateExportFileNamesCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/AutomateExportFileNameHBoxContainer"]
+layout_mode = 2
+tooltip_text = "Auto-generates the name for each preset type."
+button_pressed = true
+text = "Enable"
+
 [node name="ButlerCommandHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 
@@ -448,6 +464,11 @@ self_modulate = Color(1, 1, 1, 0)
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 
+[node name="InvisibleButton15" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
+self_modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+
 [node name="PublishButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
 custom_minimum_size = Vector2(0, 31)
 layout_mode = 2
@@ -506,6 +527,7 @@ access = 2
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportFileNameHBoxContainer/ExportFileNameLineEdit" to="." method="_on_export_file_name_line_edit_text_changed"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProjectNameHBoxContainer/ItchProjectNameLineEdit" to="." method="_on_itch_project_name_line_edit_text_changed"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProfileNameHBoxContainer/ItchProfileNameLineEdit" to="." method="_on_itch_name_line_edit_text_changed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/AutomateExportFileNameHBoxContainer/AutoGenerateExportFileNamesCheckBox" to="." method="_on_auto_generate_export_file_names_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/OpenProjectPathFolder" to="." method="_on_open_project_folder_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/SelectExportPathButton" to="." method="_on_select_export_path_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/ExportProject" to="." method="_on_export_project_pressed"]

@@ -20,6 +20,7 @@ extends ColorRect
 @onready var _projectPathLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectPathHBoxContainer2/ProjectPathLineEdit
 @onready var _outputTabContainer = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/OutputHBoxContainer/OutputTabContainer
 @onready var _useSha256CheckBox = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/Generate256HashNameHBoxContainer/UseSha256CheckBox
+@onready var _autoGenerateExportFileNamesCheckBox = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/AutomateExportFileNameHBoxContainer/AutoGenerateExportFileNamesCheckBox
 
 var _busyBackground
 var _selectedProjectItem = null
@@ -177,8 +178,12 @@ func ExportProject():
 	var thread = Thread.new()
 	thread.start(ExportProjectThread)
 	
+	# Call directly to debug 
+	# Note: The busy screen doesn't work as expected outside thread.
+	# ExportProjectThread()
 
-# Can't debug in here.
+# Can't debug in threaded operations. Call
+# directly to debug
 func ExportProjectThread():
 	if !FormValidationCheckIsSuccess():
 		OS.alert("Invalid export configuration")
@@ -193,7 +198,6 @@ func ExportProjectThread():
 
 	# Deferring to make sure the _outputTabs/content get added before counting
 	call_deferred("CompleteExport")
-
 
 func CompleteExport():
 	CountErrors()
@@ -242,7 +246,8 @@ func ExportWithZip(isCleaningUp = false):
 		
 		listOfExistingFilesToLeaveAlone.append(GetItchReleaseProfileName(presetFullName) + "-" + _projectVersionLineEdit.text + "-" + _exportFileNameLineEdit.text + ".zip")
 		ExportPreset(presetFullName)
-		listOfExistingFilesToLeaveAlone.append(ZipFiles(presetFullName))
+		var fileToIgnore = ZipFiles(presetFullName)
+		listOfExistingFilesToLeaveAlone.append(fileToIgnore)
 		if isCleaningUp:
 			_busyBackground.SetBusyDoingWhatLabel("Cleaning " + presetFullName + "...")
 			Cleanup(presetFullName, listOfExistingFilesToLeaveAlone)
@@ -253,7 +258,8 @@ func ExportWithZip(isCleaningUp = false):
 		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
 		listOfExistingFilesToLeaveAlone.append(_exportFileNameLineEdit.text + ".zip")
 		ExportPreset(presetFullName)
-		listOfExistingFilesToLeaveAlone.append(ZipFiles(presetFullName))
+		var fileToIgnore = ZipFiles(presetFullName)
+		listOfExistingFilesToLeaveAlone.append(fileToIgnore)
 		if isCleaningUp:
 			_busyBackground.SetBusyDoingWhatLabel("Cleaning " + presetFullName + "...")
 			Cleanup(presetFullName, listOfExistingFilesToLeaveAlone)
@@ -264,7 +270,8 @@ func ExportWithZip(isCleaningUp = false):
 		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
 		ExportPreset(presetFullName)
 		RenameHomePageToIndex(presetFullName)
-		listOfExistingFilesToLeaveAlone.append(ZipFiles(presetFullName))
+		var fileToIgnore = ZipFiles(presetFullName)
+		listOfExistingFilesToLeaveAlone.append(fileToIgnore)
 		if isCleaningUp:
 			Cleanup(presetFullName, listOfExistingFilesToLeaveAlone)
 
@@ -331,7 +338,12 @@ func ZipFiles(presetFullName):
 	for fileName in listOfFileNames:
 		listOfFilePaths.append(exportPath + "\\" + fileName)
 	
-	var zipFileName = _exportFileNameLineEdit.text + "-" + _projectVersionLineEdit.text + "-" + releaseProfileName + ".zip" 
+	var zipFileName = ""
+	if _autoGenerateExportFileNamesCheckBox.button_pressed:
+		zipFileName = _exportFileNameLineEdit.text + "-" + _projectVersionLineEdit.text + "-" + releaseProfileName + ".zip" 
+	else:
+		zipFileName = _exportFileNameLineEdit.text + ".zip"
+		
 	CreateZipFile(exportPath + "\\" + zipFileName, listOfFileNames, listOfFilePaths)
 	return zipFileName
 	
@@ -405,25 +417,35 @@ func FormValidationCheckIsSuccess():
 func GetExportPreview():
 	if !FormValidationCheckIsSuccess():
 		return ""
+	
+	var exportPreview = ""	
+	if _windowsCheckBox.button_pressed:
+		exportPreview += AddPreviewLine("windows")
+		
+	if _linuxCheckBox.button_pressed:
+		exportPreview += AddPreviewLine("linux")
+	
+	if _webCheckBox.button_pressed:
+		exportPreview += AddPreviewLine("web")
 
-	var exportPreview = ""
+	return exportPreview
+
+func AddPreviewLine(presetType):
+	var versionPath = GetGroomedVersionPath()
+	var zipFileName = ""
+	if _autoGenerateExportFileNamesCheckBox.button_pressed:
+		zipFileName = _exportFileNameLineEdit.text + "-" + _projectVersionLineEdit.text + "-" + presetType
+	else:
+		zipFileName = _exportFileNameLineEdit.text
+	
 	var packageType = _packageTypeOptionButton.text.to_lower()
 	if packageType == "zip" || packageType == "zip + clean":
 		packageType = ".zip"
 	else:
 		packageType = ""
-	
-	var versionPath = GetGroomedVersionPath()
-	
-	if _windowsCheckBox.button_pressed:
-		exportPreview += GetFormattedExportPath() + versionPath + "\\" + "windows" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _exportFileNameLineEdit.text + packageType + "\n"
-	if _linuxCheckBox.button_pressed:
-		exportPreview += GetFormattedExportPath() + versionPath + "\\" + "linux" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _exportFileNameLineEdit.text + packageType + "\n"
-	if _webCheckBox.button_pressed:
-		exportPreview += GetFormattedExportPath() + versionPath + "\\" + "html5" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _exportFileNameLineEdit.text + packageType
-
-	return exportPreview
-
+		
+	return GetFormattedExportPath() + versionPath + "\\" + presetType + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + zipFileName + packageType + "\n"
+		
 func GetFormattedExportPath():
 	return _exportPathLineEdit.text.trim_prefix(" ").trim_suffix(" ").to_lower().replace("/", "\\")
 
@@ -650,6 +672,15 @@ func DisplayOutput(output):
 
 func ShowSaveChangesDialog():
 	_saveChangesConfirmationDialog.show()
+
+func GetUniqueFileName(a):
+#	var zipFileName = _exportFileNameLineEdit.text + "-" + _projectVersionLineEdit.text + "-" + releaseProfileName + ".zip" 
+#
+#	if _autoGenerateExportFileNamesCheckBox.button_pressed:
+#
+#	return _exportFileNameLineEdit.text
+	pass
+	
 	
 func _on_export_button_pressed():
 	ExportProject()
@@ -759,6 +790,13 @@ func _on_export_file_name_line_edit_text_changed(_new_text):
 	_isDirty = true
 
 func _on_export_path_line_edit_text_changed(_new_text):
+	GenerateExportPreview()
+	GenerateButlerPreview()
+	ValidateExportFilePathText()
+	_isDirty = true
+
+
+func _on_auto_generate_export_file_names_check_box_pressed():
 	GenerateExportPreview()
 	GenerateButlerPreview()
 	ValidateExportFilePathText()
