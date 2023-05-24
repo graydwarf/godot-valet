@@ -250,9 +250,8 @@ func _exit_tree():
 		
 func StartProjectThread():
 	var output = []
-	var godotArguments = ["--path " + _selectedProjectItem.GetProjectPathBaseDir()]
+	var godotArguments = ["--path", _selectedProjectItem.GetProjectPathBaseDir()]
 	OS.execute(_selectedProjectItem.GetGodotPath(_selectedProjectItem.GetGodotVersionId()), godotArguments, output)
-	#DisplayOutput(output)
 	
 func EditProject():
 	if !is_instance_valid(_selectedProjectItem):
@@ -265,12 +264,14 @@ func EditProject():
 	
 	_editProjectThread = Thread.new()
 	_editProjectThread.start(EditProjectInGodotEditorThread)
+	#EditProjectInGodotEditorThread()
 
 func EditProjectInGodotEditorThread():
 	var output = []
-	var godotArguments = ["--verbose", "--path " + _selectedProjectItem.GetProjectPathBaseDir(), "--editor"]
+	var projectPath = _selectedProjectItem.GetProjectPathBaseDir()
+	var godotArguments = ["--verbose", "--editor", "--path", projectPath] 
 	var pathToGodot = _selectedProjectItem.GetGodotPath(_selectedProjectItem.GetGodotVersionId())
-	OS.execute(pathToGodot, godotArguments, output)
+	OS.execute(pathToGodot, godotArguments, output, false, true)
 
 func OpenGodotProjectManager(godotVersionId = null):
 	if godotVersionId == null:

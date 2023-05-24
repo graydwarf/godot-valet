@@ -139,7 +139,7 @@ func ExportPreset(presetFullName):
 
 	var output = []
 	
-	var args = ['--headless', '"--path "' + _projectPathLineEdit.text, exportOption, presetFullName, exportPath + "\\" + _exportFileNameLineEdit.text + extensionType]
+	var args = ['--headless', '--path',  _projectPathLineEdit.text, exportOption, presetFullName, exportPath + "\\" + _exportFileNameLineEdit.text + extensionType]
 	var readStdeer = true
 	var openConsole = false
 	OS.execute(_godotPathLineEdit.text, args, output, readStdeer, openConsole) 
@@ -602,7 +602,7 @@ func DisplayOutput(output):
 #
 #func RunProjectWithConsoleThread():
 #	var output = []
-#	var godotArguments = ["/C", "\"" + _godotPathLineEdit.text + "\"  --path " + _exportPathLineEdit.text]
+#	var godotArguments = ["/C", _godotPathLineEdit.text,  "--path", _exportPathLineEdit.text]
 #	OS.execute("CMD.exe", godotArguments, output, true, true)
 #	DisplayOutput(output)
 	
@@ -610,7 +610,7 @@ func DisplayOutput(output):
 	
 #func EditProjectInEditorWithConsoleThread():
 #	var output = []
-#	var godotArguments = ["/C", "\"" + _godotPathLineEdit.text + "\" --editor --verbose --debug --path " + _exportPathLineEdit.text]
+#	var godotArguments = ["/C", _godotPathLineEdit.text, "--editor", "--verbose", "--debug", "--path", _exportPathLineEdit.text]
 #	OS.execute("CMD.exe", godotArguments, output, true, true)
 #	DisplayOutput(output)
 
