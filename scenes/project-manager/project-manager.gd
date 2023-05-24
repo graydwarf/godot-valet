@@ -235,10 +235,8 @@ func RunProject():
 	if !is_instance_valid(_selectedProjectItem):
 		return
 
-	#_runProjectThread = Thread.new()
-	#_runProjectThread.start(StartProjectThread)
-	
-	StartProjectThread()
+	_runProjectThread = Thread.new()
+	_runProjectThread.start(StartProjectThread)
 
 func _exit_tree():
 	if is_instance_valid(_runProjectThread):

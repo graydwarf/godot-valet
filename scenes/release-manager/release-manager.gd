@@ -174,13 +174,8 @@ func GetItchReleaseProfileName(presetFullName):
 func ExportProject():
 	ClearOutput()
 	StartBusyBackground("Exporting...")
-	await get_tree().create_timer(0.5).timeout
-	
-	# For Debugging:
-	ExportProjectThread()
-	
-	#var thread = Thread.new()
-	#thread.start(ExportProjectThread)
+	var thread = Thread.new()
+	thread.start(ExportProjectThread)
 	
 
 # Can't debug in here.
