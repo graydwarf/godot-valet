@@ -265,6 +265,20 @@ tooltip_text = "Your itch account name for publishing to itch.io with butler."
 caret_blink = true
 caret_blink_interval = 0.5
 
+[node name="Generate256HashNameHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Generate256HashLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/Generate256HashNameHBoxContainer"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "Generate Checksum:"
+horizontal_alignment = 2
+
+[node name="UseSha256CheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/Generate256HashNameHBoxContainer"]
+layout_mode = 2
+button_pressed = true
+text = "Use SHA-256"
+
 [node name="ExportPathHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 
@@ -408,6 +422,11 @@ custom_minimum_size = Vector2(0, 31)
 layout_mode = 2
 
 [node name="InvisibleButton8" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
+self_modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(0, 33)
+layout_mode = 2
+
+[node name="InvisibleButton14" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
 self_modulate = Color(1, 1, 1, 0)
 custom_minimum_size = Vector2(0, 33)
 layout_mode = 2

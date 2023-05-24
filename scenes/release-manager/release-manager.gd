@@ -19,6 +19,7 @@ extends ColorRect
 @onready var _saveChangesConfirmationDialog = $SaveChangesConfirmationDialog
 @onready var _projectPathLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectPathHBoxContainer2/ProjectPathLineEdit
 @onready var _outputTabContainer = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/OutputHBoxContainer/OutputTabContainer
+@onready var _useSha256CheckBox = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/Generate256HashNameHBoxContainer/UseSha256CheckBox
 
 var _busyBackground
 var _selectedProjectItem = null
@@ -106,10 +107,10 @@ func GetExportType():
 
 func GetExtensionType(presetFullName):
 	if presetFullName == "Windows Desktop":
-		if _packageTypeOptionButton.text == "No Zip":
-			return ".exe"
-		else:
-			return ".zip"
+		#if _packageTypeOptionButton.text == "No Zip":
+		return ".exe"
+		#else:
+		#	return ".zip"
 	elif presetFullName == "Linux/X11":
 		return ".x86_64"
 	elif presetFullName == "Web":
@@ -144,6 +145,12 @@ func ExportPreset(presetFullName):
 	OS.execute(_godotPathLineEdit.text, args, output, readStdeer, openConsole) 
 
 	var groomedOutput = str(output).replace("\\r\\n", "\n")
+	if _useSha256CheckBox.button_pressed:
+		# Create a checksum of the core binary (.exe, .x86_64)
+		var checksum = CreateChecksum(exportPath + "\\" + _exportFileNameLineEdit.text + extensionType)
+		groomedOutput += "\n"
+		groomedOutput += presetFullName + " checksum: " + checksum
+		
 	call_deferred("CreateOutputTab", groomedOutput, presetFullName)
 
 func CreateOutputTab(outputAsStr, presetFullName = ""):
@@ -168,9 +175,13 @@ func ExportProject():
 	ClearOutput()
 	StartBusyBackground("Exporting...")
 	await get_tree().create_timer(0.5).timeout
+	
+	# For Debugging:
+	ExportProjectThread()
+	
 	#var thread = Thread.new()
 	#thread.start(ExportProjectThread)
-	ExportProjectThread()
+	
 
 # Can't debug in here.
 func ExportProjectThread():
@@ -233,16 +244,21 @@ func ExportWithZip(isCleaningUp = false):
 		_busyBackground.SetBusyDoingWhatLabel("Exporting for Windows...")
 		var presetFullName = "Windows Desktop"
 		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
-		listOfExistingFilesToLeaveAlone.append(_exportFileNameLineEdit.text + ".zip")
+		
+		listOfExistingFilesToLeaveAlone.append(GetItchReleaseProfileName(presetFullName) + "-" + _projectVersionLineEdit.text + "-" + _exportFileNameLineEdit.text + ".zip")
 		ExportPreset(presetFullName)
-
+		listOfExistingFilesToLeaveAlone.append(ZipFiles(presetFullName))
+		if isCleaningUp:
+			_busyBackground.SetBusyDoingWhatLabel("Cleaning " + presetFullName + "...")
+			Cleanup(presetFullName, listOfExistingFilesToLeaveAlone)
+			
 	if _linuxCheckBox.button_pressed:
 		_busyBackground.SetBusyDoingWhatLabel("Exporting for Linux...")
 		var presetFullName = "Linux/X11"
 		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
 		listOfExistingFilesToLeaveAlone.append(_exportFileNameLineEdit.text + ".zip")
 		ExportPreset(presetFullName)
-		ZipFiles(presetFullName)
+		listOfExistingFilesToLeaveAlone.append(ZipFiles(presetFullName))
 		if isCleaningUp:
 			_busyBackground.SetBusyDoingWhatLabel("Cleaning " + presetFullName + "...")
 			Cleanup(presetFullName, listOfExistingFilesToLeaveAlone)
@@ -251,10 +267,9 @@ func ExportWithZip(isCleaningUp = false):
 		_busyBackground.SetBusyDoingWhatLabel("Exporting for Web...")
 		var presetFullName = "Web"
 		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
-		listOfExistingFilesToLeaveAlone.append(_exportFileNameLineEdit.text + ".zip")
 		ExportPreset(presetFullName)
 		RenameHomePageToIndex(presetFullName)
-		ZipFiles(presetFullName)
+		listOfExistingFilesToLeaveAlone.append(ZipFiles(presetFullName))
 		if isCleaningUp:
 			Cleanup(presetFullName, listOfExistingFilesToLeaveAlone)
 
@@ -284,7 +299,33 @@ func RenameHomePageToIndex(presetFullName):
 	var versionPath = GetGroomedVersionPath()
 	var exportPath = _exportPathLineEdit.text + versionPath + "\\" + releaseProfileName + "\\" + _exportTypeOptionButton.text
 	DirAccess.rename_absolute(exportPath + "\\" + _exportFileNameLineEdit.text + ".html", exportPath + "\\" + "index.html")
-		
+
+func ValidateChecksum(filePath, checksum):
+	return CreateChecksum(filePath) == checksum
+	
+func CreateChecksum(filePath):
+	const CHUNK_SIZE = 1024
+	if not FileAccess.file_exists(filePath):
+		return
+
+	# Start a SHA-256 context.
+	var ctx = HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+
+	# Open the file to hash.
+	var file = FileAccess.open(filePath, FileAccess.READ)
+
+	# Update the context after reading each chunk.
+	while not file.eof_reached():
+		var buffer = file.get_buffer(CHUNK_SIZE)
+		if buffer.size() > 0:
+			ctx.update(buffer)
+
+	# Get the computed hash.
+	var res = ctx.finish()
+
+	return res.hex_encode()
+
 func ZipFiles(presetFullName):
 	_busyBackground.SetBusyDoingWhatLabel("Zipping for " + presetFullName + "...")
 	var releaseProfileName = GetItchReleaseProfileName(presetFullName)
@@ -295,8 +336,9 @@ func ZipFiles(presetFullName):
 	for fileName in listOfFileNames:
 		listOfFilePaths.append(exportPath + "\\" + fileName)
 	
-	var zipFileName = _exportFileNameLineEdit.text + ".zip" 
+	var zipFileName = _exportFileNameLineEdit.text + "-" + _projectVersionLineEdit.text + "-" + releaseProfileName + ".zip" 
 	CreateZipFile(exportPath + "\\" + zipFileName, listOfFileNames, listOfFilePaths)
+	return zipFileName
 	
 func CreateZipFile(zipFilePath, listOfFileNames : Array, listOfFilePaths : Array):
 	var writer := ZIPPacker.new()
@@ -342,16 +384,16 @@ func CountWarnings():
 		_warningCountLabel.self_modulate = Color(1.0, 1.0, 0.0, 1.0)
 
 func GetExportPath(presetType):
-	var butlerPreview = ""
+	var exportPath = _exportPathLineEdit.text.replace("/", "\\")
 	var versionPath = GetGroomedVersionPath()
-	if _windowsCheckBox.button_pressed:
-		butlerPreview += _exportPathLineEdit.text + versionPath + "\\" + presetType + "\\" + _exportTypeOptionButton.text + "\\" + _exportFileNameLineEdit.text + _packageTypeOptionButton.text + "\n"
-	if _linuxCheckBox.button_pressed:
-		butlerPreview += _exportPathLineEdit.text + versionPath + "\\" + presetType + "\\" + _exportTypeOptionButton.text + "\\" + _exportFileNameLineEdit.text + _packageTypeOptionButton.text + "\n"
-	if _webCheckBox.button_pressed:
-		butlerPreview += _exportPathLineEdit.text + versionPath + "\\" + presetType + "\\" + _exportTypeOptionButton.text + "\\" + _exportFileNameLineEdit.text + _packageTypeOptionButton.text
+	if presetType == "Windows Desktop":
+		exportPath += versionPath + "\\" + GetItchReleaseProfileName(presetType) + "\\" + _exportTypeOptionButton.text + "\\" + _exportFileNameLineEdit.text + ".zip"
+	elif presetType == "Linux/X11":
+		exportPath += versionPath + "\\" + GetItchReleaseProfileName(presetType) + "\\" + _exportTypeOptionButton.text + "\\" + _exportFileNameLineEdit.text + ".pck"
+	elif presetType == "Web":
+		exportPath += versionPath + "\\" + GetItchReleaseProfileName(presetType) + "\\" + _exportTypeOptionButton.text + "\\" + _exportFileNameLineEdit.text
 
-	return butlerPreview
+	return exportPath.to_lower()
 
 func FormValidationCheckIsSuccess():
 	if _exportPathLineEdit.text.to_lower().trim_prefix(" ").trim_suffix(" ") == "":
@@ -389,6 +431,18 @@ func GetExportPreview():
 
 func GetFormattedExportPath():
 	return _exportPathLineEdit.text.trim_prefix(" ").trim_suffix(" ").to_lower().replace("/", "\\")
+
+#func GetButlerPreview(presetType):
+#	var butlerPreview = ""
+#	var versionPath = GetGroomedVersionPath()
+#	if _windowsCheckBox.button_pressed:
+#		butlerPreview += _exportPathLineEdit.text + versionPath + "\\" + presetType + "\\" + _exportTypeOptionButton.text + "\\" + _exportFileNameLineEdit.text + _packageTypeOptionButton.text + "\n"
+#	if _linuxCheckBox.button_pressed:
+#		butlerPreview += _exportPathLineEdit.text + versionPath + "\\" + presetType + "\\" + _exportTypeOptionButton.text + "\\" + _exportFileNameLineEdit.text + _packageTypeOptionButton.text + "\n"
+#	if _webCheckBox.button_pressed:
+#		butlerPreview += _exportPathLineEdit.text + versionPath + "\\" + presetType + "\\" + _exportTypeOptionButton.text + "\\" + _exportFileNameLineEdit.text + _packageTypeOptionButton.text
+#
+#	return butlerPreview
 	
 func GetButlerPreview():
 	if !FormValidationCheckIsSuccess():
