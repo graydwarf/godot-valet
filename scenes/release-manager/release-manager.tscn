@@ -334,7 +334,6 @@ text = "ERRORS: "
 
 [node name="ErrorCountLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer"]
 layout_mode = 2
-tooltip_text = "Shows the total number of errors found across all outputs."
 text = "0"
 
 [node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer"]
@@ -350,7 +349,6 @@ text = "WARNINGS: "
 
 [node name="WarningsCountLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer/MarginContainer/HBoxContainer"]
 layout_mode = 2
-tooltip_text = "Shows the total number of warnings found across all outputs."
 text = "0"
 
 [node name="VBoxContainer2" type="VBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer"]

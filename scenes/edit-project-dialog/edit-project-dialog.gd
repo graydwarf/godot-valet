@@ -6,7 +6,6 @@ extends ColorRect
 @onready var _fileDialog = $FileDialog
 @onready var _extractProjectNameCheckBox = $VBoxContainer/OptionsHBoxContainer/ExtractProjectNameCheckBox
 
-var _projectId = null
 var _litOfGodotVersionIds = []
 var _selectedProjectItem = null
 
@@ -19,7 +18,6 @@ func ConfigureForSelectedProject(selectedProjectItem):
 	LoadProject()
 
 func LoadProject():
-	var config = ConfigFile.new()
 	_projectNameLineEdit.text = _selectedProjectItem.GetProjectName()
 	_projectPathLineEdit.text = _selectedProjectItem.GetProjectPath()
 	var a = _selectedProjectItem.GetGodotVersion()
@@ -137,14 +135,6 @@ func _on_save_button_pressed():
 
 func _on_select_project_folder_button_pressed():
 	_fileDialog.show()
-
-func _on_extract_project_name_check_box_pressed():
-	pass
-#	if _extractProjectNameCheckBox.button_pressed:
-#		var projectFileText = Files.GetFileAsText(_projectPathLineEdit.text)
-#
-#		GetGodotFileVersion(_godotPathLineEdit.text)
-
 
 func _on_file_dialog_file_selected(path):
 	ProcessSelectedProject(path)

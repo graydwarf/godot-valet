@@ -59,11 +59,6 @@ custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "Select Folder"
 
-[node name="OpenProjectFolderButton2" type="Button" parent="VBoxContainer/ProjectPathHBoxContainer"]
-custom_minimum_size = Vector2(140, 0)
-layout_mode = 2
-text = "Open Folder"
-
 [node name="ProjectNameHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 0

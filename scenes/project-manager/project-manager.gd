@@ -3,6 +3,7 @@ extends ColorRect
 @onready var _runProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RunProjectButton
 @onready var _editProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/EditProjectButton
 @onready var _releaseProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ReleaseProjectButton
+@onready var _openProjectFolderButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/OpenProjectFolderButton
 
 @onready var _changeProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ChangeProjectButton
 @onready var _removeProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RemoveProjectButton
@@ -40,11 +41,12 @@ func LoadOpenGodotButtons():
 		var err = config.load("user://" + Game.GetGodotVersionItemFolder() + "/" + fileName + ".cfg")
 		if err == OK:
 			var godotVersion = config.get_value("GodotVersionSettings", "godot_version", "")
-			var button = load("res://scenes/nav-button/nav-button.tscn").instantiate()
+			var button : Button = load("res://scenes/nav-button/nav-button.tscn").instantiate()
 			button.text = "Open " + godotVersion
 			button.size.x = 140
 			button.SetCustomVar1(fileName)
 			button.pressed.connect(_on_button_pressed.bind(button))
+			button.tooltip_text = "Launches into the Godot Project Manager for the given version."
 			#button.connect("pressed", _on_button_pressed)
 			_customButtonContainer.add_child(button)
 
@@ -211,7 +213,7 @@ func DisableEditButtons():
 	_runProjectButton.disabled = true
 	_editProjectButton.disabled = true
 	_releaseProjectButton.disabled = true
-	
+	_openProjectFolderButton.disabled = true
 	_changeProjectButton.disabled = true
 	_removeProjectButton.disabled = true
 	
@@ -219,6 +221,7 @@ func EnableEditButtons():
 	_runProjectButton.disabled = false
 	_editProjectButton.disabled = false
 	_releaseProjectButton.disabled = false
+	_openProjectFolderButton.disabled = false
 	_changeProjectButton.disabled = false
 	_removeProjectButton.disabled = false
 		
@@ -324,7 +327,11 @@ func DeleteSelectedProject():
 	
 func RemoveProject():
 	$DeleteConfirmationDialog.show()
-	
+
+func OpenProjectFolder():
+	var projectPath = _selectedProjectItem.GetProjectPathBaseDir()
+	OS.shell_open(projectPath)
+
 func _on_new_project_button_pressed():
 	CreateNewProject()
 	
@@ -353,3 +360,6 @@ func _on_release_project_button_pressed():
 	var releaseManager = load("res://scenes/release-manager/release-manager.tscn").instantiate()
 	add_child(releaseManager)
 	releaseManager.ConfigureReleaseManagementForm(_selectedProjectItem)
+
+func _on_open_project_folder_button_pressed():
+	OpenProjectFolder()

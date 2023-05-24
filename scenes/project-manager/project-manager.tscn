@@ -79,6 +79,12 @@ tooltip_text = "Opens the selected projects release configuration which supports
 disabled = true
 text = "Release"
 
+[node name="OpenProjectFolderButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Opens the selected projects release configuration which supports exporting and publish to multiple platforms."
+disabled = true
+text = "Open Folder"
+
 [node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/margin_top = 10
@@ -146,6 +152,7 @@ dialog_autowrap = true
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RunProjectButton" to="." method="_on_run_project_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/EditProjectButton" to="." method="_on_edit_project_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ReleaseProjectButton" to="." method="_on_release_project_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/OpenProjectFolderButton" to="." method="_on_open_project_folder_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/NewProjectButton" to="." method="_on_new_project_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ChangeProjectButton" to="." method="_on_change_project_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RemoveProjectButton" to="." method="_on_remove_project_button_pressed"]

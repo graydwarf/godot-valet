@@ -86,8 +86,8 @@ func ValidateExportFilePathText():
 			
 func ValidateFileNameText(text):
 	var validCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
-	for char in text:
-		var a = validCharacters.find(char)
+	for t in text:
+		var a = validCharacters.find(t)
 		if a == -1:
 			return false
 	return true
@@ -709,7 +709,7 @@ func _on_export_file_name_line_edit_text_changed(_new_text):
 	ValidateExportFilePathText()
 	_isDirty = true
 
-func _on_export_path_line_edit_text_changed(new_text):
+func _on_export_path_line_edit_text_changed(_new_text):
 	GenerateExportPreview()
 	GenerateButlerPreview()
 	ValidateExportFilePathText()
