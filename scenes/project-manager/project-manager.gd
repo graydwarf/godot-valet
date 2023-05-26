@@ -238,22 +238,20 @@ func RunProject():
 	_runProjectThread = Thread.new()
 	_runProjectThread.start(StartProjectThread)
 
+# We don't want this actually. When Godot Valet exits,
+# it calls this method and we don't want it to wait for 
+# launched threads to exit. Leaving here as a reminder.
 func _exit_tree():
-	if is_instance_valid(_runProjectThread):
-		_runProjectThread.wait_to_finish()
-
-	if is_instance_valid(_editProjectThread):
-		_editProjectThread.wait_to_finish()
+#	if is_instance_valid(_runProjectThread):
+#		_runProjectThread.wait_to_finish()
+	pass
 	
-	if is_instance_valid(_openGodotProjectManagerThread):
-		_openGodotProjectManagerThread.wait_to_finish()
-		
 func StartProjectThread():
 	var output = []
 	var godotArguments = ["--path", _selectedProjectItem.GetProjectPathBaseDir()]
 	var versionId = _selectedProjectItem.GetGodotVersionId()
 	var godotPath = _selectedProjectItem.GetGodotPath(versionId)
-	OS.execute(godotPath, godotArguments, output)
+	OS.execute(godotPath, godotArguments, output, false, false)
 	
 func EditProject():
 	if !is_instance_valid(_selectedProjectItem):

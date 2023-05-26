@@ -426,18 +426,13 @@ func GetExportPreview():
 		exportPreview += AddPreviewLine("linux")
 	
 	if _webCheckBox.button_pressed:
-		exportPreview += AddPreviewLine("web")
+		exportPreview += AddPreviewLine("html5")
 
 	return exportPreview
 
 func AddPreviewLine(presetType):
 	var versionPath = GetGroomedVersionPath()
-	var zipFileName = ""
-	if _autoGenerateExportFileNamesCheckBox.button_pressed:
-		zipFileName = _exportFileNameLineEdit.text + "-" + _projectVersionLineEdit.text + "-" + presetType
-	else:
-		zipFileName = _exportFileNameLineEdit.text
-	
+	var zipFileName = GetZipFileName(presetType)
 	var packageType = _packageTypeOptionButton.text.to_lower()
 	if packageType == "zip" || packageType == "zip + clean":
 		packageType = ".zip"
@@ -445,22 +440,18 @@ func AddPreviewLine(presetType):
 		packageType = ""
 		
 	return GetFormattedExportPath() + versionPath + "\\" + presetType + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + zipFileName + packageType + "\n"
-		
+
+func GetZipFileName(presetType):
+	var zipFileName = ""
+	if _autoGenerateExportFileNamesCheckBox.button_pressed:
+		zipFileName = _exportFileNameLineEdit.text + "-" + _projectVersionLineEdit.text + "-" + presetType
+	else:
+		zipFileName = _exportFileNameLineEdit.text
+	return zipFileName
+	
 func GetFormattedExportPath():
 	return _exportPathLineEdit.text.trim_prefix(" ").trim_suffix(" ").to_lower().replace("/", "\\")
 
-#func GetButlerPreview(presetType):
-#	var butlerPreview = ""
-#	var versionPath = GetGroomedVersionPath()
-#	if _windowsCheckBox.button_pressed:
-#		butlerPreview += _exportPathLineEdit.text + versionPath + "\\" + presetType + "\\" + _exportTypeOptionButton.text + "\\" + _exportFileNameLineEdit.text + _packageTypeOptionButton.text + "\n"
-#	if _linuxCheckBox.button_pressed:
-#		butlerPreview += _exportPathLineEdit.text + versionPath + "\\" + presetType + "\\" + _exportTypeOptionButton.text + "\\" + _exportFileNameLineEdit.text + _packageTypeOptionButton.text + "\n"
-#	if _webCheckBox.button_pressed:
-#		butlerPreview += _exportPathLineEdit.text + versionPath + "\\" + presetType + "\\" + _exportTypeOptionButton.text + "\\" + _exportFileNameLineEdit.text + _packageTypeOptionButton.text
-#
-#	return butlerPreview
-	
 func GetButlerPreview():
 	if !FormValidationCheckIsSuccess():
 		return ""
@@ -468,32 +459,33 @@ func GetButlerPreview():
 	if _packageTypeOptionButton.text == "No Zip":
 		_butlerPreviewTextEdit.text = ""
 		return ""
-
-	var versionPath = GetGroomedVersionPath()
+	
+	var zipFileName = ""
 	var butlerPreview = ""
 	if _windowsCheckBox.button_pressed:
-		butlerPreview += "butler push " + GetFormattedExportPath() + versionPath + "\\" + "windows" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _exportFileNameLineEdit.text.to_lower() + ".zip " + _itchProfileNameLineEdit.text.to_lower() + "/" + _itchProjectNameLineEdit.text.to_lower() + ":windows" + "\n"
+		butlerPreview += AddButlerPreviewLine("windows")
+
 	if _linuxCheckBox.button_pressed:
-		butlerPreview += "butler push " + GetFormattedExportPath() + versionPath + "\\" + "linux" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _exportFileNameLineEdit.text.to_lower() + ".zip " + _itchProfileNameLineEdit.text.to_lower() + "/" + _itchProjectNameLineEdit.text.to_lower() + ":linux" + "\n"
+		butlerPreview += AddButlerPreviewLine("linux")
+		
 	if _webCheckBox.button_pressed:
-		butlerPreview += "butler push " + GetFormattedExportPath() + versionPath + "\\" + "html5" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _exportFileNameLineEdit.text.to_lower() + ".zip " + _itchProfileNameLineEdit.text.to_lower() + "/" + _itchProjectNameLineEdit.text.to_lower() + ":html5"
+		butlerPreview += AddButlerPreviewLine("html5")
 
 	return butlerPreview
 
+func AddButlerPreviewLine(presetType):
+	var zipFileName = GetZipFileName(presetType)	
+	var versionPath = GetGroomedVersionPath()
+	return "butler push " + GetFormattedExportPath() + versionPath + "\\" + presetType + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + zipFileName + ".zip " + _itchProfileNameLineEdit.text.to_lower() + "/" + _itchProjectNameLineEdit.text.to_lower() + ":" + presetType + "\n"
+	
 func GetButlerPushCommand(presetName):
 	var versionPath = GetGroomedVersionPath()
 	if !FormValidationCheckIsSuccess():
 		return []
 	elif _packageTypeOptionButton.text == "No Zip":
 		_butlerPreviewTextEdit.text = ""
-	elif presetName == "windows":
-		return ["push", GetFormattedExportPath() + versionPath + "\\" + "windows" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _exportFileNameLineEdit.text.to_lower() + ".zip", _itchProfileNameLineEdit.text.to_lower() + "/" + _exportFileNameLineEdit.text.to_lower() + ":windows"]
-	elif presetName == "linux":
-		return ["push", GetFormattedExportPath() + versionPath + "\\" + "linux" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _exportFileNameLineEdit.text.to_lower() + ".zip", _itchProfileNameLineEdit.text.to_lower() + "/" + _exportFileNameLineEdit.text.to_lower() + ":linux"]
-	elif presetName == "web":
-		return ["push", GetFormattedExportPath() + versionPath + "\\" + "html5" + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + _exportFileNameLineEdit.text.to_lower() + ".zip", _itchProfileNameLineEdit.text.to_lower() + "/" + _exportFileNameLineEdit.text.to_lower() + ":html5"]
 
-	return []
+	return ["push", GetFormattedExportPath() + versionPath + "\\" + presetName + "\\" + _exportTypeOptionButton.text.to_lower() + "\\" + GetZipFileName(presetName)  + ".zip", _itchProfileNameLineEdit.text.to_lower() + "/" + _exportFileNameLineEdit.text.to_lower() + ":" + presetName]
 	
 # Example: butler push ...\godot-valet\exports\v0.0.1\godot-valet.zip poplava/godot-valet:windows
 func GetButlerArguments(publishType):
@@ -534,25 +526,35 @@ func PublishToItchUsingButler():
 	if !FormValidationCheckIsSuccess():
 		OS.alert("Invalid publish configuration")
 		return
-		
+	
+	StartBusyBackground("")
+	
+	var thread = Thread.new()
+	thread.start(ExecuteButlerCommandsThread)
+
+func ExecuteButlerCommandsThread():
 	if _windowsCheckBox.button_pressed:
-		var output = []
+		_busyBackground.SetBusyDoingWhatLabel("Publishing Windows...")
 		var butlerCommand = GetButlerPushCommand("windows")
-		var exitCode = OS.execute("butler", butlerCommand, output, true)
-		LogButlerResults(exitCode, output, "Butler Windows")
+		ExecuteButlerCommand(butlerCommand, "Butler Windows")
 		
 	if _linuxCheckBox.button_pressed:
-		var output = []
 		var butlerCommand = GetButlerPushCommand("linux")
-		var exitCode = OS.execute("butler", butlerCommand, output, true)
-		LogButlerResults(exitCode, output, "Butler Linux")
-	
-	if _webCheckBox.button_pressed:
-		var output = []
-		var butlerCommand = GetButlerPushCommand("web")
-		var exitCode = OS.execute("butler", butlerCommand, output, true)
-		LogButlerResults(exitCode, output, "Butler Html5")
+		_busyBackground.SetBusyDoingWhatLabel("Publishing Linux...")
+		ExecuteButlerCommand(butlerCommand, "Butler Linux")
 
+	if _webCheckBox.button_pressed:
+		var butlerCommand = GetButlerPushCommand("html5")
+		_busyBackground.SetBusyDoingWhatLabel("Publishing Web...")
+		ExecuteButlerCommand(butlerCommand, "Butler Html5")
+	
+	ClearBusyBackground()
+	
+func ExecuteButlerCommand(butlerCommand, outputName):
+	var output = []
+	var exitCode = OS.execute("butler", butlerCommand, output, true)
+	LogButlerResults(exitCode, output, outputName)
+		
 func LogButlerResults(exitCode, output, tabName):
 	var results = []
 	results.append("------------------ Butler ------------------")
