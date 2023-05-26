@@ -460,7 +460,6 @@ func GetButlerPreview():
 		_butlerPreviewTextEdit.text = ""
 		return ""
 	
-	var zipFileName = ""
 	var butlerPreview = ""
 	if _windowsCheckBox.button_pressed:
 		butlerPreview += AddButlerPreviewLine("windows")
@@ -618,72 +617,10 @@ func ClearOutput():
 func DisplayOutput(output):
 	var groomedOutput = str(output).replace("\\r\\n", "\n")
 	call_deferred("SetOutputText", groomedOutput)
-#
-#func RunProjectWithConsoleThread():
-#	var output = []
-#	var godotArguments = ["/C", _godotPathLineEdit.text,  "--path", _exportPathLineEdit.text]
-#	OS.execute("CMD.exe", godotArguments, output, true, true)
-#	DisplayOutput(output)
-	
-	#_outputTextEdit.text += "Output: " + str(output).replace("\\r\\n", "\n")
-	
-#func EditProjectInEditorWithConsoleThread():
-#	var output = []
-#	var godotArguments = ["/C", _godotPathLineEdit.text, "--editor", "--verbose", "--debug", "--path", _exportPathLineEdit.text]
-#	OS.execute("CMD.exe", godotArguments, output, true, true)
-#	DisplayOutput(output)
-
-
-	
-#func RunProjectWithConsole():
-#	var projectFile = Files.FindFirstFileWithExtension(GetFormattedProjectPath(), ".godot")
-#	if projectFile == null || !FileAccess.file_exists(projectFile):
-#		OS.alert("Did not find a project (.godot) file in the specified project path")
-#		return
-#
-#	ClearOutput()
-#	var thread = Thread.new()
-#	thread.start(RunProjectWithConsoleThread)
-#
-#func EditProjectWithConsole():
-#	var projectFile = Files.FindFirstFileWithExtension(GetFormattedProjectPath(), ".godot")
-#	if projectFile == null || !FileAccess.file_exists(projectFile):
-#		OS.alert("Did not find a project (.godot) file in the specified project path")
-#		return
-#
-#	ClearOutput()
-#	var thread = Thread.new()
-#	thread.start(EditProjectInEditorWithConsoleThread)
-
-#func EditProject():
-#	var projectFile = Files.FindFirstFileWithExtension(GetFormattedProjectPath(), ".godot")
-#	if projectFile == null || !FileAccess.file_exists(projectFile):
-#		OS.alert("Did not find a project (.godot) file in the specified project path")
-#		return
-#
-#	ClearOutput()
-#	var thread = Thread.new()
-#	thread.start(EditProjectInGodotEditorThread)
-	
-
-
-#func OpenGodotProjectManager():
-#	ClearOutput()
-#	var thread = Thread.new()
-#	thread.start(RunGodotProjectManagerThread)
 
 func ShowSaveChangesDialog():
 	_saveChangesConfirmationDialog.show()
 
-func GetUniqueFileName(a):
-#	var zipFileName = _exportFileNameLineEdit.text + "-" + _projectVersionLineEdit.text + "-" + releaseProfileName + ".zip" 
-#
-#	if _autoGenerateExportFileNamesCheckBox.button_pressed:
-#
-#	return _exportFileNameLineEdit.text
-	pass
-	
-	
 func _on_export_button_pressed():
 	ExportProject()
 
