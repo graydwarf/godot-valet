@@ -26,13 +26,14 @@ var _busyBackground
 var _selectedProjectItem = null
 var _isDirty = false
 var _isClosingReleaseManager = false
+var _exportWithInstallerStep = 0
 
 func _ready():
 	InitSignals()
-	color = Game.GetDefaultBackgroundColor()
+	color = App.GetDefaultBackgroundColor()
 
 func InitSignals():
-	pass
+	Signals.connect("ExportWithInstaller", ExportWithInstaller)
 
 func ConfigureReleaseManagementForm(selectedProjectItem):
 	_selectedProjectItem = selectedProjectItem
@@ -146,7 +147,8 @@ func ExportPreset(presetFullName):
 	OS.execute(_godotPathLineEdit.text, args, output, readStdeer, openConsole) 
 
 	var groomedOutput = str(output).replace("\\r\\n", "\n")
-	if _useSha256CheckBox.button_pressed:
+	
+	if _useSha256CheckBox.button_pressed && FileAccess.file_exists(exportPath + "\\" + _exportFileNameLineEdit.text + extensionType):
 		# Create a checksum of the core binary (.exe, .x86_64)
 		var checksum = CreateChecksum(exportPath + "\\" + _exportFileNameLineEdit.text + extensionType)
 		groomedOutput += "\n"
@@ -180,7 +182,7 @@ func ExportProject():
 	
 	# Call directly to debug 
 	# Note: The busy screen doesn't work as expected outside thread.
-	# ExportProjectThread()
+	#ExportProjectThread()
 
 # Can't debug in threaded operations. Call
 # directly to debug
@@ -195,9 +197,178 @@ func ExportProjectThread():
 		ExportWithZipWithCleanup()
 	elif _packageTypeOptionButton.text == "No Zip":
 		ExportWithoutZip()
+	elif _packageTypeOptionButton.text == "Installer":
+		_exportWithInstallerStep = 0
+		ExportWithInstaller()
 
+	# TODO: This will need to be moved to the end of each workflow.
 	# Deferring to make sure the _outputTabs/content get added before counting
 	call_deferred("CompleteExport")
+
+#
+# ExportWithInstaller will be called multiple times
+# In some cases, we'll be on the same step after downloading a file.
+#
+# Step #0 - Export project files <project>.exe and <project>.pck
+# Step #1 - Export godot-ignition if it exists and is valid.
+#	Otherwise, trigger download workflows which call back-in to repeat step 1 until complete
+# Step #2 - Export godot-fetch if it exists and is valid.
+#	Otherwise, trigger download workflows which call back-in to repeat step 2 until complete
+# Step #3 - Generate secrets and configuration files
+# Step #4 - Package files into final .zip
+#
+func ExportWithInstaller():
+	if _exportWithInstallerStep == 0:
+		ExportWithoutZip()
+		_exportWithInstallerStep += 1
+		Signals.emit_signal("ExportWithInstaller")
+	elif _exportWithInstallerStep == 1:
+		CheckForNeededSupportFiles(1)
+		# How do we know what version to use?
+		# How often do we check for latest? Once a day?
+		# We can have a file called godot-ignition-latest.txt. In this manner
+		# we have a static reference to use for getting latest.
+		# 	- windows
+		# 		- latest-version: v0.0.2
+		#		- checksum: 3241745134094
+		#	- linux
+		#		- latest-version: v0.0.3
+		#		- checksum: 3241745134094
+		# How do we know what OS is needed?
+		# How do we iterate through each OS?
+		#var fileName = "godot-ignition" #-v0.0.2-windows.zip
+		#var isUnpacking = true
+		#HandleFileExportWorkflow(fileName, isUnpacking)
+	elif _exportWithInstallerStep == 2:
+		var fileName = "godot-fetch.zip"
+		var isUnpacking = true
+		HandleFileExportWorkflow(fileName, isUnpacking)
+	elif _exportWithInstallerStep == 3:
+		# At some point, we need godot-iginition to be renamed to <project>-<version>-<os>-installer.exe
+		# godot-ignition.exe, godot-ignition.pck, godot-fetch.exe, godot-fetch.pck, <project>.exe, <project.pck> are in the export dir
+		GenerateInstallerConfigurationFiles()
+	elif _exportWithInstallerStep == 4:
+		PackageInstallerFiles()
+
+func CheckForNeededSupportFiles(checkingForSupportFileUpdatesState):
+	# LEFT OFF HERE:
+	# Collect a list of required support files <fileName> and os?
+	if true: # if user has godot-valet auto-update enabled?
+		if HasUpdateTimeExpired():
+			App.SetLastUpdateTime(Time.get_unix_time_from_system())
+			CheckForSupportFileUpdates(1)
+	else:
+		# check if any files are missing
+		# if so, prompt user to download
+		# Trigger download
+		pass
+
+func CheckForSupportFileUpdates(supportFileUpdateState):
+	if supportFileUpdateState == 0:
+		if _windowsCheckBox.button_pressed:
+			# Check for support file selections (installer and godot-fetch)
+			pass
+	elif supportFileUpdateState == 1:
+		if _linuxCheckBox.button_pressed:
+			pass
+	else:
+		# Done checking for support file updates
+		pass
+		
+func HasUpdateTimeExpired():
+	var currentTime = Time.get_unix_time_from_system()
+	var timePasseInHours = (currentTime - App.GetLastUpdateTime()) / 3600
+	if timePasseInHours >= 24:
+		return true
+	return false
+		
+func PackageInstallerFiles():
+	# zip and package into single .zip file named <project><version><os>.zip
+	pass
+	
+func GenerateInstallerConfigurationFiles():
+	# Generate secret guid to pass into each
+	# Generate godot-ignition.cfg
+	# Generate godot-fetch.cfg
+	# Generate <project>.cfg
+	_exportWithInstallerStep += 1
+	Signals.emit_signal("ExportWithInstaller")
+
+func HandleFileExportWorkflow(fileName, isUnpacking = false):
+	if App.GetLastAzureUpdateCheck() == true:
+		pass
+		
+	if !FileAccess.file_exists(fileName):
+		# TODO: REMEMBER: WE NEED TO DOWNLOAD OS SPECIFIC FILES
+		# godot-fetch-v0.0.1.linux.zip
+		BeginDownloadingMissingFileWorkflow(fileName)
+	else:
+		# I think we're going to download a checksum file for each project.
+		# We can't bury the checksum in the config of the project because we
+		# need to validate the .zip it comes in.
+		if true: #expectedChecksum != GetCheckSum(fileName):
+			# Inform user and prompt to download. trigger those workflows
+			pass
+		else:
+			ExportPackedFile(fileName, isUnpacking)
+			_exportWithInstallerStep += 1
+			#yield() # break call chain
+			Signals.emit_signal("ExportWithInstaller")
+			#return
+
+func BeginDownloadingMissingFileWorkflow(fileName):
+	# TODO: REMEMBER: WE NEED TO DOWNLOAD OS SPECIFIC FILES
+	# godot-fetch-v0.0.1.linux.zip
+	if App.GetAutoUpdate():
+		# Trigger download
+		pass
+	else:
+		pass
+	
+# App.GetGodotFetchChecksum()
+func ExportPackedFile(fileName, expectedChecksum):
+	if !FileAccess.file_exists(fileName):
+		if true: #expectedChecksum == GetCheckSum(fileName):
+			#UnpackIntoExportDirectory(fileName)
+			pass
+		else:
+			# Inform user and prompt to download a new version
+			pass
+	else:
+		# Inform user and depending on the auto-install option:
+		# Prompt user or auto-download .zip
+		if true: #expectedChecksum == GetCheckSum(fileName):
+			#UnpackIntoExportDirectory(fileName)
+			pass
+			
+func PackageInstaller():
+	# godot-ignition.exe, godot-ignition.pck
+	# <project-name>.exe, <project-name>.pck
+	# godot-fetch.exe, godot-fetch.pck
+	# We need all these in a .zip
+	# 	- Rename the project.exe and project.pck to <project>-1.dll & <project>-2.dll
+	# 	- Rename godot-ignition.exe to <project>-installer.exe
+	# We need the godot-ignition binary to be the clear godot executable
+	# We need the other files to be non-executable so the user accepts the license before they can use
+	# godot-ignition.exe needs to know to look locally for project files before looking to the cloud (cfg)
+	# godot-ignition cfg
+	#    - gets relative paths for all files
+	#    - gets checksums for all files
+	#    - gets, creates and/or passes encryption passwords to projects
+	# godot-ignition unpacks other files into working directory
+	pass
+
+func BeginGodotIgnitionDownloadWorkflows():
+	if true: #auto-install enabled:
+		# DownloadGodotIgnition()
+		# Define callback to begin checksum valiation and call VerifyInstallerPackages(2)
+		pass
+	else:
+		# Prompt user about missing files to download
+		# Else where, define Accept callback
+		# Download file
+		# Elsewhere, emit_signal or call ExportWithInstaller()
+		pass
 
 func CompleteExport():
 	CountErrors()
@@ -237,13 +408,16 @@ func ExportWithoutZip():
 
 func ExportWithZipWithCleanup():
 	ExportWithZip(true)
-	
+
+
+		
 func ExportWithZip(isCleaningUp = false):
 	if _windowsCheckBox.button_pressed:
 		_busyBackground.SetBusyDoingWhatLabel("Exporting for Windows...")
 		var presetFullName = "Windows Desktop"
 		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
-		
+		# TODO: Refactor so we only touch files we generate. We know what we're
+		# generating so no need to ignore anything.
 		listOfExistingFilesToLeaveAlone.append(GetItchReleaseProfileName(presetFullName) + "-" + _projectVersionLineEdit.text + "-" + _exportFileNameLineEdit.text + ".zip")
 		ExportPreset(presetFullName)
 		var fileToIgnore = ZipFiles(presetFullName)
@@ -255,6 +429,8 @@ func ExportWithZip(isCleaningUp = false):
 	if _linuxCheckBox.button_pressed:
 		_busyBackground.SetBusyDoingWhatLabel("Exporting for Linux...")
 		var presetFullName = "Linux/X11"
+		# TODO: Refactor so we only touch files we generate. We know what we're
+		# generating so no need to ignore anything.
 		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
 		listOfExistingFilesToLeaveAlone.append(_exportFileNameLineEdit.text + ".zip")
 		ExportPreset(presetFullName)
@@ -267,6 +443,8 @@ func ExportWithZip(isCleaningUp = false):
 	if _webCheckBox.button_pressed:
 		_busyBackground.SetBusyDoingWhatLabel("Exporting for Web...")
 		var presetFullName = "Web"
+		# TODO: Refactor so we only touch files we generate. We know what we're
+		# generating so no need to ignore anything.
 		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
 		ExportPreset(presetFullName)
 		RenameHomePageToIndex(presetFullName)

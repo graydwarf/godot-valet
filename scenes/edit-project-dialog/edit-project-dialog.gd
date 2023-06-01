@@ -10,7 +10,7 @@ var _litOfGodotVersionIds = []
 var _selectedProjectItem = null
 
 func _ready():
-	color = Game.GetDefaultBackgroundColor()
+	color = App.GetDefaultBackgroundColor()
 	LoadGodotVersion()
 
 func ConfigureForSelectedProject(selectedProjectItem):
@@ -35,7 +35,7 @@ func GetGodotVersion(godotVersionId):
 			continue
 			
 		var config = ConfigFile.new()
-		var err = config.load("user://" + Game.GetGodotVersionItemFolder() + "/" + fileName + ".cfg")
+		var err = config.load("user://" + App.GetGodotVersionItemFolder() + "/" + fileName + ".cfg")
 		if err == OK:
 			return config.get_value("GodotVersionSettings", "godot_version", "???")
 			
@@ -105,7 +105,7 @@ func SaveSettingsFile(projectId, godotVersionId):
 	config.set_value("ProjectSettings", "project_path", _projectPathLineEdit.text)
 
 	# Save the config file.
-	var err = config.save("user://" + Game.GetProjectItemFolder() + "/" + projectId + ".cfg")
+	var err = config.save("user://" + App.GetProjectItemFolder() + "/" + projectId + ".cfg")
 
 	if err != OK:
 		OS.alert("An error occurred while saving the config file.")

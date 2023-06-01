@@ -1,0 +1,102 @@
+[gd_scene load_steps=3 format=3 uid="uid://bppck7g3x7tja"]
+
+[ext_resource type="Script" path="res://scenes/admin-screen/admin-screen.gd" id="1_034de"]
+[ext_resource type="Theme" uid="uid://5kt2y65bmlvd" path="res://assets/themes/default-button-theme.tres" id="1_70db8"]
+
+[node name="AdminScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_034de")
+
+[node name="HBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 27.0
+grow_horizontal = 2
+
+[node name="InstructionLabel" type="Label" parent="HBoxContainer"]
+custom_minimum_size = Vector2(400, 0)
+layout_mode = 2
+text = "We're dealing with two config files. The first is the admin config which controls whether we use encryption when loading and creating any config files. The second is the project config which holds version info and any secrets we want to keep (db credentials and etc)
+
+Steps 5+ are for creating the project config file for local testing. Normally, this config file will be created, provided and encrypted by your release pipelne (godot-valet) because it generates and encrypts the file on the fly to contain  version information, db secrets, OS info, blob storage info and etc.
+
+1. Run Current Scene (F6)"
+autowrap_mode = 2
+
+[node name="CreateAdminTemplateButton" type="Button" parent="HBoxContainer"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+theme = ExtResource("1_70db8")
+text = "2. Create Admin Template"
+
+[node name="InstructionLabel2" type="Label" parent="HBoxContainer"]
+custom_minimum_size = Vector2(400, 0)
+layout_mode = 2
+text = "3. Edit the admin config (godot-fetch-test-admin.cfg) to enable or disable encryption when generating other config files.
+4. Add the godot-fetch-test-admin.cfg to your export ignores and your source control ignores."
+autowrap_mode = 2
+
+[node name="CreateConfigTemplateButton2" type="Button" parent="HBoxContainer"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+theme = ExtResource("1_70db8")
+text = "5. Create Config Template"
+
+[node name="InstructionLabel4" type="Label" parent="HBoxContainer"]
+custom_minimum_size = Vector2(400, 0)
+layout_mode = 2
+text = "6. Edit the config template. Plug in your project settings. "
+autowrap_mode = 2
+
+[node name="InstructionLabel5" type="Label" parent="HBoxContainer"]
+custom_minimum_size = Vector2(400, 0)
+layout_mode = 2
+text = "7. Add godot-fetch-test-template.cfg to your export and source control .ignores to prevent potential secrets from being committed into source control."
+autowrap_mode = 2
+
+[node name="InstructionLabel3" type="Label" parent="HBoxContainer"]
+custom_minimum_size = Vector2(400, 0)
+layout_mode = 2
+text = "8. Do you want to encrypt your config file? Not recommended for development."
+autowrap_mode = 2
+
+[node name="EncryptCheckBox" type="CheckBox" parent="HBoxContainer"]
+layout_mode = 2
+text = "Encrypt Config File"
+
+[node name="LoadConfigTemplateSettings" type="Button" parent="HBoxContainer"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+theme = ExtResource("1_70db8")
+text = "9. Load Template Changes (if needed or restart)"
+
+[node name="GenerateButton" type="Button" parent="HBoxContainer"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+theme = ExtResource("1_70db8")
+text = "10. Generate Config File (from Template)"
+
+[node name="ConfirmationDialog" type="ConfirmationDialog" parent="."]
+initial_position = 1
+ok_button_text = "Yes"
+dialog_text = "Admin config file already exists! Do you want to overwrite it with an empty template?"
+
+[connection signal="pressed" from="HBoxContainer/CreateAdminTemplateButton" to="." method="_on_create_admin_template_button_pressed"]
+[connection signal="pressed" from="HBoxContainer/CreateConfigTemplateButton2" to="." method="_on_create_config_template_button_2_pressed"]
+[connection signal="pressed" from="HBoxContainer/LoadConfigTemplateSettings" to="." method="_on_load_config_template_settings_pressed"]
+[connection signal="pressed" from="HBoxContainer/GenerateButton" to="." method="_on_generate_button_pressed"]
+[connection signal="confirmed" from="ConfirmationDialog" to="." method="_on_confirmation_dialog_confirmed"]

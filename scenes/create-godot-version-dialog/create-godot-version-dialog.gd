@@ -33,7 +33,7 @@ func CreateNewGodotVersionSettingsFile():
 		id = Common.GetId()
 		
 	# Save the config file.
-	var err = config.save("user://" + Game.GetGodotVersionItemFolder() +"/" + id + ".cfg")
+	var err = config.save("user://" + App.GetGodotVersionItemFolder() +"/" + id + ".cfg")
 
 	if err != OK:
 		OS.alert("An error occurred while saving the config file.")

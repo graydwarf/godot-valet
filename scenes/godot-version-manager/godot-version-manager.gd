@@ -6,7 +6,7 @@ var _selectedGodotVersionItem
 
 func _ready():
 	InitSignals()
-	color = Game.GetDefaultBackgroundColor()
+	color = App.GetDefaultBackgroundColor()
 	LoadGodotVersionItems()
 	
 func InitSignals():
@@ -32,14 +32,14 @@ func RemoveSelectedVersionItem():
 
 func IsGodotVersionInUse():
 	var projectsUsingThisGodotVersion = 0
-	var allResourceFiles = Files.GetFilesFromPath("user://" + Game.GetProjectItemFolder())
+	var allResourceFiles = Files.GetFilesFromPath("user://" + App.GetProjectItemFolder())
 	for resourceFile in allResourceFiles:
 		if !resourceFile.ends_with(".cfg"):
 			continue
 
 		var projectId = resourceFile.trim_suffix(".cfg")
 		var config = ConfigFile.new()
-		var err = config.load("user://" + Game.GetProjectItemFolder() + "/" + projectId + ".cfg")
+		var err = config.load("user://" + App.GetProjectItemFolder() + "/" + projectId + ".cfg")
 		if err == OK:
 			var godotVersionId = config.get_value("ProjectSettings", "godot_version_id", "")
 			if godotVersionId == _selectedGodotVersionItem.GetGodotVersionId():
@@ -54,7 +54,7 @@ func DeleteGodotVersionConfiguration():
 
 func DeleteGodotVersion():
 	_godotVersionItemContainer.remove_child(_selectedGodotVersionItem)
-	DirAccess.remove_absolute("user://" + Game.GetGodotVersionItemFolder() + "/" + _selectedGodotVersionItem.GetGodotVersionId() + ".cfg")
+	DirAccess.remove_absolute("user://" + App.GetGodotVersionItemFolder() + "/" + _selectedGodotVersionItem.GetGodotVersionId() + ".cfg")
 	_selectedGodotVersionItem = null
 	Signals.emit_signal("GodotVersionsChanged")
 
@@ -72,7 +72,7 @@ func EditSelectedGodotVersion():
 	editGodotVersionDialog.SetGodotPath(_selectedGodotVersionItem.GetGodotPath())
 	
 func LoadGodotVersionItems():
-	var allResourceFiles = Files.GetFilesFromPath("user://" + Game.GetGodotVersionItemFolder())
+	var allResourceFiles = Files.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
 	for resourceFile in allResourceFiles:
 		if !resourceFile.ends_with(".cfg"):
 			continue
@@ -83,7 +83,7 @@ func LoadGodotVersionItems():
 		_godotVersionItemContainer.add_child(godotVersionItem)
 		
 		var config = ConfigFile.new()
-		var err = config.load("user://" + Game.GetGodotVersionItemFolder() + "/" + fileName + ".cfg")
+		var err = config.load("user://" + App.GetGodotVersionItemFolder() + "/" + fileName + ".cfg")
 		if err == OK:
 			godotVersionItem.SetGodotVersion(config.get_value("GodotVersionSettings", "godot_version", ""))
 			godotVersionItem.SetGodotPath(config.get_value("GodotVersionSettings", "godot_path", ""))

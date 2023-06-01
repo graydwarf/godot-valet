@@ -22,7 +22,7 @@ Files="*res://singletons/files.gd"
 Settings="*res://singletons/project/settings.gd"
 Common="*res://singletons/common.gd"
 Uuid="*res://singletons/uuid.gd"
-Game="*res://singletons/project/game.gd"
+App="*res://singletons/project/app.gd"
 
 [display]
 

@@ -139,7 +139,7 @@ func GetGodotPath(godotVersionId):
 			continue
 			
 		var config = ConfigFile.new()
-		var err = config.load("user://" + Game.GetGodotVersionItemFolder() + "/" + fileName + ".cfg")
+		var err = config.load("user://" + App.GetGodotVersionItemFolder() + "/" + fileName + ".cfg")
 		if err == OK:
 			return config.get_value("GodotVersionSettings", "godot_path", "???")
 	
@@ -181,7 +181,7 @@ func SaveProjectItem():
 	config.set_value("ProjectSettings", "itch_project_name", _itchProjectName)
 	
 	# Save the config file.
-	var err = config.save("user://" + Game.GetProjectItemFolder() + "/" + _projectId + ".cfg")
+	var err = config.save("user://" + App.GetProjectItemFolder() + "/" + _projectId + ".cfg")
 
 	if err != OK:
 		OS.alert("An error occurred while saving the config file.")

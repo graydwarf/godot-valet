@@ -17,7 +17,7 @@ var _openGodotProjectManagerThread
 
 func _ready():
 	InitSignals()
-	color = Game.GetDefaultBackgroundColor()
+	color = App.GetDefaultBackgroundColor()
 	InitProjectSettings()
 
 func InitProjectSettings():
@@ -30,7 +30,7 @@ func ClearCustomButtonContainer():
 		
 func LoadOpenGodotButtons():
 	ClearCustomButtonContainer()
-	var files = Files.GetFilesFromPath("user://" + Game.GetGodotVersionItemFolder())
+	var files = Files.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
 	for file in files:
 		if !file.ends_with(".cfg"):
 			continue
@@ -38,7 +38,7 @@ func LoadOpenGodotButtons():
 		var fileName = file.trim_suffix(".cfg")
 		
 		var config = ConfigFile.new()
-		var err = config.load("user://" + Game.GetGodotVersionItemFolder() + "/" + fileName + ".cfg")
+		var err = config.load("user://" + App.GetGodotVersionItemFolder() + "/" + fileName + ".cfg")
 		if err == OK:
 			var godotVersion = config.get_value("GodotVersionSettings", "godot_version", "")
 			var button : Button = load("res://scenes/nav-button/nav-button.tscn").instantiate()
@@ -85,7 +85,7 @@ func SaveValetSettings():
 #	_selectedProjectName = config.get_value("Settings", "selected_project_name", "")
 
 func LoadProjectsIntoProjectContainer():
-	var allResourceFiles = Files.GetFilesFromPath("user://" + Game.GetProjectItemFolder())
+	var allResourceFiles = Files.GetFilesFromPath("user://" + App.GetProjectItemFolder())
 	for resourceFile in allResourceFiles:
 		if !resourceFile.ends_with(".cfg"):
 			continue
@@ -100,7 +100,7 @@ func LoadProjectsIntoProjectContainer():
 			ProjectItemSelected(_selectedProjectItem, isSelected)
 			
 		var config = ConfigFile.new()
-		var err = config.load("user://" + Game.GetProjectItemFolder() + "/" + projectId + ".cfg")
+		var err = config.load("user://" + App.GetProjectItemFolder() + "/" + projectId + ".cfg")
 		if err == OK:
 			projectItem.SetProjectId(projectId)
 			projectItem.SetProjectName(config.get_value("ProjectSettings", "project_name", "New Project"))
@@ -147,7 +147,7 @@ func LoadProjectsIntoProjectContainer():
 #		GenerateExportPreview()
 
 func GetGodotVersionFromId(godotVersionId):
-	var files = Files.GetFilesFromPath("user://" + Game.GetGodotVersionItemFolder())
+	var files = Files.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
 	for file in files:
 		if !file.ends_with(".cfg"):
 			continue
@@ -157,12 +157,12 @@ func GetGodotVersionFromId(godotVersionId):
 			continue
 		
 		var config = ConfigFile.new()
-		var err = config.load("user://" + Game.GetGodotVersionItemFolder() + "/" + fileName + ".cfg")
+		var err = config.load("user://" + App.GetGodotVersionItemFolder() + "/" + fileName + ".cfg")
 		if err == OK:
 			return config.get_value("GodotVersionSettings", "godot_version", "")
 
 func GetGodotPathFromVersionId(godotVersionId):
-	var files = Files.GetFilesFromPath("user://" + Game.GetGodotVersionItemFolder())
+	var files = Files.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
 	for file in files:
 		if !file.ends_with(".cfg"):
 			continue
@@ -172,7 +172,7 @@ func GetGodotPathFromVersionId(godotVersionId):
 			continue
 		
 		var config = ConfigFile.new()
-		var err = config.load("user://" + Game.GetGodotVersionItemFolder() + "/" + fileName + ".cfg")
+		var err = config.load("user://" + App.GetGodotVersionItemFolder() + "/" + fileName + ".cfg")
 		if err == OK:
 			return config.get_value("GodotVersionSettings", "godot_path", "")
 			
@@ -271,7 +271,7 @@ func EditProjectInGodotEditorThread():
 	var projectPath = _selectedProjectItem.GetProjectPathBaseDir()
 	var godotArguments = ["--verbose", "--editor", "--path", projectPath] 
 	var pathToGodot = _selectedProjectItem.GetGodotPath(_selectedProjectItem.GetGodotVersionId())
-	OS.execute(pathToGodot, godotArguments, output, false, true)
+	OS.execute(pathToGodot, godotArguments, output, false, false)
 
 func OpenGodotProjectManager(godotVersionId = null):
 	if godotVersionId == null:
@@ -283,7 +283,7 @@ func OpenGodotProjectManager(godotVersionId = null):
 func RunGodotProjectManagerThread(godotPath):
 	var output = []
 	var godotArguments = ["--project-manager"]
-	OS.execute(godotPath, godotArguments, output, true, true)
+	OS.execute(godotPath, godotArguments, output, false, false)
 	
 func OpenSetting():
 	var settings = load("res://scenes/settings/settings.tscn").instantiate()
@@ -322,7 +322,7 @@ func ChangeProject():
 
 func DeleteSelectedProject():
 	_projectItemContainer.remove_child(_selectedProjectItem)
-	DirAccess.remove_absolute("user://" + Game.GetProjectItemFolder() + "/" + _selectedProjectItem.GetProjectId() + ".cfg")
+	DirAccess.remove_absolute("user://" + App.GetProjectItemFolder() + "/" + _selectedProjectItem.GetProjectId() + ".cfg")
 	_selectedProjectItem = null
 	DisableEditButtons()
 	

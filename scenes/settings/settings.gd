@@ -1,7 +1,7 @@
 extends ColorRect
 
 func _ready():
-	color = Game.GetDefaultBackgroundColor()
+	color = App.GetDefaultBackgroundColor()
 
 func OpenGodotVersionManager():
 	var godotVersionManager = load("res://scenes/godot-version-manager/godot-version-manager.tscn").instantiate()

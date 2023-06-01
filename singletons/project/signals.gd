@@ -3,6 +3,7 @@ extends Node
 # Release Management
 signal CreateNewProject # might be dupe/dead
 signal ProjectRenamed
+signal ExportWithInstaller
 
 # Project Management
 signal ProjectItemSelected

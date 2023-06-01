@@ -1,0 +1,10 @@
+[gd_resource type="Theme" load_steps=2 format=3 uid="uid://cb0ewpel8841e"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dot3x"]
+bg_color = Color(0.0705882, 0.0705882, 0.0705882, 1)
+
+[resource]
+TextEdit/colors/background_color = Color(0.678431, 0.678431, 0.678431, 1)
+TextEdit/colors/font_color = Color(0, 0, 0, 1)
+TextEdit/font_sizes/font_size = 10
+TextEdit/styles/normal = SubResource("StyleBoxFlat_dot3x")
