@@ -1,4 +1,4 @@
-extends ColorRect
+extends Panel
 
 @onready var _runProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RunProjectButton
 @onready var _editProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/EditProjectButton
@@ -7,8 +7,9 @@ extends ColorRect
 
 @onready var _changeProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ChangeProjectButton
 @onready var _removeProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RemoveProjectButton
-@onready var _projectItemContainer = $VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/ProjectItemContainer
+@onready var _projectItemContainer = $VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/ProjectItemContainer
 @onready var _customButtonContainer = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/CustomButtonVBoxContainer
+@onready var _scrollContainer = $VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer
 
 var _selectedProjectItem = null
 var _runProjectThread
@@ -17,9 +18,33 @@ var _openGodotProjectManagerThread
 
 func _ready():
 	InitSignals()
-	color = App.GetDefaultBackgroundColor()
 	InitProjectSettings()
+	LoadTheme()
+	LoadBackgroundColor()
+	LoadCustomScrollContainerTheme()
+#
+func LoadCustomScrollContainerTheme():
+	var customWidth = 20
+	var v_scrollbar : VScrollBar= _scrollContainer.get_v_scroll_bar()
+	v_scrollbar.set_custom_minimum_size(Vector2(customWidth, 0))
+	
+#	_scrollContainer.theme = App.GetCu
+#	add_child(v_scrollbar)
+	
+func LoadBackgroundColor(color = null):
+	if color == null:
+		color = App.GetBackgroundColor()
+		
+	var style_box = theme.get_stylebox("panel", "Panel") as StyleBoxFlat
 
+	if style_box:
+		style_box.bg_color = App.GetBackgroundColor()
+	else:
+		print("StyleBoxFlat not found!")
+
+func LoadTheme():
+	theme = load(App.GetThemePath())
+	
 func InitProjectSettings():
 	LoadProjectsIntoProjectContainer()
 	LoadOpenGodotButtons()
@@ -181,6 +206,10 @@ func InitSignals():
 	Signals.connect("ProjectSaved", ProjectSaved)
 	Signals.connect("GodotVersionManagerClosing", GodotVersionManagerClosing)
 	Signals.connect("GodotVersionsChanged", GodotVersionsChanged)
+	Signals.connect("BackgroundColorChanged", BackgroundColorChanged)
+
+func BackgroundColorChanged(color = null):
+	LoadBackgroundColor(color)
 
 func GodotVersionsChanged():
 	ReloadProjectManager()

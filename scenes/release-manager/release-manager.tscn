@@ -2,14 +2,13 @@
 
 [ext_resource type="Script" path="res://scenes/release-manager/release-manager.gd" id="1_sdoj2"]
 
-[node name="ReleaseManager" type="ColorRect"]
+[node name="ReleaseManager" type="Panel"]
 clip_contents = true
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.415686, 0.415686, 0.415686, 1)
 script = ExtResource("1_sdoj2")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
@@ -23,7 +22,8 @@ grow_vertical = 2
 [node name="MarginContainer" type="MarginContainer" parent="VBoxContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 2
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_bottom = -4
 
 [node name="TitleLabel" type="Label" parent="VBoxContainer/MarginContainer"]
 layout_mode = 2
@@ -49,7 +49,7 @@ size_flags_horizontal = 3
 layout_mode = 2
 
 [node name="ProjectNameLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectNameHBoxContainer"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 text = "Project Name:"
 horizontal_alignment = 2
@@ -68,7 +68,7 @@ caret_blink_interval = 0.5
 layout_mode = 2
 
 [node name="ProjectPathLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectPathHBoxContainer2"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 text = "Project Path:"
 horizontal_alignment = 2
@@ -87,7 +87,7 @@ caret_blink_interval = 0.5
 layout_mode = 2
 
 [node name="GodotPathLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/GodotPathHBoxContainer"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 text = "Godot Path:"
 horizontal_alignment = 2
@@ -106,7 +106,7 @@ caret_blink_interval = 0.5
 layout_mode = 2
 
 [node name="ExportPresetLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 text = "Export Preset:"
 horizontal_alignment = 2
@@ -138,7 +138,7 @@ layout_mode = 2
 layout_mode = 2
 
 [node name="ExportPathLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer2"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 text = "Export Path:"
 horizontal_alignment = 2
@@ -156,7 +156,7 @@ caret_blink_interval = 0.5
 layout_mode = 2
 
 [node name="ProjectVersionLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectVersionHBoxContainer"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 text = "Project Version:"
 horizontal_alignment = 2
@@ -175,7 +175,7 @@ caret_blink_interval = 0.5
 layout_mode = 2
 
 [node name="ExportTypeLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportTypeHBoxContainer"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 text = "Export Type:"
 horizontal_alignment = 2
@@ -196,7 +196,7 @@ popup/item_1/id = 1
 layout_mode = 2
 
 [node name="PackageTypeLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/PackageTypeHBoxContainer"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 text = "Package Type:"
 horizontal_alignment = 2
@@ -221,7 +221,7 @@ popup/item_3/id = 3
 layout_mode = 2
 
 [node name="ExportFileNameLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportFileNameHBoxContainer"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 text = "Export File Name:"
 horizontal_alignment = 2
@@ -232,12 +232,14 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
 tooltip_text = "The name of the zip file that gets uploaded to itch.io. Must be valid file name. "
+caret_blink = true
+caret_blink_interval = 0.5
 
 [node name="ItchProjectNameHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 
 [node name="ItchProjectNameLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProjectNameHBoxContainer"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 text = "Itch Project Name:"
 horizontal_alignment = 2
@@ -248,12 +250,14 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
 tooltip_text = "The project name we'll upload to on itch as seen at the end of the projects itch url."
+caret_blink = true
+caret_blink_interval = 0.5
 
 [node name="ItchProfileNameHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 
 [node name="ItchProfileNameLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProfileNameHBoxContainer"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 text = "Itch Profile Name:"
 horizontal_alignment = 2
@@ -271,7 +275,7 @@ caret_blink_interval = 0.5
 layout_mode = 2
 
 [node name="Generate256HashLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/Generate256HashNameHBoxContainer"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 text = "Generate Checksum:"
 horizontal_alignment = 2
@@ -281,11 +285,49 @@ layout_mode = 2
 button_pressed = true
 text = "Use SHA-256"
 
+[node name="InstallerConfigurationHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
+visible = false
+layout_mode = 2
+
+[node name="InstallerConfigurationLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/InstallerConfigurationHBoxContainer"]
+custom_minimum_size = Vector2(165, 0)
+layout_mode = 2
+text = "Installer:"
+horizontal_alignment = 2
+
+[node name="InstallerConfigurationLineEdit" type="LineEdit" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/InstallerConfigurationHBoxContainer"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+tooltip_text = "Installer configuration. Only applies to Windows & Linux distributions."
+caret_blink = true
+caret_blink_interval = 0.5
+
+[node name="UpdaterConfigurationHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
+visible = false
+layout_mode = 2
+
+[node name="UpdaterConfigurationLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/UpdaterConfigurationHBoxContainer"]
+custom_minimum_size = Vector2(165, 0)
+layout_mode = 2
+text = "Updater:"
+horizontal_alignment = 2
+
+[node name="UpdaterConfigurationLineEdit" type="LineEdit" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/UpdaterConfigurationHBoxContainer"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+tooltip_text = "Installer configuration. Only applies to Windows & Linux distributions."
+caret_blink = true
+caret_blink_interval = 0.5
+
 [node name="ExportPathHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 
 [node name="ExportLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 size_flags_vertical = 0
 text = "Export Preview:"
@@ -303,7 +345,7 @@ layout_mode = 2
 alignment = 2
 
 [node name="AutomateExportFileNameLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/AutomateExportFileNameHBoxContainer"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 text = "Unique Zip Names:"
 horizontal_alignment = 2
@@ -318,7 +360,7 @@ text = "Enable"
 layout_mode = 2
 
 [node name="PublishLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ButlerCommandHBoxContainer"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 size_flags_vertical = 0
 text = "Publish Preview:"
@@ -336,7 +378,7 @@ layout_mode = 2
 size_flags_vertical = 3
 
 [node name="OutputLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/OutputHBoxContainer"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 size_flags_vertical = 0
 text = "Output:"
@@ -355,7 +397,7 @@ layout_mode = 2
 size_flags_vertical = 3
 
 [node name="OutputLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 size_flags_vertical = 0
 horizontal_alignment = 2
@@ -446,8 +488,15 @@ layout_mode = 2
 
 [node name="InvisibleButton14" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
 self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 33)
+custom_minimum_size = Vector2(0, 31)
 layout_mode = 2
+
+[node name="ConfigureInstallerButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
+visible = false
+custom_minimum_size = Vector2(0, 31)
+layout_mode = 2
+tooltip_text = "Exports all listed projects to the specified locations."
+text = "Configure"
 
 [node name="ExportProject" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
 custom_minimum_size = Vector2(0, 31)
@@ -468,7 +517,7 @@ layout_mode = 2
 
 [node name="InvisibleButton15" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
 self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 30)
+custom_minimum_size = Vector2(0, 31)
 layout_mode = 2
 
 [node name="PublishButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
@@ -484,7 +533,7 @@ layout_mode = 2
 
 [node name="InvisibleButton12" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
 self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 25)
+custom_minimum_size = Vector2(0, 28)
 layout_mode = 2
 
 [node name="InvisibleButton13" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
@@ -529,9 +578,12 @@ access = 2
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportFileNameHBoxContainer/ExportFileNameLineEdit" to="." method="_on_export_file_name_line_edit_text_changed"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProjectNameHBoxContainer/ItchProjectNameLineEdit" to="." method="_on_itch_project_name_line_edit_text_changed"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProfileNameHBoxContainer/ItchProfileNameLineEdit" to="." method="_on_itch_name_line_edit_text_changed"]
+[connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/InstallerConfigurationHBoxContainer/InstallerConfigurationLineEdit" to="." method="_on_itch_name_line_edit_text_changed"]
+[connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/UpdaterConfigurationHBoxContainer/UpdaterConfigurationLineEdit" to="." method="_on_itch_name_line_edit_text_changed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/AutomateExportFileNameHBoxContainer/AutoGenerateExportFileNamesCheckBox" to="." method="_on_auto_generate_export_file_names_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/OpenProjectPathFolder" to="." method="_on_open_project_folder_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/SelectExportPathButton" to="." method="_on_select_export_path_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/ConfigureInstallerButton" to="." method="_on_configure_installer_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/ExportProject" to="." method="_on_export_project_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/OpenProjectFolder" to="." method="_on_open_project_folder_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/PublishButton" to="." method="_on_publish_button_pressed"]

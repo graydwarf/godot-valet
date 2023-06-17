@@ -1,15 +1,16 @@
-[gd_scene load_steps=3 format=3 uid="uid://bppck7g3x7tja"]
+[gd_scene load_steps=4 format=3 uid="uid://bppck7g3x7tja"]
 
 [ext_resource type="Script" path="res://scenes/admin-screen/admin-screen.gd" id="1_034de"]
 [ext_resource type="Theme" uid="uid://5kt2y65bmlvd" path="res://assets/themes/default-button-theme.tres" id="1_70db8"]
+[ext_resource type="Theme" uid="uid://dwoo5bj1luipm" path="res://assets/themes/global-themes/godot-dark-default.tres" id="1_vytsa"]
 
-[node name="AdminScreen" type="Control"]
-layout_mode = 3
+[node name="AdminScreen" type="Panel"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("1_vytsa")
 script = ExtResource("1_034de")
 
 [node name="HBoxContainer" type="VBoxContainer" parent="."]
@@ -94,9 +95,3 @@ text = "10. Generate Config File (from Template)"
 initial_position = 1
 ok_button_text = "Yes"
 dialog_text = "Admin config file already exists! Do you want to overwrite it with an empty template?"
-
-[connection signal="pressed" from="HBoxContainer/CreateAdminTemplateButton" to="." method="_on_create_admin_template_button_pressed"]
-[connection signal="pressed" from="HBoxContainer/CreateConfigTemplateButton2" to="." method="_on_create_config_template_button_2_pressed"]
-[connection signal="pressed" from="HBoxContainer/LoadConfigTemplateSettings" to="." method="_on_load_config_template_settings_pressed"]
-[connection signal="pressed" from="HBoxContainer/GenerateButton" to="." method="_on_generate_button_pressed"]
-[connection signal="confirmed" from="ConfirmationDialog" to="." method="_on_confirmation_dialog_confirmed"]

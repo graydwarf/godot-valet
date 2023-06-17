@@ -1,4 +1,4 @@
-extends ColorRect
+extends Panel
 
 @onready var _projectNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectNameHBoxContainer/ProjectNameLineEdit
 @onready var _exportPathLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer2/ExportPathLineEdit
@@ -21,6 +21,7 @@ extends ColorRect
 @onready var _outputTabContainer = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/OutputHBoxContainer/OutputTabContainer
 @onready var _useSha256CheckBox = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/Generate256HashNameHBoxContainer/UseSha256CheckBox
 @onready var _autoGenerateExportFileNamesCheckBox = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/AutomateExportFileNameHBoxContainer/AutoGenerateExportFileNamesCheckBox
+@onready var _installerConfigurationFileNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/InstallerConfigurationHBoxContainer/InstallerConfigurationLineEdit
 
 var _busyBackground
 var _selectedProjectItem = null
@@ -30,11 +31,32 @@ var _exportWithInstallerStep = 0
 
 func _ready():
 	InitSignals()
-	color = App.GetDefaultBackgroundColor()
+	LoadTheme()
+	LoadBackgroundColor()
 
+func LoadBackgroundColor():
+	var style_box = theme.get_stylebox("panel", "Panel") as StyleBoxFlat
+
+	if style_box:
+		style_box.bg_color = App.GetBackgroundColor()
+	else:
+		print("StyleBoxFlat not found!")
+
+func LoadTheme():
+	theme = load(App.GetThemePath())
+	
 func InitSignals():
 	Signals.connect("ExportWithInstaller", ExportWithInstaller)
+	Signals.connect("SaveInstallerConfiguration", SaveInstallerConfiguration)
 
+func SaveInstallerConfiguration(installerConfigurationFileName, installerConfigurationFriendlyName):
+	if installerConfigurationFriendlyName == "":
+		_installerConfigurationFileNameLineEdit.text = ""
+		_selectedProjectItem.SetInstallerConfigurationFileName("")
+	else:
+		_selectedProjectItem.SetInstallerConfigurationFileName(installerConfigurationFileName)
+		_installerConfigurationFileNameLineEdit.text = installerConfigurationFriendlyName
+	
 func ConfigureReleaseManagementForm(selectedProjectItem):
 	_selectedProjectItem = selectedProjectItem
 	_projectPathLineEdit.text = selectedProjectItem.GetFormattedProjectPath()
@@ -223,37 +245,84 @@ func ExportWithInstaller():
 		_exportWithInstallerStep += 1
 		Signals.emit_signal("ExportWithInstaller")
 	elif _exportWithInstallerStep == 1:
-		CheckForNeededSupportFiles(1)
-		# How do we know what version to use?
-		# How often do we check for latest? Once a day?
-		# We can have a file called godot-ignition-latest.txt. In this manner
-		# we have a static reference to use for getting latest.
-		# 	- windows
-		# 		- latest-version: v0.0.2
-		#		- checksum: 3241745134094
-		#	- linux
-		#		- latest-version: v0.0.3
-		#		- checksum: 3241745134094
-		# How do we know what OS is needed?
-		# How do we iterate through each OS?
-		#var fileName = "godot-ignition" #-v0.0.2-windows.zip
-		#var isUnpacking = true
-		#HandleFileExportWorkflow(fileName, isUnpacking)
+		ExportGodotIgnition()
 	elif _exportWithInstallerStep == 2:
+		ExportGodotFetch()
 		var fileName = "godot-fetch.zip"
 		var isUnpacking = true
 		HandleFileExportWorkflow(fileName, isUnpacking)
 	elif _exportWithInstallerStep == 3:
 		# At some point, we need godot-iginition to be renamed to <project>-<version>-<os>-installer.exe
+		# rename_absolute
 		# godot-ignition.exe, godot-ignition.pck, godot-fetch.exe, godot-fetch.pck, <project>.exe, <project.pck> are in the export dir
 		GenerateInstallerConfigurationFiles()
 	elif _exportWithInstallerStep == 4:
 		PackageInstallerFiles()
 
+func ExportGodotIgnition():
+	# TODO: Load installer configuration
+	# 	- extract path to <configs>/<project name>/installer-settings.cfg
+	# 
+	# godot-ignition.zip
+	var userOptionAEnabled = true
+	var userOptionBEnabled = true
+	var userOptionCEnabled = true
+	
+	var windowsChecked = true
+	var linuxChecked = true
+	if windowsChecked:
+		var pathToGodotIgnitionForWindows = ""
+		if pathToGodotIgnitionForWindows != "":
+			if FileAccess.file_exists(pathToGodotIgnitionForWindows):
+				# TODO: Extract windows files to export directory
+				# TODO: Create matching config and include user-options
+				pass
+	
+	if linuxChecked:
+		var pathToGodotIgnitionForLinux = ""
+		if pathToGodotIgnitionForLinux != "":
+			if FileAccess.file_exists(pathToGodotIgnitionForLinux):
+				# TODO: Extract linux files to export directory
+				# TODO: Create matching config and include user-options
+				pass
+
+	_exportWithInstallerStep += 1
+	Signals.emit_signal("ExportWithInstaller")
+
+func ExportGodotFetch():
+	# TODO: Load installer configuration
+	# 	- extract path to <configs>/<project name>/installer-settings.cfg
+	# 
+	# godot-ignition.zip
+	var userOptionAEnabled = true
+	var userOptionBEnabled = true
+	var userOptionCEnabled = true
+	
+	var windowsChecked = true
+	var linuxChecked = true
+	if windowsChecked:
+		var pathToGodotIgnitionForWindows = ""
+		if pathToGodotIgnitionForWindows != "":
+			if FileAccess.file_exists(pathToGodotIgnitionForWindows):
+				# TODO: Extract windows files to export directory
+				# TODO: Create matching config and include user-options
+				pass
+	
+	if linuxChecked:
+		var pathToGodotIgnitionForLinux = ""
+		if pathToGodotIgnitionForLinux != "":
+			if FileAccess.file_exists(pathToGodotIgnitionForLinux):
+				# TODO: Extract linux files to export directory
+				# TODO: Create matching config and include user-options
+				pass
+
+	_exportWithInstallerStep += 1
+	Signals.emit_signal("ExportWithInstaller")
+	
 func CheckForNeededSupportFiles(checkingForSupportFileUpdatesState):
 	# LEFT OFF HERE:
 	# Collect a list of required support files <fileName> and os?
-	if true: # if user has godot-valet auto-update enabled?
+	if checkingForSupportFileUpdatesState == 0: # if user has godot-valet auto-update enabled?
 		if HasUpdateTimeExpired():
 			App.SetLastUpdateTime(Time.get_unix_time_from_system())
 			CheckForSupportFileUpdates(1)
@@ -918,3 +987,8 @@ func _on_auto_generate_export_file_names_check_box_pressed():
 	GenerateButlerPreview()
 	ValidateExportFilePathText()
 	_isDirty = true
+
+func _on_configure_installer_button_pressed():
+	var installerConfigurationDialog = load("res://scenes/installer-configuration-dialog/installer-configuration-dialog.tscn").instantiate()
+	add_child(installerConfigurationDialog)
+	

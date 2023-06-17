@@ -4,6 +4,7 @@ extends Node
 signal CreateNewProject # might be dupe/dead
 signal ProjectRenamed
 signal ExportWithInstaller
+signal SaveInstallerConfiguration
 
 # Project Management
 signal ProjectItemSelected
@@ -13,3 +14,7 @@ signal ProjectSaved
 signal GodotVersionsChanged
 signal GodotVersionItemClicked
 signal GodotVersionManagerClosing
+
+# Settings
+signal BackgroundColorChanged
+signal BackgroundColorTemporarilyChanged

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b6f4wg5bwwvto"
-path="res://.godot/imported/save-button-hover.png-af1d2831d4985ad4b491b62597359cc3.ctex"
+uid="uid://y82c2lkvlgnc"
+path="res://.godot/imported/godot-valet-1024x1024.svg-167c7b9fdd481cdab4b4b72f522e442f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/save-button-hover.png"
-dest_files=["res://.godot/imported/save-button-hover.png-af1d2831d4985ad4b491b62597359cc3.ctex"]
+source_file="res://assets/icons/godot-valet-1024x1024.svg"
+dest_files=["res://.godot/imported/godot-valet-1024x1024.svg-167c7b9fdd481cdab4b4b72f522e442f.ctex"]
 
 [params]
 
@@ -32,3 +32,6 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
+svg/scale=1.0
+editor/scale_with_editor_scale=false
+editor/convert_colors_with_editor_theme=false

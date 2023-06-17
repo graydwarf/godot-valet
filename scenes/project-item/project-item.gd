@@ -1,4 +1,4 @@
-extends ColorRect
+extends Panel
 @onready var _projectNameLabel = $MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer/ProjectNameLabel
 @onready var _godotVersionLabel = $MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer/HBoxContainer/GodotVersionLabel
 @onready var _projectPathLabel = $MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ProjectPathLabel
@@ -19,10 +19,21 @@ var _exportFileName = ""
 var _packageType = ""
 var _itchProjectName = ""
 var _itchProfileName = ""
-
+var _installerConfigurationFileName = ""
 
 func _ready():
+	InitSignals()
+	RefreshBackground()
+
+func InitSignals():
 	Signals.connect("ProjectItemSelected", ProjectItemSelected)
+	Signals.connect("BackgroundColorChanged", BackgroundColorChanged)
+
+func BackgroundColorChanged(color = null):
+	RefreshBackground()
+
+func RefreshBackground():
+	theme = GetDefaultTheme()	
 
 func SetGodotVersionId(value):
 	_godotVersionId = value
@@ -68,6 +79,9 @@ func SetItchProfileName(value):
 
 func SetProjectId(value):
 	_projectId = value
+
+func SetInstallerConfigurationFileName(value):
+	_installerConfigurationFileName = value
 	
 func GetProjectVersion():
 	return _projectVersionLabel.text
@@ -121,6 +135,52 @@ func GetExportPath():
 	
 func GetProjectId():
 	return _projectId
+
+func GetDefaultTheme():
+	var customTheme = Theme.new()
+	var styleBox = GetDefaultStyleBoxSettings()
+	customTheme.set_stylebox("panel", "Panel", styleBox)
+	return customTheme
+
+func GetHoverTheme():
+	var customTheme = Theme.new()
+	var styleBox = GetDefaultStyleBoxSettings()
+	styleBox.bg_color = AdjustBackgroundColor(0.12)
+	customTheme.set_stylebox("panel", "Panel", styleBox)
+	return customTheme
+
+func GetSelectedTheme():
+	var customTheme = Theme.new()
+	var styleBox = GetDefaultStyleBoxSettings()
+	styleBox.bg_color = AdjustBackgroundColor(0.32)
+	customTheme.set_stylebox("panel", "Panel", styleBox)
+	return customTheme
+
+func AdjustBackgroundColor(amount):
+	var colorToSubtract = Color(amount, amount, amount, 0.0)
+
+	var newColor = Color(
+		max(App.GetBackgroundColor().r + colorToSubtract.r, 0),
+		max(App.GetBackgroundColor().g + colorToSubtract.g, 0),
+		max(App.GetBackgroundColor().b + colorToSubtract.b, 0),
+		max(App.GetBackgroundColor().a + colorToSubtract.a, 0)
+	)
+	
+	return newColor
+	
+func GetDefaultStyleBoxSettings():
+	var styleBox = StyleBoxFlat.new()
+	styleBox.bg_color = AdjustBackgroundColor(-0.08)
+	styleBox.border_color = Color(0.6, 0.6, 0.6)
+	styleBox.border_width_left = 2
+	styleBox.border_width_top = 2
+	styleBox.border_width_right = 2
+	styleBox.border_width_bottom = 2
+	styleBox.corner_radius_top_left = 6
+	styleBox.corner_radius_top_right = 6
+	styleBox.corner_radius_bottom_right = 6
+	styleBox.corner_radius_bottom_left = 6
+	return styleBox
 	
 func ProjectItemSelected(projectItem, _isSelected):
 	if projectItem == self:
@@ -143,18 +203,24 @@ func GetGodotPath(godotVersionId):
 		if err == OK:
 			return config.get_value("GodotVersionSettings", "godot_path", "???")
 	
-func RestoreDefaultColor():
-	color = Color(0.0, 0.0, 0.0, 0.5)
 
-func ShowHoverColor():
-	color = Color(0.0, 0.0, 0.0, 0.3)
-
-func ShowSelectedColor():
-	color = Color(0.0, 0.0, 0.5, 0.2)
 
 func GetFormattedProjectPath():
 	return GetProjectPathBaseDir().to_lower().replace("/", "\\")
 
+func RestoreDefaultColor():
+	theme = GetDefaultTheme()
+	#color = Color(0.0, 0.0, 0.0, 0.5)
+	pass
+	
+func ShowHoverColor():
+	theme = GetHoverTheme()
+	#color = Color(0.0, 0.0, 0.0, 0.3)
+	#pass
+	
+func ShowSelectedColor():
+	theme = GetSelectedTheme()
+	
 func SelectProjectItem():
 	ShowSelectedColor()
 	_selected = true
@@ -200,6 +266,7 @@ func _on_mouse_entered():
 		return
 	
 	ShowHoverColor()
+	
 
 func _on_mouse_exited():
 	if _selected:

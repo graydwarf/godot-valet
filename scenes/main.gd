@@ -10,9 +10,17 @@ func _ready():
 	InitConfigurationFolders()
 	LoadAdminSettings()
 	LoadProjectSettings()
+	LoadTheme()
+	LoadBackgroundColor()
 	var projectManager = load("res://scenes/project-manager/project-manager.tscn").instantiate()
 	add_child(projectManager)
-
+	
+func LoadTheme():
+	theme = load(App.GetThemePath())
+	
+func LoadBackgroundColor():
+	pass
+	
 func LoadAdminSettings():
 	var config = ConfigFile.new()
 	var err = config.load(_adminConfig)

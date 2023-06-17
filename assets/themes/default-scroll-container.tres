@@ -1,0 +1,8 @@
+[gd_resource type="Theme" load_steps=2 format=3 uid="uid://bin8jf1kx5r2e"]
+
+[ext_resource type="StyleBox" uid="uid://b87ccsfs63fds" path="res://assets/themes/default-scroll-container-style.tres" id="1_miksw"]
+
+[resource]
+VScrollBar/styles/grabber = ExtResource("1_miksw")
+VScrollBar/styles/grabber_highlight = ExtResource("1_miksw")
+VScrollBar/styles/grabber_pressed = ExtResource("1_miksw")

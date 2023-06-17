@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://cl2egb1mgica"]
+[gd_scene load_steps=3 format=3 uid="uid://cl2egb1mgica"]
 
 [ext_resource type="Script" path="res://scenes/main.gd" id="1_5j05v"]
+[ext_resource type="Theme" uid="uid://dwoo5bj1luipm" path="res://assets/themes/global-themes/godot-dark-default.tres" id="1_eh2fm"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -9,4 +10,5 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("1_eh2fm")
 script = ExtResource("1_5j05v")

@@ -6,7 +6,7 @@ var _selectedGodotVersionItem
 
 func _ready():
 	InitSignals()
-	color = App.GetDefaultBackgroundColor()
+	color = App.GetBackgroundColor()
 	LoadGodotVersionItems()
 	
 func InitSignals():

@@ -13,7 +13,8 @@ config_version=5
 config/name="Godot Valet"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.0", "Forward Plus")
-config/icon="res://icon.svg"
+config/icon="res://assets/icons/godot-valet.ico"
+config/windows_native_icon="res://assets/icons/godot-valet.ico"
 
 [autoload]
 
@@ -27,7 +28,7 @@ App="*res://singletons/project/app.gd"
 [display]
 
 window/size/viewport_width=1200
-window/size/viewport_height=800
+window/size/viewport_height=932
 
 [filesystem]
 
