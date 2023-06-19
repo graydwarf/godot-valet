@@ -38,12 +38,12 @@ func _on_linux_pacakge_select_button_pressed():
 	
 func _on_save_button_pressed():
 	var err = ValidateInstallerConfiguration()
-	if err != 0:
+	if err != OK:
 		return
 	
 	# Save to disk
 	err = SaveConfiguration()
-	if err != 0:
+	if err != OK:
 		return
 
 	var configurationFileName = _installerConfigurationName.text

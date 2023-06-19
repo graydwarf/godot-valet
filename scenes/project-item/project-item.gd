@@ -202,11 +202,9 @@ func GetGodotPath(godotVersionId):
 		var err = config.load("user://" + App.GetGodotVersionItemFolder() + "/" + fileName + ".cfg")
 		if err == OK:
 			return config.get_value("GodotVersionSettings", "godot_path", "???")
-	
-
 
 func GetFormattedProjectPath():
-	return GetProjectPathBaseDir().to_lower().replace("/", "\\")
+	return GetProjectPathBaseDir().to_lower()#.replace("/", "\\")
 
 func RestoreDefaultColor():
 	theme = GetDefaultTheme()

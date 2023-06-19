@@ -1,5 +1,6 @@
 extends Node
 
+# Copy contents of folder to specified destination
 func CopySourceToDestinationRecursive(sourcePath: String, destinationPath: String) -> void:
 	if not DirAccess.dir_exists_absolute(destinationPath):
 		DirAccess.make_dir_recursive_absolute(destinationPath)
@@ -64,33 +65,43 @@ func GetFileAsText(filePath):
 		var file = FileAccess.open(filePath, FileAccess.READ)
 		return file.get_as_text()
 
+# Deletes everything in the directory and all sub-directories.
+# Carefully review and Use with caution
 func DeleteAllFilesAndFolders(folderPath, isSendingToRecycle = true, listOfExistingFilesToLeaveAlone = []):
-	var errors = []
 	var filePaths = GetFilesFromPath(folderPath)
 	for filePath in filePaths:
 		if listOfExistingFilesToLeaveAlone.find(filePath) >= 0:
 			continue
 			
-		var error = 0
+		var err = OK
 		if isSendingToRecycle:
 			# Send to recycle so we can recover if needed
-			error = OS.move_to_trash(folderPath + "\\" + filePath) 
+			err = OS.move_to_trash(folderPath + "\\" + filePath) 
 		else:
 			# Delete without backup
-			error = DirAccess.remove_absolute(filePath)
+			err = DirAccess.remove_absolute(filePath)
 		
-		if error != 0:
-			errors.append(error)
-
-	return errors
-
+		if err != OK:
+			return -1
+	
+	return OK
+	
 func GetLinesFromFile(path):
+	var result = {}
 	var file = FileAccess.open(path, FileAccess.READ)
 	var listOfLines = []
 	if file != null:
 		while file.get_position() < file.get_length():
 			listOfLines.append(file.get_line())
 	else:
-		OS.alert("Failed to retrieve project name from the godot project file.")
-	
+		result.error = "Failed to retrieve project name from the godot project file."
+		return result
+
 	return listOfLines
+
+func CreateDirectory(directoryName):
+	if !DirAccess.dir_exists_absolute(directoryName):
+		return DirAccess.make_dir_recursive_absolute(directoryName)
+	
+	return OK
+	

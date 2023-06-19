@@ -1,5 +1,6 @@
 extends Node
 
+var _appName = "godot-valet"
 var _backgroundColor = Color(0.2, 0.2, 0.2)
 var _projectItemFolder = "project-items"
 var _solutionFolder = "solution-settings"
@@ -10,6 +11,9 @@ var _themePath = "res://assets/themes/global-themes/godot-dark-default.tres"
 
 func _ready():
 	LoadSavedSolutionSettings()
+
+func GetAppName():
+	return _appName
 	
 func GetThemePath():
 	return _themePath
