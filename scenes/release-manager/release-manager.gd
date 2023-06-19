@@ -28,7 +28,7 @@ var _selectedProjectItem = null
 var _isDirty = false
 var _isClosingReleaseManager = false
 var _exportWithInstallerStep = 0
-var _pathToUserTempFolder = OS.get_user_data_dir() + "/temp/" # Temporarily stores the export files before we zip, copy, and clean them
+var _pathToUserTempFolder = OS.get_user_data_dir() + "/temp/" # temp storage.
 var _defaultSupportMessage = "Please contact support for assistance."
 
 func _ready():
@@ -92,38 +92,42 @@ func SaveSettings():
 	_selectedProjectItem.SaveProjectItem()
 	
 func GenerateExportPreview():
-	if FormValidationCheckIsSuccess() == -1:
-		return "-1"
-		
 	_exportPreviewTextEdit.text = GetExportPreview()
 
 func GenerateButlerPreview():
-	if FormValidationCheckIsSuccess() == -1:
-		return "-1"
-
 	_butlerPreviewTextEdit.text = GetExportPreview()
 
 func ValidateProjectVersionText():
 	var text = _projectVersionLineEdit.text
-	if !ValidateFileNameText(text):
+	if ValidateText(text) != OK:
 		_projectVersionLineEdit.self_modulate = Color(1.0, 0.0, 0.0, 1.0)
 	else:
 		_projectVersionLineEdit.self_modulate = Color(1.0, 1.0, 1.0, 1.0)
 
-func ValidateExportFilePathText():
-	var text = _exportFileNameLineEdit.text
-	if !ValidateFileNameText(text):
-		_exportFileNameLineEdit.self_modulate = Color(1.0, 0.0, 0.0, 1.0)
-	else:
-		_exportFileNameLineEdit.self_modulate = Color(1.0, 1.0, 1.0, 1.0)
-			
-func ValidateFileNameText(text):
+func ValidateExportPathText():
+	var text = _exportPathLineEdit.text
+
+	if text == null || text.strip_edges() == "" || !DirAccess.dir_exists_absolute(text):
+		_exportPathLineEdit.self_modulate = Color(1.0, 0.0, 0.0, 1.0)
+		OS.alert("The 'Export Path' doesn't exist. Please select an existing folder and try again.")
+		return -1
+
+	ResetExportPathColor()
+
+	return OK
+
+func ResetExportPathColor():
+	_exportPathLineEdit.self_modulate = Color(1.0, 1.0, 1.0, 1.0)
+	
+func ValidateText(text):
 	var validCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
 	for t in text:
 		var a = validCharacters.find(t)
 		if a == -1:
-			return false
-	return true
+			OS.alert("Invalid characters found in: " + text)
+			return -1
+
+	return OK
 	
 func GetExportType():
 	var exportType = _exportTypeOptionButton.text.to_lower()
@@ -154,6 +158,7 @@ func GetExtensionType(presetFullName):
 # Uppercase
 # Windows, Linux, Web
 func ExportPreset(presetFullName):
+	_busyBackground.SetBusyDoingWhatLabel("Exporting for " + presetFullName + "...")
 	var exportType = GetExportType()
 	var extensionType = GetExtensionType(presetFullName)
 	
@@ -169,7 +174,7 @@ func ExportPreset(presetFullName):
 	var args = ['--headless', '--path',  _projectPathLineEdit.text, exportOption, presetFullName, _pathToUserTempFolder + _exportFileNameLineEdit.text + extensionType]
 	var readStdeer = true
 	var openConsole = false
-	OS.execute(_godotPathLineEdit.text, args, output, readStdeer, openConsole) 
+	var err = OS.execute(_godotPathLineEdit.text, args, output, readStdeer, openConsole) 
 
 	var groomedOutput = str(output).replace("\\r\\n", "\n")
 	
@@ -180,6 +185,12 @@ func ExportPreset(presetFullName):
 		groomedOutput += presetFullName + " checksum: " + checksum
 		
 	call_deferred("CreateOutputTab", groomedOutput, presetFullName)
+	
+	if err == -1:
+		OS.alert("The export command failed. See output for more details")
+		return -1
+		
+	return OK
 
 func CreateOutputTab(outputAsStr, presetFullName = ""):
 	var outputTextEdit = TextEdit.new()
@@ -198,61 +209,14 @@ func GetItchReleaseProfileName(presetFullName):
 	elif presetFullName == "Web":
 		itchPublishType = "html5"
 	return itchPublishType
-	
-func ExportProject():
-	ClearOutput()
-	
-	if FormValidationCheckIsSuccess() != 0:
-		return -1
-	
-	if PrepUserTempDirectory() != 0:
-		return -1
 		
-	StartBusyBackground("Exporting...")
-	#var thread = Thread.new()
-	#thread.start(ExportProjectThread)
-	
-	# Call directly to debug 
-	# Note: The busy screen doesn't work as expected outside thread.
-	ExportProjectThread()
-	
-	return OK
-
-# Can't debug in threaded operations. Call
-# directly to debug
-func ExportProjectThread():
-	if _packageTypeOptionButton.text == "Zip":
-		var isCleaning = false
-		var err = ExportWithZip(isCleaning)
-		if err != OK:
-			return -1
-	elif _packageTypeOptionButton.text == "Zip + Clean":
-		var isCleaning = true
-		var err = ExportWithZip(isCleaning)
-		if err != OK:
-			return -1
-	elif _packageTypeOptionButton.text == "No Zip":
-		ExportWithoutZip()
-	elif _packageTypeOptionButton.text == "Installer":
-		_exportWithInstallerStep = 0
-		ExportWithInstaller()
-
-	# TODO: This will need to be moved to the end of each workflow.
-	# Deferring to make sure the _outputTabs/content get added before counting
-	CallExportComplete()
-	
-	return OK
-
-func CallExportComplete():
-	call_deferred("CompleteExport")
-	
 func PrepUserTempDirectory():
 	var err = Files.CreateDirectory(_pathToUserTempFolder)
 	if err != OK:
 		OS.alert("Failed to create: " + _pathToUserTempFolder + ". " + _defaultSupportMessage)
 		return -1
 	
-	# Sanity clean because it should be cleaned at end of each run
+	# Clean it up just in case something prevented cleanup
 	err = Files.DeleteAllFilesAndFolders(_pathToUserTempFolder)
 	if err != OK:
 		OS.alert("Failed to delete files and folders in " + _pathToUserTempFolder + ". " + _defaultSupportMessage)
@@ -279,7 +243,8 @@ func PrepUserTempDirectory():
 #
 func ExportWithInstaller():
 	if _exportWithInstallerStep == 0:
-		ExportWithoutZip()
+		# TODO: Doesn't make sense to me after refactoring export files to temp
+		# ExportWithoutZip()
 		_exportWithInstallerStep += 1
 		Signals.emit_signal("ExportWithInstaller")
 	elif _exportWithInstallerStep == 1:
@@ -493,94 +458,168 @@ func StartBusyBackground(busyDoingWhat):
 func ClearBusyBackground():
 	_busyBackground.queue_free()
 	
-func ExportWithoutZip():
+func GetSelectedExportTypes():
+	var listOfSelectedExportTypes = []
 	if _windowsCheckBox.button_pressed:
-		var presetFullName = "Windows Desktop"
-		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
-		listOfExistingFilesToLeaveAlone.append(_exportFileNameLineEdit.text + ".zip")
-		ExportPreset(presetFullName)
-
+		listOfSelectedExportTypes.append("Windows Desktop")
 	if _linuxCheckBox.button_pressed:
-		var presetFullName = "Linux/X11"
-		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
-		listOfExistingFilesToLeaveAlone.append(_exportFileNameLineEdit.text + ".zip")
-		ExportPreset(presetFullName)
-
+		listOfSelectedExportTypes.append("Linux/X11")
 	if _webCheckBox.button_pressed:
-		var presetFullName = "Web"
-		var listOfExistingFilesToLeaveAlone = GetExistingFiles(presetFullName)
-		listOfExistingFilesToLeaveAlone.append(_exportFileNameLineEdit.text + ".zip")
-		ExportPreset(presetFullName)
-		RenameHomePageToIndex(presetFullName)
+		listOfSelectedExportTypes.append("Web")
+	
+	return listOfSelectedExportTypes
 
-func ExportWithZip(isCleaningFiles = false):
-	if _windowsCheckBox.button_pressed:
-		var err = ExportZipForWindows(isCleaningFiles)
+func StartExportingWithoutZip(listOfSelectedExportTypes):
+	for exportType in listOfSelectedExportTypes:
+		var err = ExportWithoutZip(exportType)
 		if err != OK:
 			return -1
-			
-	if _linuxCheckBox.button_pressed:
-		ExportZipForLinux(isCleaningFiles)
-
-	if _webCheckBox.button_pressed:
-		ExportZipForWeb(isCleaningFiles)
 		
 	return OK
 
-func ExportZipForWeb(isCleaningFiles):
-	_busyBackground.SetBusyDoingWhatLabel("Exporting for Web...")
-	var presetFullName = "Web"
-	var listOfExistingFilesToIgnore = GetExistingFiles(presetFullName)
-	ExportPreset(presetFullName)
-	RenameHomePageToIndex(presetFullName)
-	var zipFileName = ZipFiles(presetFullName)
-	listOfExistingFilesToIgnore.append(zipFileName)
-	if isCleaningFiles:
-		var err = CleanTempFiles(presetFullName)
-		if err != OK:
-			return err
-	
-func ExportZipForLinux(isCleaningFiles):
-	_busyBackground.SetBusyDoingWhatLabel("Exporting for Linux...")
-	var presetFullName = "Linux/X11"
-	var listOfExistingFilesToIgnore = GetExistingFiles(presetFullName)
-	ExportPreset(presetFullName)
-	var zipFileName = ZipFiles(presetFullName)
-	listOfExistingFilesToIgnore.append(zipFileName)
-	if isCleaningFiles:
-		var err = CleanTempFiles(presetFullName)
-		if err != OK:
-			return err
-			
-func ExportZipForWindows(isCleaningFiles):
-	_busyBackground.SetBusyDoingWhatLabel("Exporting for Windows...")
-	var presetFullName = "Windows Desktop"
-	ExportPreset(presetFullName)
+func ExportWithoutZip(presetFullName):
+	var err = CleanTempFiles(presetFullName)
+	if err != OK:
+		return -1
 
-	# Zip the files
+	err = ExportPreset(presetFullName)
+	if err != OK:
+		return -1
+		
+	if presetFullName == "Web":
+		err = RenameHomePageToIndex(presetFullName)
+		if err != OK:
+			return -1
+	
+	var exportPath = CreateExportDirectory(presetFullName)
+	if exportPath == "":
+		return -1
+	
+	err = CopyExportedFilesToExportDirectory(presetFullName, exportPath)
+	if err != OK:
+		return -1
+
+	return OK
+
+# Copy the files to the export dirctory
+func CopyExportedFilesToExportDirectory(presetFullName, exportPath):
+	var exportedFiles = Files.GetFilesFromPath(_pathToUserTempFolder)
+	for fileName in exportedFiles:
+		var err = CopyFileToExportDirectory(presetFullName, fileName, exportPath)
+		if err != OK:
+			OS.alert("Failed to copy the zip file to the export directory. " + _defaultSupportMessage)
+			return -1
+	
+	return OK
+
+func ExportProject():
+	ClearOutput()
+		
+	if ValidateExportPathText() != OK:
+		return -1
+		
+	if ValidateText(_exportFileNameLineEdit.text) != OK:
+		return -1
+		
+	if ValidateExportPresetSelections() != OK:
+		return -1
+		
+	if FormValidationCheckIsSuccess() != OK:
+		return -1
+	
+	if PrepUserTempDirectory() != OK:
+		return -1
+		
+	StartBusyBackground("Exporting...")
+	var thread = Thread.new()
+	thread.start(ExportProjectThread)
+	
+	# Call directly to debug 
+	# Note: The busy screen doesn't work as expected outside thread.
+	#ExportProjectThread()
+	
+	return OK
+	
+# Can't debug in threaded operations. Call
+# directly to debug
+func ExportProjectThread():
+	var result = OK
+	var listOfExportTypes = GetSelectedExportTypes()
+	if _packageTypeOptionButton.text == "Zip":
+		result = StartExportingWithZip(listOfExportTypes)
+	elif _packageTypeOptionButton.text == "No Zip":
+		result = StartExportingWithoutZip(listOfExportTypes)
+	elif _packageTypeOptionButton.text == "Installer":
+		_exportWithInstallerStep = 0
+		result = ExportWithInstaller()
+
+	call_deferred("CompleteExport")
+	return result
+
+func StartExportingWithZip(listOfSelectedExportTypes):
+	for exportType in listOfSelectedExportTypes:
+		var err = ExportZipPackage(exportType)
+		if err != OK:
+			return -1
+		
+	return OK
+	
+func ExportZipPackage(presetFullName):
+	var err = ExportPreset(presetFullName)
+	if err != OK:
+		return -1
+	
+	# Rename the .html file to index.html
+	if presetFullName == "Web":
+		err = RenameHomePageToIndex(presetFullName)
+		if err != OK:
+			return -1
+		
+	# Zip up the export files
 	var zipFileName = ZipFiles(presetFullName)
 	if zipFileName == "error":
 		return -1
 	
-	# Copy the files to the export dirctory
-	CopyZipFileToExportDirectory(presetFullName, zipFileName)
-	
-	if isCleaningFiles:
-		var err = CleanTempFiles(presetFullName)
-		if err != OK:
-			return -1
+	var exportPath = CreateExportDirectory(presetFullName)
+	if exportPath == "":
+		return -1
+		
+	_busyBackground.SetBusyDoingWhatLabel("Copying files to export directory...")
+	err = CopyFileToExportDirectory(presetFullName, zipFileName, exportPath)
+	if err != OK:
+		OS.alert("Failed to copy the zip file to the export directory. " + _defaultSupportMessage)
+		return -1
+		
+	err = CleanTempFiles(presetFullName)
+	if err != OK:
+		return err
 	
 	return OK
 
-func CopyZipFileToExportDirectory(presetFullName, zipFileName):
+func CreateExportDirectory(presetFullName):
 	var releaseProfileName = GetItchReleaseProfileName(presetFullName)
 	var exportPath = _exportPathLineEdit.text + GetGroomedVersionPath() + "/" + releaseProfileName.to_lower() + "/" + _exportTypeOptionButton.text.to_lower()
-	DirAccess.copy_absolute(_pathToUserTempFolder + zipFileName, exportPath + "/" + zipFileName)
+	var err = CreateExportPath(exportPath)
+	if err != OK:
+		OS.alert("An error occured when creating the export path")
+		return ""
+	
+	return exportPath
 
+func CopyFileToExportDirectory(presetFullName, fileName, exportPath):
+	return DirAccess.copy_absolute(_pathToUserTempFolder + fileName, exportPath + "/" + fileName)
 
+func CreateExportPath(exportPath):
+	if !DirAccess.dir_exists_absolute(exportPath):
+		var err = DirAccess.make_dir_recursive_absolute(exportPath)
+		if err != OK:
+			OS.alert("Failed to create the export directory: " + exportPath + ". " + _defaultSupportMessage)
+			return -1
+	return OK
+			
 func CleanTempFiles(presetFullName):
 	_busyBackground.SetBusyDoingWhatLabel("Cleaning " + presetFullName + "...")
-	return Cleanup(presetFullName)
+	return Cleanup()
 
 # Get any existing files in the export path to ignore
 func GetExistingFiles(presetFullName):
@@ -589,7 +628,7 @@ func GetExistingFiles(presetFullName):
 	var exportPath = _exportPathLineEdit.text + versionPath + "/" + releaseProfileName + "/" + _exportTypeOptionButton.text
 	return Files.GetFilesFromPath(exportPath)
 
-func Cleanup(presetFullName):
+func Cleanup():
 	var isSendingToRecyle = true
 	var err = Files.DeleteAllFilesAndFolders(_pathToUserTempFolder, isSendingToRecyle)
 
@@ -600,10 +639,11 @@ func Cleanup(presetFullName):
 	return OK
 	
 func RenameHomePageToIndex(presetFullName):
-	var releaseProfileName = GetItchReleaseProfileName(presetFullName)
-	var versionPath = GetGroomedVersionPath()
-	var exportPath = _exportPathLineEdit.text + versionPath + "/" + releaseProfileName + "/" + _exportTypeOptionButton.text
-	DirAccess.rename_absolute(exportPath + "/" + _exportFileNameLineEdit.text + ".html", exportPath + "/" + "index.html")
+	var err = DirAccess.rename_absolute(_pathToUserTempFolder + "/" + _exportFileNameLineEdit.text + ".html", _pathToUserTempFolder + "/" + "index.html")
+	if err != OK:
+		OS.alert("Failed while renaming the html home page")
+		return -1
+	return OK
 
 func ValidateChecksum(filePath, checksum):
 	return CreateChecksum(filePath) == checksum
@@ -634,7 +674,6 @@ func CreateChecksum(filePath):
 func ZipFiles(presetFullName):
 	_busyBackground.SetBusyDoingWhatLabel("Zipping for " + presetFullName + "...")
 	var releaseProfileName = GetItchReleaseProfileName(presetFullName)
-	var versionPath = GetGroomedVersionPath()
 	var listOfFileNames = Files.GetFilesFromPath(_pathToUserTempFolder)
 	var zipFileName = ""
 	if _autoGenerateExportFileNamesCheckBox.button_pressed:
@@ -704,6 +743,13 @@ func GetExportPath(presetType):
 
 	return exportPath.to_lower()
 
+func ValidateExportPresetSelections():
+	if !_windowsCheckBox.button_pressed && !_linuxCheckBox.button_pressed && !_webCheckBox.button_pressed:
+		OS.alert("One or more 'Export Presets' must be selected")
+		return -1
+	
+	return OK
+	
 func FormValidationCheckIsSuccess():
 	if _exportPathLineEdit.text.to_lower().trim_prefix(" ").trim_suffix(" ") == "":
 		OS.alert("Found invalid characters in export path")
@@ -736,7 +782,7 @@ func AddPreviewLine(presetType):
 	var versionPath = GetGroomedVersionPath()
 	var zipFileName = GetZipFileName(presetType)
 	var packageType = _packageTypeOptionButton.text.to_lower()
-	if packageType == "zip" || packageType == "zip + clean":
+	if packageType == "zip":
 		packageType = ".zip"
 	else:
 		packageType = ""
@@ -981,6 +1027,7 @@ func _on_itch_name_line_edit_text_changed(_new_text):
 
 func _on_select_folder_file_dialog_dir_selected(dir):
 	_exportPathLineEdit.text = dir
+	ResetExportPathColor()
 	GenerateExportPreview()
 	GenerateButlerPreview()
 
@@ -1027,20 +1074,18 @@ func _on_publish_button_pressed():
 func _on_export_file_name_line_edit_text_changed(_new_text):
 	GenerateExportPreview()
 	GenerateButlerPreview()
-	ValidateExportFilePathText()
 	_isDirty = true
 
 func _on_export_path_line_edit_text_changed(_new_text):
+	ResetExportPathColor()
 	GenerateExportPreview()
 	GenerateButlerPreview()
-	ValidateExportFilePathText()
 	_isDirty = true
 
 
 func _on_auto_generate_export_file_names_check_box_pressed():
 	GenerateExportPreview()
 	GenerateButlerPreview()
-	ValidateExportFilePathText()
 	_isDirty = true
 
 func _on_configure_installer_button_pressed():
