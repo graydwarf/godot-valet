@@ -31,15 +31,22 @@ var _exportWithInstallerStep = 0
 var _pathToUserTempFolder = OS.get_user_data_dir() + "/temp/" # temp storage.
 var _defaultSupportMessage = "Please contact support for assistance."
 
+#
+# Dev Note: I was in the middle of prototyping the installer work and then 
+# decided to open source the project. I may end up cleaning it out and
+# then creating a separate branch for that work if the bugs/features start 
+# coming in.
+#
+
 func _ready():
 	InitSignals()
 	LoadTheme()
 	LoadBackgroundColor()
 
 # Triggered when user closes via X or some other means.
-# TODO: We need to block them main form from closing
-# until we get a prompt/respone from the user when dirty. 
-# Force saving is generally preferred.
+# TODO: We need to block them from closing until we get 
+# a prompt/response from the user when we have outstanding changes. 
+# Force saving as that is preferred over losing data.
 func _notification(notificationType):
 	if notificationType == NOTIFICATION_WM_CLOSE_REQUEST:
 		if _isDirty:
@@ -87,6 +94,7 @@ func ConfigureReleaseManagementForm(selectedProjectItem):
 	GenerateButlerPreview()
 	
 func SaveSettings():
+	_isDirty = false
 	_selectedProjectItem.SetWindowsChecked(_windowsCheckBox.button_pressed)
 	_selectedProjectItem.SetLinuxChecked(_linuxCheckBox.button_pressed)
 	_selectedProjectItem.SetWebChecked(_webCheckBox.button_pressed)
@@ -461,9 +469,6 @@ func CompleteExport():
 	CountErrors()
 	CountWarnings()
 	ClearBusyBackground()
-	if _isDirty:
-		_isClosingReleaseManager = false
-		ShowSaveChangesDialog()
 	
 func StartBusyBackground(busyDoingWhat):
 	_busyBackground = load("res://scenes/busy-background-blocker/busy_background_blocker_color_rect.tscn").instantiate()
@@ -947,10 +952,6 @@ func LogButlerResults(exitCode, output, tabName):
 
 	butlerOutput = butlerOutput.replace("\\r\\n", "\n")
 	call_deferred("CreateOutputTab", butlerOutput, tabName)
-	
-	if _isDirty:
-		_isClosingReleaseManager = false
-		ShowSaveChangesDialog()
 
 func GetGroomedVersionPath():
 	if _projectVersionLineEdit.text == "":
@@ -1041,6 +1042,7 @@ func _on_itch_name_line_edit_text_changed(_new_text):
 	GenerateButlerPreview()
 
 func _on_select_folder_file_dialog_dir_selected(dir):
+	_isDirty = true
 	_exportPathLineEdit.text = dir
 	ResetExportPathColor()
 	GenerateExportPreview()
@@ -1048,7 +1050,6 @@ func _on_select_folder_file_dialog_dir_selected(dir):
 
 func _on_save_button_pressed():	
 	SaveSettings()
-	_isDirty = false
 
 func _on_open_project_path_button_pressed():
 	OpenProjectPathFolder()
@@ -1060,9 +1061,9 @@ func _on_open_project_folder_pressed():
 	OpenRootExportPath()
 
 func _on_itch_project_name_line_edit_text_changed(_new_text):
+	_isDirty = true
 	GenerateExportPreview()
 	GenerateButlerPreview()
-	_isDirty = true
 
 func _on_select_export_path_button_pressed():
 	ShowSelectExportPathDialog()
@@ -1087,22 +1088,22 @@ func _on_publish_button_pressed():
 	PublishToItchUsingButler()
 
 func _on_export_file_name_line_edit_text_changed(_new_text):
+	_isDirty = true
 	GenerateExportPreview()
 	GenerateButlerPreview()
-	_isDirty = true
 
 func _on_export_path_line_edit_text_changed(_new_text):
+	_isDirty = true
 	ResetExportPathColor()
 	GenerateExportPreview()
 	GenerateButlerPreview()
-	_isDirty = true
 
 func _on_auto_generate_export_file_names_check_box_pressed():
+	_isDirty = true
 	GenerateExportPreview()
 	GenerateButlerPreview()
-	_isDirty = true
 
 func _on_configure_installer_button_pressed():
 	var installerConfigurationDialog = load("res://scenes/installer-configuration-dialog/installer-configuration-dialog.tscn").instantiate()
 	add_child(installerConfigurationDialog)
-	
+
