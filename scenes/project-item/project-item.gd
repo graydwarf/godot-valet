@@ -29,7 +29,7 @@ func InitSignals():
 	Signals.connect("ProjectItemSelected", ProjectItemSelected)
 	Signals.connect("BackgroundColorChanged", BackgroundColorChanged)
 
-func BackgroundColorChanged(color = null):
+func BackgroundColorChanged(_color = null):
 	RefreshBackground()
 
 func RefreshBackground():

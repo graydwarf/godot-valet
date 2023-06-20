@@ -36,6 +36,15 @@ func _ready():
 	LoadTheme()
 	LoadBackgroundColor()
 
+# Triggered when user closes via X or some other means.
+# TODO: We need to block them main form from closing
+# until we get a prompt/respone from the user when dirty. 
+# Force saving is generally preferred.
+func _notification(notificationType):
+	if notificationType == NOTIFICATION_WM_CLOSE_REQUEST:
+		if _isDirty:
+			SaveSettings()
+
 func LoadBackgroundColor():
 	var style_box = theme.get_stylebox("panel", "Panel") as StyleBoxFlat
 
@@ -166,10 +175,6 @@ func ExportPreset(presetFullName):
 		return
 
 	var exportOption = "--export-" + exportType.to_lower()
-
-	var releaseProfileName = GetItchReleaseProfileName(presetFullName)
-	var versionPath = GetGroomedVersionPath()
-
 	var output = []
 	var args = ['--headless', '--path',  _projectPathLineEdit.text, exportOption, presetFullName, _pathToUserTempFolder + _exportFileNameLineEdit.text + extensionType]
 	var readStdeer = true
@@ -242,85 +247,93 @@ func PrepUserTempDirectory():
 # Step #4 - Package files into final .zip
 #
 func ExportWithInstaller():
-	if _exportWithInstallerStep == 0:
-		# TODO: Doesn't make sense to me after refactoring export files to temp
-		# ExportWithoutZip()
-		_exportWithInstallerStep += 1
-		Signals.emit_signal("ExportWithInstaller")
-	elif _exportWithInstallerStep == 1:
-		ExportGodotIgnition()
-	elif _exportWithInstallerStep == 2:
-		ExportGodotFetch()
-		var fileName = "godot-fetch.zip"
-		var isUnpacking = true
-		HandleFileExportWorkflow(fileName, isUnpacking)
-	elif _exportWithInstallerStep == 3:
-		# At some point, we need godot-iginition to be renamed to <project>-<version>-<os>-installer.exe
-		# rename_absolute
-		# godot-ignition.exe, godot-ignition.pck, godot-fetch.exe, godot-fetch.pck, <project>.exe, <project.pck> are in the export dir
-		GenerateInstallerConfigurationFiles()
-	elif _exportWithInstallerStep == 4:
-		PackageInstallerFiles()
+	# WIP
+	#	if _exportWithInstallerStep == 0:
+	#		# TODO: Doesn't make sense to me after refactoring export files to temp
+	#		# ExportWithoutZip()
+	#		_exportWithInstallerStep += 1
+	#		Signals.emit_signal("ExportWithInstaller")
+	#	elif _exportWithInstallerStep == 1:
+	#		ExportGodotIgnition()
+	#	elif _exportWithInstallerStep == 2:
+	#		ExportGodotFetch()
+	#		var fileName = "godot-fetch.zip"
+	#		var isUnpacking = true
+	#		HandleFileExportWorkflow(fileName, isUnpacking)
+	#	elif _exportWithInstallerStep == 3:
+	#		# At some point, we need godot-iginition to be renamed to <project>-<version>-<os>-installer.exe
+	#		# rename_absolute
+	#		# godot-ignition.exe, godot-ignition.pck, godot-fetch.exe, godot-fetch.pck, <project>.exe, <project.pck> are in the export dir
+	#		GenerateInstallerConfigurationFiles()
+	#	elif _exportWithInstallerStep == 4:
+	#		PackageInstallerFiles()
+	pass
 
 func ExportGodotIgnition():
 	# TODO: Load installer configuration
 	# 	- extract path to <configs>/<project name>/installer-settings.cfg
 	# 
 	# godot-ignition.zip
-	var userOptionAEnabled = true
-	var userOptionBEnabled = true
-	var userOptionCEnabled = true
-	
-	var windowsChecked = true
-	var linuxChecked = true
-	if windowsChecked:
-		var pathToGodotIgnitionForWindows = ""
-		if pathToGodotIgnitionForWindows != "":
-			if FileAccess.file_exists(pathToGodotIgnitionForWindows):
-				# TODO: Extract windows files to export directory
-				# TODO: Create matching config and include user-options
-				pass
-	
-	if linuxChecked:
-		var pathToGodotIgnitionForLinux = ""
-		if pathToGodotIgnitionForLinux != "":
-			if FileAccess.file_exists(pathToGodotIgnitionForLinux):
-				# TODO: Extract linux files to export directory
-				# TODO: Create matching config and include user-options
-				pass
-
-	_exportWithInstallerStep += 1
-	Signals.emit_signal("ExportWithInstaller")
+	#
+	# TODO: WIP
+	#	var userOptionAEnabled = true
+	#	var userOptionBEnabled = true
+	#	var userOptionCEnabled = true
+	#
+	#	var windowsChecked = true
+	#	var linuxChecked = true
+	#	if windowsChecked:
+	#		var pathToGodotIgnitionForWindows = ""
+	#		if pathToGodotIgnitionForWindows != "":
+	#			if FileAccess.file_exists(pathToGodotIgnitionForWindows):
+	#				# TODO: Extract windows files to export directory
+	#				# TODO: Create matching config and include user-options
+	#				pass
+	#
+	#	if linuxChecked:
+	#		var pathToGodotIgnitionForLinux = ""
+	#		if pathToGodotIgnitionForLinux != "":
+	#			if FileAccess.file_exists(pathToGodotIgnitionForLinux):
+	#				# TODO: Extract linux files to export directory
+	#				# TODO: Create matching config and include user-options
+	#				pass
+	#
+	#	_exportWithInstallerStep += 1
+	#	Signals.emit_signal("ExportWithInstaller")
+	pass
 
 func ExportGodotFetch():
 	# TODO: Load installer configuration
 	# 	- extract path to <configs>/<project name>/installer-settings.cfg
 	# 
 	# godot-ignition.zip
-	var userOptionAEnabled = true
-	var userOptionBEnabled = true
-	var userOptionCEnabled = true
-	
-	var windowsChecked = true
-	var linuxChecked = true
-	if windowsChecked:
-		var pathToGodotIgnitionForWindows = ""
-		if pathToGodotIgnitionForWindows != "":
-			if FileAccess.file_exists(pathToGodotIgnitionForWindows):
-				# TODO: Extract windows files to export directory
-				# TODO: Create matching config and include user-options
-				pass
-	
-	if linuxChecked:
-		var pathToGodotIgnitionForLinux = ""
-		if pathToGodotIgnitionForLinux != "":
-			if FileAccess.file_exists(pathToGodotIgnitionForLinux):
-				# TODO: Extract linux files to export directory
-				# TODO: Create matching config and include user-options
-				pass
-
-	_exportWithInstallerStep += 1
-	Signals.emit_signal("ExportWithInstaller")
+	#
+	# WIP
+	#	var userOptionAEnabled = true
+	#	var userOptionBEnabled = true
+	#	var userOptionCEnabled = true
+	#
+	#	var windowsChecked = true
+	#	var linuxChecked = true
+	#	if windowsChecked:
+	#		var pathToGodotIgnitionForWindows = ""
+	#		if pathToGodotIgnitionForWindows != "":
+	#			if FileAccess.file_exists(pathToGodotIgnitionForWindows):
+	#				# TODO: Extract windows files to export directory
+	#				# TODO: Create matching config and include user-options
+	#				pass
+	#
+	#	if linuxChecked:
+	#		var pathToGodotIgnitionForLinux = ""
+	#		if pathToGodotIgnitionForLinux != "":
+	#			if FileAccess.file_exists(pathToGodotIgnitionForLinux):
+	#				# TODO: Extract linux files to export directory
+	#				# TODO: Create matching config and include user-options
+	#				pass
+	#
+	#	_exportWithInstallerStep += 1
+	#	Signals.emit_signal("ExportWithInstaller")
+	pass
 	
 func CheckForNeededSupportFiles(checkingForSupportFileUpdatesState):
 	# LEFT OFF HERE:
@@ -388,7 +401,7 @@ func HandleFileExportWorkflow(fileName, isUnpacking = false):
 			Signals.emit_signal("ExportWithInstaller")
 			#return
 
-func BeginDownloadingMissingFileWorkflow(fileName):
+func BeginDownloadingMissingFileWorkflow(_fileName):
 	# TODO: REMEMBER: WE NEED TO DOWNLOAD OS SPECIFIC FILES
 	# godot-fetch-v0.0.1.linux.zip
 	if App.GetAutoUpdate():
@@ -398,20 +411,22 @@ func BeginDownloadingMissingFileWorkflow(fileName):
 		pass
 	
 # App.GetGodotFetchChecksum()
-func ExportPackedFile(fileName, expectedChecksum):
-	if !FileAccess.file_exists(fileName):
-		if true: #expectedChecksum == GetCheckSum(fileName):
-			#UnpackIntoExportDirectory(fileName)
-			pass
-		else:
-			# Inform user and prompt to download a new version
-			pass
-	else:
-		# Inform user and depending on the auto-install option:
-		# Prompt user or auto-download .zip
-		if true: #expectedChecksum == GetCheckSum(fileName):
-			#UnpackIntoExportDirectory(fileName)
-			pass
+func ExportPackedFile(_fileName, _expectedChecksum):
+	# WIP
+	#	if !FileAccess.file_exists(fileName):
+	#		if true: #expectedChecksum == GetCheckSum(fileName):
+	#			#UnpackIntoExportDirectory(fileName)
+	#			pass
+	#		else:
+	#			# Inform user and prompt to download a new version
+	#			pass
+	#	else:
+	#		# Inform user and depending on the auto-install option:
+	#		# Prompt user or auto-download .zip
+	#		if true: #expectedChecksum == GetCheckSum(fileName):
+	#			#UnpackIntoExportDirectory(fileName)
+	#			pass
+	pass
 			
 func PackageInstaller():
 	# godot-ignition.exe, godot-ignition.pck
@@ -487,7 +502,7 @@ func ExportWithoutZip(presetFullName):
 		return -1
 		
 	if presetFullName == "Web":
-		err = RenameHomePageToIndex(presetFullName)
+		err = RenameHomePageToIndex()
 		if err != OK:
 			return -1
 	
@@ -495,17 +510,17 @@ func ExportWithoutZip(presetFullName):
 	if exportPath == "":
 		return -1
 	
-	err = CopyExportedFilesToExportDirectory(presetFullName, exportPath)
+	err = CopyExportedFilesToExportDirectory(exportPath)
 	if err != OK:
 		return -1
 
 	return OK
 
 # Copy the files to the export dirctory
-func CopyExportedFilesToExportDirectory(presetFullName, exportPath):
+func CopyExportedFilesToExportDirectory(exportPath):
 	var exportedFiles = Files.GetFilesFromPath(_pathToUserTempFolder)
 	for fileName in exportedFiles:
-		var err = CopyFileToExportDirectory(presetFullName, fileName, exportPath)
+		var err = CopyFileToExportDirectory(fileName, exportPath)
 		if err != OK:
 			OS.alert("Failed to copy the zip file to the export directory. " + _defaultSupportMessage)
 			return -1
@@ -571,7 +586,7 @@ func ExportZipPackage(presetFullName):
 	
 	# Rename the .html file to index.html
 	if presetFullName == "Web":
-		err = RenameHomePageToIndex(presetFullName)
+		err = RenameHomePageToIndex()
 		if err != OK:
 			return -1
 		
@@ -585,7 +600,7 @@ func ExportZipPackage(presetFullName):
 		return -1
 		
 	_busyBackground.SetBusyDoingWhatLabel("Copying files to export directory...")
-	err = CopyFileToExportDirectory(presetFullName, zipFileName, exportPath)
+	err = CopyFileToExportDirectory(zipFileName, exportPath)
 	if err != OK:
 		OS.alert("Failed to copy the zip file to the export directory. " + _defaultSupportMessage)
 		return -1
@@ -606,7 +621,7 @@ func CreateExportDirectory(presetFullName):
 	
 	return exportPath
 
-func CopyFileToExportDirectory(presetFullName, fileName, exportPath):
+func CopyFileToExportDirectory(fileName, exportPath):
 	return DirAccess.copy_absolute(_pathToUserTempFolder + fileName, exportPath + "/" + fileName)
 
 func CreateExportPath(exportPath):
@@ -638,7 +653,7 @@ func Cleanup():
 		
 	return OK
 	
-func RenameHomePageToIndex(presetFullName):
+func RenameHomePageToIndex():
 	var err = DirAccess.rename_absolute(_pathToUserTempFolder + "/" + _exportFileNameLineEdit.text + ".html", _pathToUserTempFolder + "/" + "index.html")
 	if err != OK:
 		OS.alert("Failed while renaming the html home page")
@@ -1081,7 +1096,6 @@ func _on_export_path_line_edit_text_changed(_new_text):
 	GenerateExportPreview()
 	GenerateButlerPreview()
 	_isDirty = true
-
 
 func _on_auto_generate_export_file_names_check_box_pressed():
 	GenerateExportPreview()

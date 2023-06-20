@@ -207,13 +207,11 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
 tooltip_text = "Optionally: Cleanup generated files after generating the Zip package. Writes over duplicate files."
-item_count = 3
+item_count = 2
 popup/item_0/text = "No Zip"
 popup/item_0/id = 0
 popup/item_1/text = "Zip"
 popup/item_1/id = 1
-popup/item_2/text = "Installer"
-popup/item_2/id = 3
 
 [node name="ExportFileNameHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
