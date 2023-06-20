@@ -52,7 +52,8 @@ func InitProjectSettings():
 func ClearCustomButtonContainer():
 	for button in _customButtonContainer.get_children():
 		button.queue_free()
-		
+
+# Creates buttons dynamically based on the godot versions we have configured
 func LoadOpenGodotButtons():
 	ClearCustomButtonContainer()
 	var files = Files.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
@@ -72,43 +73,13 @@ func LoadOpenGodotButtons():
 			button.SetCustomVar1(fileName)
 			button.pressed.connect(_on_button_pressed.bind(button))
 			button.tooltip_text = "Launches into the Godot Project Manager for the given version."
-			#button.connect("pressed", _on_button_pressed)
 			_customButtonContainer.add_child(button)
 
+# Handles events for our dynamic godot version buttons
 func _on_button_pressed(button):
 	var godotVersionId = button.GetCustomVar1()
 	OpenGodotProjectManager(godotVersionId)
 	
-func SaveValetSettings():
-	pass
-#	var config = ConfigFile.new()
-#	config.set_value("Settings", "selected_project_name", _loadProjectOptionButton.text)
-#	var err = config.save("user://" + _solutionName + ".cfg")
-#
-#	if err != OK:
-#		OS.alert("An error occurred while saving the valet configuration file.")
-		
-#func CreateNewValetSettingsFile():
-#	var config = ConfigFile.new()
-#	config.set_value("Settings", "selected_project_name", "")
-#	var err = config.save("user://" + _solutionName + ".cfg")
-#
-#	if err != OK:
-#		OS.alert("An error occurred while saving the valet configuration file.")
-	
-#func LoadValetSettings():
-#	if !FileAccess.file_exists("user://" + _solutionName + ".cfg"):
-#		CreateNewValetSettingsFile()
-#		return
-#
-#	var config = ConfigFile.new()
-#	var err = config.load("user://" + _solutionName + ".cfg")
-#	if err != OK:
-#		OS.alert("Error: " + str(err) + " - while opening: " + _solutionName + ".cfg")
-#		return
-#
-#	_selectedProjectName = config.get_value("Settings", "selected_project_name", "")
-
 func LoadProjectsIntoProjectContainer():
 	var allResourceFiles = Files.GetFilesFromPath("user://" + App.GetProjectItemFolder())
 	for resourceFile in allResourceFiles:
@@ -146,30 +117,6 @@ func LoadProjectsIntoProjectContainer():
 			projectItem.SetPackageType(config.get_value("ProjectSettings", "package_type", "Zip + Clean"))
 			projectItem.SetItchProfileName(config.get_value("ProjectSettings", "itch_profile_name", ""))
 			projectItem.SetItchProjectName(config.get_value("ProjectSettings", "itch_project_name", ""))
-		
-		#loadedConfigurationFile = true
-	
-#	# Did we load a config file?
-#	if !loadedConfigurationFile:
-#		# No. Create a new default one.
-#		newProjectName = "New Project"
-#		CreateNewSettingsFile(newProjectName)
-#		_loadProjectOptionButton.text = newProjectName
-#		SaveValetSettings()
-#	else:
-#		# We loaded a config file. Select it.
-#		if newProjectName != "":
-#			_selectedProjectName = newProjectName
-#
-#		var selectedIndex = FindProjectIndexByName(_selectedProjectName)
-#
-#		if selectedIndex == null:
-#			selectedIndex = 0
-#
-#		LoadProjectByIndex(selectedIndex)
-#		_loadProjectOptionButton.select(selectedIndex)
-#		GenerateButlerPreview()
-#		GenerateExportPreview()
 
 func GetGodotVersionFromId(godotVersionId):
 	var files = Files.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
@@ -253,12 +200,6 @@ func EnableEditButtons():
 	_openProjectFolderButton.disabled = false
 	_changeProjectButton.disabled = false
 	_removeProjectButton.disabled = false
-		
-# projectName should be valid at this point
-#func CreateNewProject(projectName):
-#	CreateNewSettingsFile(projectName)
-	#_loadProjectOptionButton.add_item(projectName)
-	#_loadProjectOptionButton.select(_loadProjectOptionButton.item_count - 1)
 
 func RunProject():
 	if !is_instance_valid(_selectedProjectItem):
@@ -267,9 +208,9 @@ func RunProject():
 	_runProjectThread = Thread.new()
 	_runProjectThread.start(StartProjectThread)
 
-# We don't want this actually. When Godot Valet exits,
-# it calls this method and we don't want it to wait for 
-# launched threads to exit. Leaving here as a reminder.
+# When Godot Valet exits, it calls this method.
+# We don't want to wait for threads to exit. 
+# Commenting and leaving as a reminder.
 func _exit_tree():
 #	if is_instance_valid(_runProjectThread):
 #		_runProjectThread.wait_to_finish()

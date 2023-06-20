@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scenes/edit-project-dialog/edit-project-dialog.gd" id="1_xd7bt"]
 
-[node name="EditProjectDialog" type="ColorRect"]
+[node name="EditProjectDialog" type="Panel"]
 custom_minimum_size = Vector2(800, 150)
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,7 +11,6 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
-color = Color(0.447059, 0.447059, 0.447059, 1)
 script = ExtResource("1_xd7bt")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
@@ -53,6 +52,8 @@ layout_mode = 2
 size_flags_horizontal = 2
 size_flags_vertical = 0
 tooltip_text = "Path to the project folder."
+caret_blink = true
+caret_blink_interval = 0.5
 
 [node name="SelectProjectFolderButton2" type="Button" parent="VBoxContainer/ProjectPathHBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
@@ -139,7 +140,6 @@ filters = PackedStringArray("*.godot")
 
 [connection signal="pressed" from="VBoxContainer/ProjectPathHBoxContainer/SelectProjectFolderButton2" to="." method="_on_select_project_folder_button_pressed"]
 [connection signal="item_selected" from="VBoxContainer/GodotVersionHBoxContainer/GodotVersionOptionButton" to="." method="_on_godot_version_option_button_item_selected"]
-[connection signal="pressed" from="VBoxContainer/OptionsHBoxContainer/ExtractProjectNameCheckBox" to="." method="_on_extract_project_name_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer/ButtonHBoxContainer/CancelButton" to="." method="_on_cancel_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer/ButtonHBoxContainer/SaveButton" to="." method="_on_save_button_pressed"]
 [connection signal="file_selected" from="FileDialog" to="." method="_on_file_dialog_file_selected"]

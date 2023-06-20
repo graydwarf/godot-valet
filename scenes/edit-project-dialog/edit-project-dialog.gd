@@ -1,4 +1,4 @@
-extends ColorRect
+extends Panel
 
 @onready var _projectNameLineEdit = $VBoxContainer/ProjectNameHBoxContainer/ProjectNameLineEdit
 @onready var _godotVersionOptionButton = $VBoxContainer/GodotVersionHBoxContainer/GodotVersionOptionButton
@@ -10,9 +10,12 @@ var _litOfGodotVersionIds = []
 var _selectedProjectItem = null
 
 func _ready():
-	color = App.GetDefaultBackgroundColor()
+	LoadTheme()
 	LoadGodotVersion()
 
+func LoadTheme():
+	theme = load(App.GetThemePath())
+	
 func ConfigureForSelectedProject(selectedProjectItem):
 	_selectedProjectItem = selectedProjectItem
 	LoadProject()
@@ -20,9 +23,9 @@ func ConfigureForSelectedProject(selectedProjectItem):
 func LoadProject():
 	_projectNameLineEdit.text = _selectedProjectItem.GetProjectName()
 	_projectPathLineEdit.text = _selectedProjectItem.GetProjectPath()
-	var a = _selectedProjectItem.GetGodotVersion()
-	if a.find("???") == -1:
-		_godotVersionOptionButton.text = _selectedProjectItem.GetGodotVersion()
+	var version = _selectedProjectItem.GetGodotVersion()
+	#if version.find("???") == -1:
+	_godotVersionOptionButton.text = _selectedProjectItem.GetGodotVersion()
 
 func GetGodotVersion(godotVersionId):
 	var files = Files.GetFilesFromPath("user://godot-version-items")
