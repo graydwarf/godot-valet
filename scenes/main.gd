@@ -5,22 +5,20 @@ var _adminConfig = "res://configs/godot-valet-admin.cfg"
 var _useEncryption = true
 var _configPass = ""
 
-# Called when the node enters the scene tree for the first time.
 func _ready():
 	InitConfigurationFolders()
 	LoadAdminSettings()
 	LoadProjectSettings()
 	LoadTheme()
-	LoadBackgroundColor()
+	AddProjectManagerScene()
+
+func AddProjectManagerScene():
 	var projectManager = load("res://scenes/project-manager/project-manager.tscn").instantiate()
 	add_child(projectManager)
-	
+
 func LoadTheme():
 	theme = load(App.GetThemePath())
-	
-func LoadBackgroundColor():
-	pass
-	
+		
 func LoadAdminSettings():
 	var config = ConfigFile.new()
 	var err = config.load(_adminConfig)
@@ -46,12 +44,3 @@ func LoadProjectSettings():
 func InitConfigurationFolders():
 	DirAccess.make_dir_recursive_absolute("user://" + App.GetProjectItemFolder())
 	DirAccess.make_dir_recursive_absolute("user://" + App.GetGodotVersionItemFolder())
-
-func _notification(notificationType):
-	if notificationType == NOTIFICATION_WM_CLOSE_REQUEST:
-		get_tree().quit()
-
-func _on_window_close():
-	pass
-	get_tree().quit()
-	

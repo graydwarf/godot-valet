@@ -46,7 +46,7 @@ func _ready():
 # Triggered when user closes via X or some other means.
 # TODO: We need to block them from closing until we get 
 # a prompt/response from the user when we have outstanding changes. 
-# Force saving as that is preferred over losing data.
+# Currently forcing saves as that is preferred over losing data.
 func _notification(notificationType):
 	if notificationType == NOTIFICATION_WM_CLOSE_REQUEST:
 		if _isDirty:
@@ -130,7 +130,6 @@ func ValidateExportPathText():
 		return -1
 
 	ResetExportPathColor()
-
 	return OK
 
 func ResetExportPathColor():
@@ -160,10 +159,7 @@ func GetExportType():
 
 func GetExtensionType(presetFullName):
 	if presetFullName == "Windows Desktop":
-		#if _packageTypeOptionButton.text == "No Zip":
 		return ".exe"
-		#else:
-		#	return ".zip"
 	elif presetFullName == "Linux/X11":
 		return ".x86_64"
 	elif presetFullName == "Web":
@@ -551,17 +547,18 @@ func ExportProject():
 		return -1
 		
 	StartBusyBackground("Exporting...")
+	
+	# Using threaded operation so we can see the UI update 
+	# as the project gets exported
 	var thread = Thread.new()
 	thread.start(ExportProjectThread)
 	
-	# Call directly to debug 
-	# Note: The busy screen doesn't work as expected outside thread.
-	#ExportProjectThread()
+	# Note: Comment the thread up above and uncomment this to debug
+	# Note: The busy screen doesn't work as expected outside a thread.
+	# ExportProjectThread()
 	
 	return OK
 	
-# Can't debug in threaded operations. Call
-# directly to debug
 func ExportProjectThread():
 	var result = OK
 	var listOfExportTypes = GetSelectedExportTypes()
@@ -573,6 +570,7 @@ func ExportProjectThread():
 		_exportWithInstallerStep = 0
 		result = ExportWithInstaller()
 
+	# Deferred to make sure the data is available for display in the output tabs
 	call_deferred("CompleteExport")
 	return result
 
@@ -857,12 +855,10 @@ func GetButlerPushCommand(presetName):
 	
 # Example: butler push ...\godot-valet\exports\v0.0.1\godot-valet.zip poplava/godot-valet:windows
 func GetButlerArguments(publishType):
-	#waiting for refactors
-	pass
 	var butlerArguments = []
 	butlerArguments.append("push")
 
-	# Build Path: ...\godot-valet\exports\v0.0.1\godot-valet.zip
+	# Export Path Example: ...\godot-valet\exports\v0.0.1\godot-valet.zip
 	# Surround with \" in case path has spaces
 	var buildPath = "\""
 	buildPath += GetButlerPushCommand(publishType)
@@ -896,8 +892,12 @@ func PublishToItchUsingButler():
 	
 	StartBusyBackground("")
 	
+	# Using threaded operation so we can see UI updates while things are happening
 	var thread = Thread.new()
 	thread.start(ExecuteButlerCommandsThread)
+	
+	# Comment the thread above and uncomment this line to debug
+	# ExecuteButlerCommandsThread()
 
 func ExecuteButlerCommandsThread():
 	if _windowsCheckBox.button_pressed:

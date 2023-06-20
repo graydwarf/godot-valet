@@ -24,7 +24,6 @@ func LoadProject():
 	_projectNameLineEdit.text = _selectedProjectItem.GetProjectName()
 	_projectPathLineEdit.text = _selectedProjectItem.GetProjectPath()
 	var version = _selectedProjectItem.GetGodotVersion()
-	#if version.find("???") == -1:
 	_godotVersionOptionButton.text = _selectedProjectItem.GetGodotVersion()
 
 func GetGodotVersion(godotVersionId):

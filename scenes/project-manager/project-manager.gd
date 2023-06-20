@@ -28,9 +28,6 @@ func LoadCustomScrollContainerTheme():
 	var v_scrollbar : VScrollBar= _scrollContainer.get_v_scroll_bar()
 	v_scrollbar.set_custom_minimum_size(Vector2(customWidth, 0))
 	
-#	_scrollContainer.theme = App.GetCu
-#	add_child(v_scrollbar)
-	
 func LoadBackgroundColor(color = null):
 	if color == null:
 		color = App.GetBackgroundColor()
@@ -40,7 +37,7 @@ func LoadBackgroundColor(color = null):
 	if style_box:
 		style_box.bg_color = App.GetBackgroundColor()
 	else:
-		print("StyleBoxFlat not found!")
+		print("LoadCustomScrollContainerTheme() - StyleBoxFlat not found!")
 
 func LoadTheme():
 	theme = load(App.GetThemePath())
@@ -234,7 +231,9 @@ func EditProject():
 	
 	_editProjectThread = Thread.new()
 	_editProjectThread.start(EditProjectInGodotEditorThread)
-	#EditProjectInGodotEditorThread()
+	
+	# Comment thread above and uncomment this to debug:
+	# EditProjectInGodotEditorThread()
 
 func EditProjectInGodotEditorThread():
 	var output = []
