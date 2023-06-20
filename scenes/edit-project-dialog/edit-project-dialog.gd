@@ -101,12 +101,9 @@ func SaveNewProjectItem():
 
 func SaveSettingsFile(projectId, godotVersionId):
 	var config = ConfigFile.new()
-
 	config.set_value("ProjectSettings", "project_name", _projectNameLineEdit.text)
 	config.set_value("ProjectSettings", "godot_version_id", godotVersionId)
 	config.set_value("ProjectSettings", "project_path", _projectPathLineEdit.text)
-
-	# Save the config file.
 	var err = config.save("user://" + App.GetProjectItemFolder() + "/" + projectId + ".cfg")
 
 	if err != OK:
@@ -118,7 +115,6 @@ func ProcessSelectedProject(path):
 		return
 	
 	_projectPathLineEdit.text = path
-	
 	if _extractProjectNameCheckBox.button_pressed:
 		var linesInProjectFile = Files.GetLinesFromFile(_projectPathLineEdit.text)
 		for line in linesInProjectFile:

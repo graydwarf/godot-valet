@@ -109,8 +109,5 @@ func _on_remove_button_pressed():
 func _on_confirmation_dialog_confirmed():
 	DeleteGodotVersionConfiguration()
 
-func _on_change_project_button_pressed():
-	pass # Replace with function body.
-
 func _on_delete_used_version_confirmation_dialog_confirmed():
 	DeleteGodotVersion()

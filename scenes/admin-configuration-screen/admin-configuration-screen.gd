@@ -1,7 +1,7 @@
 extends Control
+
 #
-# REMINDER: DO NOT STORE SECRETS IN CODE!!
-# USE LOCAL CONFIG FILES THAT YOU DON'T COMMIT TO SOURCE CONTROL
+# Please ignore. WIP and related to installer work. We 
 #
 
 @onready var _confirmationDialog = $ConfirmationDialog

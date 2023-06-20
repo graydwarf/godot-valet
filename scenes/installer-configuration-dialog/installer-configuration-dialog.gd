@@ -1,4 +1,7 @@
 extends Control
+#
+# Please ignore. This is a WIP. I'll either finish this in main or create a branch.
+#
 
 @onready var _selectedInstallerFilePath = $MarginContainer/HBoxContainer/SelectedInstallerPathLineEdit
 @onready var _selectInstallerFileDialog = $FileDialog

@@ -13,7 +13,6 @@ var _windowsChecked = false
 var _linuxChecked = false
 var _webChecked = false
 var _exportPath = ""
-#var _projectVersion = ""
 var _exportType = ""
 var _exportFileName = ""
 var _packageType = ""
@@ -208,13 +207,9 @@ func GetFormattedProjectPath():
 
 func RestoreDefaultColor():
 	theme = GetDefaultTheme()
-	#color = Color(0.0, 0.0, 0.0, 0.5)
-	pass
 	
 func ShowHoverColor():
 	theme = GetHoverTheme()
-	#color = Color(0.0, 0.0, 0.0, 0.3)
-	#pass
 	
 func ShowSelectedColor():
 	theme = GetSelectedTheme()
@@ -264,7 +259,6 @@ func _on_mouse_entered():
 		return
 	
 	ShowHoverColor()
-	
 
 func _on_mouse_exited():
 	if _selected:

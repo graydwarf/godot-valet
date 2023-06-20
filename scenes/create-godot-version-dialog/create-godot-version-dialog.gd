@@ -1,8 +1,10 @@
 extends ColorRect
+
 @onready var _godotVersionLineEdit = $NewProjectDialog/MarginContainer/VBoxContainer/HBoxContainer/GodotVersionLineEdit
 @onready var _godotPathLineEdit = $NewProjectDialog/MarginContainer/VBoxContainer/ProjectPathHBoxContainer2/GodotPathLineEdit
 @onready var _selectGodotExeFileDialog = $SelectGodotExeFileDialog
 @onready var _useFileVersionCheckBox = $NewProjectDialog/MarginContainer/VBoxContainer/UseFileVersionCheckBox
+
 var _godotVersionId = ""
 
 func SetGodotVersionId(value):
@@ -34,7 +36,6 @@ func CreateNewGodotVersionSettingsFile():
 		
 	# Save the config file.
 	var err = config.save("user://" + App.GetGodotVersionItemFolder() +"/" + id + ".cfg")
-
 	if err != OK:
 		OS.alert("An error occurred while saving the config file.")
 		return
