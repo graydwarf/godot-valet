@@ -52,13 +52,19 @@ layout_mode = 2
 size_flags_horizontal = 2
 size_flags_vertical = 0
 tooltip_text = "Path to the project folder."
+editable = false
 caret_blink = true
 caret_blink_interval = 0.5
 
-[node name="SelectProjectFolderButton2" type="Button" parent="VBoxContainer/ProjectPathHBoxContainer"]
+[node name="SelectExistingProjectFolderButton" type="Button" parent="VBoxContainer/ProjectPathHBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
-text = "Select Folder"
+text = "Select Existing"
+
+[node name="CreateNewProjectFolderButton" type="Button" parent="VBoxContainer/ProjectPathHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Create New"
 
 [node name="ProjectNameHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2
@@ -95,21 +101,6 @@ custom_minimum_size = Vector2(500, 32)
 layout_mode = 2
 size_flags_vertical = 4
 
-[node name="OptionsHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 0
-
-[node name="OptionsLabel" type="Label" parent="VBoxContainer/OptionsHBoxContainer"]
-custom_minimum_size = Vector2(140, 0)
-layout_mode = 2
-text = "Options:"
-horizontal_alignment = 2
-
-[node name="ExtractProjectNameCheckBox" type="CheckBox" parent="VBoxContainer/OptionsHBoxContainer"]
-layout_mode = 2
-button_pressed = true
-text = "Extract Project Name"
-
 [node name="MarginContainer" type="MarginContainer" parent="VBoxContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 70
@@ -138,8 +129,19 @@ file_mode = 0
 access = 2
 filters = PackedStringArray("*.godot")
 
-[connection signal="pressed" from="VBoxContainer/ProjectPathHBoxContainer/SelectProjectFolderButton2" to="." method="_on_select_project_folder_button_pressed"]
+[node name="SelectFolderForNewProjectDialog" type="FileDialog" parent="."]
+title = "Open a Directory"
+position = Vector2i(250, 150)
+size = Vector2i(600, 500)
+ok_button_text = "Select Current Folder"
+file_mode = 2
+access = 2
+show_hidden_files = true
+
+[connection signal="pressed" from="VBoxContainer/ProjectPathHBoxContainer/SelectExistingProjectFolderButton" to="." method="_on_select_project_folder_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/ProjectPathHBoxContainer/CreateNewProjectFolderButton" to="." method="_on_create_new_project_folder_button_pressed"]
 [connection signal="item_selected" from="VBoxContainer/GodotVersionHBoxContainer/GodotVersionOptionButton" to="." method="_on_godot_version_option_button_item_selected"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer/ButtonHBoxContainer/CancelButton" to="." method="_on_cancel_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer/ButtonHBoxContainer/SaveButton" to="." method="_on_save_button_pressed"]
 [connection signal="file_selected" from="FileDialog" to="." method="_on_file_dialog_file_selected"]
+[connection signal="dir_selected" from="SelectFolderForNewProjectDialog" to="." method="_on_select_folder_for_new_project_dialog_dir_selected"]

@@ -1,5 +1,23 @@
 extends Node
 
+func IsDirectoryEmpty(directoryPath: String) -> bool:
+	var dir = DirAccess.open(directoryPath)
+	dir.include_hidden = true
+	dir.include_navigational = false
+
+	if dir == null:
+		OS.alert("Failed to open directory:", directoryPath)
+		return false
+	
+	dir.list_dir_begin()
+	var file_name = dir.get_next()
+
+	if file_name != "":
+		return false
+
+	dir.list_dir_end()
+	return true
+
 # Copy contents of folder to specified destination
 func CopySourceToDestinationRecursive(sourcePath: String, destinationPath: String) -> void:
 	if not DirAccess.dir_exists_absolute(destinationPath):
