@@ -810,7 +810,10 @@ func AddPreviewLine(presetType):
 func GetZipFileName(presetType):
 	var zipFileName = ""
 	if _autoGenerateExportFileNamesCheckBox.button_pressed:
-		zipFileName = _exportFileNameLineEdit.text + "-" + _projectVersionLineEdit.text + "-" + presetType
+		if _projectVersionLineEdit.text == "":
+			zipFileName = _exportFileNameLineEdit.text + "-" + presetType
+		else:
+			zipFileName = _exportFileNameLineEdit.text + "-" + _projectVersionLineEdit.text + "-" + presetType
 	else:
 		zipFileName = _exportFileNameLineEdit.text
 	return zipFileName

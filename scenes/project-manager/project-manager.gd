@@ -111,7 +111,7 @@ func LoadProjectsIntoProjectContainer():
 			projectItem.SetWebChecked(config.get_value("ProjectSettings", "web_preset_checked", false))
 			projectItem.SetExportType(config.get_value("ProjectSettings", "export_type", "Release"))
 			projectItem.SetExportFileName(config.get_value("ProjectSettings", "export_file_name", ""))
-			projectItem.SetPackageType(config.get_value("ProjectSettings", "package_type", "Zip + Clean"))
+			projectItem.SetPackageType(config.get_value("ProjectSettings", "package_type", "Zip"))
 			projectItem.SetItchProfileName(config.get_value("ProjectSettings", "itch_profile_name", ""))
 			projectItem.SetItchProjectName(config.get_value("ProjectSettings", "itch_project_name", ""))
 
