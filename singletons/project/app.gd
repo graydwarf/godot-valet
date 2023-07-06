@@ -9,9 +9,21 @@ var _godotVersionItemFolder = "godot-version-items"
 var _lastUpdateTime
 var _themePath = "res://assets/themes/global-themes/godot-dark-default.tres"
 
+# Debug Helpers
+var _isDebuggingWithoutThreads = false
+
 func _ready():
 	LoadSavedSolutionSettings()
+	DebugCheck()
 
+# We display as errors to avoid accidently releasing with debug helpers enabled.
+func DebugCheck():
+	if _isDebuggingWithoutThreads:
+		push_error("DebugCheck: _isDebuggingWithoutThreads is enabled!")
+
+func GetIsDebuggingWithoutThreads():
+	return _isDebuggingWithoutThreads
+	
 func GetAppName():
 	return _appName
 	

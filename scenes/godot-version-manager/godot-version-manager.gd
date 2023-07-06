@@ -28,10 +28,12 @@ func RemoveSelectedVersionItem():
 	if !is_instance_valid(_selectedGodotVersionItem):
 		return
 	
-	$DeleteConfirmationDialog.show()
+	if IsGodotVersionInUse():
+		$DeleteUsedVersionConfirmationDialog.show()
+	else:
+		$DeleteConfirmationDialog.show()
 
 func IsGodotVersionInUse():
-	var projectsUsingThisGodotVersion = 0
 	var allResourceFiles = Files.GetFilesFromPath("user://" + App.GetProjectItemFolder())
 	for resourceFile in allResourceFiles:
 		if !resourceFile.ends_with(".cfg"):
@@ -43,14 +45,13 @@ func IsGodotVersionInUse():
 		if err == OK:
 			var godotVersionId = config.get_value("ProjectSettings", "godot_version_id", "")
 			if godotVersionId == _selectedGodotVersionItem.GetGodotVersionId():
-				projectsUsingThisGodotVersion += 1
+				return true
 
 	# No existing projects are using this Godot Version
-	return true
+	return false
 			
 func DeleteGodotVersionConfiguration():
-	if IsGodotVersionInUse():
-		$DeleteGodotVersionConfiguration.show()
+	pass
 
 func DeleteGodotVersion():
 	_godotVersionItemContainer.remove_child(_selectedGodotVersionItem)
@@ -107,7 +108,7 @@ func _on_remove_button_pressed():
 	RemoveSelectedVersionItem()
 
 func _on_confirmation_dialog_confirmed():
-	DeleteGodotVersionConfiguration()
+	DeleteGodotVersion()
 
 func _on_delete_used_version_confirmation_dialog_confirmed():
 	DeleteGodotVersion()

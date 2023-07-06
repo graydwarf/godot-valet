@@ -91,7 +91,10 @@ dialog_autowrap = true
 
 [node name="DeleteUsedVersionConfirmationDialog" type="ConfirmationDialog" parent="."]
 position = Vector2i(300, 150)
-dialog_text = "One or more projects are using this Godot Version! Are you sure you want to remove it? This won't cause any immediate problems but you'll need to update any projects which reference this version to another in order for them to export, publish and launch correctly."
+size = Vector2i(700, 161)
+ok_button_text = "Delete"
+dialog_text = "The version configuration you're about to delete is being used by one or more projects. Are you sure you want to remove it? "
+dialog_autowrap = true
 
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/NewVersionButton" to="." method="_on_new_project_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/EditButton" to="." method="_on_edit_button_pressed"]

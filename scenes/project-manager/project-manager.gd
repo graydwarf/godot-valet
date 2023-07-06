@@ -202,8 +202,11 @@ func RunProject():
 	if !is_instance_valid(_selectedProjectItem):
 		return
 
-	_runProjectThread = Thread.new()
-	_runProjectThread.start(StartProjectThread)
+	if App.GetIsDebuggingWithoutThreads():
+		StartProjectThread()
+	else:
+		_runProjectThread = Thread.new()
+		_runProjectThread.start(StartProjectThread)
 
 # When Godot Valet exits, it calls this method.
 # We don't want to wait for threads to exit. 
@@ -229,25 +232,32 @@ func EditProject():
 		OS.alert("Did not find a project (.godot) file in the specified project path")
 		return
 	
-	_editProjectThread = Thread.new()
-	_editProjectThread.start(EditProjectInGodotEditorThread)
-	
-	# Comment thread above and uncomment this to debug:
-	# EditProjectInGodotEditorThread()
+	if App.GetIsDebuggingWithoutThreads():
+		EditProjectInGodotEditorThread()
+	else:
+		_editProjectThread = Thread.new()
+		_editProjectThread.start(EditProjectInGodotEditorThread)
 
 func EditProjectInGodotEditorThread():
 	var output = []
 	var projectPath = _selectedProjectItem.GetProjectPathBaseDir()
 	var godotArguments = ["--verbose", "--editor", "--path", projectPath] 
 	var pathToGodot = _selectedProjectItem.GetGodotPath(_selectedProjectItem.GetGodotVersionId())
+	if pathToGodot == null:
+		OS.alert("Unable to locate godot at the given path. Use settings to review godot configurations.")
+		return
 	OS.execute(pathToGodot, godotArguments, output, false, false)
 
 func OpenGodotProjectManager(godotVersionId = null):
 	if godotVersionId == null:
 		godotVersionId = _selectedProjectItem.GetGodotVersionId()
 	var godotPath = GetGodotPathFromVersionId(godotVersionId)
-	_openGodotProjectManagerThread = Thread.new()
-	_openGodotProjectManagerThread.start(RunGodotProjectManagerThread.bind(godotPath))
+	
+	if App.GetIsDebuggingWithoutThreads():
+		RunGodotProjectManagerThread(godotPath)
+	else:
+		_openGodotProjectManagerThread = Thread.new()
+		_openGodotProjectManagerThread.start(RunGodotProjectManagerThread.bind(godotPath))
 
 func RunGodotProjectManagerThread(godotPath):
 	var output = []

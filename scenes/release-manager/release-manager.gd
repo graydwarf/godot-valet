@@ -548,14 +548,13 @@ func ExportProject():
 		
 	StartBusyBackground("Exporting...")
 	
-	# Using threaded operation so we can see the UI update 
-	# as the project gets exported
-	var thread = Thread.new()
-	thread.start(ExportProjectThread)
-	
-	# Note: Comment the thread up above and uncomment this to debug
-	# Note: The busy screen doesn't work as expected outside a thread.
-	# ExportProjectThread()
+	if App.GetIsDebuggingWithoutThreads():
+		# Note: The busy screen doesn't work as expected outside a thread.
+		ExportProjectThread()
+	else:
+		# Threaded so we can see the UI update during exports
+		var thread = Thread.new()
+		thread.start(ExportProjectThread)
 	
 	return OK
 	
@@ -895,12 +894,13 @@ func PublishToItchUsingButler():
 	
 	StartBusyBackground("")
 	
-	# Using threaded operation so we can see UI updates while things are happening
-	var thread = Thread.new()
-	thread.start(ExecuteButlerCommandsThread)
-	
-	# Comment the thread above and uncomment this line to debug
-	# ExecuteButlerCommandsThread()
+	if App.GetIsDebuggingWithoutThreads():
+		# For debugging
+		ExecuteButlerCommandsThread()
+	else:
+		# Using threaded operation so we can see UI updates
+		var thread = Thread.new()
+		thread.start(ExecuteButlerCommandsThread)
 
 func ExecuteButlerCommandsThread():
 	if _windowsCheckBox.button_pressed:
