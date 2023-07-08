@@ -22,25 +22,10 @@ func SaveGodotConfiguration():
 		return
 	
 	CreateNewGodotVersionSettingsFile()
-	
-func CreateNewGodotVersionSettingsFile():
-	var config = ConfigFile.new()
 
-	config.set_value("GodotVersionSettings", "godot_version", _godotVersionLineEdit.text)
-	config.set_value("GodotVersionSettings", "godot_path", _godotPathLineEdit.text)
-		
-	# New or are we saving?
-	var id = _godotVersionId
-	if id == "":
-		id = Common.GetId()
-		
-	# Save the config file.
-	var err = config.save("user://" + App.GetGodotVersionItemFolder() +"/" + id + ".cfg")
-	if err != OK:
-		OS.alert("An error occurred while saving the config file.")
-		return
-	
-	Signals.emit_signal("GodotVersionsChanged")
+func CreateNewGodotVersionSettingsFile():
+	var godotVersionsChanged = true
+	Signals.emit_signal("SaveGodotVersionSettingsFile", _godotVersionId, _godotVersionLineEdit.text, _godotPathLineEdit.text, -1, godotVersionsChanged)
 	queue_free()
 
 func GetGodotFileVersion(path):	

@@ -9,11 +9,14 @@ signal SaveInstallerConfiguration
 # Project Management
 signal ProjectItemSelected
 signal ProjectSaved
+signal LoadOpenGodotButtons
 
 # Godot Version Management
-signal GodotVersionsChanged
+signal NewGodotVersionAdded
 signal GodotVersionItemClicked
 signal GodotVersionManagerClosing
+signal SaveGodotVersionSettingsFile
+signal MoveVersionItemUp
 
 # Settings
 signal BackgroundColorChanged

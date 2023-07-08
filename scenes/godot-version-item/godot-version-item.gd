@@ -6,10 +6,17 @@ var _godotVersion = ""
 var _godotPath = ""
 var _selected = false
 var _godotVersionId = ""
+var _sortOrder = -1
 
 func _ready():
 	Signals.connect("GodotVersionItemClicked", GodotVersionItemClicked)
 
+func GetSortOrder():
+	return _sortOrder
+
+func SetSortOrder(value):
+	_sortOrder = value
+	
 func GetGodotVersionId():
 	return _godotVersionId
 
@@ -45,6 +52,9 @@ func ShowHoverColor():
 
 func ShowSelectedColor():
 	color = Color(0.0, 0.0, 0.5, 0.2)
+
+func MoveVersionItemUp():
+	Signals.emit_signal("MoveVersionItemUp", self)
 	
 func _on_gui_input(event):
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
@@ -63,3 +73,6 @@ func _on_mouse_exited():
 		return
 	
 	RestoreDefaultColor()
+
+func _on_move_up_button_pressed():
+	MoveVersionItemUp()

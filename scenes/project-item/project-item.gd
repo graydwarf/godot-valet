@@ -144,7 +144,7 @@ func GetDefaultTheme():
 func GetHoverTheme():
 	var customTheme = Theme.new()
 	var styleBox = GetDefaultStyleBoxSettings()
-	styleBox.bg_color = AdjustBackgroundColor(0.12)
+	styleBox.bg_color = AdjustBackgroundColor(0.001)
 	customTheme.set_stylebox("panel", "Panel", styleBox)
 	return customTheme
 

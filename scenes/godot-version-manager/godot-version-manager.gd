@@ -11,8 +11,44 @@ func _ready():
 	
 func InitSignals():
 	Signals.connect("GodotVersionItemClicked", GodotVersionItemClicked)
-	Signals.connect("GodotVersionsChanged", GodotVersionsChanged)
+	Signals.connect("NewGodotVersionAdded", NewGodotVersionAdded)
+	Signals.connect("MoveVersionItemUp", MoveVersionItemUp)
+	
+func MoveVersionItemUp(godotVersionItem):
+	var idx = godotVersionItem.get_index()
 
+	if idx > 0:
+		_godotVersionItemContainer.move_child(godotVersionItem, idx - 1)
+		_godotVersionItemContainer.move_child(_godotVersionItemContainer.get_child(idx), idx)
+
+	SaveAllGodotVersions()
+	Signals.emit_signal("LoadOpenGodotButtons")
+
+func SaveAllGodotVersions():
+	var newGodotVersionAdded = false
+	for godotVersionItem in _godotVersionItemContainer.get_children():
+		SaveGodotVersionSettingsFile(godotVersionItem.GetGodotVersionId(), godotVersionItem.GetGodotVersion(), godotVersionItem.GetGodotPath(), godotVersionItem.get_index(), newGodotVersionAdded)
+
+func SaveGodotVersionSettingsFile(id, godotVersion, filePath, sortOrder = -1, newGodotVersionAdded = false):
+	var config = ConfigFile.new()
+
+	config.set_value("GodotVersionSettings", "godot_version", godotVersion)
+	config.set_value("GodotVersionSettings", "godot_path", filePath)
+	config.set_value("GodotVersionSettings", "sort_order", sortOrder)
+	
+	# New or are we saving?
+	if id == "":
+		id = Common.GetId()
+		
+	# Save the config file.
+	var err = config.save("user://" + App.GetGodotVersionItemFolder() +"/" + id + ".cfg")
+	if err != OK:
+		OS.alert("An error occurred while saving the config file.")
+		return
+	
+	if newGodotVersionAdded:
+		NewGodotVersionAdded()
+	
 func GodotVersionItemClicked(godotVersionItem):
 	_selectedGodotVersionItem = godotVersionItem
 	
@@ -20,7 +56,7 @@ func ClearVersionItems():
 	for child in _godotVersionItemContainer.get_children():
 		child.queue_free()
 		
-func GodotVersionsChanged():
+func NewGodotVersionAdded():
 	ClearVersionItems()
 	LoadGodotVersionItems()
 
@@ -88,8 +124,35 @@ func LoadGodotVersionItems():
 		if err == OK:
 			godotVersionItem.SetGodotVersion(config.get_value("GodotVersionSettings", "godot_version", ""))
 			godotVersionItem.SetGodotPath(config.get_value("GodotVersionSettings", "godot_path", ""))
+			var sortOrder = config.get_value("GodotVersionSettings", "sort_order", -1)
+			godotVersionItem.SetSortOrder(sortOrder)
 			godotVersionItem.SetGodotVersionId(fileName)
-		
+	call_deferred("SortGodotVersionItems")
+
+func SortGodotVersionItems():
+	var children = _godotVersionItemContainer.get_children()
+	children.sort_custom(SortGodotVersionItemNodes)
+
+	while _godotVersionItemContainer.get_child_count() > 0:
+		_godotVersionItemContainer.remove_child(_godotVersionItemContainer.get_child(0))
+
+	for child in children:
+		_godotVersionItemContainer.add_child(child)
+
+func SortGodotVersionItemNodes(node1, node2):
+	var node1SortOrder = int(node1._sortOrder)
+	var node2SortOrder = int(node2._sortOrder)
+	if node1SortOrder == -1:
+		return true
+	elif node2SortOrder == -1:
+		return false
+	elif node1SortOrder < node2SortOrder:
+		return true
+	elif node1SortOrder > node2SortOrder:
+		return false
+	else:
+		return false
+
 func OpenNewGodotVersionDialog():
 	var newGodotVersionDialog = load("res://scenes/create-godot-version-dialog/create-godot-version-dialog.tscn").instantiate()
 	add_child(newGodotVersionDialog)

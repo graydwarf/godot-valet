@@ -8,6 +8,7 @@ custom_minimum_size = Vector2(0, 110)
 anchors_preset = 10
 anchor_right = 1.0
 grow_horizontal = 2
+mouse_default_cursor_shape = 2
 color = Color(0, 0, 0, 0.5)
 script = ExtResource("1_oshmt")
 
@@ -44,12 +45,22 @@ size_flags_horizontal = 3
 layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 5
 
 [node name="GodotVersionNameLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "Godot 4.2"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2"]
+layout_mode = 2
+alignment = 2
+
+[node name="MoveUpButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+text = "^"
 
 [node name="MarginContainer" type="MarginContainer" parent="MarginContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
@@ -64,3 +75,4 @@ text = "C:\\Program Files\\Godot 4\\Godot_v4.0.2-stable_win64.exe"
 [connection signal="gui_input" from="." to="." method="_on_gui_input"]
 [connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
 [connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]
+[connection signal="pressed" from="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer/MoveUpButton" to="." method="_on_move_up_button_pressed"]

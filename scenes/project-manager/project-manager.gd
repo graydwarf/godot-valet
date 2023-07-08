@@ -54,6 +54,7 @@ func ClearCustomButtonContainer():
 func LoadOpenGodotButtons():
 	ClearCustomButtonContainer()
 	var files = Files.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
+	var listOfButtons = []
 	for file in files:
 		if !file.ends_with(".cfg"):
 			continue
@@ -64,13 +65,19 @@ func LoadOpenGodotButtons():
 		var err = config.load("user://" + App.GetGodotVersionItemFolder() + "/" + fileName + ".cfg")
 		if err == OK:
 			var godotVersion = config.get_value("GodotVersionSettings", "godot_version", "")
+			var sortOrder = config.get_value("GodotVersionSettings", "sort_order", "")
 			var button : Button = load("res://scenes/nav-button/nav-button.tscn").instantiate()
 			button.text = "Open " + godotVersion
 			button.size.x = 140
 			button.SetCustomVar1(fileName)
 			button.pressed.connect(_on_button_pressed.bind(button))
 			button.tooltip_text = "Launches into the Godot Project Manager for the given version."
-			_customButtonContainer.add_child(button)
+			listOfButtons.append([sortOrder, button])
+	
+	listOfButtons.sort()
+	
+	for button in listOfButtons:
+		_customButtonContainer.add_child(button[1])
 
 # Handles events for our dynamic godot version buttons
 func _on_button_pressed(button):
@@ -149,9 +156,8 @@ func InitSignals():
 	Signals.connect("ProjectItemSelected", ProjectItemSelected)
 	Signals.connect("ProjectSaved", ProjectSaved)
 	Signals.connect("GodotVersionManagerClosing", GodotVersionManagerClosing)
-	Signals.connect("GodotVersionsChanged", GodotVersionsChanged)
 	Signals.connect("BackgroundColorChanged", BackgroundColorChanged)
-
+	
 func BackgroundColorChanged(color = null):
 	LoadBackgroundColor(color)
 
