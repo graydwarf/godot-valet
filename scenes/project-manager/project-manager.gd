@@ -10,6 +10,8 @@ extends Panel
 @onready var _projectItemContainer = $VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/ProjectItemContainer
 @onready var _customButtonContainer = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/CustomButtonVBoxContainer
 @onready var _scrollContainer = $VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer
+@onready var _showHiddenCheckBox = %ShowHiddenCheckBox
+@onready var _hiddenProjectItemCountLabel = %HiddenProjectItemCountLabel
 
 var _selectedProjectItem = null
 var _runProjectThread
@@ -22,7 +24,7 @@ func _ready():
 	LoadTheme()
 	LoadBackgroundColor()
 	LoadCustomScrollContainerTheme()
-#
+	
 func LoadCustomScrollContainerTheme():
 	var customWidth = 20
 	var v_scrollbar : VScrollBar= _scrollContainer.get_v_scroll_bar()
@@ -43,8 +45,16 @@ func LoadTheme():
 	theme = load(App.GetThemePath())
 	
 func InitProjectSettings():
+	LoadShowHiddenCheckbox()
 	LoadProjectsIntoProjectContainer()
+	ToggleHiddenProjectVisibility()
 	LoadOpenGodotButtons()
+
+func LoadShowHiddenCheckbox():
+	_showHiddenCheckBox.button_pressed = App.GetShowHidden()
+	
+func ShowHiddenProjectCount(value):
+	_hiddenProjectItemCountLabel.text = "(" + str(value) + ")"
 
 func ClearCustomButtonContainer():
 	for button in _customButtonContainer.get_children():
@@ -86,6 +96,7 @@ func _on_button_pressed(button):
 	
 func LoadProjectsIntoProjectContainer():
 	var allResourceFiles = Files.GetFilesFromPath("user://" + App.GetProjectItemFolder())
+	var hiddenProjectCount = 0
 	for resourceFile in allResourceFiles:
 		if !resourceFile.ends_with(".cfg"):
 			continue
@@ -97,7 +108,7 @@ func LoadProjectsIntoProjectContainer():
 		
 		if _selectedProjectItem != null:
 			var isSelected = true
-			ProjectItemSelected(_selectedProjectItem, isSelected)
+			ToggleProjectItemSelection(_selectedProjectItem, isSelected)
 			
 		var config = ConfigFile.new()
 		var err = config.load("user://" + App.GetProjectItemFolder() + "/" + projectId + ".cfg")
@@ -121,7 +132,21 @@ func LoadProjectsIntoProjectContainer():
 			projectItem.SetPackageType(config.get_value("ProjectSettings", "package_type", "Zip"))
 			projectItem.SetItchProfileName(config.get_value("ProjectSettings", "itch_profile_name", ""))
 			projectItem.SetItchProjectName(config.get_value("ProjectSettings", "itch_project_name", ""))
-
+			var isHidden = config.get_value("ProjectSettings", "is_hidden", false)
+			projectItem.SetIsHidden(isHidden)
+			
+			if isHidden:
+				hiddenProjectCount += 1
+				projectItem.HideProjectItem()
+			else:
+				projectItem.ShowProjectItem()
+	
+	if hiddenProjectCount > 0:
+		_hiddenProjectItemCountLabel.visible = true
+		ShowHiddenProjectCount(hiddenProjectCount)
+	else:
+		_hiddenProjectItemCountLabel.visible = false
+		
 func GetGodotVersionFromId(godotVersionId):
 	var files = Files.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
 	for file in files:
@@ -153,10 +178,14 @@ func GetGodotPathFromVersionId(godotVersionId):
 			return config.get_value("GodotVersionSettings", "godot_path", "")
 			
 func InitSignals():
-	Signals.connect("ProjectItemSelected", ProjectItemSelected)
+	Signals.connect("ToggleProjectItemSelection", ToggleProjectItemSelection)
 	Signals.connect("ProjectSaved", ProjectSaved)
 	Signals.connect("GodotVersionManagerClosing", GodotVersionManagerClosing)
 	Signals.connect("BackgroundColorChanged", BackgroundColorChanged)
+	Signals.connect("HidingProjectItem", HidingProjectItem)
+
+func HidingProjectItem():
+	ToggleHiddenProjectVisibility()
 	
 func BackgroundColorChanged(color = null):
 	LoadBackgroundColor(color)
@@ -177,16 +206,24 @@ func ProjectSaved():
 func ClearProjectContainer():
 	for child in _projectItemContainer.get_children():
 		child.queue_free()
-		
-func ProjectItemSelected(projectItem, isSelected):
-	if !isSelected:
-		DisableEditButtons()
+
+func ResetExistingSelection():
+	if _selectedProjectItem != null:
 		_selectedProjectItem.UnselectProjectItem()
-		_selectedProjectItem = null
-	else:
+	
+	_selectedProjectItem = null
+
+func ToggleProjectItemSelection(projectItem, isSelected):
+	ResetExistingSelection()
+
+	if isSelected:
 		_selectedProjectItem = projectItem
 		_selectedProjectItem.SelectProjectItem()
 		EnableEditButtons()
+	else:
+		_selectedProjectItem = null
+		projectItem.UnselectProjectItem()
+		DisableEditButtons()
 
 func DisableEditButtons():
 	_runProjectButton.disabled = true
@@ -318,6 +355,32 @@ func OpenProjectFolder():
 	var projectPath = _selectedProjectItem.GetProjectPathBaseDir()
 	OS.shell_open(projectPath)
 
+func ToggleHiddenProjectVisibility():
+	var hiddenProjectCount = 0
+	App.SetShowHidden(_showHiddenCheckBox.button_pressed)
+	for projectItem in _projectItemContainer.get_children():
+		if App._showHidden:
+			# Show all projects regardless of Hide selection.
+			projectItem.ShowProjectItem()
+		else:
+			# Hide selected projects 
+			if !projectItem.GetIsHidden():
+				continue
+				
+			hiddenProjectCount += 1
+			projectItem.HideProjectItem()
+			
+			if projectItem != _selectedProjectItem:
+				continue
+				
+			ToggleProjectItemSelection(projectItem, false)
+	
+	if hiddenProjectCount > 0:
+		_hiddenProjectItemCountLabel.visible = true
+		ShowHiddenProjectCount(hiddenProjectCount)
+	else:
+		_hiddenProjectItemCountLabel.visible = false
+		
 func _on_new_project_button_pressed():
 	CreateNewProject()
 	
@@ -349,3 +412,7 @@ func _on_release_project_button_pressed():
 
 func _on_open_project_folder_button_pressed():
 	OpenProjectFolder()
+
+func _on_check_box_pressed():
+	ToggleHiddenProjectVisibility()
+	

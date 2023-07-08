@@ -1,7 +1,8 @@
 extends Panel
 @onready var _projectNameLabel = $MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer/ProjectNameLabel
 @onready var _godotVersionLabel = $MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer/HBoxContainer/GodotVersionLabel
-@onready var _projectPathLabel = $MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/ProjectPathLabel
+@onready var _projectPathLabel = %ProjectPathLabel
+@onready var _hideProjectCheckbox = %HideProjectCheckbox
 @onready var _projectVersionLabel = $MarginContainer/HBoxContainer/VBoxContainer/MarginContainer3/ProjectVersionLabel
 
 var _selected = false
@@ -25,7 +26,6 @@ func _ready():
 	RefreshBackground()
 
 func InitSignals():
-	Signals.connect("ProjectItemSelected", ProjectItemSelected)
 	Signals.connect("BackgroundColorChanged", BackgroundColorChanged)
 
 func BackgroundColorChanged(_color = null):
@@ -81,6 +81,9 @@ func SetProjectId(value):
 
 func SetInstallerConfigurationFileName(value):
 	_installerConfigurationFileName = value
+
+func SetIsHidden(value):
+	_hideProjectCheckbox.button_pressed = value
 	
 func GetProjectVersion():
 	return _projectVersionLabel.text
@@ -155,6 +158,9 @@ func GetSelectedTheme():
 	customTheme.set_stylebox("panel", "Panel", styleBox)
 	return customTheme
 
+func GetIsHidden():
+	return _hideProjectCheckbox.button_pressed
+	
 func AdjustBackgroundColor(amount):
 	var colorToSubtract = Color(amount, amount, amount, 0.0)
 
@@ -181,12 +187,6 @@ func GetDefaultStyleBoxSettings():
 	styleBox.corner_radius_bottom_left = 6
 	return styleBox
 	
-func ProjectItemSelected(projectItem, _isSelected):
-	if projectItem == self:
-		return
-	
-	UnselectProjectItem()
-
 func GetGodotPath(godotVersionId):
 	var files = Files.GetFilesFromPath("user://godot-version-items")
 	for file in files:
@@ -222,9 +222,11 @@ func UnselectProjectItem():
 	RestoreDefaultColor()
 	_selected = false
 
+func GetProjectSelected():
+	return _selected
+	
 func SaveProjectItem():
 	var config = ConfigFile.new()
-
 	config.set_value("ProjectSettings", "project_name", _projectNameLabel.text)
 	config.set_value("ProjectSettings", "export_path", _exportPath)
 	config.set_value("ProjectSettings", "godot_version_id", _godotVersionId)
@@ -238,21 +240,23 @@ func SaveProjectItem():
 	config.set_value("ProjectSettings", "package_type", _packageType)
 	config.set_value("ProjectSettings", "itch_profile_name", _itchProfileName)
 	config.set_value("ProjectSettings", "itch_project_name", _itchProjectName)
+	config.set_value("ProjectSettings", "is_hidden", _hideProjectCheckbox.button_pressed)
 	
 	# Save the config file.
 	var err = config.save("user://" + App.GetProjectItemFolder() + "/" + _projectId + ".cfg")
 
 	if err != OK:
 		OS.alert("An error occurred while saving the config file.")
+
+func HideProjectItem():
+	visible = false
+	
+func ShowProjectItem():
+	visible = true
 	
 func _on_gui_input(event):
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		if _selected:
-			_selected = false
-			Signals.emit_signal("ProjectItemSelected", self, _selected)
-		else:
-			_selected = true
-			Signals.emit_signal("ProjectItemSelected", self, _selected)
+		Signals.emit_signal("ToggleProjectItemSelection", self, !_selected)
 
 func _on_mouse_entered():
 	if _selected:
@@ -265,4 +269,8 @@ func _on_mouse_exited():
 		return
 	
 	RestoreDefaultColor()
-	
+
+func _on_hide_check_box_pressed():
+	SaveProjectItem()
+	if _hideProjectCheckbox.button_pressed:
+		Signals.emit_signal("HidingProjectItem")

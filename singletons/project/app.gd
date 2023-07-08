@@ -1,7 +1,6 @@
 extends Node
 
 var _appName = "godot-valet"
-var _backgroundColor = Color(0.2, 0.2, 0.2)
 var _projectItemFolder = "project-items"
 var _solutionFolder = "solution-settings"
 var _solutionConfigFile = "user://" + _solutionFolder + ".cfg"
@@ -11,6 +10,10 @@ var _themePath = "res://assets/themes/global-themes/godot-dark-default.tres"
 
 # Debug Helpers
 var _isDebuggingWithoutThreads = false
+
+# Solution Settings
+var _backgroundColor = Color(0.2, 0.2, 0.2)
+var _showHidden = false
 
 func _ready():
 	LoadSavedSolutionSettings()
@@ -41,6 +44,9 @@ func GetBackgroundColor():
 
 func GetLastUpdateTime():
 	return _lastUpdateTime
+
+func GetShowHidden():
+	return _showHidden
 	
 func SetLastUpdateTime(value):
 	_lastUpdateTime = value
@@ -57,6 +63,7 @@ func LoadSavedSolutionSettings():
 	var err = config.load(_solutionConfigFile)
 	if err == OK:
 		_backgroundColor = config.get_value("SolutionSettings", "bg_color", "")
+		_showHidden = config.get_value("SolutionSettings", "show_hidden", false)
 	else:
 		OS.alert("An error occured loading the solution configuration file")
 	
@@ -64,6 +71,7 @@ func SaveSolutionSettings():
 	var config = ConfigFile.new()
 
 	config.set_value("SolutionSettings", "bg_color", _backgroundColor)
+	config.set_value("SolutionSettings", "show_hidden", _showHidden)
 	
 	# Save the config file.
 	var err = config.save(_solutionConfigFile)
@@ -71,6 +79,10 @@ func SaveSolutionSettings():
 	if err != OK:
 		OS.alert("An error occurred while saving the solution config file.")
 
+func SetShowHidden(value):
+	_showHidden = value
+	SaveSolutionSettings()
+	
 #func GetCustomScrollContainerStyle():
 #	var customTheme = Theme.new()
 #	var grabberStyle = StyleBoxFlat.new()

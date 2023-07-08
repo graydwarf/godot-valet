@@ -7,9 +7,10 @@ signal ExportWithInstaller
 signal SaveInstallerConfiguration
 
 # Project Management
-signal ProjectItemSelected
+signal ToggleProjectItemSelection
 signal ProjectSaved
 signal LoadOpenGodotButtons
+signal HidingProjectItem
 
 # Godot Version Management
 signal NewGodotVersionAdded
