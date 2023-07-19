@@ -13,6 +13,7 @@ func InitSignals():
 	Signals.connect("GodotVersionItemClicked", GodotVersionItemClicked)
 	Signals.connect("NewGodotVersionAdded", NewGodotVersionAdded)
 	Signals.connect("MoveVersionItemUp", MoveVersionItemUp)
+	Signals.connect("SaveGodotVersionSettingsFile", SaveGodotVersionSettingsFile)
 	
 func MoveVersionItemUp(godotVersionItem):
 	var idx = godotVersionItem.get_index()
