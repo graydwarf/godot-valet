@@ -1,6 +1,10 @@
-[gd_scene load_steps=2 format=3 uid="uid://chfs468nnvicn"]
+[gd_scene load_steps=3 format=3 uid="uid://chfs468nnvicn"]
 
 [ext_resource type="Script" path="res://scenes/edit-project-dialog/edit-project-dialog.gd" id="1_xd7bt"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_tr27p"]
+font_size = 14
+font_color = Color(0.921569, 0.921569, 0.921569, 1)
 
 [node name="EditProjectDialog" type="Panel"]
 custom_minimum_size = Vector2(800, 150)
@@ -119,6 +123,13 @@ text = "CANCEL"
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "SAVE"
+
+[node name="UpgradeDisclaimerLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Note for upgrades: Please launch into the appropriate godot project manager for performing upgrades. Follow the upgrade guideance and then configure and launch with godot-valet. "
+label_settings = SubResource("LabelSettings_tr27p")
+autowrap_mode = 3
 
 [node name="FileDialog" type="FileDialog" parent="."]
 title = "Open a File"
