@@ -203,7 +203,7 @@ func GetGodotPath(godotVersionId):
 			return config.get_value("GodotVersionSettings", "godot_path", "???")
 
 func GetFormattedProjectPath():
-	return GetProjectPathBaseDir().to_lower()#.replace("/", "\\")
+	return GetProjectPathBaseDir().to_lower()
 
 func RestoreDefaultColor():
 	theme = GetDefaultTheme()

@@ -749,7 +749,7 @@ func CountWarnings():
 		_warningCountLabel.self_modulate = Color(1.0, 1.0, 0.0, 1.0)
 
 func GetExportPath(presetType):
-	var exportPath = _exportPathLineEdit.text#.replace("/", "\\")
+	var exportPath = _exportPathLineEdit.text
 	var versionPath = GetGroomedVersionPath()
 	if presetType == "Windows Desktop":
 		exportPath += versionPath + "/" + GetItchReleaseProfileName(presetType) + "/" + _exportTypeOptionButton.text + "/" + _exportFileNameLineEdit.text + ".zip"

@@ -92,12 +92,14 @@ func DeleteAllFilesAndFolders(folderPath, isSendingToRecycle = true, listOfExist
 			continue
 			
 		var err = OK
+		var fullFilePath = folderPath.path_join(filePath)
+		
 		if isSendingToRecycle:
 			# Send to recycle so we can recover if needed
-			err = OS.move_to_trash(folderPath + "\\" + filePath) 
+			err = OS.move_to_trash(fullFilePath) 
 		else:
 			# Delete without backup
-			err = DirAccess.remove_absolute(filePath)
+			err = DirAccess.remove_absolute(fullFilePath) # <- use fullFilePath here
 		
 		if err != OK:
 			return -1
