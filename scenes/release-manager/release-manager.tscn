@@ -129,6 +129,13 @@ tooltip_text = "\"Web\""
 button_pressed = true
 text = "Web"
 
+[node name="MacOsCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "\"Web\""
+button_pressed = true
+text = "MacOS"
+
 [node name="EmptyButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer"]
 self_modulate = Color(1, 1, 1, 0)
 custom_minimum_size = Vector2(140, 0)
@@ -601,6 +608,7 @@ dialog_text = "Found existing files with matching names. Overwrite?"
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/WindowsCheckBox" to="." method="_on_windows_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/LinuxCheckBox" to="." method="_on_linux_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/WebCheckBox" to="." method="_on_web_check_box_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/MacOsCheckBox" to="." method="_on_mac_os_check_box_pressed"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer2/ExportPathLineEdit" to="." method="_on_export_path_line_edit_text_changed"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectVersionHBoxContainer/ProjectVersionLineEdit" to="." method="_on_project_version_line_edit_text_changed"]
 [connection signal="item_selected" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportTypeHBoxContainer/ExportTypeOptionButton" to="." method="_on_export_type_option_button_item_selected"]

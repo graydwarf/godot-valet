@@ -7,6 +7,7 @@ extends Panel
 @onready var _windowsCheckBox = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/WindowsCheckBox
 @onready var _linuxCheckBox = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/LinuxCheckBox
 @onready var _webCheckBox = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/WebCheckBox
+@onready var _macOsCheckBox = %MacOsCheckBox
 @onready var _exportTypeOptionButton = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportTypeHBoxContainer/ExportTypeOptionButton
 @onready var _exportPreviewTextEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer/ExportPreviewTextEdit
 @onready var _itchProfileNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProfileNameHBoxContainer/ItchProfileNameLineEdit
@@ -83,6 +84,7 @@ func ConfigureReleaseManagementForm(selectedProjectItem):
 	_windowsCheckBox.button_pressed = selectedProjectItem.GetWindowsChecked()
 	_linuxCheckBox.button_pressed = selectedProjectItem.GetLinuxChecked()
 	_webCheckBox.button_pressed = selectedProjectItem.GetWebChecked()
+	_macOsCheckBox.button_pressed = selectedProjectItem.GetMacOsChecked()
 	_exportPathLineEdit.text = selectedProjectItem.GetExportPath()
 	_exportFileNameLineEdit.text = selectedProjectItem.GetExportFileName()
 	_projectVersionLineEdit.text = selectedProjectItem.GetProjectVersion()
@@ -98,6 +100,7 @@ func SaveSettings():
 	_selectedProjectItem.SetWindowsChecked(_windowsCheckBox.button_pressed)
 	_selectedProjectItem.SetLinuxChecked(_linuxCheckBox.button_pressed)
 	_selectedProjectItem.SetWebChecked(_webCheckBox.button_pressed)
+	_selectedProjectItem.SetMacOsChecked(_macOsCheckBox.button_pressed)
 	_selectedProjectItem.SetExportPath(_exportPathLineEdit.text)
 	_selectedProjectItem.SetProjectVersion(_projectVersionLineEdit.text)
 	_selectedProjectItem.SetExportFileName(_exportFileNameLineEdit.text)
@@ -164,6 +167,8 @@ func GetExtensionType(presetFullName):
 		return ".x86_64"
 	elif presetFullName == "Web":
 		return ".html"
+	elif presetFullName == "macOS":
+		return ".???"
 	else:
 		OS.alert("Invalid preset type!")
 		return "invalid"
@@ -189,7 +194,7 @@ func ExportPreset(presetFullName):
 	
 	if _useSha256CheckBox.button_pressed && FileAccess.file_exists(_pathToUserTempFolder + _exportFileNameLineEdit.text + extensionType):
 		# Create a checksum of the core binary (.exe, .x86_64)
-		var checksum = CreateChecksum(_pathToUserTempFolder + _exportFileNameLineEdit.text + extensionType)
+		var checksum = Files.CreateChecksum(_pathToUserTempFolder + _exportFileNameLineEdit.text + extensionType)
 		groomedOutput += "\n"
 		groomedOutput += presetFullName + " checksum: " + checksum
 		
@@ -217,6 +222,8 @@ func GetItchReleaseProfileName(presetFullName):
 		itchPublishType = "windows"
 	elif presetFullName == "Web":
 		itchPublishType = "html5"
+	elif presetFullName == "macOS":
+		itchPublishType = "osx"
 	return itchPublishType
 		
 func PrepUserTempDirectory():
@@ -482,6 +489,8 @@ func GetSelectedExportTypes():
 		listOfSelectedExportTypes.append("Linux/X11")
 	if _webCheckBox.button_pressed:
 		listOfSelectedExportTypes.append("Web")
+	if _macOsCheckBox.button_pressed:
+		listOfSelectedExportTypes.append("macOS")
 	
 	return listOfSelectedExportTypes
 
@@ -663,30 +672,7 @@ func RenameHomePageToIndex():
 	return OK
 
 func ValidateChecksum(filePath, checksum):
-	return CreateChecksum(filePath) == checksum
-	
-func CreateChecksum(filePath):
-	const CHUNK_SIZE = 1024
-	if not FileAccess.file_exists(filePath):
-		return
-
-	# Start a SHA-256 context.
-	var ctx = HashingContext.new()
-	ctx.start(HashingContext.HASH_SHA256)
-
-	# Open the file to hash.
-	var file = FileAccess.open(filePath, FileAccess.READ)
-
-	# Update the context after reading each chunk.
-	while not file.eof_reached():
-		var buffer = file.get_buffer(CHUNK_SIZE)
-		if buffer.size() > 0:
-			ctx.update(buffer)
-
-	# Get the computed hash.
-	var res = ctx.finish()
-
-	return res.hex_encode()
+	return Files.CreateChecksum(filePath) == checksum
 
 func ZipFiles(presetFullName):
 	_busyBackground.SetBusyDoingWhatLabel("Zipping for " + presetFullName + "...")
@@ -757,11 +743,13 @@ func GetExportPath(presetType):
 		exportPath += versionPath + "/" + GetItchReleaseProfileName(presetType) + "/" + _exportTypeOptionButton.text + "/" + _exportFileNameLineEdit.text + ".pck"
 	elif presetType == "Web":
 		exportPath += versionPath + "/" + GetItchReleaseProfileName(presetType) + "/" + _exportTypeOptionButton.text + "/" + _exportFileNameLineEdit.text
-
+	if presetType == "macOS":
+		exportPath += versionPath + "/" + GetItchReleaseProfileName(presetType) + "/" + _exportTypeOptionButton.text + "/" + _exportFileNameLineEdit.text + ".zip"
+		
 	return exportPath.to_lower()
 
 func ValidateExportPresetSelections():
-	if !_windowsCheckBox.button_pressed && !_linuxCheckBox.button_pressed && !_webCheckBox.button_pressed:
+	if !_windowsCheckBox.button_pressed && !_linuxCheckBox.button_pressed && !_webCheckBox.button_pressed && !_macOsCheckBox.button_pressed: 
 		OS.alert("One or more 'Export Presets' must be selected")
 		return -1
 	
@@ -793,6 +781,9 @@ func GetExportPreview():
 	if _webCheckBox.button_pressed:
 		exportPreview += AddPreviewLine("html5")
 
+	if _macOsCheckBox.button_pressed:
+		exportPreview += AddPreviewLine("mac")
+		
 	return exportPreview
 
 func AddPreviewLine(presetType):
@@ -838,6 +829,9 @@ func GetButlerPreview():
 	if _webCheckBox.button_pressed:
 		butlerPreview += AddButlerPreviewLine("html5")
 
+	if _macOsCheckBox.button_pressed:
+		butlerPreview += AddButlerPreviewLine("mac")
+		
 	return butlerPreview
 
 func AddButlerPreviewLine(presetType):
@@ -918,6 +912,10 @@ func ExecuteButlerCommandsThread():
 		_busyBackground.SetBusyDoingWhatLabel("Publishing Web...")
 		ExecuteButlerCommand(butlerCommand, "Butler Html5")
 	
+	if _macOsCheckBox.button_pressed:
+		var butlerCommand = GetButlerPushCommand("osx")
+		_busyBackground.SetBusyDoingWhatLabel("Publishing Mac...")
+		ExecuteButlerCommand(butlerCommand, "Butler Mac")
 	ClearBusyBackground()
 	
 func ExecuteButlerCommand(butlerCommand, outputName):
@@ -1029,6 +1027,11 @@ func _on_web_check_box_pressed():
 	GenerateExportPreview()
 	GenerateButlerPreview()
 
+func _on_mac_os_check_box_pressed():
+	_isDirty = true
+	GenerateExportPreview()
+	GenerateButlerPreview()
+	
 func _on_export_type_option_button_item_selected(_index):
 	_isDirty = true
 	GenerateExportPreview()
