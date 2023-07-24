@@ -5,5 +5,6 @@ extends ColorRect
 func _ready():
 	$AnimationPlayer.play("Spin")
 
-func SetBusyDoingWhatLabel(value):
+# Use 'call_deferred' when calling from threads
+func SetBusyBackgroundLabel(value):
 	_busyDoingWhatLabel.text = value

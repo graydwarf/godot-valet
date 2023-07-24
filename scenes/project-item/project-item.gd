@@ -13,6 +13,7 @@ var _godotVersionId = null
 var _windowsChecked = false
 var _linuxChecked = false
 var _webChecked = false
+var _macOsChecked = false
 var _exportPath = ""
 var _exportType = ""
 var _exportFileName = ""
@@ -64,6 +65,9 @@ func SetLinuxChecked(value):
 func SetWebChecked(value):
 	_webChecked = value
 
+func SetMacOsChecked(value):
+	_macOsChecked = value
+	
 func SetExportPath(value):
 	_exportPath = value
 	
@@ -100,6 +104,9 @@ func GetLinuxChecked():
 func GetWebChecked():
 	return _webChecked	
 
+func GetMacOsChecked():
+	return _macOsChecked
+	
 func GetExportType():
 	return _exportType
 
@@ -236,6 +243,7 @@ func SaveProjectItem():
 	config.set_value("ProjectSettings", "windows_preset_checked", _windowsChecked)
 	config.set_value("ProjectSettings", "linux_preset_checked", _linuxChecked)
 	config.set_value("ProjectSettings", "web_preset_checked", _webChecked)
+	config.set_value("ProjectSettings", "macos_preset_checked", _macOsChecked)
 	config.set_value("ProjectSettings", "export_type", _exportType)
 	config.set_value("ProjectSettings", "package_type", _packageType)
 	config.set_value("ProjectSettings", "itch_profile_name", _itchProfileName)

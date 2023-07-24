@@ -6,7 +6,7 @@ extends Panel
 @onready var _fileDialog = $FileDialog
 @onready var _selectFolderForNewProjectDialog = $SelectFolderForNewProjectDialog
 
-var _litOfGodotVersionIds = []
+var _listOfGodotVersionIds = []
 var _selectedProjectItem = null
 var _isCreatingNewProject = false
 var _selectedDirectoryPath = ""
@@ -14,7 +14,7 @@ var _selectedDirectoryPath = ""
 func _ready():
 	LoadTheme()
 	LoadGodotVersion()
-
+	
 func LoadTheme():
 	theme = load(App.GetThemePath())
 	
@@ -25,7 +25,7 @@ func ConfigureForSelectedProject(selectedProjectItem):
 func LoadProject():
 	_projectNameLineEdit.text = _selectedProjectItem.GetProjectName()
 	_projectPathLineEdit.text = _selectedProjectItem.GetProjectPath()
-	_godotVersionOptionButton.text = _selectedProjectItem.GetGodotVersion()
+	Common.SelectOptionButtonValueByText(_godotVersionOptionButton, _selectedProjectItem.GetGodotVersion())
 
 func GetGodotVersion(godotVersionId):
 	var files = Files.GetFilesFromPath("user://godot-version-items")
@@ -43,7 +43,7 @@ func GetGodotVersion(godotVersionId):
 			return config.get_value("GodotVersionSettings", "godot_version", "???")
 			
 func LoadGodotVersion():
-	_litOfGodotVersionIds.clear()
+	_listOfGodotVersionIds.clear()
 	var allResourceFiles = Files.GetFilesFromPath("user://godot-version-items")
 	for resourceFile in allResourceFiles:
 		if !resourceFile.ends_with(".cfg"):
@@ -56,7 +56,7 @@ func LoadGodotVersion():
 		if err == OK:
 			var godotVersion = config.get_value("GodotVersionSettings", "godot_version", "???")
 			_godotVersionOptionButton.add_item(godotVersion)
-			_litOfGodotVersionIds.append(fileName)
+			_listOfGodotVersionIds.append(fileName)
 
 func SaveProjectSettings():
 	if _selectedProjectItem != null:
@@ -76,7 +76,7 @@ func SaveExistingProjectItem():
 	var selectedIndex = _godotVersionOptionButton.selected
 	var godotVersionId = null
 	if selectedIndex >= 0:
-		godotVersionId = _litOfGodotVersionIds[selectedIndex]
+		godotVersionId = _listOfGodotVersionIds[selectedIndex]
 
 	_selectedProjectItem.SetGodotVersionId(godotVersionId)
 	_selectedProjectItem.SaveProjectItem()
@@ -100,7 +100,7 @@ func SaveNewProjectItem():
 		OS.alert("Project file was not found at the specified path.")
 		return false
 				
-	var	godotVersionId = _litOfGodotVersionIds[_godotVersionOptionButton.selected]
+	var	godotVersionId = _listOfGodotVersionIds[_godotVersionOptionButton.selected]
 	var projectId = Common.GetId()
 	
 	SaveSettingsFile(projectId, godotVersionId)

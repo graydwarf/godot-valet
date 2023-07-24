@@ -124,4 +124,26 @@ func CreateDirectory(directoryName):
 		return DirAccess.make_dir_recursive_absolute(directoryName)
 	
 	return OK
-	
+
+func CreateChecksum(filePath):
+	const CHUNK_SIZE = 1024
+	if not FileAccess.file_exists(filePath):
+		return
+
+	# Start a SHA-256 context.
+	var ctx = HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+
+	# Open the file to hash.
+	var file = FileAccess.open(filePath, FileAccess.READ)
+
+	# Update the context after reading each chunk.
+	while not file.eof_reached():
+		var buffer = file.get_buffer(CHUNK_SIZE)
+		if buffer.size() > 0:
+			ctx.update(buffer)
+
+	# Get the computed hash.
+	var res = ctx.finish()
+
+	return res.hex_encode()

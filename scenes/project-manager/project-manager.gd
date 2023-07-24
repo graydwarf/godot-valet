@@ -127,6 +127,7 @@ func LoadProjectsIntoProjectContainer():
 			projectItem.SetWindowsChecked(config.get_value("ProjectSettings", "windows_preset_checked", false))
 			projectItem.SetLinuxChecked(config.get_value("ProjectSettings", "linux_preset_checked", false))
 			projectItem.SetWebChecked(config.get_value("ProjectSettings", "web_preset_checked", false))
+			projectItem.SetMacOsChecked(config.get_value("ProjectSettings", "macos_preset_checked", false))
 			projectItem.SetExportType(config.get_value("ProjectSettings", "export_type", "Release"))
 			projectItem.SetExportFileName(config.get_value("ProjectSettings", "export_file_name", ""))
 			projectItem.SetPackageType(config.get_value("ProjectSettings", "package_type", "Zip"))
