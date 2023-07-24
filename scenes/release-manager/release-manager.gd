@@ -24,6 +24,9 @@ extends Panel
 @onready var _autoGenerateExportFileNamesCheckBox = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportDetailsHBoxContainer/VBoxContainer/AutomateExportFileNameHBoxContainer/HBoxContainer/HBoxContainer/AutoGenerateExportFileNamesCheckBox
 @onready var _installerConfigurationFileNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/InstallerConfigurationHBoxContainer/InstallerConfigurationLineEdit
 
+var _executeButlerCommandsThread : Thread
+var _exportProjectThread : Thread
+
 var _busyBackground
 var _selectedProjectItem = null
 var _isDirty = false
@@ -176,7 +179,7 @@ func GetExtensionType(presetFullName):
 # Uppercase
 # Windows, Linux, Web
 func ExportPreset(presetFullName):
-	_busyBackground.SetBusyDoingWhatLabel("Exporting for " + presetFullName + "...")
+	_busyBackground.call_deferred("SetBusyBackgroundLabel", "Exporting for " + presetFullName + "...")
 	var exportType = GetExportType()
 	var extensionType = GetExtensionType(presetFullName)
 	
@@ -476,7 +479,7 @@ func CompleteExport():
 func StartBusyBackground(busyDoingWhat):
 	_busyBackground = load("res://scenes/busy-background-blocker/busy_background_blocker_color_rect.tscn").instantiate()
 	add_child(_busyBackground)
-	_busyBackground.SetBusyDoingWhatLabel(busyDoingWhat)
+	_busyBackground.call_deferred("SetBusyBackgroundLabel", busyDoingWhat)
 	
 func ClearBusyBackground():
 	_busyBackground.queue_free()
@@ -562,8 +565,11 @@ func ExportProject():
 		ExportProjectThread()
 	else:
 		# Threaded so we can see the UI update during exports
-		var thread = Thread.new()
-		thread.start(ExportProjectThread)
+		# Made global to avoid the function exiting while the local
+		# thread object was still running which would result in a warning
+		# to use _exportProjectThread.wait_to_finish()
+		_exportProjectThread = Thread.new()
+		_exportProjectThread.start(ExportProjectThread)
 	
 	return OK
 	
@@ -610,7 +616,7 @@ func ExportZipPackage(presetFullName):
 	if exportPath == "":
 		return -1
 		
-	_busyBackground.SetBusyDoingWhatLabel("Copying files to export directory...")
+	_busyBackground.call_deferred("SetBusyBackgroundLabel", "Copying files to export directory...")
 	err = CopyFileToExportDirectory(zipFileName, exportPath)
 	if err != OK:
 		OS.alert("Failed to copy the zip file to the export directory. " + _defaultSupportMessage)
@@ -644,7 +650,7 @@ func CreateExportPath(exportPath):
 	return OK
 			
 func CleanTempFiles(presetFullName):
-	_busyBackground.SetBusyDoingWhatLabel("Cleaning " + presetFullName + "...")
+	_busyBackground.call_deferred("SetBusyBackgroundLabel", "Cleaning " + presetFullName + "...")
 	return Cleanup()
 
 # Get any existing files in the export path to ignore
@@ -675,7 +681,7 @@ func ValidateChecksum(filePath, checksum):
 	return Files.CreateChecksum(filePath) == checksum
 
 func ZipFiles(presetFullName):
-	_busyBackground.SetBusyDoingWhatLabel("Zipping for " + presetFullName + "...")
+	_busyBackground.call_deferred("SetBusyBackgroundLabel", "Zipping for " + presetFullName + "...")
 	var releaseProfileName = GetItchReleaseProfileName(presetFullName)
 	var listOfFileNames = Files.GetFilesFromPath(_pathToUserTempFolder)
 	var zipFileName = ""
@@ -893,28 +899,28 @@ func PublishToItchUsingButler():
 		ExecuteButlerCommandsThread()
 	else:
 		# Using threaded operation so we can see UI updates
-		var thread = Thread.new()
-		thread.start(ExecuteButlerCommandsThread)
+		_executeButlerCommandsThread = Thread.new()
+		_executeButlerCommandsThread.start(ExecuteButlerCommandsThread)
 
 func ExecuteButlerCommandsThread():
 	if _windowsCheckBox.button_pressed:
-		_busyBackground.SetBusyDoingWhatLabel("Publishing Windows...")
+		_busyBackground.call_deferred("SetBusyBackgroundLabel", "Publishing Windows...")
 		var butlerCommand = GetButlerPushCommand("windows")
 		ExecuteButlerCommand(butlerCommand, "Butler Windows")
 		
 	if _linuxCheckBox.button_pressed:
 		var butlerCommand = GetButlerPushCommand("linux")
-		_busyBackground.SetBusyDoingWhatLabel("Publishing Linux...")
+		_busyBackground.call_deferred("SetBusyBackgroundLabel", "Publishing Linux...")
 		ExecuteButlerCommand(butlerCommand, "Butler Linux")
 
 	if _webCheckBox.button_pressed:
 		var butlerCommand = GetButlerPushCommand("html5")
-		_busyBackground.SetBusyDoingWhatLabel("Publishing Web...")
+		_busyBackground.call_deferred("SetBusyBackgroundLabel", "Publishing Web...")
 		ExecuteButlerCommand(butlerCommand, "Butler Html5")
 	
 	if _macOsCheckBox.button_pressed:
 		var butlerCommand = GetButlerPushCommand("osx")
-		_busyBackground.SetBusyDoingWhatLabel("Publishing Mac...")
+		_busyBackground.call_deferred("SetBusyBackgroundLabel", "Publishing Mac...")
 		ExecuteButlerCommand(butlerCommand, "Butler Mac")
 	ClearBusyBackground()
 	

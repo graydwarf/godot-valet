@@ -234,7 +234,7 @@ custom_minimum_size = Vector2(500, 32)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-tooltip_text = "The name of the zip file that gets uploaded to itch.io. Must be valid file name. "
+tooltip_text = "The name of the zip file that gets uploaded to itch.io. Must be valid file name. Example: godot-valet"
 caret_blink = true
 caret_blink_interval = 0.5
 
@@ -252,7 +252,7 @@ custom_minimum_size = Vector2(500, 32)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-tooltip_text = "The project name we'll upload to on itch as seen at the end of the projects itch url."
+tooltip_text = "The project name we'll upload to on itch as seen at the end of the projects itch url. Example: godot-valet"
 caret_blink = true
 caret_blink_interval = 0.5
 
@@ -270,7 +270,7 @@ custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-tooltip_text = "Your itch account name for publishing to itch.io with butler."
+tooltip_text = "Your itch account name for publishing to itch.io with butler. Example: poplava"
 caret_blink = true
 caret_blink_interval = 0.5
 
