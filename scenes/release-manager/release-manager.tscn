@@ -131,6 +131,7 @@ text = "Web"
 
 [node name="MacOsCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 tooltip_text = "\"Web\""
 button_pressed = true
