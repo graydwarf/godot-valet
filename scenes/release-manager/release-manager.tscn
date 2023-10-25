@@ -289,44 +289,6 @@ layout_mode = 2
 button_pressed = true
 text = "Use SHA-256"
 
-[node name="InstallerConfigurationHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
-visible = false
-layout_mode = 2
-
-[node name="InstallerConfigurationLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/InstallerConfigurationHBoxContainer"]
-custom_minimum_size = Vector2(165, 0)
-layout_mode = 2
-text = "Installer:"
-horizontal_alignment = 2
-
-[node name="InstallerConfigurationLineEdit" type="LineEdit" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/InstallerConfigurationHBoxContainer"]
-custom_minimum_size = Vector2(500, 0)
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 0
-tooltip_text = "Installer configuration. Only applies to Windows & Linux distributions."
-caret_blink = true
-caret_blink_interval = 0.5
-
-[node name="UpdaterConfigurationHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
-visible = false
-layout_mode = 2
-
-[node name="UpdaterConfigurationLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/UpdaterConfigurationHBoxContainer"]
-custom_minimum_size = Vector2(165, 0)
-layout_mode = 2
-text = "Updater:"
-horizontal_alignment = 2
-
-[node name="UpdaterConfigurationLineEdit" type="LineEdit" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/UpdaterConfigurationHBoxContainer"]
-custom_minimum_size = Vector2(500, 0)
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 0
-tooltip_text = "Installer configuration. Only applies to Windows & Linux distributions."
-caret_blink = true
-caret_blink_interval = 0.5
-
 [node name="ExportPathHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 
@@ -524,13 +486,6 @@ self_modulate = Color(1, 1, 1, 0)
 custom_minimum_size = Vector2(0, 31)
 layout_mode = 2
 
-[node name="ConfigureInstallerButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-visible = false
-custom_minimum_size = Vector2(0, 31)
-layout_mode = 2
-tooltip_text = "Exports all listed projects to the specified locations."
-text = "Configure"
-
 [node name="ExportProject" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
 custom_minimum_size = Vector2(0, 31)
 layout_mode = 2
@@ -617,12 +572,9 @@ dialog_text = "Found existing files with matching names. Overwrite?"
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportFileNameHBoxContainer/ExportFileNameLineEdit" to="." method="_on_export_file_name_line_edit_text_changed"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProjectNameHBoxContainer/ItchProjectNameLineEdit" to="." method="_on_itch_project_name_line_edit_text_changed"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProfileNameHBoxContainer/ItchProfileNameLineEdit" to="." method="_on_itch_name_line_edit_text_changed"]
-[connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/InstallerConfigurationHBoxContainer/InstallerConfigurationLineEdit" to="." method="_on_itch_name_line_edit_text_changed"]
-[connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/UpdaterConfigurationHBoxContainer/UpdaterConfigurationLineEdit" to="." method="_on_itch_name_line_edit_text_changed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportDetailsHBoxContainer/VBoxContainer/AutomateExportFileNameHBoxContainer/HBoxContainer/HBoxContainer/AutoGenerateExportFileNamesCheckBox" to="." method="_on_auto_generate_export_file_names_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/OpenProjectPathFolder" to="." method="_on_open_project_folder_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/SelectExportPathButton" to="." method="_on_select_export_path_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/ConfigureInstallerButton" to="." method="_on_configure_installer_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/ExportProject" to="." method="_on_export_project_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/OpenProjectFolder" to="." method="_on_open_project_folder_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/PublishButton" to="." method="_on_publish_button_pressed"]

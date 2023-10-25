@@ -22,7 +22,6 @@ extends Panel
 @onready var _outputTabContainer = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/OutputHBoxContainer/OutputTabContainer
 @onready var _useSha256CheckBox = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/Generate256HashNameHBoxContainer/UseSha256CheckBox
 @onready var _autoGenerateExportFileNamesCheckBox = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportDetailsHBoxContainer/VBoxContainer/AutomateExportFileNameHBoxContainer/HBoxContainer/HBoxContainer/AutoGenerateExportFileNamesCheckBox
-@onready var _installerConfigurationFileNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/InstallerConfigurationHBoxContainer/InstallerConfigurationLineEdit
 
 var _executeButlerCommandsThread : Thread
 var _exportProjectThread : Thread
@@ -33,7 +32,7 @@ var _isDirty = false
 var _isClosingReleaseManager = false
 var _exportWithInstallerStep = 0
 var _pathToUserTempFolder = OS.get_user_data_dir() + "/temp/" # temp storage.
-var _defaultSupportMessage = "Please contact support for assistance."
+var _defaultSupportMessage = "Please jump into the poplava discord and report the issue."
 
 #
 # Dev Note: I was in the middle of prototyping the installer work and then 
@@ -68,16 +67,7 @@ func LoadTheme():
 	theme = load(App.GetThemePath())
 	
 func InitSignals():
-	Signals.connect("ExportWithInstaller", ExportWithInstaller)
-	Signals.connect("SaveInstallerConfiguration", SaveInstallerConfiguration)
-
-func SaveInstallerConfiguration(installerConfigurationFileName, installerConfigurationFriendlyName):
-	if installerConfigurationFriendlyName == "":
-		_installerConfigurationFileNameLineEdit.text = ""
-		_selectedProjectItem.SetInstallerConfigurationFileName("")
-	else:
-		_selectedProjectItem.SetInstallerConfigurationFileName(installerConfigurationFileName)
-		_installerConfigurationFileNameLineEdit.text = installerConfigurationFriendlyName
+	pass
 	
 func ConfigureReleaseManagementForm(selectedProjectItem):
 	_selectedProjectItem = selectedProjectItem
@@ -248,228 +238,6 @@ func PrepUserTempDirectory():
 		return -1
 	
 	return OK
-#
-# ExportWithInstaller will be called multiple times
-# In some cases, we'll be on the same step after downloading a file.
-#
-# Step #0 - Export project files <project>.exe and <project>.pck
-# Step #1 - Export godot-ignition if it exists and is valid.
-#	Otherwise, trigger download workflows which call back-in to repeat step 1 until complete
-# Step #2 - Export godot-fetch if it exists and is valid.
-#	Otherwise, trigger download workflows which call back-in to repeat step 2 until complete
-# Step #3 - Generate secrets and configuration files
-# Step #4 - Package files into final .zip
-#
-func ExportWithInstaller():
-	# WIP
-	#	if _exportWithInstallerStep == 0:
-	#		# TODO: Doesn't make sense to me after refactoring export files to temp
-	#		# ExportWithoutZip()
-	#		_exportWithInstallerStep += 1
-	#		Signals.emit_signal("ExportWithInstaller")
-	#	elif _exportWithInstallerStep == 1:
-	#		ExportGodotIgnition()
-	#	elif _exportWithInstallerStep == 2:
-	#		ExportGodotFetch()
-	#		var fileName = "godot-fetch.zip"
-	#		var isUnpacking = true
-	#		HandleFileExportWorkflow(fileName, isUnpacking)
-	#	elif _exportWithInstallerStep == 3:
-	#		# At some point, we need godot-iginition to be renamed to <project>-<version>-<os>-installer.exe
-	#		# rename_absolute
-	#		# godot-ignition.exe, godot-ignition.pck, godot-fetch.exe, godot-fetch.pck, <project>.exe, <project.pck> are in the export dir
-	#		GenerateInstallerConfigurationFiles()
-	#	elif _exportWithInstallerStep == 4:
-	#		PackageInstallerFiles()
-	pass
-
-func ExportGodotIgnition():
-	# TODO: Load installer configuration
-	# 	- extract path to <configs>/<project name>/installer-settings.cfg
-	# 
-	# godot-ignition.zip
-	#
-	# TODO: WIP
-	#	var userOptionAEnabled = true
-	#	var userOptionBEnabled = true
-	#	var userOptionCEnabled = true
-	#
-	#	var windowsChecked = true
-	#	var linuxChecked = true
-	#	if windowsChecked:
-	#		var pathToGodotIgnitionForWindows = ""
-	#		if pathToGodotIgnitionForWindows != "":
-	#			if FileAccess.file_exists(pathToGodotIgnitionForWindows):
-	#				# TODO: Extract windows files to export directory
-	#				# TODO: Create matching config and include user-options
-	#				pass
-	#
-	#	if linuxChecked:
-	#		var pathToGodotIgnitionForLinux = ""
-	#		if pathToGodotIgnitionForLinux != "":
-	#			if FileAccess.file_exists(pathToGodotIgnitionForLinux):
-	#				# TODO: Extract linux files to export directory
-	#				# TODO: Create matching config and include user-options
-	#				pass
-	#
-	#	_exportWithInstallerStep += 1
-	#	Signals.emit_signal("ExportWithInstaller")
-	pass
-
-func ExportGodotFetch():
-	# TODO: Load installer configuration
-	# 	- extract path to <configs>/<project name>/installer-settings.cfg
-	# 
-	# godot-ignition.zip
-	#
-	# WIP
-	#	var userOptionAEnabled = true
-	#	var userOptionBEnabled = true
-	#	var userOptionCEnabled = true
-	#
-	#	var windowsChecked = true
-	#	var linuxChecked = true
-	#	if windowsChecked:
-	#		var pathToGodotIgnitionForWindows = ""
-	#		if pathToGodotIgnitionForWindows != "":
-	#			if FileAccess.file_exists(pathToGodotIgnitionForWindows):
-	#				# TODO: Extract windows files to export directory
-	#				# TODO: Create matching config and include user-options
-	#				pass
-	#
-	#	if linuxChecked:
-	#		var pathToGodotIgnitionForLinux = ""
-	#		if pathToGodotIgnitionForLinux != "":
-	#			if FileAccess.file_exists(pathToGodotIgnitionForLinux):
-	#				# TODO: Extract linux files to export directory
-	#				# TODO: Create matching config and include user-options
-	#				pass
-	#
-	#	_exportWithInstallerStep += 1
-	#	Signals.emit_signal("ExportWithInstaller")
-	pass
-	
-func CheckForNeededSupportFiles(checkingForSupportFileUpdatesState):
-	# LEFT OFF HERE:
-	# Collect a list of required support files <fileName> and os?
-	if checkingForSupportFileUpdatesState == 0: # if user has godot-valet auto-update enabled?
-		if HasUpdateTimeExpired():
-			App.SetLastUpdateTime(Time.get_unix_time_from_system())
-			CheckForSupportFileUpdates(1)
-	else:
-		# check if any files are missing
-		# if so, prompt user to download
-		# Trigger download
-		pass
-
-func CheckForSupportFileUpdates(supportFileUpdateState):
-	if supportFileUpdateState == 0:
-		if _windowsCheckBox.button_pressed:
-			# Check for support file selections (installer and godot-fetch)
-			pass
-	elif supportFileUpdateState == 1:
-		if _linuxCheckBox.button_pressed:
-			pass
-	else:
-		# Done checking for support file updates
-		pass
-		
-func HasUpdateTimeExpired():
-	var currentTime = Time.get_unix_time_from_system()
-	var timePasseInHours = (currentTime - App.GetLastUpdateTime()) / 3600
-	if timePasseInHours >= 24:
-		return true
-	return false
-		
-func PackageInstallerFiles():
-	# zip and package into single .zip file named <project><version><os>.zip
-	pass
-	
-func GenerateInstallerConfigurationFiles():
-	# Generate secret guid to pass into each
-	# Generate godot-ignition.cfg
-	# Generate godot-fetch.cfg
-	# Generate <project>.cfg
-	_exportWithInstallerStep += 1
-	Signals.emit_signal("ExportWithInstaller")
-
-func HandleFileExportWorkflow(fileName, isUnpacking = false):
-	if App.GetLastAzureUpdateCheck() == true:
-		pass
-		
-	if !FileAccess.file_exists(fileName):
-		# TODO: REMEMBER: WE NEED TO DOWNLOAD OS SPECIFIC FILES
-		# godot-fetch-v0.0.1.linux.zip
-		BeginDownloadingMissingFileWorkflow(fileName)
-	else:
-		# I think we're going to download a checksum file for each project.
-		# We can't bury the checksum in the config of the project because we
-		# need to validate the .zip it comes in.
-		if true: #expectedChecksum != GetCheckSum(fileName):
-			# Inform user and prompt to download. trigger those workflows
-			pass
-		else:
-			ExportPackedFile(fileName, isUnpacking)
-			_exportWithInstallerStep += 1
-			#yield() # break call chain
-			Signals.emit_signal("ExportWithInstaller")
-			#return
-
-func BeginDownloadingMissingFileWorkflow(_fileName):
-	# TODO: REMEMBER: WE NEED TO DOWNLOAD OS SPECIFIC FILES
-	# godot-fetch-v0.0.1.linux.zip
-	if App.GetAutoUpdate():
-		# Trigger download
-		pass
-	else:
-		pass
-	
-# App.GetGodotFetchChecksum()
-func ExportPackedFile(_fileName, _expectedChecksum):
-	# WIP
-	#	if !FileAccess.file_exists(fileName):
-	#		if true: #expectedChecksum == GetCheckSum(fileName):
-	#			#UnpackIntoExportDirectory(fileName)
-	#			pass
-	#		else:
-	#			# Inform user and prompt to download a new version
-	#			pass
-	#	else:
-	#		# Inform user and depending on the auto-install option:
-	#		# Prompt user or auto-download .zip
-	#		if true: #expectedChecksum == GetCheckSum(fileName):
-	#			#UnpackIntoExportDirectory(fileName)
-	#			pass
-	pass
-			
-func PackageInstaller():
-	# godot-ignition.exe, godot-ignition.pck
-	# <project-name>.exe, <project-name>.pck
-	# godot-fetch.exe, godot-fetch.pck
-	# We need all these in a .zip
-	# 	- Rename the project.exe and project.pck to <project>-1.dll & <project>-2.dll
-	# 	- Rename godot-ignition.exe to <project>-installer.exe
-	# We need the godot-ignition binary to be the clear godot executable
-	# We need the other files to be non-executable so the user accepts the license before they can use
-	# godot-ignition.exe needs to know to look locally for project files before looking to the cloud (cfg)
-	# godot-ignition cfg
-	#    - gets relative paths for all files
-	#    - gets checksums for all files
-	#    - gets, creates and/or passes encryption passwords to projects
-	# godot-ignition unpacks other files into working directory
-	pass
-
-func BeginGodotIgnitionDownloadWorkflows():
-	if true: #auto-install enabled:
-		# DownloadGodotIgnition()
-		# Define callback to begin checksum valiation and call VerifyInstallerPackages(2)
-		pass
-	else:
-		# Prompt user about missing files to download
-		# Else where, define Accept callback
-		# Download file
-		# Elsewhere, emit_signal or call ExportWithInstaller()
-		pass
 
 func CompleteExport():
 	CountErrors()
@@ -570,6 +338,9 @@ func ExportProject():
 		# to use _exportProjectThread.wait_to_finish()
 		_exportProjectThread = Thread.new()
 		_exportProjectThread.start(ExportProjectThread)
+		
+		# Comment two lines above and uncomment this line to debug
+		# ExportProjectThread()
 	
 	return OK
 	
@@ -580,9 +351,6 @@ func ExportProjectThread():
 		result = StartExportingWithZip(listOfExportTypes)
 	elif _packageTypeOptionButton.text == "No Zip":
 		result = StartExportingWithoutZip(listOfExportTypes)
-	elif _packageTypeOptionButton.text == "Installer":
-		_exportWithInstallerStep = 0
-		result = ExportWithInstaller()
 
 	# Deferred to make sure the data is available for display in the output tabs
 	call_deferred("CompleteExport")
@@ -621,7 +389,7 @@ func ExportZipPackage(presetFullName):
 	if err != OK:
 		OS.alert("Failed to copy the zip file to the export directory. " + _defaultSupportMessage)
 		return -1
-		
+
 	err = CleanTempFiles(presetFullName)
 	if err != OK:
 		return err
