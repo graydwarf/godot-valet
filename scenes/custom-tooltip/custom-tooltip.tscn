@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://b253hqveki4ok"]
+
+[node name="RichTextLabel" type="RichTextLabel"]
+custom_minimum_size = Vector2(400, 80)
+offset_right = 400.0
+offset_bottom = 80.0
+text = "Will show godot export output along with butler output. godot tends to have lots of warnings and errors especially during early beta periods. Post issues on our discord that you aren't able to resolve on your own."
+fit_content = true

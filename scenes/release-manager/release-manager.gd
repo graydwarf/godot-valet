@@ -4,9 +4,9 @@ extends Panel
 @onready var _exportPathLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer2/ExportPathLineEdit
 @onready var _godotPathLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/GodotPathHBoxContainer/ExportPathLineEdit
 @onready var _projectVersionLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectVersionHBoxContainer/ProjectVersionLineEdit
-@onready var _windowsCheckBox = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/WindowsCheckBox
-@onready var _linuxCheckBox = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/LinuxCheckBox
-@onready var _webCheckBox = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/WebCheckBox
+@onready var _windowsCheckBox = %WindowsCheckBox
+@onready var _linuxCheckBox = %LinuxCheckBox
+@onready var _webCheckBox = %WebCheckBox
 @onready var _macOsCheckBox = %MacOsCheckBox
 @onready var _exportTypeOptionButton = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportTypeHBoxContainer/ExportTypeOptionButton
 @onready var _exportPreviewTextEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer/ExportPreviewTextEdit
@@ -34,13 +34,6 @@ var _exportWithInstallerStep = 0
 var _pathToUserTempFolder = OS.get_user_data_dir() + "/temp/" # temp storage.
 var _defaultSupportMessage = "Please jump into the poplava discord and report the issue."
 
-#
-# Dev Note: I was in the middle of prototyping the installer work and then 
-# decided to open source the project. I may end up cleaning it out and
-# then creating a separate branch for that work if the bugs/features start 
-# coming in.
-#
-
 func _ready():
 	InitSignals()
 	LoadTheme()
@@ -54,6 +47,41 @@ func _notification(notificationType):
 	if notificationType == NOTIFICATION_WM_CLOSE_REQUEST:
 		if _isDirty:
 			SaveSettings()
+
+func HideExportPresets():
+	for node in %ExportPresetCheckboxContainer.get_children():
+		node.visible = false
+
+func LoadExportPresets():
+	HideExportPresets()
+	var exportPresetFilePath = _projectPathLineEdit.text + "/export_presets.cfg"
+	
+	if !FileAccess.file_exists(exportPresetFilePath):
+		OS.alert("Did not find a export_presets.cfg file in the root of your project. Exporting blocked until you add at least one export option (Windows, Web, or Linux).")
+		return
+		
+	var lines = Files.GetLinesFromFile(exportPresetFilePath)
+	var oneOptionAdded = false
+	for line in lines:
+		if line.begins_with("platform="):
+			var exportType = line.rsplit("=")[1].replace("\"", "")
+			if exportType == "Windows Desktop":
+				%WindowsCheckBox.visible = true
+				oneOptionAdded = true
+			elif exportType == "Web":
+				%WebCheckBox.visible = true
+				oneOptionAdded = true
+			elif exportType == "Linux/X11":
+				%LinuxCheckBox.visible = true
+				oneOptionAdded = true
+			elif exportType == "macOS":
+				# TODO: Add Mac support
+				# %MacOsCheckBox.visible = true
+				# oneOptionAdded = true
+				pass
+	
+	if !oneOptionAdded:
+		OS.alert("Found an export_presets.cfg but no supported options were found.");
 
 func LoadBackgroundColor():
 	var style_box = theme.get_stylebox("panel", "Panel") as StyleBoxFlat
@@ -310,7 +338,7 @@ func CopyExportedFilesToExportDirectory(exportPath):
 
 func ExportProject():
 	ClearOutput()
-		
+	
 	if ValidateExportPathText() != OK:
 		return -1
 		
@@ -322,7 +350,7 @@ func ExportProject():
 		
 	if FormValidationCheckIsSuccess() != OK:
 		return -1
-	
+
 	if PrepUserTempDirectory() != OK:
 		return -1
 		
@@ -338,12 +366,9 @@ func ExportProject():
 		# to use _exportProjectThread.wait_to_finish()
 		_exportProjectThread = Thread.new()
 		_exportProjectThread.start(ExportProjectThread)
-		
-		# Comment two lines above and uncomment this line to debug
-		# ExportProjectThread()
 	
 	return OK
-	
+
 func ExportProjectThread():
 	var result = OK
 	var listOfExportTypes = GetSelectedExportTypes()

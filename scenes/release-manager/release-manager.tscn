@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://dnh0www6opq0g"]
+[gd_scene load_steps=3 format=3 uid="uid://dnh0www6opq0g"]
 
 [ext_resource type="Script" path="res://scenes/release-manager/release-manager.gd" id="1_sdoj2"]
+[ext_resource type="Script" path="res://scenes/release-manager/custom-label.gd" id="2_nuwtj"]
 
 [node name="ReleaseManager" type="Panel"]
 clip_contents = true
@@ -108,28 +109,40 @@ layout_mode = 2
 [node name="ExportPresetLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer"]
 custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
-text = "Export Preset:"
+tooltip_text = "Select one or more. Export options must be added to your project beforehand. Supported options: Windows, Web and Linux."
+mouse_filter = 1
+text = "Export Preset(s):"
 horizontal_alignment = 2
 
-[node name="WindowsCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer"]
+[node name="ExportPresetCheckboxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="WindowsCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer"]
+unique_name_in_owner = true
+visible = false
 layout_mode = 2
 tooltip_text = "\"Windows Desktop\""
 button_pressed = true
 text = "Windows"
 
-[node name="LinuxCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer"]
-layout_mode = 2
-tooltip_text = "\"Linux/X11\""
-button_pressed = true
-text = "Linux"
-
-[node name="WebCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer"]
+[node name="WebCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer"]
+unique_name_in_owner = true
+visible = false
 layout_mode = 2
 tooltip_text = "\"Web\""
 button_pressed = true
 text = "Web"
 
-[node name="MacOsCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer"]
+[node name="LinuxCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+tooltip_text = "\"Linux/X11\""
+button_pressed = true
+text = "Linux"
+
+[node name="MacOsCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
@@ -137,17 +150,14 @@ tooltip_text = "\"Web\""
 button_pressed = true
 text = "MacOS"
 
-[node name="EmptyButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer"]
-self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(140, 0)
-layout_mode = 2
-
 [node name="ExportPathHBoxContainer2" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 
 [node name="ExportPathLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer2"]
 custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
+tooltip_text = "Path to where you want to export to."
+mouse_filter = 1
 text = "Export Path:"
 horizontal_alignment = 2
 
@@ -156,7 +166,6 @@ custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-tooltip_text = "Path to where you want to export to."
 caret_blink = true
 caret_blink_interval = 0.5
 
@@ -166,6 +175,8 @@ layout_mode = 2
 [node name="ProjectVersionLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectVersionHBoxContainer"]
 custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
+tooltip_text = "The version can be whatever you want as long as long as it results in a valid export path. Check 'Export Preview' to validate the path. "
+mouse_filter = 1
 text = "Project Version:"
 horizontal_alignment = 2
 
@@ -174,7 +185,6 @@ custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-tooltip_text = "The version can be whatever you want as long as long as it results in a valid export path. Check 'Export Preview' to validate the path. "
 text = "v0.0.1"
 caret_blink = true
 caret_blink_interval = 0.5
@@ -185,6 +195,8 @@ layout_mode = 2
 [node name="ExportTypeLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportTypeHBoxContainer"]
 custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
+tooltip_text = "Export with the debug option enabled?"
+mouse_filter = 1
 text = "Export Type:"
 horizontal_alignment = 2
 
@@ -193,7 +205,6 @@ custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-tooltip_text = "Export with the debug option enabled?"
 item_count = 2
 popup/item_0/text = "Release"
 popup/item_0/id = 0
@@ -206,6 +217,8 @@ layout_mode = 2
 [node name="PackageTypeLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/PackageTypeHBoxContainer"]
 custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
+tooltip_text = "Optional: Cleanup generated files after generating the Zip package. Writes over duplicate files."
+mouse_filter = 1
 text = "Package Type:"
 horizontal_alignment = 2
 
@@ -214,7 +227,6 @@ custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-tooltip_text = "Optionally: Cleanup generated files after generating the Zip package. Writes over duplicate files."
 item_count = 2
 popup/item_0/text = "No Zip"
 popup/item_0/id = 0
@@ -227,6 +239,8 @@ layout_mode = 2
 [node name="ExportFileNameLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportFileNameHBoxContainer"]
 custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
+tooltip_text = "The name of the zip file that gets uploaded to itch.io. Must be valid file name. Example: godot-valet"
+mouse_filter = 1
 text = "Export File Name:"
 horizontal_alignment = 2
 
@@ -235,7 +249,6 @@ custom_minimum_size = Vector2(500, 32)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-tooltip_text = "The name of the zip file that gets uploaded to itch.io. Must be valid file name. Example: godot-valet"
 caret_blink = true
 caret_blink_interval = 0.5
 
@@ -245,6 +258,8 @@ layout_mode = 2
 [node name="ItchProjectNameLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProjectNameHBoxContainer"]
 custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
+tooltip_text = "The project name we'll upload to on itch as seen at the end of the projects itch url. Example: godot-valet"
+mouse_filter = 1
 text = "Itch Project Name:"
 horizontal_alignment = 2
 
@@ -253,7 +268,6 @@ custom_minimum_size = Vector2(500, 32)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-tooltip_text = "The project name we'll upload to on itch as seen at the end of the projects itch url. Example: godot-valet"
 caret_blink = true
 caret_blink_interval = 0.5
 
@@ -263,6 +277,8 @@ layout_mode = 2
 [node name="ItchProfileNameLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProfileNameHBoxContainer"]
 custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
+tooltip_text = "Your itch profile name for publishing to itch.io with butler. The one that shows up in your itch URL. Example: poplava from https://poplava.itch.io/"
+mouse_filter = 1
 text = "Itch Profile Name:"
 horizontal_alignment = 2
 
@@ -271,7 +287,6 @@ custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-tooltip_text = "Your itch account name for publishing to itch.io with butler. Example: poplava"
 caret_blink = true
 caret_blink_interval = 0.5
 
@@ -281,6 +296,7 @@ layout_mode = 2
 [node name="Generate256HashLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/Generate256HashNameHBoxContainer"]
 custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
+tooltip_text = "Optional: If you want to generate a checksum of the zipped package. The checksum value shows up in the export output down below."
 text = "Generate Checksum:"
 horizontal_alignment = 2
 
@@ -296,6 +312,8 @@ layout_mode = 2
 custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 size_flags_vertical = 0
+tooltip_text = "Shows a preview of the export commands that will run when the Export button is pressed."
+mouse_filter = 1
 text = "Export Preview:"
 horizontal_alignment = 2
 
@@ -303,7 +321,6 @@ horizontal_alignment = 2
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 size_flags_horizontal = 3
-tooltip_text = "Shows a preview of the export commands that will run when the Export button is pressed."
 editable = false
 
 [node name="ExportDetailsHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
@@ -358,6 +375,8 @@ layout_mode = 2
 custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 size_flags_vertical = 0
+tooltip_text = "Shows a preview of the commands that will run with butler to upload your project exports."
+mouse_filter = 1
 text = "Publish Preview:"
 horizontal_alignment = 2
 
@@ -365,7 +384,6 @@ horizontal_alignment = 2
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 size_flags_horizontal = 3
-tooltip_text = "Shows a preview of the commands that will run with butler to upload your project exports."
 editable = false
 
 [node name="OutputHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
@@ -376,13 +394,15 @@ size_flags_vertical = 3
 custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 size_flags_vertical = 0
+tooltip_text = "Will show godot export output along with butler output. godot tends to have lots of warnings and errors especially during early beta periods. Post issues on our discord that you aren't able to resolve on your own."
+mouse_filter = 1
 text = "Output:"
 horizontal_alignment = 2
+script = ExtResource("2_nuwtj")
 
 [node name="OutputTabContainer" type="TabContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/OutputHBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-tooltip_text = "Will show output for exports and butler."
 
 [node name="ErrorCountVBoxContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
@@ -437,13 +457,14 @@ text = "Open Folder"
 
 [node name="InvisibleButton2" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
 self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 31)
+custom_minimum_size = Vector2(0, 26)
 layout_mode = 2
 
-[node name="InvisibleButton3" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-self_modulate = Color(1, 1, 1, 0)
+[node name="LoadExportOptionsButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
 custom_minimum_size = Vector2(0, 31)
 layout_mode = 2
+tooltip_text = "Reloads the projects export settings from the export_presets.cfg in case you changed the presets while this page was open."
+text = "Refresh Exports"
 
 [node name="SelectExportPathButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
 custom_minimum_size = Vector2(0, 31)
@@ -561,10 +582,10 @@ title = "Please Confirm Overwrite..."
 ok_button_text = "Overwrite"
 dialog_text = "Found existing files with matching names. Overwrite?"
 
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/WindowsCheckBox" to="." method="_on_windows_check_box_pressed"]
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/LinuxCheckBox" to="." method="_on_linux_check_box_pressed"]
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/WebCheckBox" to="." method="_on_web_check_box_pressed"]
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/MacOsCheckBox" to="." method="_on_mac_os_check_box_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer/WindowsCheckBox" to="." method="_on_windows_check_box_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer/WebCheckBox" to="." method="_on_web_check_box_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer/LinuxCheckBox" to="." method="_on_linux_check_box_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer/MacOsCheckBox" to="." method="_on_mac_os_check_box_pressed"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer2/ExportPathLineEdit" to="." method="_on_export_path_line_edit_text_changed"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectVersionHBoxContainer/ProjectVersionLineEdit" to="." method="_on_project_version_line_edit_text_changed"]
 [connection signal="item_selected" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportTypeHBoxContainer/ExportTypeOptionButton" to="." method="_on_export_type_option_button_item_selected"]
@@ -574,6 +595,7 @@ dialog_text = "Found existing files with matching names. Overwrite?"
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProfileNameHBoxContainer/ItchProfileNameLineEdit" to="." method="_on_itch_name_line_edit_text_changed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportDetailsHBoxContainer/VBoxContainer/AutomateExportFileNameHBoxContainer/HBoxContainer/HBoxContainer/AutoGenerateExportFileNamesCheckBox" to="." method="_on_auto_generate_export_file_names_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/OpenProjectPathFolder" to="." method="_on_open_project_folder_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/LoadExportOptionsButton" to="." method="LoadExportPresets"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/SelectExportPathButton" to="." method="_on_select_export_path_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/ExportProject" to="." method="_on_export_project_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/OpenProjectFolder" to="." method="_on_open_project_folder_pressed"]
