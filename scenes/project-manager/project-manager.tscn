@@ -3,14 +3,17 @@
 [ext_resource type="Script" path="res://scenes/project-manager/project-manager.gd" id="1_1xf0t"]
 
 [node name="ProjectManager" type="Panel"]
+clip_contents = true
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+size_flags_horizontal = 3
 script = ExtResource("1_1xf0t")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
+clip_contents = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -19,45 +22,94 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="VBoxContainer"]
+clip_contents = true
 layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 5
 theme_override_constants/margin_bottom = -4
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer"]
+clip_contents = true
 layout_mode = 2
 
 [node name="TitleLabel" type="Label" parent="VBoxContainer/MarginContainer/HBoxContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "Project Manager"
+clip_text = true
 
 [node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/MarginContainer/HBoxContainer"]
-layout_mode = 2
-theme_override_constants/margin_left = 25
-
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer"]
+clip_contents = true
 layout_mode = 2
 size_flags_horizontal = 3
-alignment = 1
+theme_override_constants/margin_left = 25
+theme_override_constants/margin_right = 8
 
-[node name="ShowHiddenCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer/HBoxContainer"]
+[node name="HBoxContainer3" type="HBoxContainer" parent="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+theme_override_constants/separation = 32
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer/HBoxContainer3"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 2
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer/HBoxContainer3/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 2
+
+[node name="SortByLabel" type="Label" parent="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer/HBoxContainer3/VBoxContainer/HBoxContainer2"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Sort By: "
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SortByOptionButton" type="OptionButton" parent="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer/HBoxContainer3/VBoxContainer/HBoxContainer2"]
+unique_name_in_owner = true
+layout_mode = 2
+item_count = 4
+popup/item_0/text = "None"
+popup/item_0/id = 0
+popup/item_1/text = "Published Date"
+popup/item_1/id = 1
+popup/item_2/text = "Created Date"
+popup/item_2/id = 2
+popup/item_3/text = "Edited Date"
+popup/item_3/id = 3
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer/HBoxContainer3"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer/HBoxContainer3/VBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 8
+theme_override_constants/separation = 4
+
+[node name="ShowHiddenCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer/HBoxContainer3/VBoxContainer2/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 focus_mode = 0
 text = "Show Hidden"
 
-[node name="HiddenProjectItemCountLabel" type="Label" parent="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer/HBoxContainer"]
+[node name="HiddenProjectItemCountLabel" type="Label" parent="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer/HBoxContainer3/VBoxContainer2/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+clip_contents = true
 layout_mode = 2
 size_flags_vertical = 3
 
 [node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/HBoxContainer"]
+clip_contents = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/margin_left = 5
@@ -70,12 +122,14 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer"]
+clip_contents = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/margin_right = 18
 
 [node name="ProjectItemContainer" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer"]
+clip_contents = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -129,21 +183,21 @@ color = Color(0.439216, 0.439216, 0.439216, 0.360784)
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 tooltip_text = "Creates a new project management item. This does not create a new Godot project."
-text = "New Project"
+text = "New / Import"
 
 [node name="ChangeProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 tooltip_text = "Opens the project configuration dialog for the selected project."
 disabled = true
-text = "Change Project"
+text = "Configure Project"
 
 [node name="RemoveProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 tooltip_text = "Permanently deletes the project template for the selected project. This does not delete any Godot project files."
 disabled = true
-text = "Remove Project"
+text = "Remove"
 
 [node name="MarginContainer2" type="MarginContainer" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
@@ -179,7 +233,8 @@ size = Vector2i(600, 135)
 dialog_text = " Are you sure you want to remove the project configuration from the list?"
 dialog_autowrap = true
 
-[connection signal="pressed" from="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer/HBoxContainer/ShowHiddenCheckBox" to="." method="_on_check_box_pressed"]
+[connection signal="item_selected" from="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer/HBoxContainer3/VBoxContainer/HBoxContainer2/SortByOptionButton" to="." method="_on_option_button_item_selected"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer/HBoxContainer3/VBoxContainer2/HBoxContainer/ShowHiddenCheckBox" to="." method="_on_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RunProjectButton" to="." method="_on_run_project_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/EditProjectButton" to="." method="_on_edit_project_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ReleaseProjectButton" to="." method="_on_release_project_button_pressed"]

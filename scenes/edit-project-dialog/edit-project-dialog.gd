@@ -122,6 +122,8 @@ func SaveSettingsFile(projectId, godotVersionId):
 	config.set_value("ProjectSettings", "project_name", _projectNameLineEdit.text)
 	config.set_value("ProjectSettings", "godot_version_id", godotVersionId)
 	config.set_value("ProjectSettings", "project_path", _projectPathLineEdit.text)
+	config.set_value("ProjectSettings", "created_date", Date.GetCurrentDateAsDictionary())
+
 	var err = config.save("user://" + App.GetProjectItemFolder() + "/" + projectId + ".cfg")
 
 	if err != OK:

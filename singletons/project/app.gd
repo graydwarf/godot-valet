@@ -14,6 +14,7 @@ var _isDebuggingWithoutThreads = false
 # Solution Settings
 var _backgroundColor = Color(0.2, 0.2, 0.2)
 var _showHidden = false
+var _sortType = Enums.SortByType.EditedDate
 
 func _ready():
 	LoadSavedSolutionSettings()
@@ -47,6 +48,9 @@ func GetLastUpdateTime():
 
 func GetShowHidden():
 	return _showHidden
+
+func GetSortType():
+	return _sortType
 	
 func SetLastUpdateTime(value):
 	_lastUpdateTime = value
@@ -64,6 +68,7 @@ func LoadSavedSolutionSettings():
 	if err == OK:
 		_backgroundColor = config.get_value("SolutionSettings", "bg_color", "")
 		_showHidden = config.get_value("SolutionSettings", "show_hidden", false)
+		_sortType = config.get_value("SolutionSettings", "sort_type", Enums.SortByType.EditedDate)
 	else:
 		OS.alert("An error occured loading the solution configuration file")
 	
@@ -72,6 +77,7 @@ func SaveSolutionSettings():
 
 	config.set_value("SolutionSettings", "bg_color", _backgroundColor)
 	config.set_value("SolutionSettings", "show_hidden", _showHidden)
+	config.set_value("SolutionSettings", "sort_type", _sortType)
 	
 	# Save the config file.
 	var err = config.save(_solutionConfigFile)
@@ -81,6 +87,10 @@ func SaveSolutionSettings():
 
 func SetShowHidden(value):
 	_showHidden = value
+	SaveSolutionSettings()
+
+func SetSortType(value):
+	_sortType = value
 	SaveSolutionSettings()
 	
 #func GetCustomScrollContainerStyle():

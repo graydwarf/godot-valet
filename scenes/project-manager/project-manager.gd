@@ -46,12 +46,16 @@ func LoadTheme():
 	
 func InitProjectSettings():
 	LoadShowHiddenCheckbox()
+	LoadSortType()
 	LoadProjectsIntoProjectContainer()
 	ToggleHiddenProjectVisibility()
 	LoadOpenGodotButtons()
 
 func LoadShowHiddenCheckbox():
 	_showHiddenCheckBox.button_pressed = App.GetShowHidden()
+
+func LoadSortType():
+	%SortByOptionButton.select(App.GetSortType())
 	
 func ShowHiddenProjectCount(value):
 	_hiddenProjectItemCountLabel.text = "(" + str(value) + ")"
@@ -97,6 +101,7 @@ func _on_button_pressed(button):
 func LoadProjectsIntoProjectContainer():
 	var allResourceFiles = Files.GetFilesFromPath("user://" + App.GetProjectItemFolder())
 	var hiddenProjectCount = 0
+	var listOfProjectItems = []
 	for resourceFile in allResourceFiles:
 		if !resourceFile.ends_with(".cfg"):
 			continue
@@ -104,7 +109,7 @@ func LoadProjectsIntoProjectContainer():
 		var projectId = resourceFile.trim_suffix(".cfg")
 		
 		var projectItem = load("res://scenes/project-item/project-item.tscn").instantiate()
-		_projectItemContainer.add_child(projectItem)
+		listOfProjectItems.append(projectItem)
 		
 		if _selectedProjectItem != null:
 			var isSelected = true
@@ -135,6 +140,9 @@ func LoadProjectsIntoProjectContainer():
 			projectItem.SetItchProjectName(config.get_value("ProjectSettings", "itch_project_name", ""))
 			var isHidden = config.get_value("ProjectSettings", "is_hidden", false)
 			projectItem.SetIsHidden(isHidden)
+			projectItem.SetPublishedDate(config.get_value("ProjectSettings", "published_date", {}))
+			projectItem.SetCreatedDate(config.get_value("ProjectSettings", "created_date", {}))
+			projectItem.SetEditedDate(config.get_value("ProjectSettings", "edited_date", {}))
 			
 			if isHidden:
 				hiddenProjectCount += 1
@@ -142,12 +150,34 @@ func LoadProjectsIntoProjectContainer():
 			else:
 				projectItem.ShowProjectItem()
 	
+	listOfProjectItems = HandleCustomSorts(listOfProjectItems)
+
+	for sortedProjectItem in listOfProjectItems:
+		_projectItemContainer.add_child(sortedProjectItem)
+		
 	if hiddenProjectCount > 0:
 		_hiddenProjectItemCountLabel.visible = true
 		ShowHiddenProjectCount(hiddenProjectCount)
 	else:
 		_hiddenProjectItemCountLabel.visible = false
-		
+
+func HandleCustomSorts(listOfProjectItems):
+	var sortType = %SortByOptionButton.get_selected_id()
+	match sortType:
+		Enums.SortByType.None:
+			pass
+		Enums.SortByType.PublishedDate:
+			listOfProjectItems.sort_custom(Callable(CustomSorter, "sort_by_published_date"))
+			listOfProjectItems.reverse()
+		Enums.SortByType.CreatedDate:
+			listOfProjectItems.sort_custom(Callable(CustomSorter, "sort_by_created_date"))
+			listOfProjectItems.reverse()
+		Enums.SortByType.EditedDate:
+			listOfProjectItems.sort_custom(Callable(CustomSorter, "sort_by_edited_date"))
+			listOfProjectItems.reverse()
+	
+	return listOfProjectItems
+	
 func GetGodotVersionFromId(godotVersionId):
 	var files = Files.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
 	for file in files:
@@ -276,12 +306,16 @@ func EditProject():
 		OS.alert("Did not find a project (.godot) file in the specified project path")
 		return
 	
+	_selectedProjectItem.SetEditedDate(Date.GetCurrentDateAsDictionary())
+	_selectedProjectItem.SaveProjectItem()
+	
 	if App.GetIsDebuggingWithoutThreads():
 		EditProjectInGodotEditorThread()
 	else:
 		_editProjectThread = Thread.new()
 		_editProjectThread.start(EditProjectInGodotEditorThread)
-
+	ReloadProjectManager()
+	
 func EditProjectInGodotEditorThread():
 	var output = []
 	var projectPath = _selectedProjectItem.GetProjectPathBaseDir()
@@ -381,7 +415,7 @@ func ToggleHiddenProjectVisibility():
 		ShowHiddenProjectCount(hiddenProjectCount)
 	else:
 		_hiddenProjectItemCountLabel.visible = false
-		
+	
 func _on_new_project_button_pressed():
 	CreateNewProject()
 	
@@ -417,3 +451,6 @@ func _on_open_project_folder_button_pressed():
 func _on_check_box_pressed():
 	ToggleHiddenProjectVisibility()
 	
+func _on_option_button_item_selected(index: int) -> void:
+	ReloadProjectManager()
+	App.SetSortType(index)

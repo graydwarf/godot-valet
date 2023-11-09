@@ -3,7 +3,7 @@ extends Panel
 @onready var _projectNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectNameHBoxContainer/ProjectNameLineEdit
 @onready var _exportPathLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer2/ExportPathLineEdit
 @onready var _godotPathLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/GodotPathHBoxContainer/ExportPathLineEdit
-@onready var _projectVersionLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectVersionHBoxContainer/ProjectVersionLineEdit
+@onready var _projectVersionLineEdit = %ProjectVersionLineEdit
 @onready var _windowsCheckBox = %WindowsCheckBox
 @onready var _linuxCheckBox = %LinuxCheckBox
 @onready var _webCheckBox = %WebCheckBox
@@ -30,12 +30,10 @@ var _busyBackground
 var _selectedProjectItem = null
 var _isDirty = false
 var _isClosingReleaseManager = false
-var _exportWithInstallerStep = 0
 var _pathToUserTempFolder = OS.get_user_data_dir() + "/temp/" # temp storage.
 var _defaultSupportMessage = "Please jump into the poplava discord and report the issue."
 
 func _ready():
-	InitSignals()
 	LoadTheme()
 	LoadBackgroundColor()
 
@@ -93,10 +91,7 @@ func LoadBackgroundColor():
 
 func LoadTheme():
 	theme = load(App.GetThemePath())
-	
-func InitSignals():
-	pass
-	
+		
 func ConfigureReleaseManagementForm(selectedProjectItem):
 	_selectedProjectItem = selectedProjectItem
 	_projectPathLineEdit.text = selectedProjectItem.GetFormattedProjectPath()
@@ -113,8 +108,10 @@ func ConfigureReleaseManagementForm(selectedProjectItem):
 	_packageTypeOptionButton.text = selectedProjectItem.GetPackageType()
 	_itchProjectNameLineEdit.text = selectedProjectItem.GetItchProjectName()
 	_itchProfileNameLineEdit.text = selectedProjectItem.GetItchProfileName()
+	%LastPublishedLineEdit.text = Date.GetCurrentDateAsString(selectedProjectItem.GetPublishedDate())
 	GenerateExportPreview()
 	GenerateButlerPreview()
+	LoadExportPresets()
 	
 func SaveSettings():
 	_isDirty = false
@@ -130,6 +127,11 @@ func SaveSettings():
 	_selectedProjectItem.SetPackageType(_packageTypeOptionButton.text)
 	_selectedProjectItem.SetItchProjectName(_itchProjectNameLineEdit.text)
 	_selectedProjectItem.SetItchProfileName(_itchProfileNameLineEdit.text)
+	var dateTimeDictionary = Date.ConvertDateStringToDictionary(%LastPublishedLineEdit.text)
+	if dateTimeDictionary == {}:
+		OS.alert("Invalid date provided. Publish again or edit using this format: \"%d/%d/%d %d:%d %s\" % [time.month, time.day, time.year, hour, time.minute, am_pm]. Example: 11/9/2023 7:32 AM")
+		
+	_selectedProjectItem.SetPublishedDate(dateTimeDictionary)
 	_selectedProjectItem.SaveProjectItem()
 	
 func GenerateExportPreview():
@@ -716,6 +718,11 @@ func ExecuteButlerCommandsThread():
 		_busyBackground.call_deferred("SetBusyBackgroundLabel", "Publishing Mac...")
 		ExecuteButlerCommand(butlerCommand, "Butler Mac")
 	ClearBusyBackground()
+	call_deferred("UpdatePublishedDate")
+
+func UpdatePublishedDate():
+	%LastPublishedLineEdit.text = Date.GetCurrentDateAsString(Date.GetCurrentDateAsDictionary())
+	_isDirty = true
 	
 func ExecuteButlerCommand(butlerCommand, outputName):
 	var output = []

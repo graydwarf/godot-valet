@@ -20,11 +20,29 @@ var _exportFileName = ""
 var _packageType = ""
 var _itchProjectName = ""
 var _itchProfileName = ""
+var _publishedDate : Dictionary = {}
+var _createdDate : Dictionary = {}
+var _editedDate : Dictionary = {}
+
 var _installerConfigurationFileName = ""
+# Fields
+var _projectName = ""
+var _godotVersion = ""
+var _projectPath = ""
+var _projectVersion = ""
+var _isHidden = false
 
 func _ready():
 	InitSignals()
 	RefreshBackground()
+	_projectNameLabel.text = _projectName
+	_godotVersionLabel.text = _godotVersion
+	_projectPathLabel.text = _projectPath
+	_projectVersionLabel.text = _projectVersion
+	_hideProjectCheckbox.button_pressed = _isHidden
+	%CreatedDateLabel.text = "Created: " + Date.GetCurrentDateAsString(_createdDate)
+	%EditedDateLabel.text = "Edited: " + Date.GetCurrentDateAsString(_editedDate)
+	%PublishedDateLabel.text = "Published: " + Date.GetCurrentDateAsString(_publishedDate)
 
 func InitSignals():
 	Signals.connect("BackgroundColorChanged", BackgroundColorChanged)
@@ -39,19 +57,20 @@ func SetGodotVersionId(value):
 	_godotVersionId = value
 	
 func SetProjectVersion(value):
-	_projectVersionLabel.text = value
+	_projectVersion = value
 	
 func SetProjectPath(value):
-	_projectPathLabel.text = value
+	_projectPath = value
 
 func SetExportFileName(value):
 	_exportFileName = value
 	
 func SetProjectName(value):
-	_projectNameLabel.text = value
+	_projectName = value
+
 	
 func SetGodotVersion(value):
-	_godotVersionLabel.text = value
+	_godotVersion = value
 
 func SetItchProjectName(value):
 	_itchProjectName = value
@@ -80,6 +99,15 @@ func SetPackageType(value):
 func SetItchProfileName(value):
 	_itchProfileName = value
 
+func SetPublishedDate(value):
+	_publishedDate = value
+
+func SetCreatedDate(value):
+	_createdDate = value
+	
+func SetEditedDate(value):
+	_editedDate = value
+	
 func SetProjectId(value):
 	_projectId = value
 
@@ -87,7 +115,7 @@ func SetInstallerConfigurationFileName(value):
 	_installerConfigurationFileName = value
 
 func SetIsHidden(value):
-	_hideProjectCheckbox.button_pressed = value
+	_isHidden = value
 	
 func GetProjectVersion():
 	return _projectVersionLabel.text
@@ -118,6 +146,15 @@ func GetPackageType():
 
 func GetItchProfileName():
 	return _itchProfileName
+
+func GetPublishedDate():
+	return _publishedDate
+
+func GetCreatedDate():
+	return _createdDate
+	
+func GetEditedDate():
+	return _editedDate
 	
 # Strip off the file name
 # /project.godot
@@ -249,12 +286,17 @@ func SaveProjectItem():
 	config.set_value("ProjectSettings", "itch_profile_name", _itchProfileName)
 	config.set_value("ProjectSettings", "itch_project_name", _itchProjectName)
 	config.set_value("ProjectSettings", "is_hidden", _hideProjectCheckbox.button_pressed)
+	config.set_value("ProjectSettings", "published_date", _publishedDate)
+	config.set_value("ProjectSettings", "created_date", _createdDate)
+	config.set_value("ProjectSettings", "edited_date", _editedDate)
 	
 	# Save the config file.
 	var err = config.save("user://" + App.GetProjectItemFolder() + "/" + _projectId + ".cfg")
 
 	if err != OK:
 		OS.alert("An error occurred while saving the config file.")
+
+	Signals.emit_signal("ProjectSaved")
 
 func HideProjectItem():
 	visible = false
