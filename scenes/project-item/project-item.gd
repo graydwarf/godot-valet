@@ -14,17 +14,20 @@ var _windowsChecked = false
 var _linuxChecked = false
 var _webChecked = false
 var _macOsChecked = false
+var _sourceChecked = false
 var _exportPath = ""
 var _exportType = ""
 var _exportFileName = ""
 var _packageType = ""
 var _itchProjectName = ""
 var _itchProfileName = ""
+var _showTipsForErrors = ""
 var _publishedDate : Dictionary = {}
 var _createdDate : Dictionary = {}
 var _editedDate : Dictionary = {}
 
 var _installerConfigurationFileName = ""
+
 # Fields
 var _projectName = ""
 var _godotVersion = ""
@@ -35,6 +38,12 @@ var _isHidden = false
 func _ready():
 	InitSignals()
 	RefreshBackground()
+	UpdateProjectItemUi()
+
+func InitSignals():
+	Signals.connect("BackgroundColorChanged", BackgroundColorChanged)
+
+func UpdateProjectItemUi():
 	_projectNameLabel.text = _projectName
 	_godotVersionLabel.text = _godotVersion
 	_projectPathLabel.text = _projectPath
@@ -43,10 +52,7 @@ func _ready():
 	%CreatedDateLabel.text = "Created: " + Date.GetCurrentDateAsString(_createdDate)
 	%EditedDateLabel.text = "Edited: " + Date.GetCurrentDateAsString(_editedDate)
 	%PublishedDateLabel.text = "Published: " + Date.GetCurrentDateAsString(_publishedDate)
-
-func InitSignals():
-	Signals.connect("BackgroundColorChanged", BackgroundColorChanged)
-
+	
 func BackgroundColorChanged(_color = null):
 	RefreshBackground()
 
@@ -67,7 +73,6 @@ func SetExportFileName(value):
 	
 func SetProjectName(value):
 	_projectName = value
-
 	
 func SetGodotVersion(value):
 	_godotVersion = value
@@ -86,7 +91,10 @@ func SetWebChecked(value):
 
 func SetMacOsChecked(value):
 	_macOsChecked = value
-	
+
+func SetSourceChecked(value):
+	_sourceChecked = value
+		
 func SetExportPath(value):
 	_exportPath = value
 	
@@ -99,6 +107,9 @@ func SetPackageType(value):
 func SetItchProfileName(value):
 	_itchProfileName = value
 
+func SetShowTipsForErrors(value):
+	_showTipsForErrors = value
+	
 func SetPublishedDate(value):
 	_publishedDate = value
 
@@ -134,7 +145,10 @@ func GetWebChecked():
 
 func GetMacOsChecked():
 	return _macOsChecked
-	
+
+func GetSourceChecked():
+	return _sourceChecked
+		
 func GetExportType():
 	return _exportType
 
@@ -147,6 +161,9 @@ func GetPackageType():
 func GetItchProfileName():
 	return _itchProfileName
 
+func GetShowTipsForErrors():
+	return _showTipsForErrors
+	
 func GetPublishedDate():
 	return _publishedDate
 
@@ -271,19 +288,21 @@ func GetProjectSelected():
 	
 func SaveProjectItem():
 	var config = ConfigFile.new()
-	config.set_value("ProjectSettings", "project_name", _projectNameLabel.text)
+	config.set_value("ProjectSettings", "project_name", _projectName)
 	config.set_value("ProjectSettings", "export_path", _exportPath)
 	config.set_value("ProjectSettings", "godot_version_id", _godotVersionId)
-	config.set_value("ProjectSettings", "project_path", _projectPathLabel.text)
+	config.set_value("ProjectSettings", "project_path", _projectPath)
 	config.set_value("ProjectSettings", "export_file_name", _exportFileName)
-	config.set_value("ProjectSettings", "project_version", _projectVersionLabel.text)
+	config.set_value("ProjectSettings", "project_version", _projectVersion)
 	config.set_value("ProjectSettings", "windows_preset_checked", _windowsChecked)
 	config.set_value("ProjectSettings", "linux_preset_checked", _linuxChecked)
 	config.set_value("ProjectSettings", "web_preset_checked", _webChecked)
 	config.set_value("ProjectSettings", "macos_preset_checked", _macOsChecked)
+	config.set_value("ProjectSettings", "source_checked", _sourceChecked)
 	config.set_value("ProjectSettings", "export_type", _exportType)
 	config.set_value("ProjectSettings", "package_type", _packageType)
 	config.set_value("ProjectSettings", "itch_profile_name", _itchProfileName)
+	config.set_value("ProjectSettings", "show_tips_for_errors", _showTipsForErrors)
 	config.set_value("ProjectSettings", "itch_project_name", _itchProjectName)
 	config.set_value("ProjectSettings", "is_hidden", _hideProjectCheckbox.button_pressed)
 	config.set_value("ProjectSettings", "published_date", _publishedDate)

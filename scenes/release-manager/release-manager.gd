@@ -8,6 +8,7 @@ extends Panel
 @onready var _linuxCheckBox = %LinuxCheckBox
 @onready var _webCheckBox = %WebCheckBox
 @onready var _macOsCheckBox = %MacOsCheckBox
+@onready var _sourceCheckBox = %SourceCheckBox
 @onready var _exportTypeOptionButton = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportTypeHBoxContainer/ExportTypeOptionButton
 @onready var _exportPreviewTextEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer/ExportPreviewTextEdit
 @onready var _itchProfileNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProfileNameHBoxContainer/ItchProfileNameLineEdit
@@ -32,11 +33,12 @@ var _isDirty = false
 var _isClosingReleaseManager = false
 var _pathToUserTempFolder = OS.get_user_data_dir() + "/temp/" # temp storage.
 var _defaultSupportMessage = "Please jump into the poplava discord and report the issue."
+var _isProvidingTipsForKnownErrors = true
 
 func _ready():
 	LoadTheme()
 	LoadBackgroundColor()
-
+	
 # Triggered when user closes via X or some other means.
 # TODO: We need to block them from closing until we get 
 # a prompt/response from the user when we have outstanding changes. 
@@ -57,7 +59,10 @@ func LoadExportPresets():
 	if !FileAccess.file_exists(exportPresetFilePath):
 		OS.alert("Did not find a export_presets.cfg file in the root of your project. Exporting blocked until you add at least one export option (Windows, Web, or Linux).")
 		return
-		
+
+	# Always visible (well, it will be if we can get the source zipping up like we want)
+	# %SourceCheckBox.visible = true
+
 	var lines = Files.GetLinesFromFile(exportPresetFilePath)
 	var oneOptionAdded = false
 	for line in lines:
@@ -101,6 +106,7 @@ func ConfigureReleaseManagementForm(selectedProjectItem):
 	_linuxCheckBox.button_pressed = selectedProjectItem.GetLinuxChecked()
 	_webCheckBox.button_pressed = selectedProjectItem.GetWebChecked()
 	_macOsCheckBox.button_pressed = selectedProjectItem.GetMacOsChecked()
+	_sourceCheckBox.button_pressed = selectedProjectItem.GetSourceChecked()
 	_exportPathLineEdit.text = selectedProjectItem.GetExportPath()
 	_exportFileNameLineEdit.text = selectedProjectItem.GetExportFileName()
 	_projectVersionLineEdit.text = selectedProjectItem.GetProjectVersion()
@@ -108,6 +114,7 @@ func ConfigureReleaseManagementForm(selectedProjectItem):
 	_packageTypeOptionButton.text = selectedProjectItem.GetPackageType()
 	_itchProjectNameLineEdit.text = selectedProjectItem.GetItchProjectName()
 	_itchProfileNameLineEdit.text = selectedProjectItem.GetItchProfileName()
+	%ShowTipsForErrorsCheckBox.button_pressed = selectedProjectItem.GetShowTipsForErrors()
 	%LastPublishedLineEdit.text = Date.GetCurrentDateAsString(selectedProjectItem.GetPublishedDate())
 	GenerateExportPreview()
 	GenerateButlerPreview()
@@ -119,6 +126,7 @@ func SaveSettings():
 	_selectedProjectItem.SetLinuxChecked(_linuxCheckBox.button_pressed)
 	_selectedProjectItem.SetWebChecked(_webCheckBox.button_pressed)
 	_selectedProjectItem.SetMacOsChecked(_macOsCheckBox.button_pressed)
+	_selectedProjectItem.SetSourceChecked(_sourceCheckBox.button_pressed)
 	_selectedProjectItem.SetExportPath(_exportPathLineEdit.text)
 	_selectedProjectItem.SetProjectVersion(_projectVersionLineEdit.text)
 	_selectedProjectItem.SetExportFileName(_exportFileNameLineEdit.text)
@@ -127,10 +135,11 @@ func SaveSettings():
 	_selectedProjectItem.SetPackageType(_packageTypeOptionButton.text)
 	_selectedProjectItem.SetItchProjectName(_itchProjectNameLineEdit.text)
 	_selectedProjectItem.SetItchProfileName(_itchProfileNameLineEdit.text)
-	var dateTimeDictionary = Date.ConvertDateStringToDictionary(%LastPublishedLineEdit.text)
-	if dateTimeDictionary == {}:
-		OS.alert("Invalid date provided. Publish again or edit using this format: \"%d/%d/%d %d:%d %s\" % [time.month, time.day, time.year, hour, time.minute, am_pm]. Example: 11/9/2023 7:32 AM")
-		
+	_selectedProjectItem.SetShowTipsForErrors(%ShowTipsForErrorsCheckBox.button_pressed)
+	var lastPublishedDate = %LastPublishedLineEdit.text
+	var dateTimeDictionary = {}
+	if lastPublishedDate != "":
+		dateTimeDictionary = Date.ConvertDateStringToDictionary(lastPublishedDate)
 	_selectedProjectItem.SetPublishedDate(dateTimeDictionary)
 	_selectedProjectItem.SaveProjectItem()
 	
@@ -147,6 +156,24 @@ func ValidateProjectVersionText():
 	else:
 		_projectVersionLineEdit.self_modulate = Color(1.0, 1.0, 1.0, 1.0)
 
+func ValidateUniqueVersion():
+	if ValidateText(_projectVersionLineEdit.text) != OK:
+		_projectVersionLineEdit.self_modulate = Color(1.0, 0.0, 0.0, 1.0)
+		OS.alert("Invalid project version. Remove any special characters?")
+		return -1
+		
+	if _projectVersionLineEdit.text == "":
+		_projectVersionLineEdit.self_modulate = Color(1.0, 0.0, 0.0, 1.0)
+		OS.alert("Invalid project version. Cannot be empty.")
+		return -1
+
+	if DirAccess.dir_exists_absolute(_exportPathLineEdit.text + "/" + _projectVersionLineEdit.text):
+		_projectVersionLineEdit.self_modulate = Color(1.0, 0.0, 0.0, 1.0)
+		%SameVersionConfirmationDialog.show()
+		return -1
+	
+	return OK
+	
 func ValidateExportPathText():
 	var text = _exportPathLineEdit.text
 
@@ -160,7 +187,8 @@ func ValidateExportPathText():
 
 func ResetExportPathColor():
 	_exportPathLineEdit.self_modulate = Color(1.0, 1.0, 1.0, 1.0)
-	
+
+# TODO: Considerations for linux/mac users?
 func ValidateText(text):
 	var validCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
 	for t in text:
@@ -196,6 +224,14 @@ func GetExtensionType(presetFullName):
 		OS.alert("Invalid preset type!")
 		return "invalid"
 
+func CleanSourceExportDirectoryOfUnwantedFiles(exportPath):
+	for file in Files.GetFilesFromPath(exportPath):
+		#TODO
+		pass
+		
+func CopySourceDirectoryToSourceExportPath(exportPath):
+	Files.CopySourceToDestinationRecursive("res://", exportPath)
+		
 # Uppercase
 # Windows, Linux, Web
 func ExportPreset(presetFullName):
@@ -256,7 +292,10 @@ func PrepUserTempDirectory():
 		return -1
 	
 	# Clean it up just in case something prevented cleanup
-	err = Files.DeleteAllFilesAndFolders(_pathToUserTempFolder)
+	var isSendingToRecycle = true
+	var isIncludingDotFiles = true
+	var filesToIgnore = []
+	err = Files.DeleteAllFilesAndFolders(_pathToUserTempFolder, filesToIgnore, isSendingToRecycle, isIncludingDotFiles)
 	if err != OK:
 		OS.alert("Failed to delete files and folders in " + _pathToUserTempFolder + ". " + _defaultSupportMessage)
 		return -1
@@ -273,6 +312,7 @@ func CompleteExport():
 	CountErrors()
 	CountWarnings()
 	ClearBusyBackground()
+	SearchForKnownErrorsAndInform()
 	
 func StartBusyBackground(busyDoingWhat):
 	_busyBackground = load("res://scenes/busy-background-blocker/busy_background_blocker_color_rect.tscn").instantiate()
@@ -292,6 +332,8 @@ func GetSelectedExportTypes():
 		listOfSelectedExportTypes.append("Web")
 	if _macOsCheckBox.button_pressed:
 		listOfSelectedExportTypes.append("macOS")
+	if _sourceCheckBox.button_pressed:
+		listOfSelectedExportTypes.append("Source")
 	
 	return listOfSelectedExportTypes
 
@@ -308,9 +350,19 @@ func ExportWithoutZip(presetFullName):
 	if err != OK:
 		return -1
 
-	err = ExportPreset(presetFullName)
-	if err != OK:
-		return -1
+	if presetFullName == "Source":
+		var exportPath = CreateExportDirectory(presetFullName)
+		err = CopySourceDirectoryToSourceExportPath(exportPath)
+		if err != OK:
+			return -1
+			
+		err = CleanSourceExportDirectoryOfUnwantedFiles(exportPath)
+		if err != OK:
+			return -1
+	else:
+		err = ExportPreset(presetFullName)
+		if err != OK:
+			return -1
 		
 	if presetFullName == "Web":
 		err = RenameHomePageToIndex()
@@ -340,10 +392,21 @@ func CopyExportedFilesToExportDirectory(exportPath):
 
 func ExportProject():
 	ClearOutput()
-	
+
 	if ValidateExportPathText() != OK:
-		return -1
-		
+		return
+
+	var versionUnique = ValidateUniqueVersion()
+	if versionUnique == OK:
+		ContinueExportingProject()
+
+	# Otherwise, the version was invalid in some way. We might
+	# also be prompting the user to confirm overwrite of dupe version.
+
+func ContinueExportingProject():
+	# Reset. All validations passed
+	_projectVersionLineEdit.self_modulate = Color(1.0, 1.0, 1.0, 1.0)
+	
 	if ValidateText(_exportFileNameLineEdit.text) != OK:
 		return -1
 		
@@ -385,17 +448,28 @@ func ExportProjectThread():
 
 func StartExportingWithZip(listOfSelectedExportTypes):
 	for exportType in listOfSelectedExportTypes:
-		var err = ExportZipPackage(exportType)
-		if err != OK:
-			return -1
-		
+		if exportType == "Source":
+			var err = ExportSource()
+			if err != OK:
+				return err
+		else:
+			var err = ExportZipPackage(exportType)
+			if err != OK:
+				return -1
 	return OK
-	
+
+func ExportSource():
+	var exportPath = CreateExportDirectory("Source")
+	if exportPath == "":
+		return -1
+		
+	Files.CopyDirectory(_projectPathLineEdit.text, exportPath)
+		
 func ExportZipPackage(presetFullName):
 	var err = ExportPreset(presetFullName)
 	if err != OK:
 		return -1
-	
+
 	# Rename the .html file to index.html
 	if presetFullName == "Web":
 		err = RenameHomePageToIndex()
@@ -457,7 +531,9 @@ func GetExistingFiles(presetFullName):
 
 func Cleanup():
 	var isSendingToRecyle = true
-	var err = Files.DeleteAllFilesAndFolders(_pathToUserTempFolder, isSendingToRecyle)
+	var isIncludingDotFiles = true
+	var filesToIgnore = []
+	var err = Files.DeleteAllFilesAndFolders(_pathToUserTempFolder, filesToIgnore, isSendingToRecyle, isIncludingDotFiles)
 
 	if err != OK:
 		OS.alert("Failed to cleanup temp export files. This is unexpected and can result in problems. " + _defaultSupportMessage)
@@ -511,6 +587,17 @@ func CreateZipFile(zipFilePath, listOfFileNames : Array):
 	writer.close()
 	return OK
 
+func SearchForKnownErrorsAndInform():
+	if !%ShowTipsForErrorsCheckBox.button_pressed:
+		return
+		
+	var output = ""
+	for child in _outputTabContainer.get_children():
+		output += child.text
+	
+	if output.contains("No export template found at the expected path"):
+		OS.alert("Looks like you're missing export templates. Open your project in Godot, go into 'Project', 'Exports' and add any missing export templates. You may need to update them if upgrading a project.")
+	
 func CountErrors():
 	var output = ""
 	for child in _outputTabContainer.get_children():
@@ -550,7 +637,7 @@ func GetExportPath(presetType):
 	return exportPath.to_lower()
 
 func ValidateExportPresetSelections():
-	if !_windowsCheckBox.button_pressed && !_linuxCheckBox.button_pressed && !_webCheckBox.button_pressed && !_macOsCheckBox.button_pressed: 
+	if !_windowsCheckBox.button_pressed && !_linuxCheckBox.button_pressed && !_webCheckBox.button_pressed && !_macOsCheckBox.button_pressed && !_sourceCheckBox.button_pressed: 
 		OS.alert("One or more 'Export Presets' must be selected")
 		return -1
 	
@@ -584,6 +671,9 @@ func GetExportPreview():
 
 	if _macOsCheckBox.button_pressed:
 		exportPreview += AddPreviewLine("mac")
+
+	if _sourceCheckBox.button_pressed:
+		exportPreview += AddPreviewLine("source")
 		
 	return exportPreview
 
@@ -777,7 +867,8 @@ func ShowSelectExportPathDialog():
 	$SelectFolderFileDialog.show()
 	
 func OpenProjectPathFolder():
-	var err = OS.shell_open(_projectNameLineEdit.text)
+	var projectPath = _projectPathLineEdit.text
+	var err = OS.shell_open(projectPath)
 	if err == 7:
 		OS.alert("Unable to open project folder. Did it get moved or renamed?")
 		
@@ -795,17 +886,11 @@ func ShowSaveChangesDialog():
 func _on_export_button_pressed():
 	ExportProject()
 
-func _on_open_project_folder_button_pressed():
-	OpenProjectPathFolder()
-
 func _on_preview_butler_command_button_pressed():
 	GenerateButlerPreview()
 
 func _on_preview_export_path_button_pressed():
 	GenerateExportPreview()
-
-func _on_open_export_path_folder_button_pressed():
-	OpenRootExportPath()
 
 func _on_project_path_line_edit_text_changed(_new_text):
 	_isDirty = true
@@ -837,6 +922,10 @@ func _on_mac_os_check_box_pressed():
 	_isDirty = true
 	GenerateExportPreview()
 	GenerateButlerPreview()
+
+func _on_source_check_box_pressed() -> void:
+	_isDirty = true
+	GenerateExportPreview()
 	
 func _on_export_type_option_button_item_selected(_index):
 	_isDirty = true
@@ -863,14 +952,11 @@ func _on_select_folder_file_dialog_dir_selected(dir):
 func _on_save_button_pressed():	
 	SaveSettings()
 
-func _on_open_project_path_button_pressed():
-	OpenProjectPathFolder()
-
 func _on_export_project_pressed():
 	ExportProject()
 
 func _on_open_project_folder_pressed():
-	OpenRootExportPath()
+	OpenProjectPathFolder()
 
 func _on_itch_project_name_line_edit_text_changed(_new_text):
 	_isDirty = true
@@ -914,8 +1000,10 @@ func _on_auto_generate_export_file_names_check_box_pressed():
 	_isDirty = true
 	GenerateExportPreview()
 	GenerateButlerPreview()
-
+	
 func _on_configure_installer_button_pressed():
 	var installerConfigurationDialog = load("res://scenes/installer-configuration-dialog/installer-configuration-dialog.tscn").instantiate()
 	add_child(installerConfigurationDialog)
 
+func _on_same_version_confirmation_dialog_confirmed() -> void:
+	ContinueExportingProject()

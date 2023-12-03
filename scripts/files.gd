@@ -1,6 +1,6 @@
 extends Node
-
-func IsDirectoryEmpty(directoryPath: String) -> bool:
+class_name Files
+static func IsDirectoryEmpty(directoryPath: String) -> bool:
 	var dir = DirAccess.open(directoryPath)
 	dir.include_hidden = true
 	dir.include_navigational = false
@@ -18,8 +18,42 @@ func IsDirectoryEmpty(directoryPath: String) -> bool:
 	dir.list_dir_end()
 	return true
 
+# Entry point that is recursively called as we crawl folders.
+static func CopyDirectory(pathOfDirectory, destinationPath : String):
+	destinationPath = destinationPath.trim_suffix("/")
+	
+	var directoryToCopy = DirAccess.open(pathOfDirectory)
+	if not directoryToCopy:
+		OS.alert("Failed to find/open directory at path: " + pathOfDirectory)
+		return -1
+	var err
+	if !DirAccess.dir_exists_absolute(destinationPath):
+		err = DirAccess.make_dir_recursive_absolute(destinationPath)
+		if err != OK:
+			return err
+
+	var destinationFolder = DirAccess.open(destinationPath)	
+	destinationFolder.change_dir(destinationPath)
+	
+	err = CopyFilesRecursive(directoryToCopy, destinationPath)
+	if err != null && err != OK:
+		return err
+		
+	directoryToCopy.list_dir_end()
+	return destinationPath
+
+static func CopyFilesRecursive(directoryToCopy: DirAccess, destinationPath: String):
+	directoryToCopy.list_dir_begin()
+	var fileName = directoryToCopy.get_next()
+	while fileName != "":
+		if directoryToCopy.current_is_dir():
+			CopyDirectory(directoryToCopy.get_current_dir() + "/" + fileName, destinationPath + "/" + fileName)
+		else:
+			directoryToCopy.copy(directoryToCopy.get_current_dir() + "/" + fileName, destinationPath + "/" + fileName)
+		fileName = directoryToCopy.get_next()
+
 # Copy contents of folder to specified destination
-func CopySourceToDestinationRecursive(sourcePath: String, destinationPath: String) -> void:
+static func CopySourceToDestinationRecursive(sourcePath: String, destinationPath: String) -> void:
 	if not DirAccess.dir_exists_absolute(destinationPath):
 		DirAccess.make_dir_recursive_absolute(destinationPath)
 
@@ -39,7 +73,7 @@ func CopySourceToDestinationRecursive(sourcePath: String, destinationPath: Strin
 
 			sourceName = sourceDirectory.get_next()
 
-func FindFirstFileWithExtension(path, extension):
+static func FindFirstFileWithExtension(path, extension):
 	if !DirAccess.dir_exists_absolute(path):
 		return null
 		
@@ -59,7 +93,7 @@ func FindFirstFileWithExtension(path, extension):
 
 	return null
 	
-func GetFilesFromPath(path):
+static func GetFilesFromPath(path, isIncludingDotFiles = false, isIncludingDirectories = true):
 	var files = []
 	if !DirAccess.dir_exists_absolute(path):
 		return files
@@ -71,24 +105,32 @@ func GetFilesFromPath(path):
 		var file = dir.get_next()
 		if file == "":
 			break
-		elif not file.begins_with("."):
+			
+		if dir.current_is_dir():
+			if isIncludingDirectories:
+				files.append(file)
+			else:
+				continue
+		elif isIncludingDotFiles:
+			files.append(file)
+		elif !file.begins_with("."):
 			files.append(file)
 
 	dir.list_dir_end()
 
 	return files
 
-func GetFileAsText(filePath):
+static func GetFileAsText(filePath):
 	if FileAccess.file_exists(filePath):
 		var file = FileAccess.open(filePath, FileAccess.READ)
 		return file.get_as_text()
 
 # Deletes everything in the directory and all sub-directories.
 # Carefully review and Use with caution
-func DeleteAllFilesAndFolders(folderPath, isSendingToRecycle = true, listOfExistingFilesToLeaveAlone = []):
-	var filePaths = GetFilesFromPath(folderPath)
+static func DeleteAllFilesAndFolders(folderPath, filesToIgnore = [], isSendingToRecycle = true, isIncludingDotFiles = false):
+	var filePaths = GetFilesFromPath(folderPath, isIncludingDotFiles)
 	for filePath in filePaths:
-		if listOfExistingFilesToLeaveAlone.find(filePath) >= 0:
+		if filesToIgnore.find(filePath) >= 0:
 			continue
 			
 		var err = OK
@@ -106,7 +148,7 @@ func DeleteAllFilesAndFolders(folderPath, isSendingToRecycle = true, listOfExist
 	
 	return OK
 	
-func GetLinesFromFile(path):
+static func GetLinesFromFile(path):
 	var result = {}
 	var file = FileAccess.open(path, FileAccess.READ)
 	var listOfLines = []
@@ -119,13 +161,13 @@ func GetLinesFromFile(path):
 
 	return listOfLines
 
-func CreateDirectory(directoryName):
+static func CreateDirectory(directoryName):
 	if !DirAccess.dir_exists_absolute(directoryName):
 		return DirAccess.make_dir_recursive_absolute(directoryName)
 	
 	return OK
 
-func CreateChecksum(filePath):
+static func CreateChecksum(filePath):
 	const CHUNK_SIZE = 1024
 	if not FileAccess.file_exists(filePath):
 		return
