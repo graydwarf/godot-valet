@@ -25,6 +25,7 @@ var _showTipsForErrors = ""
 var _publishedDate : Dictionary = {}
 var _createdDate : Dictionary = {}
 var _editedDate : Dictionary = {}
+var _sourceFilters = []
 
 var _installerConfigurationFileName = ""
 
@@ -113,6 +114,9 @@ func SetShowTipsForErrors(value):
 func SetPublishedDate(value):
 	_publishedDate = value
 
+func SetSourceFilters(value):
+	_sourceFilters = value
+	
 func SetCreatedDate(value):
 	_createdDate = value
 	
@@ -199,6 +203,9 @@ func GetExportPath():
 func GetProjectId():
 	return _projectId
 
+func GetSourceFilters():
+	return _sourceFilters
+	
 func GetDefaultTheme():
 	var customTheme = Theme.new()
 	var styleBox = GetDefaultStyleBoxSettings()
@@ -308,6 +315,7 @@ func SaveProjectItem():
 	config.set_value("ProjectSettings", "published_date", _publishedDate)
 	config.set_value("ProjectSettings", "created_date", _createdDate)
 	config.set_value("ProjectSettings", "edited_date", _editedDate)
+	config.set_value("ProjectSettings", "source_filters", _sourceFilters)
 	
 	# Save the config file.
 	var err = config.save("user://" + App.GetProjectItemFolder() + "/" + _projectId + ".cfg")

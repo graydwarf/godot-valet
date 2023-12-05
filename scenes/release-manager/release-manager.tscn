@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://dnh0www6opq0g"]
+[gd_scene load_steps=4 format=3 uid="uid://dnh0www6opq0g"]
 
 [ext_resource type="Script" path="res://scenes/release-manager/release-manager.gd" id="1_sdoj2"]
+[ext_resource type="Texture2D" uid="uid://co7ukhfnntav" path="res://assets/icons/source-filter.png" id="2_ka8w6"]
 [ext_resource type="Script" path="res://scenes/release-manager/custom-label.gd" id="2_nuwtj"]
 
 [node name="ReleaseManager" type="Panel"]
@@ -153,11 +154,20 @@ text = "MacOS"
 
 [node name="SourceCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer"]
 unique_name_in_owner = true
-visible = false
 layout_mode = 2
 tooltip_text = "\"Web\""
 button_pressed = true
 text = "Source"
+
+[node name="SourceFilterTextureButton" type="TextureButton" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer/SourceCheckBox"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_left = 79.0
+offset_right = 113.0
+offset_bottom = 31.0
+texture_normal = ExtResource("2_ka8w6")
+stretch_mode = 3
 
 [node name="ExportPathHBoxContainer2" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
@@ -343,6 +353,7 @@ layout_mode = 2
 custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 tooltip_text = "Optional: If you want to generate a checksum of the zipped package. The checksum value shows up in the export output down below."
+mouse_filter = 1
 text = "Generate Checksum:"
 horizontal_alignment = 2
 vertical_alignment = 1
@@ -499,9 +510,9 @@ layout_mode = 2
 [node name="ShowTipsForErrorsCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer/MarginContainer2/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-tooltip_text = "\"Windows Desktop\""
+tooltip_text = "Tries to provide guideance for any understood errors."
 button_pressed = true
-text = "Show Tips For Errors"
+text = "Shows tips for known errors"
 
 [node name="VBoxContainer2" type="VBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
@@ -576,7 +587,7 @@ layout_mode = 2
 tooltip_text = "Exports all listed projects to the specified locations."
 text = "Export"
 
-[node name="OpenProjectFolder" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
+[node name="OpenExportFolder" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
 custom_minimum_size = Vector2(0, 31)
 layout_mode = 2
 tooltip_text = "Opens to the version directory for the specified export path. If no paths are listed, nothing will happen."
@@ -639,6 +650,7 @@ size = Vector2i(600, 500)
 ok_button_text = "Select Current Folder"
 file_mode = 2
 access = 2
+show_hidden_files = true
 
 [node name="OverwriteConfirmationDialog" type="ConfirmationDialog" parent="."]
 title = "Please Confirm Overwrite..."
@@ -653,7 +665,7 @@ unresizable = true
 always_on_top = true
 popup_window = true
 ok_button_text = "Overwrite"
-dialog_text = "WARNING: This 'Project Version' already exists on disk. Proceeding will overwrite existing files! 
+dialog_text = "WARNING: This 'Project Version' already exists on disk. Proceeding will overwrite duplicate files while leaving the rest. Recommend avoiding this so you don't end up with unwanted files. Delete the directory and recreate if you want to recreate the same version. 
 
 Are you sure you want to continue?"
 dialog_autowrap = true
@@ -663,6 +675,7 @@ dialog_autowrap = true
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer/LinuxCheckBox" to="." method="_on_linux_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer/MacOsCheckBox" to="." method="_on_mac_os_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer/SourceCheckBox" to="." method="_on_source_check_box_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer/SourceCheckBox/SourceFilterTextureButton" to="." method="_on_source_filter_texture_button_pressed"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer2/ExportPathLineEdit" to="." method="_on_export_path_line_edit_text_changed"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectVersionHBoxContainer/VBoxContainer/ProjectVersionLineEdit" to="." method="_on_project_version_line_edit_text_changed"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectVersionHBoxContainer/VBoxContainer2/VBoxContainer/LastPublishedLineEdit" to="." method="_on_project_version_line_edit_text_changed"]
@@ -677,7 +690,7 @@ dialog_autowrap = true
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/LoadExportOptionsButton" to="." method="LoadExportPresets"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/SelectExportPathButton" to="." method="_on_select_export_path_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/ExportProject" to="." method="_on_export_project_pressed"]
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/OpenProjectFolder" to="." method="_on_open_project_folder_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/OpenExportFolder" to="." method="_on_open_export_folder_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/PublishButton" to="." method="_on_publish_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/SaveButton" to="." method="_on_save_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/CloseButton" to="." method="_on_close_button_pressed"]

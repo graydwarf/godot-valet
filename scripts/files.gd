@@ -53,25 +53,46 @@ static func CopyFilesRecursive(directoryToCopy: DirAccess, destinationPath: Stri
 		fileName = directoryToCopy.get_next()
 
 # Copy contents of folder to specified destination
-static func CopySourceToDestinationRecursive(sourcePath: String, destinationPath: String) -> void:
-	if not DirAccess.dir_exists_absolute(destinationPath):
-		DirAccess.make_dir_recursive_absolute(destinationPath)
+static func CopySourceToDestinationRecursive(sourcePath: String, absoluteOutputPath: String, sourceFilters = []):
+	if not DirAccess.dir_exists_absolute(absoluteOutputPath):
+		DirAccess.make_dir_recursive_absolute(absoluteOutputPath)
 
-	var sourceDirectory = DirAccess.open(sourcePath)
-	if sourceDirectory != null:
-		sourceDirectory.list_dir_begin()
-		var sourceName = sourceDirectory.get_next()
+	var fileOrDir = DirAccess.open(sourcePath)
+	if fileOrDir != null:
+		fileOrDir.list_dir_begin()
+		var sourceName = fileOrDir.get_next()
 		while sourceName != "":
 			if sourceName == "." || sourceName == "..":
-				sourceName = sourceDirectory.get_next()
+				sourceName = fileOrDir.get_next()
 				continue
+			
+			var fileOrFolderPath = sourcePath
+			if sourcePath != "res://":
+				fileOrFolderPath += "/"
 				
-			if sourceDirectory.current_is_dir():
-				CopySourceToDestinationRecursive(sourcePath + "/" + sourceName, destinationPath + "/" + sourceName)
+			fileOrFolderPath += sourceName
+			if fileOrDir.current_is_dir():
+				var filterPath = fileOrFolderPath.trim_prefix("res://")
+				var filterIndex = sourceFilters.find(filterPath)
+				if filterIndex >= 0:
+					var filter = sourceFilters[filterIndex]
+					if sourceName == filter || sourceName.begins_with(filter + "/"):
+						sourceName = fileOrDir.get_next()
+						continue
+						
+				CopySourceToDestinationRecursive(fileOrFolderPath, absoluteOutputPath + "/" + sourceName, sourceFilters)
 			else:
-				sourceDirectory.copy(sourcePath + "/" + sourceName, destinationPath + "/" + sourceName)
+				var filterPath = fileOrFolderPath.trim_prefix("res://")
+				var filterIndex = sourceFilters.find(filterPath)
+				if filterIndex >= 0:
+					sourceName = fileOrDir.get_next()
+					continue
+							
+				fileOrDir.copy(fileOrFolderPath, absoluteOutputPath + "/" + sourceName)
 
-			sourceName = sourceDirectory.get_next()
+			sourceName = fileOrDir.get_next()
+	
+	return OK
 
 static func FindFirstFileWithExtension(path, extension):
 	if !DirAccess.dir_exists_absolute(path):

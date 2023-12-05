@@ -1,0 +1,121 @@
+[gd_scene load_steps=2 format=3 uid="uid://bkuq0ng0wlgs2"]
+
+[ext_resource type="Script" path="res://scenes/source-filter-dialog/source-filter-dialog.gd" id="1_yygwq"]
+
+[node name="SourceFilterDialog" type="Control"]
+custom_minimum_size = Vector2(500, 350)
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_yygwq")
+
+[node name="Panel" type="Panel" parent="."]
+custom_minimum_size = Vector2(500, 350)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="ColorRect" type="ColorRect" parent="Panel/MarginContainer"]
+layout_mode = 2
+color = Color(0.290196, 0.290196, 0.290196, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer"]
+layout_mode = 2
+
+[node name="MarginContainer2" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 5
+
+[node name="ColorRect" type="ColorRect" parent="Panel/MarginContainer/VBoxContainer/MarginContainer2"]
+layout_mode = 2
+color = Color(0, 0, 0, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/MarginContainer2/ColorRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 2
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 2
+theme_override_constants/margin_bottom = 2
+
+[node name="ColorRect2" type="ColorRect" parent="Panel/MarginContainer/VBoxContainer/MarginContainer2/ColorRect/MarginContainer"]
+layout_mode = 2
+color = Color(0.501961, 0.501961, 0.501961, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/MarginContainer2/ColorRect/MarginContainer/ColorRect2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="TextEdit" type="TextEdit" parent="Panel/MarginContainer/VBoxContainer/MarginContainer2/ColorRect/MarginContainer/ColorRect2/MarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/background_color = Color(0.137255, 0.137255, 0.137255, 1)
+theme_override_colors/font_color = Color(0.729412, 0.729412, 0.729412, 1)
+theme_override_colors/font_placeholder_color = Color(0.439216, 0.439216, 0.439216, 1)
+placeholder_text = "Specify paths to folders and files to ignore when using the 'Source' export option. Paths should be relative to the root of your export directory. No wildcards or other special attributes supported. Each ignore needs to be on a separate line. Empty lines are ignored. Hidden files ignored. To view these instructions again, cut all lines (including blanks) and then paste back to resume (sorry). Type anywhere to start.
+
+Examples:
+folder1
+folder2/folder3/folder4
+folder5/file1.tmp
+file2.txt
+
+
+
+
+"
+wrap_mode = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_bottom = 10
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 200
+alignment = 1
+
+[node name="CancelButton" type="Button" parent="Panel/MarginContainer/VBoxContainer/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "Cancel"
+
+[node name="SaveButton" type="Button" parent="Panel/MarginContainer/VBoxContainer/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "Save"
+
+[connection signal="pressed" from="Panel/MarginContainer/VBoxContainer/MarginContainer/HBoxContainer/CancelButton" to="." method="_on_cancel_button_pressed"]
+[connection signal="pressed" from="Panel/MarginContainer/VBoxContainer/MarginContainer/HBoxContainer/SaveButton" to="." method="_on_save_button_pressed"]

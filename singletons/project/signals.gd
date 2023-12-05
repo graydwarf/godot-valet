@@ -5,6 +5,8 @@ signal CreateNewProject # might be dupe/dead
 signal ProjectRenamed
 signal ExportWithInstaller
 signal SaveInstallerConfiguration
+signal SaveSourceFilterChanges
+signal SelectedProjecItemUpdated
 
 # Project Management
 signal ToggleProjectItemSelection

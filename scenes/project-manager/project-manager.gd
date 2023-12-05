@@ -145,6 +145,7 @@ func LoadProjectsIntoProjectContainer():
 			projectItem.SetPublishedDate(config.get_value("ProjectSettings", "published_date", {}))
 			projectItem.SetCreatedDate(config.get_value("ProjectSettings", "created_date", {}))
 			projectItem.SetEditedDate(config.get_value("ProjectSettings", "edited_date", {}))
+			projectItem.SetSourceFilters(config.get_value("ProjectSettings", "source_filters", []))
 			
 			if isHidden:
 				hiddenProjectCount += 1
@@ -229,9 +230,26 @@ func GodotVersionsChanged():
 func GodotVersionManagerClosing():
 	LoadOpenGodotButtons()
 
+# When we save in ReleaseManager, we want to
+# update the Edited Date so we need to redraw the
+# list which means we need to save and restore our current selection.
 func ReloadProjectManager():
+	var indexOfSelectedProject = GetIndexOfSelectedProject()
+	
+	# This deletes and then recreates all our projects.
 	ClearProjectContainer()
 	LoadProjectsIntoProjectContainer()
+	
+	# Let the project list redraw so we can find projects because
+	# we reference ProjectItem nodes when passing data back
+	# and forth with the ReleaseManager page. Needs to be overhauled
+	# so the data management is abstracted from the UI.
+	await get_tree().create_timer(0.1).timeout
+	
+	_selectedProjectItem = GetProjectItemFromIndex(indexOfSelectedProject)
+	if _selectedProjectItem != null:
+		var isSelected = true
+		ToggleProjectItemSelection(_selectedProjectItem, isSelected)
 	
 func ProjectSaved():
 	ReloadProjectManager()
@@ -253,6 +271,9 @@ func ToggleProjectItemSelection(projectItem, isSelected):
 		_selectedProjectItem = projectItem
 		_selectedProjectItem.SelectProjectItem()
 		EnableEditButtons()
+		
+		# If ReleaseManager is closed, this does nothing
+		Signals.emit_signal("SelectedProjecItemUpdated", _selectedProjectItem)
 	else:
 		_selectedProjectItem = null
 		projectItem.UnselectProjectItem()
@@ -316,6 +337,7 @@ func EditProject():
 	else:
 		_editProjectThread = Thread.new()
 		_editProjectThread.start(EditProjectInGodotEditorThread)
+	
 	ReloadProjectManager()
 	
 func EditProjectInGodotEditorThread():
@@ -391,6 +413,22 @@ func RemoveProject():
 func OpenProjectFolder():
 	var projectPath = _selectedProjectItem.GetProjectPathBaseDir()
 	OS.shell_open(projectPath)
+
+func GetProjectItemFromIndex(indexOfSelectedProjectItem):
+	var index = 0;
+	for projectItem in _projectItemContainer.get_children():
+		if index == indexOfSelectedProjectItem:
+			return projectItem
+		index += 1
+		
+func GetIndexOfSelectedProject():
+	var indexOfSelectedProjectItem = 0
+	for projectItem in _projectItemContainer.get_children():
+		if projectItem == _selectedProjectItem:
+			break
+		indexOfSelectedProjectItem += 1
+		
+	return indexOfSelectedProjectItem
 
 func ToggleHiddenProjectVisibility():
 	var hiddenProjectCount = 0
