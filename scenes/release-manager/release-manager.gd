@@ -247,11 +247,7 @@ func GetExtensionType(presetFullName):
 	else:
 		OS.alert("Invalid preset type!")
 		return "invalid"
-	
-func CopySourceDirectoryToSourceExportPath(exportPath):
-	var err = Files.CopySourceToDestinationRecursive("res://", exportPath, _sourceFilters)
-	return err
-		
+			
 # Uppercase
 # Windows, Linux, Web, Source
 func ExportPreset(presetFullName):
@@ -381,23 +377,16 @@ func ExportWithoutZip(presetFullName):
 	if err != OK:
 		return err
 
-	var exportPath = ""
-	if presetFullName == "Source":
-		exportPath = CreateExportDirectory(presetFullName)
-		err = CopySourceDirectoryToSourceExportPath(exportPath)
-		if err != OK:
-			return err
-	else:
-		err = ExportPreset(presetFullName)
-		if err != OK:
-			return err
+	err = ExportPreset(presetFullName)
+	if err != OK:
+		return err
 		
 	if presetFullName == "Web":
 		err = RenameHomePageToIndex()
 		if err != OK:
 			return err
 	
-	exportPath = CreateExportDirectory(presetFullName)
+	var exportPath = CreateExportDirectory(presetFullName)
 	if exportPath == "":
 		return -1
 	
@@ -496,8 +485,9 @@ func ExportSource():
 	var err = CleanTempFiles()
 	if err != OK:
 		return -1
+	var sourcePath = _projectPathLineEdit.text
+	err = Files.CopySourceToDestinationRecursive(sourcePath, _pathToUserTempFolder, _sourceFilters)
 
-	err = CopySourceDirectoryToSourceExportPath(_pathToUserTempFolder)
 	if err != OK:
 		return -1
 

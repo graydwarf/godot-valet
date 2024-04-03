@@ -53,7 +53,7 @@ static func CopyFilesRecursive(directoryToCopy: DirAccess, destinationPath: Stri
 		fileName = directoryToCopy.get_next()
 
 # Copy contents of folder to specified destination
-static func CopySourceToDestinationRecursive(sourcePath: String, absoluteOutputPath: String, sourceFilters = []):
+static func CopySourceToDestinationRecursive(sourcePath: String, absoluteOutputPath: String, sourceFilters):
 	if not DirAccess.dir_exists_absolute(absoluteOutputPath):
 		DirAccess.make_dir_recursive_absolute(absoluteOutputPath)
 
@@ -73,13 +73,16 @@ static func CopySourceToDestinationRecursive(sourcePath: String, absoluteOutputP
 			fileOrFolderPath += sourceName
 			if fileOrDir.current_is_dir():
 				var filterPath = fileOrFolderPath.trim_prefix("res://")
-				var filterIndex = sourceFilters.find(filterPath)
-				if filterIndex >= 0:
-					var filter = sourceFilters[filterIndex]
-					if sourceName == filter || sourceName.begins_with(filter + "/"):
-						sourceName = fileOrDir.get_next()
-						continue
-						
+				var foundFilteredItem = false
+				for sourceFilter in sourceFilters:
+					if filterPath.find(sourceFilter) >= 0:
+						foundFilteredItem = true
+						break
+				
+				if foundFilteredItem:
+					sourceName = fileOrDir.get_next()
+					continue
+
 				CopySourceToDestinationRecursive(fileOrFolderPath, absoluteOutputPath + "/" + sourceName, sourceFilters)
 			else:
 				var filterPath = fileOrFolderPath.trim_prefix("res://")

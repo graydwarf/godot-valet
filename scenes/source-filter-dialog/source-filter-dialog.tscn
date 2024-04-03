@@ -83,7 +83,7 @@ size_flags_vertical = 3
 theme_override_colors/background_color = Color(0.137255, 0.137255, 0.137255, 1)
 theme_override_colors/font_color = Color(0.729412, 0.729412, 0.729412, 1)
 theme_override_colors/font_placeholder_color = Color(0.439216, 0.439216, 0.439216, 1)
-placeholder_text = "Specify paths to folders and files to ignore when using the 'Source' export option. Paths should be relative to the root of your export directory. No wildcards or other special attributes supported. Each ignore needs to be on a separate line. Empty lines are ignored. Hidden files ignored. To view these instructions again, cut all lines (including blanks) and then paste back to resume (sorry). Type anywhere to start.
+placeholder_text = "Only applies to Source Export. A bit rudametary at the moment. Replace instructional text in this dialog with the exclude filters you want. One filter per line. Example: Specifying \"exports\" without quotes will skip any file/folder path with the term 'export' in it. Be sure and be as specific as you need. Paths should be relative to the root of your export directory. No wildcards or other special attributes supported. Empty lines are ignored. Hidden files ignored. Type anywhere to start.
 
 Examples:
 folder1
