@@ -7,3 +7,9 @@ enum SortByType {
 	CreatedDate,
 	EditedDate
 }
+
+enum ExportType {
+	None,
+	Source,
+	Windows
+}

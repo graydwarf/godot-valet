@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://cac5k46l4b7xf"]
 
-[ext_resource type="Script" path="res://scenes/project-manager/project-manager.gd" id="1_1xf0t"]
+[ext_resource type="Script" uid="uid://biys5q3kmgc7g" path="res://scenes/project-manager/project-manager.gd" id="1_1xf0t"]
 
 [node name="ProjectManager" type="Panel"]
 clip_contents = true

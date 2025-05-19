@@ -1,8 +1,8 @@
 [gd_scene load_steps=4 format=3 uid="uid://dnh0www6opq0g"]
 
-[ext_resource type="Script" path="res://scenes/release-manager/release-manager.gd" id="1_sdoj2"]
+[ext_resource type="Script" uid="uid://bgbdmlgcgyg4g" path="res://scenes/release-manager/release-manager.gd" id="1_sdoj2"]
 [ext_resource type="Texture2D" uid="uid://co7ukhfnntav" path="res://assets/icons/source-filter.png" id="2_ka8w6"]
-[ext_resource type="Script" path="res://scenes/release-manager/custom-label.gd" id="2_nuwtj"]
+[ext_resource type="Script" uid="uid://dkeqydap72aj1" path="res://scenes/release-manager/custom-label.gd" id="2_nuwtj"]
 
 [node name="ReleaseManager" type="Panel"]
 clip_contents = true
@@ -78,6 +78,7 @@ horizontal_alignment = 2
 vertical_alignment = 1
 
 [node name="ProjectPathLineEdit" type="LineEdit" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectPathHBoxContainer2"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -86,6 +87,12 @@ tooltip_text = "Path to the appropriate godot version you want to build/export w
 editable = false
 caret_blink = true
 caret_blink_interval = 0.5
+
+[node name="OpenProjectPathFolder" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectPathHBoxContainer2"]
+custom_minimum_size = Vector2(125, 31)
+layout_mode = 2
+tooltip_text = "Opens folder to the specified project path."
+text = "Open Folder"
 
 [node name="GodotPathHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
@@ -169,6 +176,12 @@ offset_bottom = 31.0
 texture_normal = ExtResource("2_ka8w6")
 stretch_mode = 3
 
+[node name="LoadExportOptionsButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer"]
+custom_minimum_size = Vector2(0, 31)
+layout_mode = 2
+tooltip_text = "Reloads the projects export settings from the export_presets.cfg in case you changed the presets while this page was open."
+text = "Refresh Exports"
+
 [node name="ExportPathHBoxContainer2" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 
@@ -182,12 +195,19 @@ horizontal_alignment = 2
 vertical_alignment = 1
 
 [node name="ExportPathLineEdit" type="LineEdit" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer2"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
 caret_blink = true
 caret_blink_interval = 0.5
+
+[node name="SelectExportPathButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer2"]
+custom_minimum_size = Vector2(125, 31)
+layout_mode = 2
+tooltip_text = "Select the folder to export to. Recommend 'exports' in your project directory. Add to.gitignore file."
+text = "Select Folder"
 
 [node name="ProjectVersionHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
@@ -346,6 +366,35 @@ size_flags_vertical = 0
 caret_blink = true
 caret_blink_interval = 0.5
 
+[node name="ObfuscationContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ObfuscateLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer"]
+custom_minimum_size = Vector2(165, 0)
+layout_mode = 2
+tooltip_text = "Optional: If you want to generate a checksum of the zipped package. The checksum value shows up in the export output down below."
+mouse_filter = 1
+text = "Obfuscation:"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="ObfuscationCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Enabled"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 2
+
+[node name="TestButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer/HBoxContainer2"]
+custom_minimum_size = Vector2(125, 0)
+layout_mode = 2
+tooltip_text = "Copies to export path, obfuscates and launches."
+text = "Test"
+
 [node name="Generate256HashNameHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 
@@ -371,9 +420,14 @@ alignment = 2
 [node name="WarningLabel2" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/Generate256HashNameHBoxContainer/HBoxContainer2"]
 custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
-text = "Note: Exporting overwrites existing files with the exact same path."
 horizontal_alignment = 2
 vertical_alignment = 1
+
+[node name="ExportProject" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/Generate256HashNameHBoxContainer"]
+custom_minimum_size = Vector2(125, 31)
+layout_mode = 2
+tooltip_text = "Exports all listed projects to the specified locations."
+text = "Export"
 
 [node name="ExportPathHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
@@ -392,6 +446,13 @@ custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 size_flags_horizontal = 3
 editable = false
+
+[node name="OpenExportFolder" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer"]
+custom_minimum_size = Vector2(125, 31)
+layout_mode = 2
+size_flags_vertical = 0
+tooltip_text = "Opens to the version directory for the specified export path. If no paths are listed, nothing will happen."
+text = "Open Folder"
 
 [node name="ExportDetailsHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
@@ -428,6 +489,12 @@ tooltip_text = "Auto-generates the name for each preset type."
 button_pressed = true
 text = "Enable"
 
+[node name="PublishButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportDetailsHBoxContainer"]
+custom_minimum_size = Vector2(125, 31)
+layout_mode = 2
+tooltip_text = "Executes the listed commands one after the other with butler to upload your project."
+text = "Publish"
+
 [node name="ButlerCommandHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 
@@ -463,6 +530,13 @@ script = ExtResource("2_nuwtj")
 [node name="OutputTabContainer" type="TabContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/OutputHBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="SaveButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/OutputHBoxContainer"]
+custom_minimum_size = Vector2(125, 0)
+layout_mode = 2
+size_flags_vertical = 0
+tooltip_text = "Saves the settings for this view."
+text = "Save Settings"
 
 [node name="ErrorCountVBoxContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
@@ -502,6 +576,7 @@ text = "0"
 
 [node name="MarginContainer2" type="MarginContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/margin_left = 50
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer/MarginContainer2"]
@@ -510,131 +585,18 @@ layout_mode = 2
 [node name="ShowTipsForErrorsCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer/MarginContainer2/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 tooltip_text = "Tries to provide guideance for any understood errors."
 button_pressed = true
 text = "Shows tips for known errors"
 
-[node name="VBoxContainer2" type="VBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer"]
-custom_minimum_size = Vector2(140, 0)
+[node name="CloseButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(125, 0)
 layout_mode = 2
-
-[node name="InvisibleButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 31)
-layout_mode = 2
-
-[node name="OpenProjectPathFolder" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-custom_minimum_size = Vector2(0, 31)
-layout_mode = 2
-tooltip_text = "Opens folder to the specified project path."
-text = "Open Folder"
-
-[node name="InvisibleButton2" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 26)
-layout_mode = 2
-
-[node name="LoadExportOptionsButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-custom_minimum_size = Vector2(0, 31)
-layout_mode = 2
-tooltip_text = "Reloads the projects export settings from the export_presets.cfg in case you changed the presets while this page was open."
-text = "Refresh Exports"
-
-[node name="SelectExportPathButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-custom_minimum_size = Vector2(0, 31)
-layout_mode = 2
-tooltip_text = "Select the folder to export to. Recommend 'exports' in your project directory. Add to.gitignore file."
-text = "Select Folder"
-
-[node name="InvisibleButton4" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 31)
-layout_mode = 2
-
-[node name="InvisibleButton5" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 31)
-layout_mode = 2
-
-[node name="InvisibleButton6" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 31)
-layout_mode = 2
-
-[node name="InvisibleButton10" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 31)
-layout_mode = 2
-
-[node name="InvisibleButton7" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 31)
-layout_mode = 2
-
-[node name="InvisibleButton8" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 33)
-layout_mode = 2
-
-[node name="InvisibleButton14" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 31)
-layout_mode = 2
-
-[node name="ExportProject" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-custom_minimum_size = Vector2(0, 31)
-layout_mode = 2
-tooltip_text = "Exports all listed projects to the specified locations."
-text = "Export"
-
-[node name="OpenExportFolder" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-custom_minimum_size = Vector2(0, 31)
-layout_mode = 2
-tooltip_text = "Opens to the version directory for the specified export path. If no paths are listed, nothing will happen."
-text = "Open Folder"
-
-[node name="InvisibleButton9" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 30)
-layout_mode = 2
-
-[node name="InvisibleButton15" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 31)
-layout_mode = 2
-
-[node name="PublishButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-custom_minimum_size = Vector2(0, 31)
-layout_mode = 2
-tooltip_text = "Executes the listed commands one after the other with butler to upload your project."
-text = "Publish"
-
-[node name="InvisibleButton11" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 31)
-layout_mode = 2
-
-[node name="InvisibleButton12" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 28)
-layout_mode = 2
-
-[node name="InvisibleButton13" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 32)
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="SaveButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-layout_mode = 2
-tooltip_text = "Saves the settings for this view."
-text = "Save Settings"
-
-[node name="CloseButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2"]
-custom_minimum_size = Vector2(140, 0)
-layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
 tooltip_text = "Closes the Release Manager view."
-text = "Close"
+text = "Save & Close"
 
 [node name="SaveChangesConfirmationDialog" type="ConfirmationDialog" parent="."]
 position = Vector2i(400, 300)
@@ -660,23 +622,26 @@ dialog_text = "Found existing files with matching names. Overwrite?"
 [node name="SameVersionConfirmationDialog" type="ConfirmationDialog" parent="."]
 unique_name_in_owner = true
 initial_position = 2
-size = Vector2i(399, 236)
+size = Vector2i(399, 340)
 unresizable = true
 always_on_top = true
 popup_window = true
 ok_button_text = "Overwrite"
-dialog_text = "WARNING: This 'Project Version' already exists on disk. Proceeding will overwrite duplicate files while leaving the rest. Recommend avoiding this so you don't end up with unwanted files. Delete the directory and recreate if you want to recreate the same version. 
+dialog_text = "WARNING: A folder with this version already exists in your exports path. Proceeding will overwrite duplicate files while leaving the rest. Recommend avoiding this so you don't end up with unwanted files. Either delete the existing release or change the 'Project Version'
 
 Are you sure you want to continue?"
 dialog_autowrap = true
 
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectPathHBoxContainer2/OpenProjectPathFolder" to="." method="_on_open_project_folder_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer/WindowsCheckBox" to="." method="_on_windows_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer/WebCheckBox" to="." method="_on_web_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer/LinuxCheckBox" to="." method="_on_linux_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer/MacOsCheckBox" to="." method="_on_mac_os_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer/SourceCheckBox" to="." method="_on_source_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer/SourceCheckBox/SourceFilterTextureButton" to="." method="_on_source_filter_texture_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/LoadExportOptionsButton" to="." method="LoadExportPresets"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer2/ExportPathLineEdit" to="." method="_on_export_path_line_edit_text_changed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer2/SelectExportPathButton" to="." method="_on_select_export_path_button_pressed"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectVersionHBoxContainer/VBoxContainer/ProjectVersionLineEdit" to="." method="_on_project_version_line_edit_text_changed"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectVersionHBoxContainer/VBoxContainer2/VBoxContainer/LastPublishedLineEdit" to="." method="_on_project_version_line_edit_text_changed"]
 [connection signal="item_selected" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportTypeHBoxContainer/ExportTypeOptionButton" to="." method="_on_export_type_option_button_item_selected"]
@@ -684,16 +649,14 @@ dialog_autowrap = true
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportFileNameHBoxContainer/ExportFileNameLineEdit" to="." method="_on_export_file_name_line_edit_text_changed"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProjectNameHBoxContainer/ItchProjectNameLineEdit" to="." method="_on_itch_project_name_line_edit_text_changed"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProfileNameHBoxContainer/ItchProfileNameLineEdit" to="." method="_on_itch_name_line_edit_text_changed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer/HBoxContainer2/TestButton" to="." method="_on_test_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/Generate256HashNameHBoxContainer/ExportProject" to="." method="_on_export_project_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer/OpenExportFolder" to="." method="_on_open_export_folder_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportDetailsHBoxContainer/VBoxContainer/AutomateExportFileNameHBoxContainer/HBoxContainer/HBoxContainer/AutoGenerateExportFileNamesCheckBox" to="." method="_on_auto_generate_export_file_names_check_box_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportDetailsHBoxContainer/PublishButton" to="." method="_on_publish_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/OutputHBoxContainer/SaveButton" to="." method="_on_save_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer/MarginContainer2/HBoxContainer/ShowTipsForErrorsCheckBox" to="." method="_on_windows_check_box_pressed"]
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/OpenProjectPathFolder" to="." method="_on_open_project_folder_pressed"]
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/LoadExportOptionsButton" to="." method="LoadExportPresets"]
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/SelectExportPathButton" to="." method="_on_select_export_path_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/ExportProject" to="." method="_on_export_project_pressed"]
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/OpenExportFolder" to="." method="_on_open_export_folder_pressed"]
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/PublishButton" to="." method="_on_publish_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/SaveButton" to="." method="_on_save_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer2/CloseButton" to="." method="_on_close_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer/CloseButton" to="." method="_on_close_button_pressed"]
 [connection signal="canceled" from="SaveChangesConfirmationDialog" to="." method="_on_save_changes_confirmation_dialog_canceled"]
 [connection signal="confirmed" from="SaveChangesConfirmationDialog" to="." method="_on_save_changes_confirmation_dialog_confirmed"]
 [connection signal="dir_selected" from="SelectFolderFileDialog" to="." method="_on_select_folder_file_dialog_dir_selected"]

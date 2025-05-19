@@ -67,7 +67,7 @@ func ClearCustomButtonContainer():
 # Creates buttons dynamically based on the godot versions we have configured
 func LoadOpenGodotButtons():
 	ClearCustomButtonContainer()
-	var files = Files.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
+	var files = FileHelper.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
 	var listOfButtons = []
 	for file in files:
 		if !file.ends_with(".cfg"):
@@ -99,7 +99,7 @@ func _on_button_pressed(button):
 	OpenGodotProjectManager(godotVersionId)
 	
 func LoadProjectsIntoProjectContainer():
-	var allResourceFiles = Files.GetFilesFromPath("user://" + App.GetProjectItemFolder())
+	var allResourceFiles = FileHelper.GetFilesFromPath("user://" + App.GetProjectItemFolder())
 	var hiddenProjectCount = 0
 	var listOfProjectItems = []
 	for resourceFile in allResourceFiles:
@@ -182,7 +182,7 @@ func HandleCustomSorts(listOfProjectItems):
 	return listOfProjectItems
 	
 func GetGodotVersionFromId(godotVersionId):
-	var files = Files.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
+	var files = FileHelper.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
 	for file in files:
 		if !file.ends_with(".cfg"):
 			continue
@@ -197,7 +197,7 @@ func GetGodotVersionFromId(godotVersionId):
 			return config.get_value("GodotVersionSettings", "godot_version", "")
 
 func GetGodotPathFromVersionId(godotVersionId):
-	var files = Files.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
+	var files = FileHelper.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
 	for file in files:
 		if !file.ends_with(".cfg"):
 			continue
@@ -343,7 +343,7 @@ func EditProject():
 func EditProjectInGodotEditorThread():
 	var output = []
 	var projectPath = _selectedProjectItem.GetProjectPathBaseDir()
-	var godotArguments = ["--verbose", "--editor", "--path", projectPath] 
+	var godotArguments = ["--editor", "--path", projectPath] 
 	var pathToGodot = _selectedProjectItem.GetGodotPath(_selectedProjectItem.GetGodotVersionId())
 	if pathToGodot == null:
 		OS.alert("Unable to locate godot at the given path. Use settings to review godot configurations.")
@@ -374,7 +374,7 @@ func CreateEditProjectDialog():
 	return load("res://scenes/edit-project-dialog/edit-project-dialog.tscn").instantiate()
 
 func GodotVersionCreatedCheck():
-	var allResourceFiles = Files.GetFilesFromPath("user://godot-version-items")
+	var allResourceFiles = FileHelper.GetFilesFromPath("user://godot-version-items")
 	for resourceFile in allResourceFiles:
 		if !resourceFile.ends_with(".cfg"):
 			continue

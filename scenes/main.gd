@@ -11,7 +11,11 @@ func _ready():
 	LoadProjectSettings()
 	LoadTheme()
 	AddProjectManagerScene()
-
+	
+	# REMOVE THIS!!!!
+	#await get_tree().create_timer(0.2).timeout
+	#ObfuscateHelper.Test_ExtractFunctionSymbols()
+	
 func AddProjectManagerScene():
 	var projectManager = load("res://scenes/project-manager/project-manager.tscn").instantiate()
 	add_child(projectManager)

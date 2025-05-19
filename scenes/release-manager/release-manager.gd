@@ -17,6 +17,7 @@ extends Panel
 @onready var _warningCountLabel = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer/MarginContainer/HBoxContainer/WarningsCountLabel
 @onready var _packageTypeOptionButton = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/PackageTypeHBoxContainer/PackageTypeOptionButton
 @onready var _butlerPreviewTextEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ButlerCommandHBoxContainer/ButlerPreviewTextEdit
+@onready var _obfuscationCheckbox = %ObfuscationCheckBox
 @onready var _exportFileNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportFileNameHBoxContainer/ExportFileNameLineEdit
 @onready var _saveChangesConfirmationDialog = $SaveChangesConfirmationDialog
 @onready var _projectPathLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectPathHBoxContainer2/ProjectPathLineEdit
@@ -83,7 +84,7 @@ func LoadExportPresets():
 	# Always visible (well, it will be if we can get the source zipping up like we want)
 	%SourceCheckBox.visible = true
 
-	var lines = Files.GetLinesFromFile(exportPresetFilePath)
+	var lines = FileHelper.GetLinesFromFile(exportPresetFilePath)
 	var oneOptionAdded = false
 	for line in lines:
 		if line.begins_with("platform="):
@@ -278,7 +279,7 @@ func ExportPreset(presetFullName):
 	
 	if _useSha256CheckBox.button_pressed && FileAccess.file_exists(_pathToUserTempFolder + "/" + _exportFileNameLineEdit.text + extensionType):
 		# Create a checksum of the core binary (.exe, .x86_64)
-		var checksum = Files.CreateChecksum(_pathToUserTempFolder + "/" + _exportFileNameLineEdit.text + extensionType)
+		var checksum = FileHelper.CreateChecksum(_pathToUserTempFolder + "/" + _exportFileNameLineEdit.text + extensionType)
 		groomedOutput += "\n"
 		groomedOutput += presetFullName + " checksum: " + checksum
 		
@@ -313,7 +314,7 @@ func GetItchReleaseProfileName(presetFullName):
 	return itchPublishType
 		
 func PrepUserTempDirectory():
-	var err = Files.CreateDirectory(_pathToUserTempFolder)
+	var err = FileHelper.CreateDirectory(_pathToUserTempFolder)
 	if err != OK:
 		OS.alert("Failed to create: " + _pathToUserTempFolder + ". " + _defaultSupportMessage)
 		return -1
@@ -322,14 +323,14 @@ func PrepUserTempDirectory():
 	var isSendingToRecycle = true
 	var isIncludingDotFiles = true
 	var filesToIgnore = []
-	err = Files.DeleteAllFilesAndFolders(_pathToUserTempFolder, filesToIgnore, isSendingToRecycle, isIncludingDotFiles)
+	err = FileHelper.DeleteAllFilesAndFolders(_pathToUserTempFolder, filesToIgnore, isSendingToRecycle, isIncludingDotFiles)
 	if err != OK:
 		OS.alert("Failed to delete files and folders in " + _pathToUserTempFolder + ". " + _defaultSupportMessage)
 		return -1
 	
 	# Sanity check because we expect it to be empty.
 	# We don't want to end up zipping surprise files.
-	if Files.GetFilesFromPath(_pathToUserTempFolder).size() > 0:
+	if FileHelper.GetFilesFromPath(_pathToUserTempFolder).size() > 0:
 		OS.alert("Export cancelled. Found one or more files in " + _pathToUserTempFolder + " which is unexpected. " + _defaultSupportMessage)
 		return -1
 	
@@ -386,6 +387,11 @@ func ExportWithoutZip(presetFullName):
 		if err != OK:
 			return err
 	
+	if _obfuscationCheckbox.button_pressed:
+		ObfuscateHelper.ObfuscateScripts(_pathToUserTempFolder, _pathToUserTempFolder)
+	
+	return OK
+	
 	var exportPath = CreateExportDirectory(presetFullName)
 	if exportPath == "":
 		return -1
@@ -398,7 +404,7 @@ func ExportWithoutZip(presetFullName):
 
 # Copy the files to the export dirctory
 func CopyExportedFilesToExportDirectory(exportPath):
-	var exportedFiles = Files.GetFilesFromPath(_pathToUserTempFolder)
+	var exportedFiles = FileHelper.GetFilesFromPath(_pathToUserTempFolder)
 	for fileName in exportedFiles:
 		var err = CopyFileToExportDirectory(fileName, exportPath)
 		if err != OK:
@@ -442,6 +448,10 @@ func ContinueExportingProject():
 	# warning dialog from blocking the status
 	await get_tree().create_timer(0.2).timeout
 	
+	#if %ObfuscationCheckBox.button_pressed:
+		#ObfuscateHelper.ObfuscateScripts(%ProjectPathLineEdit.text, _pathToUserTempFolder)
+#
+	#return
 	if App.GetIsDebuggingWithoutThreads():
 		# Note: The busy screen doesn't work as expected outside a thread.
 		ExportProjectThread()
@@ -486,7 +496,7 @@ func ExportSource():
 	if err != OK:
 		return -1
 	var sourcePath = _projectPathLineEdit.text
-	err = Files.CopySourceToDestinationRecursive(sourcePath, _pathToUserTempFolder, _sourceFilters)
+	err = FileHelper.CopySourceToDestinationRecursive(sourcePath, _pathToUserTempFolder, _sourceFilters)
 
 	if err != OK:
 		return -1
@@ -561,13 +571,13 @@ func GetExistingFiles(presetFullName):
 	var releaseProfileName = GetItchReleaseProfileName(presetFullName)
 	var versionPath = GetGroomedVersionPath()
 	var exportPath = _exportPathLineEdit.text + versionPath + "/" + releaseProfileName + "/" + _exportTypeOptionButton.text
-	return Files.GetFilesFromPath(exportPath)
+	return FileHelper.GetFilesFromPath(exportPath)
 
 func Cleanup():
 	var isSendingToRecyle = true
 	var isIncludingDotFiles = true
 	var filesToIgnore = []
-	var err = Files.DeleteAllFilesAndFolders(_pathToUserTempFolder, filesToIgnore, isSendingToRecyle, isIncludingDotFiles)
+	var err = FileHelper.DeleteAllFilesAndFolders(_pathToUserTempFolder, filesToIgnore, isSendingToRecyle, isIncludingDotFiles)
 
 	if err != OK:
 		OS.alert("Failed to cleanup temp export files. This is unexpected and can result in problems. " + _defaultSupportMessage)
@@ -583,7 +593,7 @@ func RenameHomePageToIndex():
 	return OK
 
 func ValidateChecksum(filePath, checksum):
-	return Files.CreateChecksum(filePath) == checksum
+	return FileHelper.CreateChecksum(filePath) == checksum
 
 func ZipFiles(zipFileName, presetFullName, exportPath):
 	_busyBackground.call_deferred("SetBusyBackgroundLabel", "Zipping for " + presetFullName + "...")
@@ -1089,3 +1099,10 @@ func _on_source_filter_texture_button_pressed() -> void:
 
 func _on_open_export_folder_pressed() -> void:
 	OpenRootExportPath()
+
+func _on_test_button_pressed() -> void:
+	ValidateExportPathText()
+	var err = await ExportZipPackage(Enums.ExportType.Source)
+	var inputPath = %ProjectPathLineEdit.text
+	var outputPath = %ExportPathLineEdit.text
+	ObfuscateHelper.ObfuscateScripts(inputPath, outputPath)

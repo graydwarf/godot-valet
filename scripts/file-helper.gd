@@ -1,5 +1,5 @@
 extends Node
-class_name Files
+class_name FileHelper
 static func IsDirectoryEmpty(directoryPath: String) -> bool:
 	var dir = DirAccess.open(directoryPath)
 	dir.include_hidden = true
@@ -213,3 +213,32 @@ static func CreateChecksum(filePath):
 	var res = ctx.finish()
 
 	return res.hex_encode()
+
+# Passing in empty allowedExtensions returns all files.
+# allowedExtensions example: = ["gd", "tscn"]
+static func GetFilesRecursive(path: String, allowedExtensions : Array) -> Array:
+	var results := []
+	var dir := DirAccess.open(path)
+	if dir == null:
+		return results
+
+	dir.list_dir_begin()
+	var filename := dir.get_next()
+	while filename != "":
+		var fullPath := path + "/" + filename
+		if dir.current_is_dir():
+			if filename != "." and filename != "..":
+				results += GetFilesRecursive(fullPath, allowedExtensions)
+		elif allowedExtensions == null || allowedExtensions.size() == 0:
+			# No filter used, add any/all files.
+			results.append(fullPath)
+		else:
+			for extension in allowedExtensions:
+				if filename.ends_with("." + extension):
+					results.append(fullPath)
+					break
+
+		filename = dir.get_next()
+
+	dir.list_dir_end()
+	return results

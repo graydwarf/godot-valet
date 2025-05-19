@@ -256,7 +256,7 @@ func GetDefaultStyleBoxSettings():
 	return styleBox
 	
 func GetGodotPath(godotVersionId):
-	var files = Files.GetFilesFromPath("user://godot-version-items")
+	var files = FileHelper.GetFilesFromPath("user://godot-version-items")
 	for file in files:
 		if !file.ends_with(".cfg"):
 			continue

@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://48qkjwgaxowd"]
 
-[ext_resource type="Script" path="res://scenes/color-picker-dialog/color-picker-dialog.gd" id="1_2h4n3"]
+[ext_resource type="Script" uid="uid://dbv4hd6pkalag" path="res://scenes/color-picker-dialog/color-picker-dialog.gd" id="1_2h4n3"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q8u3s"]
 bg_color = Color(0.317647, 0.247059, 0.184314, 1)

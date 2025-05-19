@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://cwx44qpnwm6e2"]
 
-[ext_resource type="Script" path="res://scenes/godot-version-item/godot-version-item.gd" id="1_oshmt"]
+[ext_resource type="Script" uid="uid://2fngc4w2db73" path="res://scenes/godot-version-item/godot-version-item.gd" id="1_oshmt"]
 [ext_resource type="Texture2D" uid="uid://wop6qk8dkl40" path="res://icon.svg" id="2_h232o"]
 
 [node name="GodotVersionItem" type="ColorRect"]

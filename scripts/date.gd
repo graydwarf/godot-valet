@@ -69,4 +69,3 @@ static func ConvertDateStringToDictionary(date_string : String) -> Variant:
 		"hour": hour,
 		"minute": minute
 	}
-

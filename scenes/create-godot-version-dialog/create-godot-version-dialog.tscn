@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://bs3cejai31h0v"]
 
-[ext_resource type="Script" path="res://scenes/create-godot-version-dialog/create-godot-version-dialog.gd" id="1_c7nj4"]
+[ext_resource type="Script" uid="uid://dlbkg4qgnbbug" path="res://scenes/create-godot-version-dialog/create-godot-version-dialog.gd" id="1_c7nj4"]
 
 [node name="CreateGodotVersionDialog" type="ColorRect"]
 anchors_preset = 15

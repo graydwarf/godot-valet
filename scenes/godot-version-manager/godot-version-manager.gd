@@ -71,7 +71,7 @@ func RemoveSelectedVersionItem():
 		$DeleteConfirmationDialog.show()
 
 func IsGodotVersionInUse():
-	var allResourceFiles = Files.GetFilesFromPath("user://" + App.GetProjectItemFolder())
+	var allResourceFiles = FileHelper.GetFilesFromPath("user://" + App.GetProjectItemFolder())
 	for resourceFile in allResourceFiles:
 		if !resourceFile.ends_with(".cfg"):
 			continue
@@ -110,7 +110,7 @@ func EditSelectedGodotVersion():
 	editGodotVersionDialog.SetGodotPath(_selectedGodotVersionItem.GetGodotPath())
 	
 func LoadGodotVersionItems():
-	var allResourceFiles = Files.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
+	var allResourceFiles = FileHelper.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
 	for resourceFile in allResourceFiles:
 		if !resourceFile.ends_with(".cfg"):
 			continue
