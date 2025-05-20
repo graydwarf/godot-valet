@@ -4,12 +4,17 @@ class_name ObfuscateHelper
 static var _inputDir : String = ""
 static var _outputDir : String = ""
 static var _usedNames : Dictionary = {}
-static var _globalSymbolMap := {}
+static var _exportVariableNames := []
 
+# It's possible that you've used a reserved keyword without realizing.
+# godot generally warns about using reserved keywords but it's easy to miss.
+# Recommend updating your code to not use reserved keywords vs fixing in here.
+# My example which godot doesn't warn me about: var values = enumType.values()
+# I chose to rename the variable to something else.
 const _godotReservedKeywords := [
 	"_ready", "_process", "_physics_process", "_input", "_unhandled_input", "_init",
 	"_enter_tree", "_exit_tree", "_notification", "_draw", "_gui_input", "_get_property_list",
-	"_get", "_set", "_to_string", "_save", "_load", "values", "velocity"
+	"_get", "_set", "_to_string", "_save", "_load"
 ]
 
 static func ObfuscateScripts(inputDir: String, outputDir: String) -> void:
@@ -51,11 +56,11 @@ static func GenerateObfuscatedName()  -> String:
 	
 	return ""
 
-static func ApplySymbolObfuscation(contentPayload : ContentPayload , obfuscationMap: Dictionary) -> void:
-	for symbol in obfuscationMap.keys():
-		contentPayload.SetContent(ReplaceSymbol(contentPayload.GetContent(), symbol, obfuscationMap[symbol]))
+static func ApplySymbolObfuscation(contentPayload : ContentPayload , symbolMap: Dictionary) -> void:
+	for symbol in symbolMap.keys():
+		contentPayload.SetContent(ReplaceSymbol(contentPayload.GetContent(), symbol, symbolMap[symbol]))
 
-static func ReplaceSymbol(content: String, symbol: String, obf: Dictionary) -> String:
+static func ReplaceSymbol(content: String, symbol: String, symbolMap: Dictionary) -> String:
 	var pattern := RegEx.new()
 	pattern.compile("\\b" + symbol + "\\b")
 
@@ -67,12 +72,12 @@ static func ReplaceSymbol(content: String, symbol: String, obf: Dictionary) -> S
 	var lastIndex := 0
 
 	for match in matches:
+		if _exportVariableNames.find(symbol) > -1:
+			continue
+			
 		var start := match.get_start()
 		var end := match.get_end()
-		if symbol == "_slotType":
-			pass
-		var replacement = GetSymbolReplacement(content, symbol, obf, start, end)
-
+		var replacement = GetSymbolReplacement(content, symbol, symbolMap, start, end)
 		result += content.substr(lastIndex, start - lastIndex)
 		result += replacement
 		lastIndex = end
@@ -80,7 +85,7 @@ static func ReplaceSymbol(content: String, symbol: String, obf: Dictionary) -> S
 	result += content.substr(lastIndex)
 	return result
 
-static func GetSymbolReplacement(content: String, symbol: String, obf: Dictionary, start: int, end: int) -> String:
+static func GetSymbolReplacement(content: String, symbol: String, symbolMap: Dictionary, start: int, end: int) -> String:
 	var before := content.substr(max(start - 20, 0), start - max(start - 20, 0))
 	# var after := content.substr(end, 10)
 	
@@ -90,28 +95,23 @@ static func GetSymbolReplacement(content: String, symbol: String, obf: Dictionar
 		
 	var nextChar := content.substr(end, 1)
 
-	#if before.contains("has_method"):
-		#pass
-		
-	if obf.kind == "type":
-		if before.match(":\\s*$") or before.match("as\\s+$"):
-			return symbol  # Don't replace in type context
-		else:
-			return symbol  # Unknown context, skip for safety
-	elif obf.kind == "function":
+	#if symbolMap.kind == "type":
+		#if before.match(":\\s*$") or before.match("as\\s+$"):
+			#return symbol  # Don't replace in type context
+		#else:
+			#return symbol  # Unknown context, skip for safety
+	if symbolMap.kind == "function":
 		if FindFunctionSymbol(before, prevChar, nextChar):
-			return obf.replacement
+			return symbolMap.replacement
 		else:
 			return symbol
-	elif obf.kind == "variable" or obf.kind == "global":
+	elif symbolMap.kind == "variable":
 		# Check if we are obfuscating inside an @export declaration
-		if symbol == "_slotType":
-			pass #@export var _slotType := Enums.SlotType.None
-
 		if before.contains("@export var"):
+			_exportVariableNames.append(symbol)
 			return symbol
 			
-		return obf.replacement
+		return symbolMap.replacement
 
 	return symbol
 
@@ -127,31 +127,33 @@ static func FindFunctionSymbol(before, prevChar, nextChar):
 
 	if prevChar != "." and nextChar == ")":
 		return true
-		
+	
 	regex.compile('.*\\.has_method\\(\\"')
 	return !!regex.search(before)
 	
 static func ObfuscateDirectory(path: String) -> void:
 	var fileFilters := ["gd"]
 	var filteredFiles := FileHelper.GetFilesRecursive(path, fileFilters)
-	BuildGlobalSymbolMap(filteredFiles)
-	ObfuscateAllFiles(filteredFiles)
+	var symbolMap := BuildGlobalSymbolMap(filteredFiles)
+	ObfuscateAllFiles(filteredFiles, symbolMap)
 
 # Pass 1: Build global symbol map
-static func BuildGlobalSymbolMap(allFiles):
+static func BuildGlobalSymbolMap(allFiles) -> Dictionary:
+	var symbolMap : Dictionary = {}
 	for fullPath in allFiles:
 		var content := FileAccess.get_file_as_string(fullPath)
-		var symbolMap := ParseSymbolsAndBuildMap(content)
+		BuildSymbolMap(content, symbolMap)
 
 		for symbolName in symbolMap.keys():
-			if not _globalSymbolMap.has(symbolName):
-				var kind = symbolMap[symbolName].get("kind")
-				var replacement = GenerateObfuscatedName()
+			var kind = symbolMap[symbolName].get("kind")
+			var replacement = GenerateObfuscatedName()
 
-				_globalSymbolMap[symbolName] = {
-					"kind": kind,
-					"replacement": replacement
-				}
+			symbolMap[symbolName] = {
+				"kind": kind,
+				"replacement": replacement
+			}
+
+	return symbolMap
 				
 static func PreserveStringLiterals(contentPayload : ContentPayload) -> void:
 	var stringRegex := RegEx.new()
@@ -172,16 +174,16 @@ static func PreserveStringLiterals(contentPayload : ContentPayload) -> void:
 	contentPayload.SetPreservedStrings(preservedStrings)
 	
 # Put preserved strings back in
-static func RestoreStrings(contentPayload : ContentPayload) -> void:
+static func RestoreStringLiterals(contentPayload : ContentPayload) -> void:
 	for key in contentPayload.GetPreservedStrings().keys():
 		contentPayload.SetContent(contentPayload.GetContent().replace(key, contentPayload.GetPreservedStrings()[key]))
 
+# Put special preserved strings back in
+static func RestoreSpecialStrings(contentPayload : ContentPayload) -> void:
 	for key in contentPayload.GetPreservedSpecialStrings().keys():
 		contentPayload.SetContent(contentPayload.GetContent().replace(key, contentPayload.GetPreservedSpecialStrings()[key]))
 
-# Note: This is a work in progress as I figure out what
-# special things we need to do. has_method is the first string
-# that we want to obfuscate while we want to preserve all others.
+# Note: This only supports has_method calls.
 static func PreserveSpecialStrings(contentPayload : ContentPayload) -> void:
 	var stringRegex := RegEx.new()
 	stringRegex.compile(r'has_method\("([^"\\]*)"\)')
@@ -201,15 +203,24 @@ static func PreserveSpecialStrings(contentPayload : ContentPayload) -> void:
 	contentPayload.SetPreservedSpecialStrings(preservedStrings)
 	
 # Pass #2: Obfuscate all files with global map
-static func ObfuscateAllFiles(allFiles):
+static func ObfuscateAllFiles(allFiles : Array, symbolMap : Dictionary):
 	for fullPath in allFiles:
 		var fileContents := FileAccess.get_file_as_string(fullPath)
 		var contentPayload := ContentPayload.new()
 		contentPayload.SetContent(fileContents)
 		PreserveSpecialStrings(contentPayload)
 		PreserveStringLiterals(contentPayload)
-		ApplySymbolObfuscation(contentPayload, _globalSymbolMap)
-		RestoreStrings(contentPayload)
+		
+		# We need these strings to be replaced as function names
+		RestoreSpecialStrings(contentPayload)
+
+		# Reset export var tracking per file. Anytime
+		# we come across and @export var, we need to ignore
+		# all other matches in the same file.
+		_exportVariableNames.clear()
+		ApplySymbolObfuscation(contentPayload, symbolMap)
+		
+		RestoreStringLiterals(contentPayload)
 		var relativePath = fullPath.replace(_inputDir, "")
 		var outputPath = _outputDir + relativePath
 		var outputDir = outputPath.get_base_dir()
@@ -222,64 +233,79 @@ static func ObfuscateAllFiles(allFiles):
 		else:
 			printerr("Failed to open file for writing: ", outputPath)
 
-static func ParseSymbolsAndBuildMap(content: String) -> Dictionary:
-	var map := {}
-
+static func BuildSymbolMap(content : String, symbolMap : Dictionary) -> void:
+	AddFunctionsToSymbolMap(content, symbolMap)
+	AddVariablesToSymbolMap(content, symbolMap)
+	
+static func AddFunctionsToSymbolMap(content: String, symbolMap) -> void:
 	# Function declarations (including static)
 	var regex := RegEx.new()
 	regex.compile(r"(?:static\s+)?func\s+(\w+)\s*\(")
 	for match in regex.search_all(content):
 		var symbolName = match.get_string(1)
 
+		# Don't add dupe symbolNames
+		if symbolMap.has(symbolName):
+			continue
+
 		# Ignore godot built-in functions
 		if symbolName in _godotReservedKeywords:
 			continue
 			
-		# SPECIAL NOTE!
-		# Assumes PasalCase function names for now
-		# - you'll need to modify for snake_case
+		# TODO:
+		# Assumes PasalCase function names (for now)
+		# - Assuming this will need modification for snake_case
 		if not symbolName.begins_with("_"):
-			map[symbolName] = { "kind": "function" }
+			symbolMap[symbolName] = { "kind": "function" }
 
 	# Type references
-	regex = RegEx.new()
-	regex.compile(r"(?::|as)\s+(\w+)")
-	for match in regex.search_all(content):
-		var symbolName = match.get_string(1)
-		if symbolName in _godotReservedKeywords:
-			continue
-			
-		if not map.has(symbolName):
-			map[symbolName] = { "kind": "type" }
+	#regex = RegEx.new()
+	#regex.compile(r"(?::|as)\s+(\w+)")
+	#for match in regex.search_all(content):
+		#var symbolName = match.get_string(1)
+		#if symbolName in _godotReservedKeywords:
+			#continue
+			#
+		#if not map.has(symbolName):
+			#map[symbolName] = { "kind": "type" }
 
-	# Map variables
-	#map = ParseVariablesExcludingExport(content, map, _godotReservedKeywords)
-
-	return map
-
-static func ParseVariablesExcludingExport(content: String, map: Dictionary, _godotReservedKeywords: Array):
+static func AddVariablesToSymbolMap(content : String, symbolMap : Dictionary):
 	var lines := content.split("\n")
-
-# TODO: Use this? _godotReservedKeywords
+	var filterdExportVariables = []
 	for line in lines:
 		line = line.strip_edges()
 		
-		# Handle inline export declarations: @export var foo
-		if line.begins_with("@export var"):
-			continue
+		# Note:
+		# Skip @export vars because gdscript will
+		# reset the GUI assigned values when renamed.
+		# We could improve this by digging into the 
+		# respective tscn file to remap them but 
+		# that's future work.
+		#if line.begins_with("@export var"):
+			#var exportVariableName = ExtractExportedVarName(line)
+			#filterdExportVariables.append(exportVariableName)
+			#continue
 
 		var regex := RegEx.new()
 		regex.compile(r"\bvar\s+(\w+)")
 		var match = regex.search(line)
 		if match:
 			var symbolName = match.get_string(1)
-			if symbolName in _godotReservedKeywords:
+			if symbolMap.has(symbolName):
 				continue
-			if not map.has(symbolName):
-				var kind := "global" if symbolName.begins_with("_") else "variable"
-				map[symbolName] = { "kind": kind }
-	
-	return map
+				
+			#var kind := "global" if symbolName.begins_with("_") else "variable"
+			symbolMap[symbolName] = { "kind": "variable" }
+
+#static func ExtractExportedVarName(line: String) -> String:
+	#if line.strip_edges().begins_with("@export"):
+		#var match = line.find("var ")
+		#if match != -1:
+			#var sub = line.substr(match + 4)
+			#var name = sub.split(":")[0].strip_edges()
+			#return name
+	#return ""
+
 	
 # For testing locally if needed
 static func GetTestContent() -> String:
