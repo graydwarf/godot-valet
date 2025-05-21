@@ -368,7 +368,6 @@ caret_blink = true
 caret_blink_interval = 0.5
 
 [node name="ObfuscationContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
-visible = false
 layout_mode = 2
 
 [node name="ObfuscateLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer"]
