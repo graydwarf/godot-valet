@@ -1,10 +1,79 @@
 extends Node
 class_name ObfuscateHelper
 
+# README - BETA BETA BETA - EARLY ACCESS - UNTESTED
+#
+# USE AT YOUR OWN RISK <- Read that again.
+#
+# Don't use this project or enable and use this feature
+# if you are not prepared to take full responsibility for
+# any issues that arrise.
+#
+# This is an open source project. Review any and all code and ensure
+# it does what you expect before using it. 
+#
+# I assume ZERO responsibility...
+# - for anything and everything but especially if...
+# 	- #1 - you end up obfuscating your original source. 
+#	  Please don't do that. Not possible as-is (we copy
+#	  the source into a working directory and do everything
+#	  there but that wouldn't stop someone from copying or 
+#	  exporting the obfuscated source back into their repo
+#	  directory. Make backups and/or use source control. 
+#
+# 	- #2 - you use this without testing properly and end up deploying
+#	  broken builds for any reason including bugs in the code. You
+#	  will be entirely at fault. It's not ready for prime time because
+#	  we haven't tested it. It's ready for testing and ridicule at best.
+#
+# You SHOULD NOT use obfuscation without testing every nook and
+# cranny of your game. Launching it is not enough. Obfuscation touches
+# every little thing in your project so you have to test every little
+# thing to be certain nothing is broken. I do mean every little thing.
+# Unit tests can be a big help in this regard if you have them. Once 
+# you've refined & stabalized the obfuscation (and tested every aspect
+# of your game) you should only need to test where you've made changes
+# from there on out. If you make changes to the obfuscator, a full test
+# pass is recommended (required).
+#
+# This initial version is rudamtary at best. It was designed based on
+# a single project which means no real testing has occured yet. I use 
+# pascalCase so this could be completely busted for snake_case users.
+#
+# You will most likely need to massage your code to work well with 
+# obfuscation (renaming problematic things) as well as updating the
+# obfuscator where it's lacking or maybe even wrong. Again, this is
+# a largely untested beta feature.
+#
+# There are other obfuscator projects out there that are way more 
+# sofisticated including plug-ins for godot. 
+#
+# If you make improvements that others can benefit from, 
+# please publish a PR. Please adhere to the existing code style
+# and standards when posting a PR.
+#
 static var _inputDir : String = ""
 static var _outputDir : String = ""
 static var _usedNames : Dictionary = {}
 static var _exportVariableNames := []
+
+# Notes:
+# Key things to keep in mind.
+# - We use a global symbol map (we crawl through all the files looking for
+#	all function and variable names.
+# - We use that global symbol map to replace function/variable 
+# 	name regardless of local/global state so every instance of a name
+# 	gets replaced with the same replacement name across all files.
+# 	This generally works for most things but is likely to trip up.
+# 
+# Open Issues: (to name a few)
+# - Just about any call made with a string to a
+# 	function is at risk if duplicate names are present.
+# - Calls to functions using string representation such 
+#	as: .set("_rotationSpeed", ...) especially if that variable
+#	was set with @export.
+# 	Calls to variables in other classes where the variable 
+# 	is an @export AND that same variable name is defined elsewhere.
 
 # It's possible that you've used a reserved keyword without realizing.
 # godot generally warns about using reserved keywords but it's easy to miss.
@@ -17,30 +86,31 @@ const _godotReservedKeywords := [
 	"_get", "_set", "_to_string", "_save", "_load"
 ]
 
-static func ObfuscateScripts(inputDir: String, outputDir: String) -> void:
+static func ObfuscateScripts(inputDir: String, outputDir: String):
 	_inputDir = inputDir
 	_outputDir = outputDir
 
 	if inputDir == "":
 		OS.alert("Invalid input directory for obfuscation. Please specify a valid directory containing a Godot project.")
-		return
+		return -1
 
 	if outputDir == "":
 		OS.alert("Invalid output directory for obfuscation. Please specify a directory outside of your project.")
-		return
+		return -1
 
 	if not DirAccess.dir_exists_absolute(_inputDir):
 		printerr("Input directory does not exist: ", _inputDir)
-		return
+		return -1
 
 	if not DirAccess.dir_exists_absolute(_outputDir):
 		var created := DirAccess.make_dir_recursive_absolute(_outputDir)
 		if created != OK:
 			printerr("Failed to create output directory: ", _outputDir)
-			return
+			return -1
 
 	ObfuscateDirectory(_inputDir)
-
+	return OK
+	
 # Generates a random name ensuring we haven't
 # used the name before.
 static func GenerateObfuscatedName()  -> String:

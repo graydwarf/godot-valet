@@ -13,6 +13,7 @@ extends Panel
 @onready var _showHiddenCheckBox = %ShowHiddenCheckBox
 @onready var _hiddenProjectItemCountLabel = %HiddenProjectItemCountLabel
 
+var _busyThread : Thread
 var _selectedProjectItem = null
 var _runProjectThread
 var _editProjectThread
@@ -134,6 +135,7 @@ func LoadProjectsIntoProjectContainer():
 			projectItem.SetWebChecked(config.get_value("ProjectSettings", "web_preset_checked", false))
 			projectItem.SetMacOsChecked(config.get_value("ProjectSettings", "macos_preset_checked", false))
 			projectItem.SetSourceChecked(config.get_value("ProjectSettings", "source_checked", false))
+			projectItem.SetObfuscationChecked(config.get_value("ProjectSettings", "obfuscation_checked", false))
 			projectItem.SetExportType(config.get_value("ProjectSettings", "export_type", "Release"))
 			projectItem.SetExportFileName(config.get_value("ProjectSettings", "export_file_name", ""))
 			projectItem.SetPackageType(config.get_value("ProjectSettings", "package_type", "Zip"))
@@ -484,7 +486,7 @@ func _on_release_project_button_pressed():
 	var releaseManager = load("res://scenes/release-manager/release-manager.tscn").instantiate()
 	add_child(releaseManager)
 	releaseManager.ConfigureReleaseManagementForm(_selectedProjectItem)
-
+	
 func _on_open_project_folder_button_pressed():
 	OpenProjectFolder()
 

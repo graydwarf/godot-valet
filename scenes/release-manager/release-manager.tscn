@@ -162,7 +162,7 @@ text = "MacOS"
 [node name="SourceCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-tooltip_text = "\"Web\""
+tooltip_text = "Exports the source code for the project into a "
 button_pressed = true
 text = "Source"
 
@@ -319,6 +319,7 @@ horizontal_alignment = 2
 vertical_alignment = 1
 
 [node name="ExportFileNameLineEdit" type="LineEdit" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportFileNameHBoxContainer"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(500, 32)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -381,8 +382,7 @@ vertical_alignment = 1
 [node name="ObfuscationCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-button_pressed = true
-text = "Enabled"
+text = "Enabled (BETA - This option is risky to use. Read the obfuscation.gd README at top of file)"
 
 [node name="HBoxContainer2" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer"]
 layout_mode = 2
@@ -596,7 +596,7 @@ layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 0
 tooltip_text = "Closes the Release Manager view."
-text = "Save & Close"
+text = "Close"
 
 [node name="SaveChangesConfirmationDialog" type="ConfirmationDialog" parent="."]
 position = Vector2i(400, 300)

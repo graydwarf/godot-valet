@@ -17,43 +17,43 @@ static func IsDirectoryEmpty(directoryPath: String) -> bool:
 
 	dir.list_dir_end()
 	return true
-
-# Entry point that is recursively called as we crawl folders.
-static func CopyDirectory(pathOfDirectory, destinationPath : String):
-	destinationPath = destinationPath.trim_suffix("/")
-	
-	var directoryToCopy = DirAccess.open(pathOfDirectory)
-	if not directoryToCopy:
-		OS.alert("Failed to find/open directory at path: " + pathOfDirectory)
-		return -1
-	var err
-	if !DirAccess.dir_exists_absolute(destinationPath):
-		err = DirAccess.make_dir_recursive_absolute(destinationPath)
-		if err != OK:
-			return err
-
-	var destinationFolder = DirAccess.open(destinationPath)	
-	destinationFolder.change_dir(destinationPath)
-	
-	err = CopyFilesRecursive(directoryToCopy, destinationPath)
-	if err != null && err != OK:
-		return err
-		
-	directoryToCopy.list_dir_end()
-	return destinationPath
-
-static func CopyFilesRecursive(directoryToCopy: DirAccess, destinationPath: String):
-	directoryToCopy.list_dir_begin()
-	var fileName = directoryToCopy.get_next()
-	while fileName != "":
-		if directoryToCopy.current_is_dir():
-			CopyDirectory(directoryToCopy.get_current_dir() + "/" + fileName, destinationPath + "/" + fileName)
-		else:
-			directoryToCopy.copy(directoryToCopy.get_current_dir() + "/" + fileName, destinationPath + "/" + fileName)
-		fileName = directoryToCopy.get_next()
+#
+## Entry point that is recursively called as we crawl folders.
+#static func CopyDirectory(pathOfDirectory, destinationPath : String):
+	#destinationPath = destinationPath.trim_suffix("/")
+	#
+	#var directoryToCopy = DirAccess.open(pathOfDirectory)
+	#if not directoryToCopy:
+		#OS.alert("Failed to find/open directory at path: " + pathOfDirectory)
+		#return -1
+	#var err
+	#if !DirAccess.dir_exists_absolute(destinationPath):
+		#err = DirAccess.make_dir_recursive_absolute(destinationPath)
+		#if err != OK:
+			#return err
+#
+	#var destinationFolder = DirAccess.open(destinationPath)	
+	#destinationFolder.change_dir(destinationPath)
+	#
+	#err = CopyFilesRecursive(directoryToCopy, destinationPath)
+	#if err != null && err != OK:
+		#return err
+		#
+	#directoryToCopy.list_dir_end()
+	#return destinationPath
+#
+#static func CopyFilesRecursive(directoryToCopy: DirAccess, destinationPath: String):
+	#directoryToCopy.list_dir_begin()
+	#var fileName = directoryToCopy.get_next()
+	#while fileName != "":
+		#if directoryToCopy.current_is_dir():
+			#CopyDirectory(directoryToCopy.get_current_dir() + "/" + fileName, destinationPath + "/" + fileName)
+		#else:
+			#directoryToCopy.copy(directoryToCopy.get_current_dir() + "/" + fileName, destinationPath + "/" + fileName)
+		#fileName = directoryToCopy.get_next()
 
 # Copy contents of folder to specified destination
-static func CopySourceToDestinationRecursive(sourcePath: String, absoluteOutputPath: String, sourceFilters):
+static func CopyFoldersAndFilesRecursive(sourcePath: String, absoluteOutputPath: String, sourceFilters : Array = []):
 	if not DirAccess.dir_exists_absolute(absoluteOutputPath):
 		DirAccess.make_dir_recursive_absolute(absoluteOutputPath)
 
@@ -83,7 +83,7 @@ static func CopySourceToDestinationRecursive(sourcePath: String, absoluteOutputP
 					sourceName = fileOrDir.get_next()
 					continue
 
-				CopySourceToDestinationRecursive(fileOrFolderPath, absoluteOutputPath + "/" + sourceName, sourceFilters)
+				CopyFoldersAndFilesRecursive(fileOrFolderPath, absoluteOutputPath + "/" + sourceName, sourceFilters)
 			else:
 				var filterPath = fileOrFolderPath.trim_prefix("res://")
 				var filterIndex = sourceFilters.find(filterPath)
