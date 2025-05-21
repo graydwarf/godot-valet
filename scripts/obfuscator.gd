@@ -5,36 +5,25 @@ class_name ObfuscateHelper
 #
 # USE AT YOUR OWN RISK <- Read that again.
 #
-# Don't use this project or enable and use this feature
-# if you are not prepared to take full responsibility for
-# any issues that arrise.
+# Don't use obfuscation if you are not prepared to
+# take full responsibility for any issues that arrise.
 #
-# This is an open source project. Review any and all code and ensure
-# it does what you expect before using it. 
+# This is an open source project. Review any and all code
+# and ensure it does what you expect before using it. 
 #
-# I assume ZERO responsibility...
-# - for anything and everything but especially if...
-# 	- #1 - you end up obfuscating your original source. 
-#	  Please don't do that. Not possible as-is (we copy
-#	  the source into a working directory and do everything
-#	  there but that wouldn't stop someone from copying or 
-#	  exporting the obfuscated source back into their repo
-#	  directory. Make backups and/or use source control. 
-#
-# 	- #2 - you use this without testing properly and end up deploying
-#	  broken builds for any reason including bugs in the code. You
-#	  will be entirely at fault. It's not ready for prime time because
-#	  we haven't tested it. It's ready for testing and ridicule at best.
+# A couple important things:
+# - Do not proceed without source control (backing up)
+# - Do not release without comprehensive testing.
 #
 # You SHOULD NOT use obfuscation without testing every nook and
-# cranny of your game. Launching it is not enough. Obfuscation touches
+# cranny of your game. Launching is not enough. Obfuscation touches
 # every little thing in your project so you have to test every little
 # thing to be certain nothing is broken. I do mean every little thing.
 # Unit tests can be a big help in this regard if you have them. Once 
 # you've refined & stabalized the obfuscation (and tested every aspect
 # of your game) you should only need to test where you've made changes
 # from there on out. If you make changes to the obfuscator, a full test
-# pass is recommended (required).
+# pass is recommended (generally required).
 #
 # This initial version is rudamtary at best. It was designed based on
 # a single project which means no real testing has occured yet. I use 
@@ -42,8 +31,8 @@ class_name ObfuscateHelper
 #
 # You will most likely need to massage your code to work well with 
 # obfuscation (renaming problematic things) as well as updating the
-# obfuscator where it's lacking or maybe even wrong. Again, this is
-# a largely untested beta feature.
+# obfuscator where it's lacking or maybe even wrong. Again, this feature
+# is largely untested.
 #
 # There are other obfuscator projects out there that are way more 
 # sofisticated including plug-ins for godot. 
@@ -52,14 +41,10 @@ class_name ObfuscateHelper
 # please publish a PR. Please adhere to the existing code style
 # and standards when posting a PR.
 #
-static var _inputDir : String = ""
-static var _outputDir : String = ""
-static var _usedNames : Dictionary = {}
-static var _exportVariableNames := []
 
 # Notes:
 # Key things to keep in mind.
-# - We use a global symbol map (we crawl through all the files looking for
+# - A global symbol map is used (we crawl through all the files looking for
 #	all function and variable names.
 # - We use that global symbol map to replace function/variable 
 # 	name regardless of local/global state so every instance of a name
@@ -75,11 +60,19 @@ static var _exportVariableNames := []
 # 	Calls to variables in other classes where the variable 
 # 	is an @export AND that same variable name is defined elsewhere.
 
-# It's possible that you've used a reserved keyword without realizing.
-# godot generally warns about using reserved keywords but it's easy to miss.
-# Recommend updating your code to not use reserved keywords vs fixing in here.
-# My example which godot doesn't warn me about: var values = enumType.values()
-# I chose to rename the variable to something else.
+static var _inputDir : String = ""
+static var _outputDir : String = ""
+static var _usedNames : Dictionary = {}
+static var _exportVariableNames := []
+
+# It's possible that you've used a reserved keyword 
+# without realizing it. Godot generally warns about 
+# reserved keywords but not always. Recommend updating
+# your code to not use reserved keywords vs fixing here.
+# My example which godot doesn't warn me about: 
+# var values = enumType.values() # Using values as a 
+# var which is "reserved". I chose to rename the variable
+# to something else.
 const _godotReservedKeywords := [
 	"_ready", "_process", "_physics_process", "_input", "_unhandled_input", "_init",
 	"_enter_tree", "_exit_tree", "_notification", "_draw", "_gui_input", "_get_property_list",
@@ -126,11 +119,11 @@ static func GenerateObfuscatedName()  -> String:
 	
 	return ""
 
-static func ApplySymbolObfuscation(contentPayload : ContentPayload , symbolMap: Dictionary) -> void:
-	for symbol in symbolMap.keys():
-		contentPayload.SetContent(ReplaceSymbol(contentPayload.GetContent(), symbol, symbolMap[symbol]))
+static func ApplySymbolObfuscation(contentPayload : ContentPayload , globalSymbolMap: Dictionary) -> void:
+	for symbol in globalSymbolMap.keys():
+		contentPayload.SetContent(ReplaceSymbol(contentPayload.GetContent(), symbol, globalSymbolMap[symbol]))
 
-static func ReplaceSymbol(content: String, symbol: String, symbolMap: Dictionary) -> String:
+static func ReplaceSymbol(content: String, symbol: String, globalSymbolMap: Dictionary) -> String:
 	var pattern := RegEx.new()
 	pattern.compile("\\b" + symbol + "\\b")
 
@@ -147,7 +140,7 @@ static func ReplaceSymbol(content: String, symbol: String, symbolMap: Dictionary
 			
 		var start := match.get_start()
 		var end := match.get_end()
-		var replacement = GetSymbolReplacement(content, symbol, symbolMap, start, end)
+		var replacement = GetSymbolReplacement(content, symbol, globalSymbolMap, start, end)
 		result += content.substr(lastIndex, start - lastIndex)
 		result += replacement
 		lastIndex = end
@@ -165,11 +158,13 @@ static func GetSymbolReplacement(content: String, symbol: String, symbolMap: Dic
 		
 	var nextChar := content.substr(end, 1)
 
+	# Saving for future consideration.
 	#if symbolMap.kind == "type":
 		#if before.match(":\\s*$") or before.match("as\\s+$"):
 			#return symbol  # Don't replace in type context
 		#else:
 			#return symbol  # Unknown context, skip for safety
+			
 	if symbolMap.kind == "function":
 		if FindFunctionSymbol(before, prevChar, nextChar):
 			return symbolMap.replacement
@@ -204,8 +199,8 @@ static func FindFunctionSymbol(before, prevChar, nextChar):
 static func ObfuscateDirectory(path: String) -> void:
 	var fileFilters := ["gd"]
 	var filteredFiles := FileHelper.GetFilesRecursive(path, fileFilters)
-	var symbolMap := BuildGlobalSymbolMap(filteredFiles)
-	ObfuscateAllFiles(filteredFiles, symbolMap)
+	var globalSymbolMap := BuildGlobalSymbolMap(filteredFiles)
+	ObfuscateAllFiles(filteredFiles, globalSymbolMap)
 
 # Pass 1: Build global symbol map
 static func BuildGlobalSymbolMap(allFiles) -> Dictionary:
@@ -273,7 +268,7 @@ static func PreserveSpecialStrings(contentPayload : ContentPayload) -> void:
 	contentPayload.SetPreservedSpecialStrings(preservedStrings)
 	
 # Pass #2: Obfuscate all files with global map
-static func ObfuscateAllFiles(allFiles : Array, symbolMap : Dictionary):
+static func ObfuscateAllFiles(allFiles : Array, globalSymbolMap : Dictionary):
 	for fullPath in allFiles:
 		var fileContents := FileAccess.get_file_as_string(fullPath)
 		var contentPayload := ContentPayload.new()
@@ -288,7 +283,7 @@ static func ObfuscateAllFiles(allFiles : Array, symbolMap : Dictionary):
 		# we come across and @export var, we need to ignore
 		# all other matches in the same file.
 		_exportVariableNames.clear()
-		ApplySymbolObfuscation(contentPayload, symbolMap)
+		ApplySymbolObfuscation(contentPayload, globalSymbolMap)
 		
 		RestoreStringLiterals(contentPayload)
 		var relativePath = fullPath.replace(_inputDir, "")
@@ -328,6 +323,7 @@ static func AddFunctionsToSymbolMap(content: String, symbolMap) -> void:
 		if not symbolName.begins_with("_"):
 			symbolMap[symbolName] = { "kind": "function" }
 
+	# Saving for future consideration
 	# Type references
 	#regex = RegEx.new()
 	#regex.compile(r"(?::|as)\s+(\w+)")
@@ -335,7 +331,6 @@ static func AddFunctionsToSymbolMap(content: String, symbolMap) -> void:
 		#var symbolName = match.get_string(1)
 		#if symbolName in _godotReservedKeywords:
 			#continue
-			#
 		#if not map.has(symbolName):
 			#map[symbolName] = { "kind": "type" }
 
@@ -344,18 +339,6 @@ static func AddVariablesToSymbolMap(content : String, symbolMap : Dictionary):
 	var filterdExportVariables = []
 	for line in lines:
 		line = line.strip_edges()
-		
-		# Note:
-		# Skip @export vars because gdscript will
-		# reset the GUI assigned values when renamed.
-		# We could improve this by digging into the 
-		# respective tscn file to remap them but 
-		# that's future work.
-		#if line.begins_with("@export var"):
-			#var exportVariableName = ExtractExportedVarName(line)
-			#filterdExportVariables.append(exportVariableName)
-			#continue
-
 		var regex := RegEx.new()
 		regex.compile(r"\bvar\s+(\w+)")
 		var match = regex.search(line)
@@ -364,19 +347,8 @@ static func AddVariablesToSymbolMap(content : String, symbolMap : Dictionary):
 			if symbolMap.has(symbolName):
 				continue
 				
-			#var kind := "global" if symbolName.begins_with("_") else "variable"
 			symbolMap[symbolName] = { "kind": "variable" }
 
-#static func ExtractExportedVarName(line: String) -> String:
-	#if line.strip_edges().begins_with("@export"):
-		#var match = line.find("var ")
-		#if match != -1:
-			#var sub = line.substr(match + 4)
-			#var name = sub.split(":")[0].strip_edges()
-			#return name
-	#return ""
-
-	
 # For testing locally if needed
 static func GetTestContent() -> String:
 	return """

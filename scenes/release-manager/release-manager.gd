@@ -215,6 +215,10 @@ func ValidateExportFileName():
 	return OK
 		
 func ValidateExportPathText():
+	if _exportPathLineEdit.text.contains(_projectPathLineEdit.text):
+		OS.alert("Exporting to your project path is generally a bad idea. Cancelling export. Recommend exporting to a location external to your project. Feel free to override this at your own peril.")
+		return -1
+	
 	var text = _exportPathLineEdit.text
 
 	if text == null || text.strip_edges() == "" || !DirAccess.dir_exists_absolute(text):
@@ -1176,7 +1180,20 @@ func _on_open_export_folder_pressed() -> void:
 
 func _on_test_button_pressed() -> void:
 	ValidateExportPathText()
-	var err = await ExportZipPackage(Enums.ExportType.Source)
+	
+	var err = ExportSourceToTempWorkingDirectory()
+	if err != OK:
+		return
+	
+	if _obfuscationCheckbox.button_pressed:
+		err = ObfuscateSource()
+		if err != OK:
+			return
+
+	err = OS.shell_open(_pathToUserTempSourceFolder)
+	if err != OK:
+		return
+		
 	var inputPath = %ProjectPathLineEdit.text
 	var outputPath = %ExportPathLineEdit.text
 	ObfuscateHelper.ObfuscateScripts(inputPath, outputPath)
