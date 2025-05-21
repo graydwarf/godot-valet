@@ -28,7 +28,7 @@ func LoadProject():
 	Common.SelectOptionButtonValueByText(_godotVersionOptionButton, _selectedProjectItem.GetGodotVersion())
 
 func GetGodotVersion(godotVersionId):
-	var files = Files.GetFilesFromPath("user://godot-version-items")
+	var files = FileHelper.GetFilesFromPath("user://godot-version-items")
 	for file in files:
 		if !file.ends_with(".cfg"):
 			continue
@@ -44,7 +44,7 @@ func GetGodotVersion(godotVersionId):
 			
 func LoadGodotVersion():
 	_listOfGodotVersionIds.clear()
-	var allResourceFiles = Files.GetFilesFromPath("user://godot-version-items")
+	var allResourceFiles = FileHelper.GetFilesFromPath("user://godot-version-items")
 	for resourceFile in allResourceFiles:
 		if !resourceFile.ends_with(".cfg"):
 			continue
@@ -108,7 +108,7 @@ func SaveNewProjectItem():
 	queue_free()
 
 func AutoExtractProjectName():
-	var linesInProjectFile = Files.GetLinesFromFile(_projectPathLineEdit.text)
+	var linesInProjectFile = FileHelper.GetLinesFromFile(_projectPathLineEdit.text)
 	for line in linesInProjectFile:
 		var projectNameFilter = "config/name"
 		if line.begins_with(projectNameFilter):
@@ -171,7 +171,7 @@ func _on_select_folder_for_new_project_dialog_dir_selected(dir):
 		OS.alert("Could not locate the selected directory")
 		return
 	
-	if !Files.IsDirectoryEmpty(dir):
+	if !FileHelper.IsDirectoryEmpty(dir):
 		OS.alert("Unable to create project in directory. Make sure the directory is empty and you have sufficient access to create new files.")
 		return
 

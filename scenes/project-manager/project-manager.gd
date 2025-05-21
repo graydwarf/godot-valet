@@ -13,6 +13,7 @@ extends Panel
 @onready var _showHiddenCheckBox = %ShowHiddenCheckBox
 @onready var _hiddenProjectItemCountLabel = %HiddenProjectItemCountLabel
 
+var _busyThread : Thread
 var _selectedProjectItem = null
 var _runProjectThread
 var _editProjectThread
@@ -67,7 +68,7 @@ func ClearCustomButtonContainer():
 # Creates buttons dynamically based on the godot versions we have configured
 func LoadOpenGodotButtons():
 	ClearCustomButtonContainer()
-	var files = Files.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
+	var files = FileHelper.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
 	var listOfButtons = []
 	for file in files:
 		if !file.ends_with(".cfg"):
@@ -99,7 +100,7 @@ func _on_button_pressed(button):
 	OpenGodotProjectManager(godotVersionId)
 	
 func LoadProjectsIntoProjectContainer():
-	var allResourceFiles = Files.GetFilesFromPath("user://" + App.GetProjectItemFolder())
+	var allResourceFiles = FileHelper.GetFilesFromPath("user://" + App.GetProjectItemFolder())
 	var hiddenProjectCount = 0
 	var listOfProjectItems = []
 	for resourceFile in allResourceFiles:
@@ -134,6 +135,7 @@ func LoadProjectsIntoProjectContainer():
 			projectItem.SetWebChecked(config.get_value("ProjectSettings", "web_preset_checked", false))
 			projectItem.SetMacOsChecked(config.get_value("ProjectSettings", "macos_preset_checked", false))
 			projectItem.SetSourceChecked(config.get_value("ProjectSettings", "source_checked", false))
+			projectItem.SetObfuscationChecked(config.get_value("ProjectSettings", "obfuscation_checked", false))
 			projectItem.SetExportType(config.get_value("ProjectSettings", "export_type", "Release"))
 			projectItem.SetExportFileName(config.get_value("ProjectSettings", "export_file_name", ""))
 			projectItem.SetPackageType(config.get_value("ProjectSettings", "package_type", "Zip"))
@@ -182,7 +184,7 @@ func HandleCustomSorts(listOfProjectItems):
 	return listOfProjectItems
 	
 func GetGodotVersionFromId(godotVersionId):
-	var files = Files.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
+	var files = FileHelper.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
 	for file in files:
 		if !file.ends_with(".cfg"):
 			continue
@@ -197,7 +199,7 @@ func GetGodotVersionFromId(godotVersionId):
 			return config.get_value("GodotVersionSettings", "godot_version", "")
 
 func GetGodotPathFromVersionId(godotVersionId):
-	var files = Files.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
+	var files = FileHelper.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
 	for file in files:
 		if !file.ends_with(".cfg"):
 			continue
@@ -343,7 +345,7 @@ func EditProject():
 func EditProjectInGodotEditorThread():
 	var output = []
 	var projectPath = _selectedProjectItem.GetProjectPathBaseDir()
-	var godotArguments = ["--verbose", "--editor", "--path", projectPath] 
+	var godotArguments = ["--editor", "--path", projectPath] 
 	var pathToGodot = _selectedProjectItem.GetGodotPath(_selectedProjectItem.GetGodotVersionId())
 	if pathToGodot == null:
 		OS.alert("Unable to locate godot at the given path. Use settings to review godot configurations.")
@@ -374,7 +376,7 @@ func CreateEditProjectDialog():
 	return load("res://scenes/edit-project-dialog/edit-project-dialog.tscn").instantiate()
 
 func GodotVersionCreatedCheck():
-	var allResourceFiles = Files.GetFilesFromPath("user://godot-version-items")
+	var allResourceFiles = FileHelper.GetFilesFromPath("user://godot-version-items")
 	for resourceFile in allResourceFiles:
 		if !resourceFile.ends_with(".cfg"):
 			continue
@@ -484,7 +486,7 @@ func _on_release_project_button_pressed():
 	var releaseManager = load("res://scenes/release-manager/release-manager.tscn").instantiate()
 	add_child(releaseManager)
 	releaseManager.ConfigureReleaseManagementForm(_selectedProjectItem)
-
+	
 func _on_open_project_folder_button_pressed():
 	OpenProjectFolder()
 

@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://chfs468nnvicn"]
 
-[ext_resource type="Script" path="res://scenes/edit-project-dialog/edit-project-dialog.gd" id="1_xd7bt"]
+[ext_resource type="Script" uid="uid://dpt5jpqag1hef" path="res://scenes/edit-project-dialog/edit-project-dialog.gd" id="1_xd7bt"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_tr27p"]
 font_size = 14

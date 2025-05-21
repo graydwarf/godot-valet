@@ -1,6 +1,6 @@
 [gd_scene load_steps=6 format=3 uid="uid://b40l176rvjkys"]
 
-[ext_resource type="Script" path="res://scenes/busy-background-blocker/busy_background_blocker_color_rect.gd" id="1_q4ysb"]
+[ext_resource type="Script" uid="uid://qgotng6vi8uu" path="res://scenes/busy-background-blocker/busy_background_blocker_color_rect.gd" id="1_q4ysb"]
 [ext_resource type="Texture2D" uid="uid://bqtp01cja5ax5" path="res://assets/icons/busy-icon.png" id="2_kl753"]
 
 [sub_resource type="Animation" id="Animation_aixc8"]
@@ -85,8 +85,8 @@ tracks/2/keys = {
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_c36qh"]
 _data = {
-"RESET": SubResource("Animation_aixc8"),
-"Spin": SubResource("Animation_l4ckw")
+&"RESET": SubResource("Animation_aixc8"),
+&"Spin": SubResource("Animation_l4ckw")
 }
 
 [node name="BusyBackgroundBlockerColorRect" type="ColorRect"]

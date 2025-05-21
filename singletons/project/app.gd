@@ -9,6 +9,7 @@ var _lastUpdateTime
 var _themePath = "res://assets/themes/global-themes/godot-dark-default.tres"
 
 # Debug Helpers
+# Set this to true anytime you are learning/testing/debugging
 var _isDebuggingWithoutThreads = false
 
 # Solution Settings

@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://bkuq0ng0wlgs2"]
 
-[ext_resource type="Script" path="res://scenes/source-filter-dialog/source-filter-dialog.gd" id="1_yygwq"]
+[ext_resource type="Script" uid="uid://b5gcbyq2t3se" path="res://scenes/source-filter-dialog/source-filter-dialog.gd" id="1_yygwq"]
 
 [node name="SourceFilterDialog" type="Control"]
 custom_minimum_size = Vector2(500, 350)
@@ -81,8 +81,8 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_colors/background_color = Color(0.137255, 0.137255, 0.137255, 1)
-theme_override_colors/font_color = Color(0.729412, 0.729412, 0.729412, 1)
 theme_override_colors/font_placeholder_color = Color(0.439216, 0.439216, 0.439216, 1)
+theme_override_colors/font_color = Color(0.729412, 0.729412, 0.729412, 1)
 placeholder_text = "Only applies to Source Export. A bit rudametary at the moment. Replace instructional text in this dialog with the exclude filters you want. One filter per line. Example: Specifying \"exports\" without quotes will skip any file/folder path with the term 'export' in it. Be sure and be as specific as you need. Paths should be relative to the root of your export directory. No wildcards or other special attributes supported. Empty lines are ignored. Hidden files ignored. Type anywhere to start.
 
 Examples:

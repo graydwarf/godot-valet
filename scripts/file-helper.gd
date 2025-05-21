@@ -1,5 +1,5 @@
 extends Node
-class_name Files
+class_name FileHelper
 static func IsDirectoryEmpty(directoryPath: String) -> bool:
 	var dir = DirAccess.open(directoryPath)
 	dir.include_hidden = true
@@ -17,43 +17,43 @@ static func IsDirectoryEmpty(directoryPath: String) -> bool:
 
 	dir.list_dir_end()
 	return true
-
-# Entry point that is recursively called as we crawl folders.
-static func CopyDirectory(pathOfDirectory, destinationPath : String):
-	destinationPath = destinationPath.trim_suffix("/")
-	
-	var directoryToCopy = DirAccess.open(pathOfDirectory)
-	if not directoryToCopy:
-		OS.alert("Failed to find/open directory at path: " + pathOfDirectory)
-		return -1
-	var err
-	if !DirAccess.dir_exists_absolute(destinationPath):
-		err = DirAccess.make_dir_recursive_absolute(destinationPath)
-		if err != OK:
-			return err
-
-	var destinationFolder = DirAccess.open(destinationPath)	
-	destinationFolder.change_dir(destinationPath)
-	
-	err = CopyFilesRecursive(directoryToCopy, destinationPath)
-	if err != null && err != OK:
-		return err
-		
-	directoryToCopy.list_dir_end()
-	return destinationPath
-
-static func CopyFilesRecursive(directoryToCopy: DirAccess, destinationPath: String):
-	directoryToCopy.list_dir_begin()
-	var fileName = directoryToCopy.get_next()
-	while fileName != "":
-		if directoryToCopy.current_is_dir():
-			CopyDirectory(directoryToCopy.get_current_dir() + "/" + fileName, destinationPath + "/" + fileName)
-		else:
-			directoryToCopy.copy(directoryToCopy.get_current_dir() + "/" + fileName, destinationPath + "/" + fileName)
-		fileName = directoryToCopy.get_next()
+#
+## Entry point that is recursively called as we crawl folders.
+#static func CopyDirectory(pathOfDirectory, destinationPath : String):
+	#destinationPath = destinationPath.trim_suffix("/")
+	#
+	#var directoryToCopy = DirAccess.open(pathOfDirectory)
+	#if not directoryToCopy:
+		#OS.alert("Failed to find/open directory at path: " + pathOfDirectory)
+		#return -1
+	#var err
+	#if !DirAccess.dir_exists_absolute(destinationPath):
+		#err = DirAccess.make_dir_recursive_absolute(destinationPath)
+		#if err != OK:
+			#return err
+#
+	#var destinationFolder = DirAccess.open(destinationPath)	
+	#destinationFolder.change_dir(destinationPath)
+	#
+	#err = CopyFilesRecursive(directoryToCopy, destinationPath)
+	#if err != null && err != OK:
+		#return err
+		#
+	#directoryToCopy.list_dir_end()
+	#return destinationPath
+#
+#static func CopyFilesRecursive(directoryToCopy: DirAccess, destinationPath: String):
+	#directoryToCopy.list_dir_begin()
+	#var fileName = directoryToCopy.get_next()
+	#while fileName != "":
+		#if directoryToCopy.current_is_dir():
+			#CopyDirectory(directoryToCopy.get_current_dir() + "/" + fileName, destinationPath + "/" + fileName)
+		#else:
+			#directoryToCopy.copy(directoryToCopy.get_current_dir() + "/" + fileName, destinationPath + "/" + fileName)
+		#fileName = directoryToCopy.get_next()
 
 # Copy contents of folder to specified destination
-static func CopySourceToDestinationRecursive(sourcePath: String, absoluteOutputPath: String, sourceFilters):
+static func CopyFoldersAndFilesRecursive(sourcePath: String, absoluteOutputPath: String, sourceFilters : Array = []):
 	if not DirAccess.dir_exists_absolute(absoluteOutputPath):
 		DirAccess.make_dir_recursive_absolute(absoluteOutputPath)
 
@@ -83,7 +83,7 @@ static func CopySourceToDestinationRecursive(sourcePath: String, absoluteOutputP
 					sourceName = fileOrDir.get_next()
 					continue
 
-				CopySourceToDestinationRecursive(fileOrFolderPath, absoluteOutputPath + "/" + sourceName, sourceFilters)
+				CopyFoldersAndFilesRecursive(fileOrFolderPath, absoluteOutputPath + "/" + sourceName, sourceFilters)
 			else:
 				var filterPath = fileOrFolderPath.trim_prefix("res://")
 				var filterIndex = sourceFilters.find(filterPath)
@@ -213,3 +213,32 @@ static func CreateChecksum(filePath):
 	var res = ctx.finish()
 
 	return res.hex_encode()
+
+# Passing in empty allowedExtensions returns all files.
+# allowedExtensions example: = ["gd", "tscn"]
+static func GetFilesRecursive(path: String, allowedExtensions : Array) -> Array:
+	var results := []
+	var dir := DirAccess.open(path)
+	if dir == null:
+		return results
+
+	dir.list_dir_begin()
+	var filename := dir.get_next()
+	while filename != "":
+		var fullPath := path + "/" + filename
+		if dir.current_is_dir():
+			if filename != "." and filename != "..":
+				results += GetFilesRecursive(fullPath, allowedExtensions)
+		elif allowedExtensions == null || allowedExtensions.size() == 0:
+			# No filter used, add any/all files.
+			results.append(fullPath)
+		else:
+			for extension in allowedExtensions:
+				if filename.ends_with("." + extension):
+					results.append(fullPath)
+					break
+
+		filename = dir.get_next()
+
+	dir.list_dir_end()
+	return results

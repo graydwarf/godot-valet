@@ -1,5 +1,4 @@
 extends Panel
-
 @onready var _projectNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectNameHBoxContainer/ProjectNameLineEdit
 @onready var _exportPathLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer2/ExportPathLineEdit
 @onready var _godotPathLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/GodotPathHBoxContainer/ExportPathLineEdit
@@ -17,6 +16,7 @@ extends Panel
 @onready var _warningCountLabel = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer/MarginContainer/HBoxContainer/WarningsCountLabel
 @onready var _packageTypeOptionButton = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/PackageTypeHBoxContainer/PackageTypeOptionButton
 @onready var _butlerPreviewTextEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ButlerCommandHBoxContainer/ButlerPreviewTextEdit
+@onready var _obfuscationCheckbox = %ObfuscationCheckBox
 @onready var _exportFileNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportFileNameHBoxContainer/ExportFileNameLineEdit
 @onready var _saveChangesConfirmationDialog = $SaveChangesConfirmationDialog
 @onready var _projectPathLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectPathHBoxContainer2/ProjectPathLineEdit
@@ -31,7 +31,9 @@ var _busyBackground
 var _selectedProjectItem = null
 var _isDirty = false
 var _isClosingReleaseManager = false
-var _pathToUserTempFolder = OS.get_user_data_dir() + "/temp" # temp storage.
+var _pathToUserTempFolder = OS.get_user_data_dir() + "/temp"
+var _pathToUserTempExportFolder = _pathToUserTempFolder + "/export"
+var _pathToUserTempSourceFolder = _pathToUserTempFolder + "/source"
 var _defaultSupportMessage = "Please jump into the poplava discord and report the issue."
 var _zipPackerWriter = null
 var _hasWarnedAboutSkippableZippingError = false
@@ -83,7 +85,7 @@ func LoadExportPresets():
 	# Always visible (well, it will be if we can get the source zipping up like we want)
 	%SourceCheckBox.visible = true
 
-	var lines = Files.GetLinesFromFile(exportPresetFilePath)
+	var lines = FileHelper.GetLinesFromFile(exportPresetFilePath)
 	var oneOptionAdded = false
 	for line in lines:
 		if line.begins_with("platform="):
@@ -127,6 +129,7 @@ func ConfigureReleaseManagementForm(selectedProjectItem):
 	_webCheckBox.button_pressed = selectedProjectItem.GetWebChecked()
 	_macOsCheckBox.button_pressed = selectedProjectItem.GetMacOsChecked()
 	_sourceCheckBox.button_pressed = selectedProjectItem.GetSourceChecked()
+	_obfuscationCheckbox.button_pressed = selectedProjectItem.GetObfuscationChecked()
 	%SourceFilterTextureButton.visible = %SourceCheckBox.button_pressed
 	_exportPathLineEdit.text = selectedProjectItem.GetExportPath()
 	_exportFileNameLineEdit.text = selectedProjectItem.GetExportFileName()
@@ -159,6 +162,7 @@ func SaveSettings():
 	_selectedProjectItem.SetItchProfileName(_itchProfileNameLineEdit.text)
 	_selectedProjectItem.SetShowTipsForErrors(%ShowTipsForErrorsCheckBox.button_pressed)
 	_selectedProjectItem.SetSourceFilters(_sourceFilters)
+	_selectedProjectItem.SetObfuscationChecked(_obfuscationCheckbox.button_pressed)
 	var lastPublishedDate = %LastPublishedLineEdit.text
 	var dateTimeDictionary = {}
 	if lastPublishedDate != "":
@@ -197,8 +201,24 @@ func ValidateUniqueVersion():
 		return -1
 	
 	return OK
+
+func ValidateExportFileName():
+	var exportFileName = _exportFileNameLineEdit.text
+	if exportFileName.strip_edges().length() == 0:
+		OS.alert("An export file name is required! Recommend using your project name with all lowercase.")
+		return -1
 	
+	var err = ValidateText(exportFileName)
+	if err != OK:
+		return -1
+		
+	return OK
+		
 func ValidateExportPathText():
+	if _exportPathLineEdit.text.contains(_projectPathLineEdit.text):
+		OS.alert("Exporting to your project path is generally a bad idea. Cancelling export. Recommend exporting to a location external to your project. Feel free to override this at your own peril.")
+		return -1
+	
 	var text = _exportPathLineEdit.text
 
 	if text == null || text.strip_edges() == "" || !DirAccess.dir_exists_absolute(text):
@@ -253,10 +273,10 @@ func GetExtensionType(presetFullName):
 func ExportPreset(presetFullName):
 	var err
 	if presetFullName == "Source":
-		err = ExportSource()
+		err = FileHelper.CopyFoldersAndFilesRecursive(_pathToUserTempSourceFolder, _pathToUserTempExportFolder)
 		if err != OK:
-			call_deferred("CreateOutputTab", "Error Code: " + str(err), presetFullName)
-			return err
+			return -1
+	
 		call_deferred("CreateOutputTab", "Succesfully exported source.", presetFullName)
 		return OK
 		
@@ -265,20 +285,23 @@ func ExportPreset(presetFullName):
 	var extensionType = GetExtensionType(presetFullName)
 	
 	if exportType == "invalid" || extensionType == "invalid":
-		return
+		return -1
 
 	var exportOption = "--export-" + exportType.to_lower()
 	var output = []
-	var args = ['--headless', '--path',  _projectPathLineEdit.text, exportOption, presetFullName, _pathToUserTempFolder + "/" + _exportFileNameLineEdit.text + extensionType]
+	var args = ['--headless', '--path',  _pathToUserTempSourceFolder, exportOption, presetFullName, _pathToUserTempExportFolder + "/" + _exportFileNameLineEdit.text + extensionType]
 	var readStdeer = true
 	var openConsole = false
+	
+	# Quietly export the project in the tempSource folder 
+	# to the tempExport folder for the given preset.
 	err = OS.execute(_godotPathLineEdit.text, args, output, readStdeer, openConsole) 
 
 	var groomedOutput = str(output).replace("\\r\\n", "\n")
 	
-	if _useSha256CheckBox.button_pressed && FileAccess.file_exists(_pathToUserTempFolder + "/" + _exportFileNameLineEdit.text + extensionType):
+	if _useSha256CheckBox.button_pressed && FileAccess.file_exists(_pathToUserTempExportFolder + "/" + _exportFileNameLineEdit.text + extensionType):
 		# Create a checksum of the core binary (.exe, .x86_64)
-		var checksum = Files.CreateChecksum(_pathToUserTempFolder + "/" + _exportFileNameLineEdit.text + extensionType)
+		var checksum = FileHelper.CreateChecksum(_pathToUserTempExportFolder + "/" + _exportFileNameLineEdit.text + extensionType)
 		groomedOutput += "\n"
 		groomedOutput += presetFullName + " checksum: " + checksum
 		
@@ -311,9 +334,11 @@ func GetItchReleaseProfileName(presetFullName):
 	elif presetFullName == "Source":
 		itchPublishType = "source"
 	return itchPublishType
-		
+
+# Delete all files/folders in _pathToUserTempFolder including
+# tempExports and tempSource
 func PrepUserTempDirectory():
-	var err = Files.CreateDirectory(_pathToUserTempFolder)
+	var err = FileHelper.CreateDirectory(_pathToUserTempFolder)
 	if err != OK:
 		OS.alert("Failed to create: " + _pathToUserTempFolder + ". " + _defaultSupportMessage)
 		return -1
@@ -322,17 +347,27 @@ func PrepUserTempDirectory():
 	var isSendingToRecycle = true
 	var isIncludingDotFiles = true
 	var filesToIgnore = []
-	err = Files.DeleteAllFilesAndFolders(_pathToUserTempFolder, filesToIgnore, isSendingToRecycle, isIncludingDotFiles)
+	err = FileHelper.DeleteAllFilesAndFolders(_pathToUserTempFolder, filesToIgnore, isSendingToRecycle, isIncludingDotFiles)
 	if err != OK:
 		OS.alert("Failed to delete files and folders in " + _pathToUserTempFolder + ". " + _defaultSupportMessage)
 		return -1
 	
 	# Sanity check because we expect it to be empty.
 	# We don't want to end up zipping surprise files.
-	if Files.GetFilesFromPath(_pathToUserTempFolder).size() > 0:
-		OS.alert("Export cancelled. Found one or more files in " + _pathToUserTempFolder + " which is unexpected. " + _defaultSupportMessage)
+	if FileHelper.GetFilesFromPath(_pathToUserTempFolder).size() > 0:
+		OS.alert("Export cancelled. Found one or more files in " + _pathToUserTempFolder + " which is unexpected." + _defaultSupportMessage)
 		return -1
-	
+
+	err = FileHelper.CreateDirectory(_pathToUserTempSourceFolder)
+	if err != OK:
+		OS.alert("Failed to create: " + _pathToUserTempSourceFolder + ". " + _defaultSupportMessage)
+		return -1
+		
+	err = FileHelper.CreateDirectory(_pathToUserTempExportFolder)
+	if err != OK:
+		OS.alert("Failed to create: " + _pathToUserTempExportFolder + ". " + _defaultSupportMessage)
+		return -1
+		
 	return OK
 
 func CompleteExport():
@@ -366,39 +401,47 @@ func GetSelectedExportTypes():
 
 func StartExportingWithoutZip(listOfSelectedExportTypes):
 	for exportType in listOfSelectedExportTypes:
-		var err = ExportWithoutZip(exportType)
+		var err = await ExportWithoutZip(exportType)
 		if err != OK:
 			return err
 		
+		# For effect so user can see and understand workflow.
+		# Otherwise, we flicker too quickly between states and
+		# its confusing.
+		await get_tree().create_timer(0.3).timeout
+
+		err = CleanupTempFolder(_pathToUserTempExportFolder)
+		if err != OK:
+			return err
+			
 	return OK
 
 func ExportWithoutZip(presetFullName):
-	var err = CleanTempFiles()
+	var err = PerformExportPrep(presetFullName)
 	if err != OK:
-		return err
-
-	err = ExportPreset(presetFullName)
-	if err != OK:
-		return err
+		return -1
 		
-	if presetFullName == "Web":
-		err = RenameHomePageToIndex()
-		if err != OK:
-			return err
-	
 	var exportPath = CreateExportDirectory(presetFullName)
 	if exportPath == "":
 		return -1
 	
-	err = CopyExportedFilesToExportDirectory(exportPath)
+	err = CopyTempExportToExportPath(exportPath)
 	if err != OK:
 		return err
-
+	
 	return OK
 
+func CopyTempExportToExportPath(exportPath):
+	var err = FileHelper.CopyFoldersAndFilesRecursive(_pathToUserTempExportFolder, exportPath)
+	if err != OK:
+		OS.alert("Failed to copy the temp export files to the export directory. " + _defaultSupportMessage)
+		return -1
+	
+	return OK
+	
 # Copy the files to the export dirctory
 func CopyExportedFilesToExportDirectory(exportPath):
-	var exportedFiles = Files.GetFilesFromPath(_pathToUserTempFolder)
+	var exportedFiles = FileHelper.GetFilesFromPath(_pathToUserTempExportFolder)
 	for fileName in exportedFiles:
 		var err = CopyFileToExportDirectory(fileName, exportPath)
 		if err != OK:
@@ -408,34 +451,31 @@ func CopyExportedFilesToExportDirectory(exportPath):
 	return OK
 
 func ExportProject():
-	ClearOutput()
+	ClearOutputText()
 
+	if ValidateExportFileName() != OK:
+		return
+		
 	if ValidateExportPathText() != OK:
 		return
 
 	var versionUnique = ValidateUniqueVersion()
-	if versionUnique == OK:
-		ContinueExportingProject()
-
-	# Otherwise, the version was invalid in some way. We might
-	# also be prompting the user to confirm overwrite of dupe version.
+	if versionUnique != OK:
+		return
+	
+	ContinueExportingProject()
 
 func ContinueExportingProject():
 	# Reset. All validations passed
 	_projectVersionLineEdit.self_modulate = Color(1.0, 1.0, 1.0, 1.0)
-	
-	if ValidateText(_exportFileNameLineEdit.text) != OK:
-		return -1
-		
-	if ValidateExportPresetSelections() != OK:
-		return -1
-		
+			
 	if FormValidationCheckIsSuccess() != OK:
 		return -1
 
+	# This creates and/or clears the entire temp working directoy
 	if PrepUserTempDirectory() != OK:
 		return -1
-		
+	
 	StartBusyBackground("Exporting...")
 	
 	# For effect but also to prevent our overwrite 
@@ -443,10 +483,14 @@ func ContinueExportingProject():
 	await get_tree().create_timer(0.2).timeout
 	
 	if App.GetIsDebuggingWithoutThreads():
-		# Note: The busy screen doesn't work as expected outside a thread.
+		# Note: Debugging inside a thread is painful 
+		# so we disable it when we want to step through.
+		# IF YOU ARE HERE TRYING TO FIGURE THIS OUT, DISABLE
+		# THREADING UNTIL YOU ARE SATISIFIED WITH EVERYTHING AND
+		# WANT TO SEE A SMOOTH REAL-TIME STATUS.
 		ExportProjectThread()
 	else:
-		# Threaded so we can see the UI update during exports
+		# Threaded so we can see the UI update during exports.
 		# Made global to avoid the function exiting while the local
 		# thread object was still running which would result in a warning
 		# to use _exportProjectThread.wait_to_finish()
@@ -455,13 +499,33 @@ func ContinueExportingProject():
 	
 	return OK
 
+func ExportSourceToTempWorkingDirectory():
+	var err = ExportSource()
+	if err != OK:
+		call_deferred("CreateOutputTab", "Error Code: " + str(err))
+		return err
+	
+	return OK
+
+# From here on out, we have many options which we branch
+# and/or iterate on. The first branching logic is whether we're
+# zipping packages or not. Either all export types get
+# zipped or none of them do.
 func ExportProjectThread():
-	var err
+	var err = ExportSourceToTempWorkingDirectory()
+	if err != OK:
+		return err
+	
+	if _obfuscationCheckbox.button_pressed:
+		err = ObfuscateSource()
+		if err != OK:
+			return err
+			
 	var listOfExportTypes = GetSelectedExportTypes()
 	if _packageTypeOptionButton.text == "Zip":
 		err = await StartExportingWithZip(listOfExportTypes)
 	elif _packageTypeOptionButton.text == "No Zip":
-		err = StartExportingWithoutZip(listOfExportTypes)
+		err = await StartExportingWithoutZip(listOfExportTypes)
 
 	# Deferred to make sure the data is available for display in the output tabs
 	call_deferred("CompleteExport")
@@ -470,30 +534,50 @@ func ExportProjectThread():
 		OS.alert("An error occured while exporting. ErrorCode: " + err)
 		return err
 	
+	err = CleanupTempFolder()
+	if err != OK:
+		return err
+		
 	# We don't actually use this return value
 	return OK
 
+# We obfuscate in the source in-place in the
+# temp directory.
+func ObfuscateSource():
+	var err = ObfuscateHelper.ObfuscateScripts(_pathToUserTempSourceFolder, _pathToUserTempSourceFolder)
+	if err != OK:
+		OS.alert("Failed during obfuscation! Halting export.")
+		return -1
+
+	return OK	
+	
 func StartExportingWithZip(listOfSelectedExportTypes):
-	for exportType in listOfSelectedExportTypes:
-		var err = await ExportZipPackage(exportType)
+	for presetFullName in listOfSelectedExportTypes:
+		var err = await ExportZipPackage(presetFullName)
+		if err != OK:
+			return err
+			
+		# For effect so user can see and understand workflow.
+		# Otherwise, we flicker too quickly between states and
+		# its confusing.
+		await get_tree().create_timer(0.3).timeout
+
+		err = CleanupTempFolder(_pathToUserTempExportFolder)
 		if err != OK:
 			return err
 	
 	return OK
 
 func ExportSource():
-	var err = CleanTempFiles()
-	if err != OK:
-		return -1
 	var sourcePath = _projectPathLineEdit.text
-	err = Files.CopySourceToDestinationRecursive(sourcePath, _pathToUserTempFolder, _sourceFilters)
+	var err = FileHelper.CopyFoldersAndFilesRecursive(sourcePath, _pathToUserTempSourceFolder, _sourceFilters)
 
 	if err != OK:
 		return -1
 
 	return OK
 	
-func ExportZipPackage(presetFullName):
+func PerformExportPrep(presetFullName):
 	var err = ExportPreset(presetFullName)
 	if err != OK:
 		return -1
@@ -503,46 +587,51 @@ func ExportZipPackage(presetFullName):
 		err = RenameHomePageToIndex()
 		if err != OK:
 			return -1
+
+	return OK
+	
+func ExportZipPackage(presetFullName):
+	var err = PerformExportPrep(presetFullName)
+	if err != OK:
+		return -1
 		
 	var exportPath = CreateExportDirectory(presetFullName)
 	if exportPath == "":
 		return -1
-
+		
 	# Zip up the export files
 	var releaseProfileName = GetItchReleaseProfileName(presetFullName)
-	var zipFileName = ""
+	var zipFileName = _exportFileNameLineEdit.text
 	if _autoGenerateExportFileNamesCheckBox.button_pressed:
-		zipFileName = _exportFileNameLineEdit.text + "-" + _projectVersionLineEdit.text + "-" + releaseProfileName + ".zip" 
+		zipFileName += "-" + _projectVersionLineEdit.text + "-" + releaseProfileName + ".zip" 
 	else:
-		zipFileName = _exportFileNameLineEdit.text + ".zip"
+		zipFileName += ".zip"
 		
 	err = ZipFiles(zipFileName, presetFullName, exportPath)
-	if err != OK:
-		return err
-
-	# For effect so user can see and understand workflow.
-	# Otherwise, we flicker too quickly between states and
-	# its confusing.
-	await get_tree().create_timer(0.3).timeout
-	
-	err = CleanTempFiles()
 	if err != OK:
 		return err
 	
 	return OK
 
-func CreateExportDirectory(presetFullName):
+func CopySourceToExportDirectory():
+	var err = FileHelper.CopyFoldersAndFilesRecursive(_pathToUserTempSourceFolder, _pathToUserTempExportFolder)
+	if err != OK:
+		return err
+	
+	return OK
+	
+func CreateExportDirectory(presetFullName) -> String:
 	var releaseProfileName = GetItchReleaseProfileName(presetFullName)
 	var exportPath = _exportPathLineEdit.text + GetGroomedVersionPath() + "/" + releaseProfileName.to_lower() + "/" + _exportTypeOptionButton.text.to_lower()
 	var err = CreateExportPath(exportPath)
 	if err != OK:
-		OS.alert("An error occured when creating the export path")
+		OS.alert("An error occured when creating the export path: " + exportPath)
 		return ""
 	
 	return exportPath
 
 func CopyFileToExportDirectory(fileName, exportPath):
-	return DirAccess.copy_absolute(_pathToUserTempFolder + "/" + fileName, exportPath + "/" + fileName)
+	return DirAccess.copy_absolute(_pathToUserTempExportFolder + "/" + fileName, exportPath + "/" + fileName)
 
 func CreateExportPath(exportPath):
 	if !DirAccess.dir_exists_absolute(exportPath):
@@ -550,24 +639,23 @@ func CreateExportPath(exportPath):
 		if err != OK:
 			OS.alert("Failed to create the export directory: " + exportPath + ". " + _defaultSupportMessage)
 			return -1
+
 	return OK
 			
-func CleanTempFiles():
-	_busyBackground.call_deferred("SetBusyBackgroundLabel", "Clearing Temp Working Directory...")
-	return Cleanup()
-
 # Get any existing files in the export path to ignore
 func GetExistingFiles(presetFullName):
 	var releaseProfileName = GetItchReleaseProfileName(presetFullName)
 	var versionPath = GetGroomedVersionPath()
 	var exportPath = _exportPathLineEdit.text + versionPath + "/" + releaseProfileName + "/" + _exportTypeOptionButton.text
-	return Files.GetFilesFromPath(exportPath)
+	return FileHelper.GetFilesFromPath(exportPath)
 
-func Cleanup():
+func CleanupTempFolder(pathToFolder = _pathToUserTempFolder):
+	_busyBackground.call_deferred("SetBusyBackgroundLabel", "Clearing Temp Export Working Directory...")
+	
 	var isSendingToRecyle = true
 	var isIncludingDotFiles = true
 	var filesToIgnore = []
-	var err = Files.DeleteAllFilesAndFolders(_pathToUserTempFolder, filesToIgnore, isSendingToRecyle, isIncludingDotFiles)
+	var err = FileHelper.DeleteAllFilesAndFolders(pathToFolder, filesToIgnore, isSendingToRecyle, isIncludingDotFiles)
 
 	if err != OK:
 		OS.alert("Failed to cleanup temp export files. This is unexpected and can result in problems. " + _defaultSupportMessage)
@@ -576,25 +664,25 @@ func Cleanup():
 	return OK
 	
 func RenameHomePageToIndex():
-	var err = DirAccess.rename_absolute(_pathToUserTempFolder + "/" + _exportFileNameLineEdit.text + ".html", _pathToUserTempFolder + "/" + "index.html")
+	var err = DirAccess.rename_absolute(_pathToUserTempExportFolder + "/" + _exportFileNameLineEdit.text + ".html", _pathToUserTempExportFolder + "/" + "index.html")
 	if err != OK:
 		OS.alert("Failed while renaming the html home page")
 		return -1
 	return OK
 
 func ValidateChecksum(filePath, checksum):
-	return Files.CreateChecksum(filePath) == checksum
+	return FileHelper.CreateChecksum(filePath) == checksum
 
 func ZipFiles(zipFileName, presetFullName, exportPath):
 	_busyBackground.call_deferred("SetBusyBackgroundLabel", "Zipping for " + presetFullName + "...")
-	var err = CreateZipFile(_pathToUserTempFolder, zipFileName, exportPath)
+	var err = CreateZipFile(_pathToUserTempExportFolder, zipFileName, exportPath)
 	if err != OK:
 		return err
 		
 	return OK
 	
 func CreateZipFile(folderToZip, zipFileName, exportPath):
-	DirAccess.remove_absolute(exportPath + "/" + zipFileName)
+	#DirAccess.remove_absolute(_pathToUserTempExportFolder + "/" + zipFileName)
 	_zipPackerWriter = ZIPPacker.new()
 	var err = _zipPackerWriter.open(exportPath + "/" + zipFileName)
 	if err != OK:
@@ -612,14 +700,8 @@ func CreateZipFile(folderToZip, zipFileName, exportPath):
 func RecursivelyAddContentsToExistingZipFile(folderToZip, zipFolder = ""):
 	var dir = DirAccess.open(folderToZip)
 	if dir == null:
-		if DirAccess.get_open_error() == 31:
-			if !_hasWarnedAboutSkippableZippingError:
-				OS.alert("Failed to open directory for zipping because the path is too long! Will continue to pack while skipping paths that are too long. Path: " + folderToZip)
-				_hasWarnedAboutSkippableZippingError = true
-			return 31
-		else:
-			OS.alert("Failed to open directory for zipping!: " + folderToZip + "Error Code: " + str(DirAccess.get_open_error()))
-			return -1
+		OS.alert("Failed to open directory for zipping!: " + folderToZip + "Error Code: " + str(DirAccess.get_open_error()) + " - Search godot help for Error to see list of enum error codes.")
+		return -1
 		
 	dir.list_dir_begin()
 	var fileOrFolder = dir.get_next()
@@ -704,6 +786,12 @@ func ValidateExportPresetSelections():
 	return OK
 	
 func FormValidationCheckIsSuccess():
+	if ValidateText(_exportFileNameLineEdit.text) != OK:
+		return -1
+		
+	if ValidateExportPresetSelections() != OK:
+		return -1
+		
 	if _exportPathLineEdit.text.to_lower().trim_prefix(" ").trim_suffix(" ") == "":
 		OS.alert("Found invalid characters in export path")
 		return -1
@@ -832,7 +920,7 @@ func GetButlerArguments(publishType):
 
 # butler push godot-valet.zip poplava/godot-valet:windows
 func PublishToItchUsingButler():
-	ClearOutput()
+	ClearOutputText()
 	
 	if FormValidationCheckIsSuccess() == -1:
 		return -1
@@ -938,7 +1026,7 @@ func OpenProjectPathFolder():
 	if err == 7:
 		OS.alert("Unable to open project folder. Did it get moved or renamed?")
 		
-func ClearOutput():
+func ClearOutputText():
 	for child in _outputTabContainer.get_children():
 		child.queue_free()
 
@@ -1089,3 +1177,23 @@ func _on_source_filter_texture_button_pressed() -> void:
 
 func _on_open_export_folder_pressed() -> void:
 	OpenRootExportPath()
+
+func _on_test_button_pressed() -> void:
+	ValidateExportPathText()
+	
+	var err = ExportSourceToTempWorkingDirectory()
+	if err != OK:
+		return
+	
+	if _obfuscationCheckbox.button_pressed:
+		err = ObfuscateSource()
+		if err != OK:
+			return
+
+	err = OS.shell_open(_pathToUserTempSourceFolder)
+	if err != OK:
+		return
+		
+	var inputPath = %ProjectPathLineEdit.text
+	var outputPath = %ExportPathLineEdit.text
+	ObfuscateHelper.ObfuscateScripts(inputPath, outputPath)

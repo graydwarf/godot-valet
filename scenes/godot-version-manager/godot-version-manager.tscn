@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://dbuhdio2463k6"]
 
-[ext_resource type="Script" path="res://scenes/godot-version-manager/godot-version-manager.gd" id="1_6trj8"]
+[ext_resource type="Script" uid="uid://bw1wavuwt5q" path="res://scenes/godot-version-manager/godot-version-manager.gd" id="1_6trj8"]
 
 [node name="GodotVersionManager" type="ColorRect"]
 anchors_preset = 15

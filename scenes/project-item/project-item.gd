@@ -5,36 +5,41 @@ extends Panel
 @onready var _hideProjectCheckbox = %HideProjectCheckbox
 @onready var _projectVersionLabel = $MarginContainer/HBoxContainer/VBoxContainer/MarginContainer3/ProjectVersionLabel
 
-var _selected = false
-var _projectId = ""
-var _godotVersionId = null
+var _selected := false
+var _windowsChecked := false
+var _linuxChecked := false
+var _webChecked := false
+var _macOsChecked := false
+var _sourceChecked := false
+var _obfuscationChecked := false
+var _isHidden := false
+var _showTipsForErrors := false
 
-# Release Management Vars
-var _windowsChecked = false
-var _linuxChecked = false
-var _webChecked = false
-var _macOsChecked = false
-var _sourceChecked = false
-var _exportPath = ""
-var _exportType = ""
-var _exportFileName = ""
-var _packageType = ""
-var _itchProjectName = ""
-var _itchProfileName = ""
-var _showTipsForErrors = ""
-var _publishedDate : Dictionary = {}
-var _createdDate : Dictionary = {}
-var _editedDate : Dictionary = {}
-var _sourceFilters = []
-
-var _installerConfigurationFileName = ""
-
-# Fields
+var _godotVersionId := ""
+var _projectId := ""
+var _exportPath := ""
+var _exportType := ""
+var _exportFileName := ""
+var _packageType := ""
+var _itchProjectName := ""
+var _itchProfileName := ""
+var _installerConfigurationFileName := ""
 var _projectName = ""
 var _godotVersion = ""
 var _projectPath = ""
 var _projectVersion = ""
-var _isHidden = false
+
+var _publishedDate : Dictionary = {}
+var _createdDate : Dictionary = {}
+var _editedDate : Dictionary = {}
+
+var _sourceFilters := []
+
+
+
+# Fields
+
+
 
 func _ready():
 	InitSignals()
@@ -116,6 +121,9 @@ func SetPublishedDate(value):
 
 func SetSourceFilters(value):
 	_sourceFilters = value
+
+func SetObfuscationChecked(value : bool):
+	_obfuscationChecked = value
 	
 func SetCreatedDate(value):
 	_createdDate = value
@@ -152,7 +160,10 @@ func GetMacOsChecked():
 
 func GetSourceChecked():
 	return _sourceChecked
-		
+
+func GetObfuscationChecked():
+	return _obfuscationChecked
+	
 func GetExportType():
 	return _exportType
 
@@ -256,7 +267,7 @@ func GetDefaultStyleBoxSettings():
 	return styleBox
 	
 func GetGodotPath(godotVersionId):
-	var files = Files.GetFilesFromPath("user://godot-version-items")
+	var files = FileHelper.GetFilesFromPath("user://godot-version-items")
 	for file in files:
 		if !file.ends_with(".cfg"):
 			continue
@@ -306,6 +317,7 @@ func SaveProjectItem():
 	config.set_value("ProjectSettings", "web_preset_checked", _webChecked)
 	config.set_value("ProjectSettings", "macos_preset_checked", _macOsChecked)
 	config.set_value("ProjectSettings", "source_checked", _sourceChecked)
+	config.set_value("ProjectSettings", "obfuscation_checked", _obfuscationChecked)
 	config.set_value("ProjectSettings", "export_type", _exportType)
 	config.set_value("ProjectSettings", "package_type", _packageType)
 	config.set_value("ProjectSettings", "itch_profile_name", _itchProfileName)
