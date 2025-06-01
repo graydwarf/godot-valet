@@ -1,4 +1,8 @@
 extends Panel
+#
+# Reminder: A lot of this is done so we can access the 
+# UI controls inside of a thread.
+#
 @onready var _projectNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectNameHBoxContainer/ProjectNameLineEdit
 @onready var _exportPathLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer2/ExportPathLineEdit
 @onready var _godotPathLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/GodotPathHBoxContainer/ExportPathLineEdit
@@ -559,10 +563,7 @@ func ExportProjectThread():
 # temp directory.
 func ObfuscateSource():
 	PostStatusUpdate("Start obfuscating scripts...")
-	var isObfuscatingFunctions = %ObfuscateFunctionsCheckBox.button_pressed
-	var isObfuscatingVariables = %ObfuscateVariablesCheckBox.button_pressed
-	var isObfuscatingComments = %ObfuscateCommentsCheckBox.button_pressed
-	var err = ObfuscateHelper.ObfuscateScripts(_pathToUserTempSourceFolder, _pathToUserTempSourceFolder, isObfuscatingFunctions, isObfuscatingVariables, isObfuscatingComments)
+	var err = ObfuscateHelper.ObfuscateScripts(_pathToUserTempSourceFolder, _pathToUserTempSourceFolder, _obfuscateFunctionsCheckbox.button_pressed, _obfuscateVariablesCheckbox.button_pressed, _obfuscateCommentsCheckbox.button_pressed)
 	if err != OK:
 		OS.alert("Failed during obfuscation! Halting export.")
 		return -1
