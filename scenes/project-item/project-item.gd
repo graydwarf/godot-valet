@@ -11,7 +11,9 @@ var _linuxChecked := false
 var _webChecked := false
 var _macOsChecked := false
 var _sourceChecked := false
-var _obfuscationChecked := false
+var _obfuscateFunctionsChecked := false
+var _obfuscateVariablesChecked := false
+var _obfuscateCommentsChecked := false
 var _isHidden := false
 var _showTipsForErrors := false
 
@@ -122,8 +124,14 @@ func SetPublishedDate(value):
 func SetSourceFilters(value):
 	_sourceFilters = value
 
-func SetObfuscationChecked(value : bool):
-	_obfuscationChecked = value
+func SetObfuscateFunctionsChecked(value : bool):
+	_obfuscateFunctionsChecked = value
+
+func SetObfuscateVariablesChecked(value : bool):
+	_obfuscateVariablesChecked = value	
+
+func SetObfuscateCommentsChecked(value : bool):
+	_obfuscateCommentsChecked = value
 	
 func SetCreatedDate(value):
 	_createdDate = value
@@ -161,9 +169,15 @@ func GetMacOsChecked():
 func GetSourceChecked():
 	return _sourceChecked
 
-func GetObfuscationChecked():
-	return _obfuscationChecked
-	
+func GetObfuscateFunctionsChecked():
+	return _obfuscateFunctionsChecked
+
+func GetObfuscateVariablesChecked():
+	return _obfuscateVariablesChecked
+
+func GetObfuscateCommentsChecked():
+	return _obfuscateCommentsChecked
+		
 func GetExportType():
 	return _exportType
 
@@ -317,7 +331,9 @@ func SaveProjectItem():
 	config.set_value("ProjectSettings", "web_preset_checked", _webChecked)
 	config.set_value("ProjectSettings", "macos_preset_checked", _macOsChecked)
 	config.set_value("ProjectSettings", "source_checked", _sourceChecked)
-	config.set_value("ProjectSettings", "obfuscation_checked", _obfuscationChecked)
+	config.set_value("ProjectSettings", "obfuscate_functions_checked", _obfuscateFunctionsChecked)
+	config.set_value("ProjectSettings", "obfuscate_variables_checked", _obfuscateVariablesChecked)
+	config.set_value("ProjectSettings", "obfuscate_comments_checked", _obfuscateCommentsChecked)
 	config.set_value("ProjectSettings", "export_type", _exportType)
 	config.set_value("ProjectSettings", "package_type", _packageType)
 	config.set_value("ProjectSettings", "itch_profile_name", _itchProfileName)

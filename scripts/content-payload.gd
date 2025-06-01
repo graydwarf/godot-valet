@@ -14,7 +14,7 @@ func SetPreservedStrings(v):
 func SetPreservedSpecialStrings(v):
 	_preservedSpecialStrings = v
 	
-func GetContent():
+func GetContent() -> String:
 	return _content
 
 func GetPreservedStrings():
