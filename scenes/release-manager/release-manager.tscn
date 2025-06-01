@@ -373,16 +373,26 @@ layout_mode = 2
 [node name="ObfuscateLabel" type="Label" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer"]
 custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
-tooltip_text = "Optional: If you want to generate a checksum of the zipped package. The checksum value shows up in the export output down below."
+tooltip_text = "Attempts to slow down would-be thieves who would steal your hard work and call it their own. Please use at your own risk. Be sure to test everything. Recommend unit tests and full test passes everytime you modify code and run. "
 mouse_filter = 1
-text = "Obfuscation:"
+text = "(Beta) Obfuscation:"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="ObfuscationCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer"]
+[node name="ObfuscateFunctionsCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Enabled (BETA - This option is risky to use. Read the obfuscation.gd README at top of file)"
+text = "Functions"
+
+[node name="ObfuscateVariablesCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Variables"
+
+[node name="ObfuscateCommentsCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Comments"
 
 [node name="HBoxContainer2" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer"]
 layout_mode = 2

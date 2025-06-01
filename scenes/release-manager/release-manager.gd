@@ -16,7 +16,9 @@ extends Panel
 @onready var _warningCountLabel = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ErrorCountVBoxContainer/HBoxContainer/MarginContainer/HBoxContainer/WarningsCountLabel
 @onready var _packageTypeOptionButton = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/PackageTypeHBoxContainer/PackageTypeOptionButton
 @onready var _butlerPreviewTextEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ButlerCommandHBoxContainer/ButlerPreviewTextEdit
-@onready var _obfuscationCheckbox = %ObfuscationCheckBox
+@onready var _obfuscateFunctionsCheckbox = %ObfuscateFunctionsCheckBox
+@onready var _obfuscateVariablesCheckbox = %ObfuscateVariablesCheckBox
+@onready var _obfuscateCommentsCheckbox = %ObfuscateCommentsCheckBox
 @onready var _exportFileNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportFileNameHBoxContainer/ExportFileNameLineEdit
 @onready var _saveChangesConfirmationDialog = $SaveChangesConfirmationDialog
 @onready var _projectPathLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectPathHBoxContainer2/ProjectPathLineEdit
@@ -26,6 +28,7 @@ extends Panel
 
 var _executeButlerCommandsThread : Thread
 var _exportProjectThread : Thread
+var _exportTestThread : Thread
 var _sourceFilters = []
 var _busyBackground
 var _selectedProjectItem = null
@@ -129,7 +132,9 @@ func ConfigureReleaseManagementForm(selectedProjectItem):
 	_webCheckBox.button_pressed = selectedProjectItem.GetWebChecked()
 	_macOsCheckBox.button_pressed = selectedProjectItem.GetMacOsChecked()
 	_sourceCheckBox.button_pressed = selectedProjectItem.GetSourceChecked()
-	_obfuscationCheckbox.button_pressed = selectedProjectItem.GetObfuscationChecked()
+	%ObfuscateFunctionsCheckBox.button_pressed = selectedProjectItem.GetObfuscateFunctionsChecked()
+	%ObfuscateVariablesCheckBox.button_pressed = selectedProjectItem.GetObfuscateVariablesChecked()
+	%ObfuscateCommentsCheckBox.button_pressed = selectedProjectItem.GetObfuscateCommentsChecked()
 	%SourceFilterTextureButton.visible = %SourceCheckBox.button_pressed
 	_exportPathLineEdit.text = selectedProjectItem.GetExportPath()
 	_exportFileNameLineEdit.text = selectedProjectItem.GetExportFileName()
@@ -162,7 +167,9 @@ func SaveSettings():
 	_selectedProjectItem.SetItchProfileName(_itchProfileNameLineEdit.text)
 	_selectedProjectItem.SetShowTipsForErrors(%ShowTipsForErrorsCheckBox.button_pressed)
 	_selectedProjectItem.SetSourceFilters(_sourceFilters)
-	_selectedProjectItem.SetObfuscationChecked(_obfuscationCheckbox.button_pressed)
+	_selectedProjectItem.SetObfuscateFunctionsChecked(_obfuscateFunctionsCheckbox.button_pressed)
+	_selectedProjectItem.SetObfuscateVariablesChecked(_obfuscateVariablesCheckbox.button_pressed)
+	_selectedProjectItem.SetObfuscateCommentsChecked(_obfuscateCommentsCheckbox.button_pressed)
 	var lastPublishedDate = %LastPublishedLineEdit.text
 	var dateTimeDictionary = {}
 	if lastPublishedDate != "":
@@ -335,9 +342,17 @@ func GetItchReleaseProfileName(presetFullName):
 		itchPublishType = "source"
 	return itchPublishType
 
+func PostStatusUpdate(statusText : String):
+	if _busyBackground == null:
+		return
+		
+	_busyBackground.call_deferred("SetBusyBackgroundLabel", statusText)
+	
 # Delete all files/folders in _pathToUserTempFolder including
 # tempExports and tempSource
 func PrepUserTempDirectory():
+	PostStatusUpdate("Cleaning temp working directory...")
+	
 	var err = FileHelper.CreateDirectory(_pathToUserTempFolder)
 	if err != OK:
 		OS.alert("Failed to create: " + _pathToUserTempFolder + ". " + _defaultSupportMessage)
@@ -476,7 +491,7 @@ func ContinueExportingProject():
 	if PrepUserTempDirectory() != OK:
 		return -1
 	
-	StartBusyBackground("Exporting...")
+	await StartBusyBackground("Exporting...")
 	
 	# For effect but also to prevent our overwrite 
 	# warning dialog from blocking the status
@@ -516,10 +531,9 @@ func ExportProjectThread():
 	if err != OK:
 		return err
 	
-	if _obfuscationCheckbox.button_pressed:
-		err = ObfuscateSource()
-		if err != OK:
-			return err
+	err = ObfuscateSource()
+	if err != OK:
+		return err
 			
 	var listOfExportTypes = GetSelectedExportTypes()
 	if _packageTypeOptionButton.text == "Zip":
@@ -544,7 +558,11 @@ func ExportProjectThread():
 # We obfuscate in the source in-place in the
 # temp directory.
 func ObfuscateSource():
-	var err = ObfuscateHelper.ObfuscateScripts(_pathToUserTempSourceFolder, _pathToUserTempSourceFolder)
+	PostStatusUpdate("Start obfuscating scripts...")
+	var isObfuscatingFunctions = %ObfuscateFunctionsCheckBox.button_pressed
+	var isObfuscatingVariables = %ObfuscateVariablesCheckBox.button_pressed
+	var isObfuscatingComments = %ObfuscateCommentsCheckBox.button_pressed
+	var err = ObfuscateHelper.ObfuscateScripts(_pathToUserTempSourceFolder, _pathToUserTempSourceFolder, isObfuscatingFunctions, isObfuscatingVariables, isObfuscatingComments)
 	if err != OK:
 		OS.alert("Failed during obfuscation! Halting export.")
 		return -1
@@ -569,6 +587,7 @@ func StartExportingWithZip(listOfSelectedExportTypes):
 	return OK
 
 func ExportSource():
+	PostStatusUpdate("Copy folders and files to source directory...")
 	var sourcePath = _projectPathLineEdit.text
 	var err = FileHelper.CopyFoldersAndFilesRecursive(sourcePath, _pathToUserTempSourceFolder, _sourceFilters)
 
@@ -650,7 +669,7 @@ func GetExistingFiles(presetFullName):
 	return FileHelper.GetFilesFromPath(exportPath)
 
 func CleanupTempFolder(pathToFolder = _pathToUserTempFolder):
-	_busyBackground.call_deferred("SetBusyBackgroundLabel", "Clearing Temp Export Working Directory...")
+	PostStatusUpdate("Clearing Temp Export Working Directory...")
 	
 	var isSendingToRecyle = true
 	var isIncludingDotFiles = true
@@ -658,7 +677,7 @@ func CleanupTempFolder(pathToFolder = _pathToUserTempFolder):
 	var err = FileHelper.DeleteAllFilesAndFolders(pathToFolder, filesToIgnore, isSendingToRecyle, isIncludingDotFiles)
 
 	if err != OK:
-		OS.alert("Failed to cleanup temp export files. This is unexpected and can result in problems. " + _defaultSupportMessage)
+		OS.alert("Failed to cleanup temp export files. This is unexpected and can result in problems. Make sure you don't have the temp project open." + _defaultSupportMessage)
 		return -1
 		
 	return OK
@@ -787,9 +806,11 @@ func ValidateExportPresetSelections():
 	
 func FormValidationCheckIsSuccess():
 	if ValidateText(_exportFileNameLineEdit.text) != OK:
+		# Error notification handled within
 		return -1
 		
 	if ValidateExportPresetSelections() != OK:
+		# Error notification handled within
 		return -1
 		
 	if _exportPathLineEdit.text.to_lower().trim_prefix(" ").trim_suffix(" ") == "":
@@ -925,7 +946,7 @@ func PublishToItchUsingButler():
 	if FormValidationCheckIsSuccess() == -1:
 		return -1
 	
-	StartBusyBackground("")
+	await StartBusyBackground("")
 	
 	if App.GetIsDebuggingWithoutThreads():
 		# For debugging
@@ -1046,6 +1067,59 @@ func ShowSourceFilterDialog():
 	var dialogPosition = (viewportSize - dialogSize) / 2
 	sourceFilterDialog.position = dialogPosition
 
+func TestObfuscation():
+	var isObfuscatingFunctions = %ObfuscateFunctionsCheckBox.button_pressed
+	var isObfuscatingVariables = %ObfuscateVariablesCheckBox.button_pressed
+	var isObfuscatingComments = %ObfuscateCommentsCheckBox.button_pressed
+	if !isObfuscatingFunctions && !isObfuscatingVariables && !isObfuscatingComments:
+		OS.alert("At least one obfuscation option must be selected.")
+		return
+
+	await StartBusyBackground("Exporting...")
+
+	# Get the spinner going
+	await get_tree().create_timer(0.4).timeout
+		
+	if App.GetIsDebuggingWithoutThreads():
+		StartTestThread()
+	else:
+		_exportTestThread = Thread.new()
+		_exportTestThread.start(StartTestThread)
+	
+func StartTestThread():
+	var err = PrepUserTempDirectory()
+	if err != OK:
+		# Error notification handled within
+		return
+	
+	# For effect but also to prevent our overwrite 
+	# warning dialog from blocking the status
+	await get_tree().create_timer(0.2).timeout
+	
+	err = CleanupTempFolder(_pathToUserTempExportFolder)
+	if err != OK:
+		# Error notification handled within
+		return
+
+	err = ExportSourceToTempWorkingDirectory()
+	if err != OK:
+		OS.alert("Error exporting source to temp directory. err: " + str(err))
+		return
+	
+	err = ObfuscateSource()
+	if err != OK:
+		# Error notification handled within
+		return
+
+	
+	# Deferred to make sure the data is available for display in the output tabs
+	call_deferred("CompleteExport")
+	
+	err = OS.shell_open(_pathToUserTempSourceFolder)
+	if err != OK:
+		OS.alert("Error opening temp directory. err: " + str(err))
+		return
+	
 func _on_export_button_pressed():
 	ExportProject()
 
@@ -1179,21 +1253,4 @@ func _on_open_export_folder_pressed() -> void:
 	OpenRootExportPath()
 
 func _on_test_button_pressed() -> void:
-	ValidateExportPathText()
-	
-	var err = ExportSourceToTempWorkingDirectory()
-	if err != OK:
-		return
-	
-	if _obfuscationCheckbox.button_pressed:
-		err = ObfuscateSource()
-		if err != OK:
-			return
-
-	err = OS.shell_open(_pathToUserTempSourceFolder)
-	if err != OK:
-		return
-		
-	var inputPath = %ProjectPathLineEdit.text
-	var outputPath = %ExportPathLineEdit.text
-	ObfuscateHelper.ObfuscateScripts(inputPath, outputPath)
+	TestObfuscation()

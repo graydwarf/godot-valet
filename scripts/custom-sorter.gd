@@ -18,7 +18,7 @@ static func sort_by_date_field(a, b, field_name: String) -> bool:
 	b_date = {"year": b_date.get("year", 0), "month": b_date.get("month", 1), "day": b_date.get("day", 1), "hour": b_date.get("hour", 0), "minute": b_date.get("minute", 0)}
 
 	# Comparison logic
-	if a_date["year"] != b_date["year"]:
+	if a_date["year"] != b_date["year"]: 
 		return a_date["year"] < b_date["year"]
 	if a_date["month"] != b_date["month"]:
 		return a_date["month"] < b_date["month"]
@@ -29,5 +29,3 @@ static func sort_by_date_field(a, b, field_name: String) -> bool:
 	if a_date["minute"] != b_date["minute"]:
 		return a_date["minute"] < b_date["minute"]
 	return false  # If all the components are equal
-
-
