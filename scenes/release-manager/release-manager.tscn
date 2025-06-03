@@ -642,6 +642,9 @@ dialog_text = "WARNING: A folder with this version already exists in your export
 Are you sure you want to continue?"
 dialog_autowrap = true
 
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectPathHBoxContainer2/OpenProjectPathFolder" to="." method="_on_open_project_folder_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer/WindowsCheckBox" to="." method="_on_windows_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer/WebCheckBox" to="." method="_on_web_check_box_pressed"]

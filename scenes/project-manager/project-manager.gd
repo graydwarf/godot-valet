@@ -287,6 +287,7 @@ func DisableEditButtons():
 	_runProjectButton.disabled = true
 	_editProjectButton.disabled = true
 	_releaseProjectButton.disabled = true
+	%ResourceManagerButton.disabled = true
 	_openProjectFolderButton.disabled = true
 	_changeProjectButton.disabled = true
 	_removeProjectButton.disabled = true
@@ -295,6 +296,7 @@ func EnableEditButtons():
 	_runProjectButton.disabled = false
 	_editProjectButton.disabled = false
 	_releaseProjectButton.disabled = false
+	%ResourceManagerButton.disabled = false
 	_openProjectFolderButton.disabled = false
 	_changeProjectButton.disabled = false
 	_removeProjectButton.disabled = false
@@ -459,7 +461,15 @@ func ToggleHiddenProjectVisibility():
 		ShowHiddenProjectCount(hiddenProjectCount)
 	else:
 		_hiddenProjectItemCountLabel.visible = false
-	
+
+func OpenResourceManager():
+	if _selectedProjectItem == null:
+		return
+		
+	var resourceManager = load("res://scenes/resource-manager/resource-manager.tscn").instantiate()
+	add_child(resourceManager)
+	resourceManager.ConfigureResourceManager(_selectedProjectItem)
+
 func _on_new_project_button_pressed():
 	CreateNewProject()
 	
@@ -498,3 +508,6 @@ func _on_check_box_pressed():
 func _on_option_button_item_selected(index: int) -> void:
 	ReloadProjectManager()
 	App.SetSortType(index)
+
+func _on_release_project_button_2_pressed() -> void:
+	OpenResourceManager()

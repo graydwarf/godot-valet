@@ -12,3 +12,9 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_eh2fm")
 script = ExtResource("1_5j05v")
+
+[node name="SoundEffectsContainer" type="Control" parent="."]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0

@@ -1,5 +1,7 @@
 extends Control
 
+@onready var _soundEffectScene = preload("res://scenes/sound-effect/sound-effect.tscn")
+
 var _projectConfig = "res://configs/godot-valet.cfg"
 var _adminConfig = "res://configs/godot-valet-admin.cfg"
 var _useEncryption = true
@@ -11,6 +13,24 @@ func _ready():
 	LoadProjectSettings()
 	LoadTheme()
 	AddProjectManagerScene()
+	InitSignals()
+
+func InitSignals():
+	Signals.connect("PlaySound", PlaySound)
+
+func PlaySound(audioPath : String, volume := 0.0, busType := AudioManager.Bus.Effects, pitchScale := 1.0, delay := 0.0, globalPosition := Vector2.ZERO):
+	var soundEffect = CreateSoundEffect()
+	
+	if audioPath == "":
+		printerr("Audio file not found: " + audioPath)
+		return
+		
+	soundEffect.PlaySoundEffect(audioPath, volume, busType, pitchScale, delay, globalPosition)
+	
+func CreateSoundEffect():
+	var soundEffect = _soundEffectScene.instantiate()
+	%SoundEffectsContainer.add_child(soundEffect)
+	return soundEffect
 
 func AddProjectManagerScene():
 	var projectManager = load("res://scenes/project-manager/project-manager.tscn").instantiate()

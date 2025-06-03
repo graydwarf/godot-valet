@@ -1,0 +1,194 @@
+[gd_scene load_steps=3 format=3 uid="uid://bd8iycsueyb22"]
+
+[ext_resource type="Script" uid="uid://epf1ifcbpo40" path="res://scenes/resource-manager/resource-manager.gd" id="1_amsdj"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_amsdj"]
+
+[node name="ResourceManager" type="Panel"]
+clip_contents = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_amsdj")
+
+[node name="VSplitContainer" type="VSplitContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VSplitContainer"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="VSplitContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_bottom = -4
+
+[node name="TitleLabel" type="Label" parent="VSplitContainer/VBoxContainer/MarginContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Resource Manager"
+
+[node name="MarginContainer2" type="MarginContainer" parent="VSplitContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VSplitContainer/VBoxContainer/MarginContainer2"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VSplitContainer/VBoxContainer/MarginContainer2/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ProjectNameHBoxContainer" type="HBoxContainer" parent="VSplitContainer/VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ProjectNameLabel" type="Label" parent="VSplitContainer/VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectNameHBoxContainer"]
+custom_minimum_size = Vector2(165, 0)
+layout_mode = 2
+text = "Project Name:"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="ProjectNameLineEdit" type="LineEdit" parent="VSplitContainer/VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectNameHBoxContainer"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+tooltip_text = "Path to the appropriate godot version you want to build/export with."
+editable = false
+caret_blink = true
+caret_blink_interval = 0.5
+
+[node name="ProjectPathHBoxContainer2" type="HBoxContainer" parent="VSplitContainer/VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ProjectPathLabel" type="Label" parent="VSplitContainer/VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectPathHBoxContainer2"]
+custom_minimum_size = Vector2(165, 0)
+layout_mode = 2
+text = "Project Path:"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="ProjectPathLineEdit" type="LineEdit" parent="VSplitContainer/VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectPathHBoxContainer2"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+tooltip_text = "Path to the appropriate godot version you want to build/export with."
+editable = false
+caret_blink = true
+caret_blink_interval = 0.5
+
+[node name="OpenProjectPathFolder" type="Button" parent="VSplitContainer/VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectPathHBoxContainer2"]
+custom_minimum_size = Vector2(125, 31)
+layout_mode = 2
+tooltip_text = "Opens folder to the specified project path."
+text = "Open Folder"
+
+[node name="HSplitContainer" type="HSplitContainer" parent="VSplitContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/split_bar_background = SubResource("StyleBoxFlat_amsdj")
+
+[node name="FilesContainer" type="Control" parent="VSplitContainer/HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VSplitContainer/HSplitContainer/FilesContainer"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="PlayOggButton" type="Button" parent="VSplitContainer/HSplitContainer/FilesContainer/VBoxContainer"]
+layout_mode = 2
+text = "Play OGG"
+
+[node name="PlayWavButton" type="Button" parent="VSplitContainer/HSplitContainer/FilesContainer/VBoxContainer"]
+layout_mode = 2
+text = "Play Wav"
+
+[node name="OpenImageButton" type="Button" parent="VSplitContainer/HSplitContainer/FilesContainer/VBoxContainer"]
+layout_mode = 2
+text = "Open Image"
+
+[node name="OpenScript" type="Button" parent="VSplitContainer/HSplitContainer/FilesContainer/VBoxContainer"]
+layout_mode = 2
+text = "Open Script"
+
+[node name="OpenScript2" type="Button" parent="VSplitContainer/HSplitContainer/FilesContainer/VBoxContainer"]
+layout_mode = 2
+text = "Play .Zip File Sound"
+
+[node name="DetailsContainer" type="Control" parent="VSplitContainer/HSplitContainer"]
+clip_contents = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ImagePreviewTextureRect" type="TextureRect" parent="VSplitContainer/HSplitContainer/DetailsContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+stretch_mode = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VSplitContainer/HSplitContainer/DetailsContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TextEdit" type="TextEdit" parent="VSplitContainer/HSplitContainer/DetailsContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+scroll_smooth = true
+scroll_past_end_of_file = true
+
+[node name="SaveButton" type="Button" parent="VSplitContainer/HSplitContainer/DetailsContainer/VBoxContainer"]
+layout_mode = 2
+text = "Save"
+
+[node name="SelectFolderFileDialog" type="FileDialog" parent="."]
+title = "Open a Directory"
+initial_position = 2
+size = Vector2i(600, 500)
+ok_button_text = "Select Current Folder"
+file_mode = 2
+access = 2
+show_hidden_files = true
+
+[node name="OverwriteConfirmationDialog" type="ConfirmationDialog" parent="."]
+title = "Please Confirm Overwrite..."
+size = Vector2i(429, 100)
+ok_button_text = "Overwrite"
+dialog_text = "Found existing files with matching names. Overwrite?"
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+
+[connection signal="pressed" from="VSplitContainer/VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectPathHBoxContainer2/OpenProjectPathFolder" to="." method="_on_open_project_folder_pressed"]
+[connection signal="pressed" from="VSplitContainer/HSplitContainer/FilesContainer/VBoxContainer/PlayOggButton" to="." method="_on_open_ogg_button_pressed"]
+[connection signal="pressed" from="VSplitContainer/HSplitContainer/FilesContainer/VBoxContainer/PlayWavButton" to="." method="_on_play_wav_button_pressed"]
+[connection signal="pressed" from="VSplitContainer/HSplitContainer/FilesContainer/VBoxContainer/OpenImageButton" to="." method="_on_button_pressed"]
+[connection signal="pressed" from="VSplitContainer/HSplitContainer/FilesContainer/VBoxContainer/OpenScript" to="." method="_on_open_script_pressed"]
+[connection signal="pressed" from="VSplitContainer/HSplitContainer/FilesContainer/VBoxContainer/OpenScript2" to="." method="_on_open_script_2_pressed"]
+[connection signal="pressed" from="VSplitContainer/HSplitContainer/DetailsContainer/VBoxContainer/SaveButton" to="." method="_on_save_button_pressed"]
+[connection signal="dir_selected" from="SelectFolderFileDialog" to="." method="_on_select_folder_file_dialog_dir_selected"]

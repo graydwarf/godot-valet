@@ -20,3 +20,6 @@ signal MoveVersionItemUp
 # Settings
 signal BackgroundColorChanged
 signal BackgroundColorTemporarilyChanged
+
+# Sounds
+signal PlaySound
