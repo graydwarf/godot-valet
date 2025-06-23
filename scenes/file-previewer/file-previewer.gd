@@ -10,10 +10,38 @@ var supportedSceneFiles = ["tscn", "scn"]
 func _ready():
 	ClearPreview()
 
+# Add this function to FilePreviewer.gd
+func IsZipPath(filePath: String) -> bool:
+	"""Check if the path is inside a zip file"""
+	return "::" in filePath
+
+func ExtractFileFromZip(zipFilePath: String, internalPath: String) -> PackedByteArray:
+	"""Extract a file from a zip archive and return its data"""
+	var zip = ZIPReader.new()
+	var error = zip.open(zipFilePath)
+	if error != OK:
+		print("Failed to open zip file: " + zipFilePath)
+		return PackedByteArray()
+	
+	var fileData = zip.read_file(internalPath)
+	zip.close()
+	return fileData
+
+# Update your PreviewFile function to handle zip paths:
 func PreviewFile(filePath: String):
 	"""Preview a file based on its extension"""
-	var fileName = filePath.get_file()
-	var extension = filePath.get_extension().to_lower()
+	var fileName = ""
+	var extension = ""
+	
+	# Handle zip file paths
+	if IsZipPath(filePath):
+		var parts = filePath.split("::")
+		var internalPath = parts[1]
+		fileName = internalPath.get_file()
+		extension = internalPath.get_extension().to_lower()
+	else:
+		fileName = filePath.get_file()
+		extension = filePath.get_extension().to_lower()
 	
 	titleLabel.text = fileName
 	
@@ -27,12 +55,43 @@ func PreviewFile(filePath: String):
 	else:
 		ShowUnsupportedFile(filePath, extension)
 
+# Update your PreviewImage function:
 func PreviewImage(filePath: String):
 	"""Preview image files"""
 	ShowImageDisplay()
 	
 	var image = Image.new()
-	var error = image.load(filePath)
+	var error
+	
+	if IsZipPath(filePath):
+		# Extract from zip and save to temporary file
+		var parts = filePath.split("::")
+		var zipPath = parts[0]
+		var internalPath = parts[1]
+		
+		var imageData = ExtractFileFromZip(zipPath, internalPath)
+		if imageData.size() == 0:
+			ShowError("Failed to extract image from zip: " + internalPath)
+			return
+		
+		# Create a temporary file
+		var tempFilePath = "user://temp_image_preview." + internalPath.get_extension()
+		var tempFile = FileAccess.open(tempFilePath, FileAccess.WRITE)
+		if tempFile == null:
+			ShowError("Failed to create temporary file for image preview")
+			return
+		
+		tempFile.store_buffer(imageData)
+		tempFile.close()
+		
+		# Load from temporary file
+		error = image.load(tempFilePath)
+		
+		# Clean up temporary file
+		DirAccess.remove_absolute(tempFilePath)
+	else:
+		# Load from regular file
+		error = image.load(filePath)
 	
 	if error != OK:
 		ShowError("Failed to load image: " + filePath)
@@ -41,49 +100,120 @@ func PreviewImage(filePath: String):
 	var texture = ImageTexture.create_from_image(image)
 	%ImageViewer.texture = texture
 	
-	# Set stretch mode to keep aspect ratio
-	#%ImageViewer.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	# Set to actual size - no scaling
+	%ImageViewer.stretch_mode = TextureRect.STRETCH_KEEP
+	%ImageViewer.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	
+	# Set the size to match the image
+	%ImageViewer.custom_minimum_size = Vector2(image.get_width(), image.get_height())
 	
 	# Show image info
+	var displayPath = filePath
+	if IsZipPath(filePath):
+		displayPath = filePath.split("::")[1]
+	
 	var info = "Image: %dx%d pixels\nFormat: %s\nSize: %s" % [
 		image.get_width(),
 		image.get_height(),
-		filePath.get_extension().to_upper(),
+		displayPath.get_extension().to_upper(),
 		FormatFileSize(GetFileSize(filePath))
 	]
 	
-	# You could add an info label here if desired
 	print(info)
 
+# Update your PreviewTextFile function:
 func PreviewTextFile(filePath: String):
 	"""Preview text-based files"""
 	ShowTextEditor()
 	
-	var file = FileAccess.open(filePath, FileAccess.READ)
-	if file == null:
-		ShowError("Failed to open file: " + filePath)
-		return
+	var content = ""
 	
-	var content = file.get_as_text()
-	file.close()
+	if IsZipPath(filePath):
+		# Extract from zip
+		var parts = filePath.split("::")
+		var zipPath = parts[0]
+		var internalPath = parts[1]
+		
+		var fileData = ExtractFileFromZip(zipPath, internalPath)
+		if fileData.size() == 0:
+			ShowError("Failed to extract file from zip: " + internalPath)
+			return
+		
+		content = fileData.get_string_from_utf8()
+	else:
+		# Load from regular file
+		var file = FileAccess.open(filePath, FileAccess.READ)
+		if file == null:
+			ShowError("Failed to open file: " + filePath)
+			return
+		
+		content = file.get_as_text()
+		file.close()
 	
 	%TextViewer.text = content
 	%TextViewer.editable = false  # Read-only preview
 	
 	# Set syntax highlighting based on file type
-	SetSyntaxHighlighting(filePath.get_extension())
+	var extension = ""
+	if IsZipPath(filePath):
+		extension = filePath.split("::")[1].get_extension()
+	else:
+		extension = filePath.get_extension()
+	
+	SetSyntaxHighlighting(extension)
+
+# Update your GetFileSize function:
+func GetFileSize(filePath: String) -> int:
+	"""Get file size in bytes"""
+	if IsZipPath(filePath):
+		var parts = filePath.split("::")
+		var zipPath = parts[0]
+		var internalPath = parts[1]
+		
+		var zip = ZIPReader.new()
+		var error = zip.open(zipPath)
+		if error != OK:
+			return 0
+		
+		var fileData = zip.read_file(internalPath)
+		zip.close()
+		return fileData.size()
+	else:
+		var file = FileAccess.open(filePath, FileAccess.READ)
+		if file == null:
+			return 0
+		
+		var size = file.get_length()
+		file.close()
+		return size
 
 func PreviewSceneFile(filePath: String):
 	"""Preview Godot scene files"""
 	ShowTextEditor()
 	
-	var file = FileAccess.open(filePath, FileAccess.READ)
-	if file == null:
-		ShowError("Failed to open scene file: " + filePath)
-		return
+	var content = ""
 	
-	var content = file.get_as_text()
-	file.close()
+	if IsZipPath(filePath):
+		# Extract from zip
+		var parts = filePath.split("::")
+		var zipPath = parts[0]
+		var internalPath = parts[1]
+		
+		var fileData = ExtractFileFromZip(zipPath, internalPath)
+		if fileData.size() == 0:
+			ShowError("Failed to extract scene file from zip: " + internalPath)
+			return
+		
+		content = fileData.get_string_from_utf8()
+	else:
+		# Load from regular file
+		var file = FileAccess.open(filePath, FileAccess.READ)
+		if file == null:
+			ShowError("Failed to open scene file: " + filePath)
+			return
+		
+		content = file.get_as_text()
+		file.close()
 	
 	%TextViewer.text = content
 	%TextViewer.editable = false
@@ -95,16 +225,26 @@ func ShowUnsupportedFile(filePath: String, extension: String):
 	"""Show info for unsupported file types"""
 	ShowTextEditor()
 	
+	var fileName = ""
+	if IsZipPath(filePath):
+		fileName = filePath.split("::")[1].get_file()
+	else:
+		fileName = filePath.get_file()
+	
 	var fileSize = GetFileSize(filePath)
 	var info = "File: %s\nExtension: %s\nSize: %s\n\nThis file type is not supported for preview." % [
-		filePath.get_file(),
+		fileName,
 		extension,
 		FormatFileSize(fileSize)
 	]
 	
+	if IsZipPath(filePath):
+		var zipPath = filePath.split("::")[0].get_file()
+		info += "\n\nThis file is inside: " + zipPath
+	
 	%TextViewer.text = info
 	%TextViewer.editable = false
-
+	
 func ShowError(errorMessage: String):
 	"""Show error message"""
 	ShowTextEditor()
@@ -136,21 +276,10 @@ func ShowImageDisplay():
 	%ImageViewer.visible = true
 
 func ClearPreview():
-	"""Clear the preview area"""
 	%TitleLabel.text = "No file selected"
 	%TextViewer.text = ""
 	%ImageViewer.texture = null
 	ShowTextEditor()
-
-func GetFileSize(filePath: String) -> int:
-	"""Get file size in bytes"""
-	var file = FileAccess.open(filePath, FileAccess.READ)
-	if file == null:
-		return 0
-	
-	var size = file.get_length()
-	file.close()
-	return size
 
 func FormatFileSize(sizeBytes: int) -> String:
 	"""Format file size in human-readable format"""

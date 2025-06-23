@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://1mnohgp6net8"
-path="res://.godot/imported/drive.png-cf85411aec72cf7b12ffddd7ebf4621d.ctex"
+uid="uid://t8bm4s0688ke"
+path="res://.godot/imported/file.png-f8db71fd9b589761ba4dacd7516532ae.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://scenes/file-explorer/assets/drive.png"
-dest_files=["res://.godot/imported/drive.png-cf85411aec72cf7b12ffddd7ebf4621d.ctex"]
+source_file="res://scenes/file-tree-view-explorer/assets/file.png"
+dest_files=["res://.godot/imported/file.png-f8db71fd9b589761ba4dacd7516532ae.ctex"]
 
 [params]
 

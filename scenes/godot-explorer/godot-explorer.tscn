@@ -1,10 +1,10 @@
 [gd_scene load_steps=4 format=3 uid="uid://c1asrwu11e74m"]
 
-[ext_resource type="Script" uid="uid://bnx8iu6s5scut" path="res://scenes/explore-manager/explore-manager.gd" id="1_vpqee"]
-[ext_resource type="PackedScene" uid="uid://6ygqegta6dek" path="res://scenes/file-explorer/file-explorer.tscn" id="2_npbdf"]
+[ext_resource type="Script" uid="uid://bnx8iu6s5scut" path="res://scenes/godot-explorer/godot-explorer.gd" id="1_vpqee"]
+[ext_resource type="PackedScene" uid="uid://6ygqegta6dek" path="res://scenes/file-tree-view-explorer/file-tree-view-explorer.tscn" id="2_ocxm6"]
 [ext_resource type="PackedScene" uid="uid://r8y55mlah1wy" path="res://scenes/file-previewer/file-previewer.tscn" id="3_g1ls4"]
 
-[node name="ExploreManager" type="Panel"]
+[node name="GodotExplorer" type="Panel"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -92,10 +92,17 @@ text = "Open Folder"
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="FileExplorer" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer" instance=ExtResource("2_npbdf")]
+[node name="FileTreeViewExplorer" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer" instance=ExtResource("2_ocxm6")]
 unique_name_in_owner = true
 layout_mode = 2
 
 [node name="FilePreviewer" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer" instance=ExtResource("3_g1ls4")]
 unique_name_in_owner = true
 layout_mode = 2
+
+[node name="BackButton" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Back"
+
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/VBoxContainer/BackButton" to="." method="_on_back_button_pressed"]

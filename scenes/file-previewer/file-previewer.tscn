@@ -21,10 +21,13 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="ButtonHBoxContainer" type="HBoxContainer" parent="vBoxContainer"]
+layout_mode = 2
+
 [node name="TitleLabel" type="Label" parent="vBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "No fiel selected"
+text = "..."
 
 [node name="ContentScrollContainer" type="ScrollContainer" parent="vBoxContainer"]
 layout_mode = 2
@@ -43,4 +46,4 @@ visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-stretch_mode = 2
+stretch_mode = 3

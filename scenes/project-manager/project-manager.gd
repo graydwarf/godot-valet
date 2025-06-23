@@ -423,8 +423,9 @@ func OpenProjectFolder():
 
 func OpenExploreManager():
 	if _exploreManager == null:
-		_exploreManager = load("res://scenes/explore-manager/explore-manager.tscn").instantiate()
+		_exploreManager = load("res://scenes/godot-explorer/godot-explorer.tscn").instantiate()
 		add_child(_exploreManager)
+
 	_exploreManager.visible = true
 	
 func GetProjectItemFromIndex(indexOfSelectedProjectItem):

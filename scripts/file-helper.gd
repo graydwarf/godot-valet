@@ -242,3 +242,90 @@ static func GetFilesRecursive(path: String, allowedExtensions : Array) -> Array:
 
 	dir.list_dir_end()
 	return results
+
+static func OpenFilePathInWindowsExplorer(filePath: String):
+	"""Open the file or folder in Windows Explorer"""
+	if filePath.is_empty():
+		print("Empty file path provided")
+		return
+	
+	# Check if it's a file or directory
+	var dir = DirAccess.open(filePath)
+	if dir != null:
+		# It's a directory - open it directly
+		OpenDirectoryInExplorer(filePath)
+	else:
+		# It's a file - open explorer and select the file
+		OpenFileInExplorer(filePath)
+
+static func OpenDirectoryInExplorer(dirPath: String):
+	"""Open a directory in Windows Explorer"""
+	var normalizedPath = dirPath.replace("/", "\\")
+	var args = [normalizedPath]
+	
+	print("Opening directory in explorer: " + normalizedPath)
+	OS.execute("explorer.exe", args)
+
+# Open Windows Explorer and select the specified file
+# Using cmd.exe because explorer.exe doesn't work with /select 
+# for some reason.
+static func OpenFileInExplorer(filePath: String):
+	var normalizedPath = filePath.replace("/", "\\")
+	var command = "explorer.exe /select,\"" + normalizedPath + "\""
+	OS.execute("cmd.exe", ["/c", command])
+
+static func OpenFileWithDefaultProgram(filePath: String):
+	"""Open the file with its default associated program"""
+	if filePath.is_empty():
+		print("Empty file path provided")
+		return
+	
+	print("Opening file with default program: " + filePath)
+	OS.shell_open(filePath)
+
+# Alternative method using shell_open for directories
+static func OpenDirectoryWithShellOpen(dirPath: String):
+	"""Alternative method to open directory using shell_open"""
+	print("Opening directory with shell_open: " + dirPath)
+	OS.shell_open(dirPath)
+
+# Utility function to check if path exists
+static func PathExists(path: String) -> bool:
+	"""Check if a file or directory exists"""
+	var file = FileAccess.open(path, FileAccess.READ)
+	if file != null:
+		file.close()
+		return true
+	
+	var dir = DirAccess.open(path)
+	return dir != null
+
+# Enhanced version with error handling
+static func OpenFilePathInWindowsExplorerSafe(filePath: String) -> bool:
+	"""Safe version with error handling - returns true if successful"""
+	if filePath.is_empty():
+		print("Error: Empty file path provided")
+		return false
+	
+	if not PathExists(filePath):
+		print("Error: Path does not exist: " + filePath)
+		return false
+	
+	var normalizedPath = filePath.replace("/", "\\")
+	var dir = DirAccess.open(filePath)
+	
+	if dir != null:
+		# It's a directory
+		var result = OS.execute("explorer.exe", [normalizedPath])
+		if result != 0:
+			print("Error opening directory, trying alternative method")
+			OS.shell_open(filePath)
+		return true
+	else:
+		# It's a file
+		var result = OS.execute("explorer.exe", ["/select,", normalizedPath])
+		if result != 0:
+			print("Error opening file in explorer, result code: " + str(result))
+			return false
+		return true
+		
