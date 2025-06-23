@@ -18,6 +18,7 @@ var _selectedProjectItem = null
 var _runProjectThread
 var _editProjectThread
 var _openGodotProjectManagerThread
+var _exploreManager : ExploreManager
 
 func _ready():
 	InitSignals()
@@ -290,6 +291,7 @@ func DisableEditButtons():
 	_openProjectFolderButton.disabled = true
 	_changeProjectButton.disabled = true
 	_removeProjectButton.disabled = true
+	%ExploreButton.disabled = false
 	
 func EnableEditButtons():
 	_runProjectButton.disabled = false
@@ -298,6 +300,7 @@ func EnableEditButtons():
 	_openProjectFolderButton.disabled = false
 	_changeProjectButton.disabled = false
 	_removeProjectButton.disabled = false
+	%ExploreButton.disabled = true
 
 func RunProject():
 	if !is_instance_valid(_selectedProjectItem):
@@ -418,6 +421,12 @@ func OpenProjectFolder():
 	var projectPath = _selectedProjectItem.GetProjectPathBaseDir()
 	OS.shell_open(projectPath)
 
+func OpenExploreManager():
+	if _exploreManager == null:
+		_exploreManager = load("res://scenes/explore-manager/explore-manager.tscn").instantiate()
+		add_child(_exploreManager)
+	_exploreManager.visible = true
+	
 func GetProjectItemFromIndex(indexOfSelectedProjectItem):
 	var index = 0;
 	for projectItem in _projectItemContainer.get_children():
@@ -498,3 +507,6 @@ func _on_check_box_pressed():
 func _on_option_button_item_selected(index: int) -> void:
 	ReloadProjectManager()
 	App.SetSortType(index)
+
+func _on_explore_button_pressed() -> void:
+	OpenExploreManager()

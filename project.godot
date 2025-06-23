@@ -32,6 +32,12 @@ gdscript/warnings/unused_signal=0
 window/size/viewport_width=1200
 window/size/viewport_height=932
 
+[editor]
+
+naming/node_name_casing=1
+naming/scene_name_casing=1
+naming/script_name_casing=3
+
 [filesystem]
 
 import/blender/enabled=false

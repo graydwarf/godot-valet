@@ -1,0 +1,50 @@
+[gd_scene load_steps=2 format=3 uid="uid://6ygqegta6dek"]
+
+[ext_resource type="Script" uid="uid://gdqxa44bc62r" path="res://scenes/file-explorer/file-explorer.gd" id="1_wruwl"]
+
+[node name="FileExplorer" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_wruwl")
+
+[node name="vBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="hBoxContainer" type="HBoxContainer" parent="vBoxContainer"]
+layout_mode = 2
+
+[node name="lineEdit" type="LineEdit" parent="vBoxContainer/hBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="UpButton" type="Button" parent="vBoxContainer/hBoxContainer"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+text = "^"
+
+[node name="BackButton" type="Button" parent="vBoxContainer/hBoxContainer"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+text = "<"
+
+[node name="ForwardButton\'" type="Button" parent="vBoxContainer/hBoxContainer"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+text = ">"
+
+[node name="FileTree" type="Tree" parent="vBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+hide_root = true
