@@ -19,6 +19,7 @@ var _runProjectThread
 var _editProjectThread
 var _openGodotProjectManagerThread
 var _exploreManager : ExploreManager
+var _claude : Claude
 
 func _ready():
 	InitSignals()
@@ -421,6 +422,13 @@ func OpenProjectFolder():
 	var projectPath = _selectedProjectItem.GetProjectPathBaseDir()
 	OS.shell_open(projectPath)
 
+func OpenClaude():
+	if _claude == null:
+		_claude = load("res://scenes/claude/claude.tscn").instantiate()
+		add_child(_claude)
+	
+	_claude.visible = true
+		
 func OpenExploreManager():
 	if _exploreManager == null:
 		_exploreManager = load("res://scenes/godot-explorer/godot-explorer.tscn").instantiate()
@@ -511,3 +519,6 @@ func _on_option_button_item_selected(index: int) -> void:
 
 func _on_explore_button_pressed() -> void:
 	OpenExploreManager()
+
+func _on_claude_button_pressed() -> void:
+	OpenClaude()

@@ -55,13 +55,15 @@ func PreviewFile(filePath: String):
 	else:
 		ShowUnsupportedFile(filePath, extension)
 
-# Update your PreviewImage function:
-func PreviewImage(filePath: String):
-	"""Preview image files"""
-	ShowImageDisplay()
+func ResetContentScrollContainer():
+	%ContentScrollContainer.scroll_horizontal = 0
+	%ContentScrollContainer.scroll_vertical = 0
 	
+func PreviewImage(filePath: String):
 	var image = Image.new()
 	var error
+	ResetContentScrollContainer()
+	ShowImageDisplay()	
 	
 	if IsZipPath(filePath):
 		# Extract from zip and save to temporary file
@@ -121,11 +123,8 @@ func PreviewImage(filePath: String):
 	
 	print(info)
 
-# Update your PreviewTextFile function:
 func PreviewTextFile(filePath: String):
-	"""Preview text-based files"""
 	ShowTextEditor()
-	
 	var content = ""
 	
 	if IsZipPath(filePath):
@@ -162,9 +161,7 @@ func PreviewTextFile(filePath: String):
 	
 	SetSyntaxHighlighting(extension)
 
-# Update your GetFileSize function:
 func GetFileSize(filePath: String) -> int:
-	"""Get file size in bytes"""
 	if IsZipPath(filePath):
 		var parts = filePath.split("::")
 		var zipPath = parts[0]
@@ -187,8 +184,8 @@ func GetFileSize(filePath: String) -> int:
 		file.close()
 		return size
 
+# Preview text files
 func PreviewSceneFile(filePath: String):
-	"""Preview Godot scene files"""
 	ShowTextEditor()
 	
 	var content = ""

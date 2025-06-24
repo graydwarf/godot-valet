@@ -1,7 +1,19 @@
-[gd_scene load_steps=3 format=3 uid="uid://6ygqegta6dek"]
+[gd_scene load_steps=15 format=3 uid="uid://6ygqegta6dek"]
 
 [ext_resource type="Script" uid="uid://gdqxa44bc62r" path="res://scenes/file-tree-view-explorer/file-tree-view-explorer.gd" id="1_wruwl"]
-[ext_resource type="Texture2D" uid="uid://dgcmvdjsus4wo" path="res://scenes/file-previewer/assets/open-windows-explorer.png" id="2_k063r"]
+[ext_resource type="Texture2D" uid="uid://de417oegex7sh" path="res://scenes/file-tree-view-explorer/assets/nav-back.png" id="2_jnomi"]
+[ext_resource type="Texture2D" uid="uid://bejkpjpt86y1g" path="res://scenes/file-tree-view-explorer/assets/open-folder.png" id="2_k063r"]
+[ext_resource type="Texture2D" uid="uid://dw5pxmkfiwtnr" path="res://scenes/file-tree-view-explorer/assets/nav-down.png" id="2_uu2th"]
+[ext_resource type="Texture2D" uid="uid://biviu8du3swnu" path="res://scenes/file-tree-view-explorer/assets/nav-down-pressed.png" id="3_aj3or"]
+[ext_resource type="Texture2D" uid="uid://o0fp8ke64xjm" path="res://scenes/file-tree-view-explorer/assets/nav-back-pressed.png" id="3_uayya"]
+[ext_resource type="Texture2D" uid="uid://becaohf3t25tj" path="res://scenes/file-tree-view-explorer/assets/nav-next.png" id="4_cc6nv"]
+[ext_resource type="Texture2D" uid="uid://kf8a46fs2qak" path="res://scenes/file-tree-view-explorer/assets/nav-back-hovered.png" id="4_s6k0g"]
+[ext_resource type="Texture2D" uid="uid://sa2jrvnhpc60" path="res://scenes/file-tree-view-explorer/assets/nav-next-pressed.png" id="5_s6k0g"]
+[ext_resource type="Texture2D" uid="uid://bldq4nx8pgj2j" path="res://scenes/file-tree-view-explorer/assets/nav-up.png" id="6_3ghy6"]
+[ext_resource type="Texture2D" uid="uid://3mr63347mc0" path="res://scenes/file-tree-view-explorer/assets/nav-next-hovered.png" id="7_3ghy6"]
+[ext_resource type="Texture2D" uid="uid://f6kx83ytrqw2" path="res://scenes/file-tree-view-explorer/assets/nav-up-pressed.png" id="7_objvc"]
+[ext_resource type="Texture2D" uid="uid://dc4p7y3ap1nt6" path="res://scenes/file-tree-view-explorer/assets/nav-up-hovered.png" id="8_r6hur"]
+[ext_resource type="Texture2D" uid="uid://bs3p5uv270si5" path="res://scenes/file-tree-view-explorer/assets/nav-down-hovered.png" id="13_objvc"]
 
 [node name="FileTreeViewExplorer" type="Control"]
 layout_mode = 3
@@ -24,25 +36,36 @@ grow_vertical = 2
 
 [node name="hBoxContainer" type="HBoxContainer" parent="vBoxContainer"]
 layout_mode = 2
+theme_override_constants/separation = 4
+alignment = 2
 
-[node name="lineEdit" type="LineEdit" parent="vBoxContainer/hBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="UpButton" type="Button" parent="vBoxContainer/hBoxContainer"]
+[node name="PreviousButton" type="TextureButton" parent="vBoxContainer/hBoxContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
-text = "^"
+texture_normal = ExtResource("2_jnomi")
+texture_pressed = ExtResource("3_uayya")
+texture_hover = ExtResource("4_s6k0g")
 
-[node name="BackButton" type="Button" parent="vBoxContainer/hBoxContainer"]
+[node name="NextButton" type="TextureButton" parent="vBoxContainer/hBoxContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
-text = "<"
+texture_normal = ExtResource("4_cc6nv")
+texture_pressed = ExtResource("5_s6k0g")
+texture_hover = ExtResource("7_3ghy6")
 
-[node name="ForwardButton\'" type="Button" parent="vBoxContainer/hBoxContainer"]
+[node name="UpButton" type="TextureButton" parent="vBoxContainer/hBoxContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
-text = ">"
+texture_normal = ExtResource("6_3ghy6")
+texture_pressed = ExtResource("7_objvc")
+texture_hover = ExtResource("8_r6hur")
+
+[node name="DownButton" type="TextureButton" parent="vBoxContainer/hBoxContainer"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture_normal = ExtResource("2_uu2th")
+texture_pressed = ExtResource("3_aj3or")
+texture_hover = ExtResource("13_objvc")
 
 [node name="OpenFileExplorerButton" type="TextureButton" parent="vBoxContainer/hBoxContainer"]
 layout_mode = 2
@@ -57,28 +80,8 @@ hide_root = true
 [node name="hBoxContainer2" type="HBoxContainer" parent="vBoxContainer"]
 layout_mode = 2
 
-[node name="PreviousButton" type="Button" parent="vBoxContainer/hBoxContainer2"]
-custom_minimum_size = Vector2(32, 32)
-layout_mode = 2
-text = "<"
-
-[node name="NextButton" type="Button" parent="vBoxContainer/hBoxContainer2"]
-custom_minimum_size = Vector2(32, 32)
-layout_mode = 2
-text = ">"
-
-[node name="UpButton" type="Button" parent="vBoxContainer/hBoxContainer2"]
-custom_minimum_size = Vector2(32, 32)
-layout_mode = 2
-text = "^"
-
-[node name="DownButton" type="Button" parent="vBoxContainer/hBoxContainer2"]
-custom_minimum_size = Vector2(32, 32)
-layout_mode = 2
-text = "\\/"
-
+[connection signal="pressed" from="vBoxContainer/hBoxContainer/PreviousButton" to="." method="_on_previous_button_pressed"]
+[connection signal="pressed" from="vBoxContainer/hBoxContainer/NextButton" to="." method="_on_next_button_pressed"]
+[connection signal="pressed" from="vBoxContainer/hBoxContainer/UpButton" to="." method="_on_up_button_pressed"]
+[connection signal="pressed" from="vBoxContainer/hBoxContainer/DownButton" to="." method="_on_down_button_pressed"]
 [connection signal="pressed" from="vBoxContainer/hBoxContainer/OpenFileExplorerButton" to="." method="_on_open_file_explorer_button_pressed"]
-[connection signal="pressed" from="vBoxContainer/hBoxContainer2/PreviousButton" to="." method="_on_previous_button_pressed"]
-[connection signal="pressed" from="vBoxContainer/hBoxContainer2/NextButton" to="." method="_on_next_button_pressed"]
-[connection signal="pressed" from="vBoxContainer/hBoxContainer2/UpButton" to="." method="_on_up_button_pressed"]
-[connection signal="pressed" from="vBoxContainer/hBoxContainer2/DownButton" to="." method="_on_down_button_pressed"]

@@ -13,16 +13,20 @@ func _ready():
 func _on_file_selected(filePath: String):
 	# print("File selected for preview: " + filePath)
 	
-	# Check if the file is supported for preview
+	# Is supported for preview?
 	if _filePreviewer.IsFileSupported(filePath):
 		_filePreviewer.PreviewFile(filePath)
 	else:
 		# Show file info for unsupported files
-		_filePreviewer.PreviewFile(filePath)  # Will show "unsupported" message
+		# TODO: ???? Improve
+		_filePreviewer.PreviewFile(filePath)
+	
+	%PathLabel.text = filePath
 
 func _on_directory_selected(dirPath: String):
 	# Clear preview when directory is selected
 	_filePreviewer.ClearPreview()
+	%PathLabel.text = dirPath
 
 func _on_back_button_pressed() -> void:
 	visible = false

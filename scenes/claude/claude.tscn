@@ -1,0 +1,35 @@
+[gd_scene load_steps=2 format=3 uid="uid://w4jujpatu6b4"]
+
+[ext_resource type="Script" uid="uid://bltgmotcc1wq8" path="res://scenes/claude/claude.gd" id="1_cc7t5"]
+
+[node name="Claude" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_cc7t5")
+
+[node name="vBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="OutputTextEdit" type="TextEdit" parent="vBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+scroll_smooth = true
+
+[node name="InputLineEdit" type="LineEdit" parent="vBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="HttpRequest" type="HTTPRequest" parent="."]
+unique_name_in_owner = true
+
+[connection signal="gui_input" from="vBoxContainer/InputLineEdit" to="." method="_on_input_line_edit_gui_input"]

@@ -46,16 +46,16 @@ func _ready():
 func IsFileSupported(fileName: String) -> bool:
 	var extension = "." + fileName.get_extension().to_lower()
 	return extension in supportedExtensions
-	
+
+func GetOpenFolderIcon() -> Texture2D:
+	return load("res://scenes/file-tree-view-explorer/assets/open-folder.png") as Texture2D
+		
 func SetupTree():
 	# Configure tree properties
 	%FileTree.hide_root = true
 	%FileTree.allow_reselect = true
 	%FileTree.select_mode = Tree.SELECT_SINGLE
-	
-	%FileTree.scroll_horizontal_custom_step = 20
-	%FileTree.scroll_vertical_custom_step = 20
-	
+		
 	# Create root item
 	_rootItem = %FileTree.create_item()
 
@@ -98,6 +98,18 @@ func _on_item_collapsed(item: TreeItem):
 		return
 	
 	_isProcessingExpansion = true
+	
+	# Update folder icon based on collapsed state
+	var metadata = item.get_metadata(0)
+	if metadata != null:
+		var path = metadata as String
+		var isDirectory = IsDirectory(path)
+		
+		if isDirectory:
+			if item.is_collapsed():
+				item.set_icon(0, GetFolderIcon())  # Closed folder
+			else:
+				item.set_icon(0, GetOpenFolderIcon())  # Open folder
 	
 	# When an item is expanded (collapsed = false), check if we need to populate it
 	if not item.is_collapsed():
@@ -322,26 +334,20 @@ func _on_item_selected():
 
 # Called when the selected path changes
 func SelectedPathChanged(path: String):
-	print("Path selected: " + path)
-	
 	# Check if it's inside a zip file
 	if "::" in path:
 		var parts = path.split("::")
 		var zipPath = parts[0]
 		var internalPath = parts[1]
-		print("Selected file inside zip: " + internalPath + " in " + zipPath)
 		file_selected.emit(path)  # Emit the full path including zip reference
 	elif IsZipFile(path):
-		print("Selected a zip file")
 		directory_selected.emit(path)  # Treat zip files as directories
 	else:
 		# Check if it's a file or directory
 		var dir = DirAccess.open(path)
 		if dir != null:
-			print("Selected a directory")
 			directory_selected.emit(path)
 		else:
-			print("Selected a file")
 			file_selected.emit(path)
 
 func GetSelectedPath() -> String:

@@ -169,6 +169,12 @@ layout_mode = 2
 tooltip_text = "Opens the selected projects release configuration which supports exporting and publish to multiple platforms."
 text = "Explore"
 
+[node name="ClaudeButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Opens the selected projects release configuration which supports exporting and publish to multiple platforms."
+text = "Claude"
+
 [node name="OpenProjectFolderButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
 tooltip_text = "Opens the selected projects release configuration which supports exporting and publish to multiple platforms."
@@ -245,6 +251,7 @@ dialog_autowrap = true
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/EditProjectButton" to="." method="_on_edit_project_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ReleaseProjectButton" to="." method="_on_release_project_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ExploreButton" to="." method="_on_explore_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ClaudeButton" to="." method="_on_claude_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/OpenProjectFolderButton" to="." method="_on_open_project_folder_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/NewProjectButton" to="." method="_on_new_project_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ChangeProjectButton" to="." method="_on_change_project_button_pressed"]
