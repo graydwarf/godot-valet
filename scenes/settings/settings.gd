@@ -41,4 +41,3 @@ func _on_change_background_color_button_pressed():
 	add_child(colorPickerDialog)
 	colorPickerDialog.position = Vector2(400, 50)
 	colorPickerDialog.SetDefaultColor(App.GetBackgroundColor())
-

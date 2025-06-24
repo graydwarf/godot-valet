@@ -13,7 +13,6 @@ extends Panel
 @onready var _showHiddenCheckBox = %ShowHiddenCheckBox
 @onready var _hiddenProjectItemCountLabel = %HiddenProjectItemCountLabel
 
-var _busyThread : Thread
 var _selectedProjectItem = null
 var _runProjectThread
 var _editProjectThread

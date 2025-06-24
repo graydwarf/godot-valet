@@ -60,6 +60,40 @@ func SetBackgroundColor(value):
 	_backgroundColor = value
 	Signals.emit_signal("BackgroundColorChanged")
 
+# API Key Management
+func SaveKey(serviceName: String, apiKey: String):
+	var config = ConfigFile.new()
+	
+	var err
+	# Load existing config if it exists
+	if FileAccess.file_exists(_solutionConfigFile):
+		err = config.load(_solutionConfigFile)
+		if err != OK:
+			OS.alert("Error loading config file for API key storage")
+			return
+	
+	# Set the API key in the APIKeys section
+	config.set_value("APIKeys", serviceName, apiKey)
+	
+	# Save the config file
+	err = config.save(_solutionConfigFile)
+	if err != OK:
+		OS.alert("Error saving API key to config file")
+
+func GetKey(serviceName: String) -> String:
+	if !FileAccess.file_exists(_solutionConfigFile):
+		return ""
+		
+	var config = ConfigFile.new()
+	var err = config.load(_solutionConfigFile)
+	if err != OK:
+		return ""
+	
+	return config.get_value("APIKeys", serviceName, "")
+
+func HasKey(serviceName: String) -> bool:
+	return GetKey(serviceName) != ""
+
 func LoadSavedSolutionSettings():
 	if !FileAccess.file_exists(_solutionConfigFile):
 		return
@@ -75,6 +109,10 @@ func LoadSavedSolutionSettings():
 	
 func SaveSolutionSettings():
 	var config = ConfigFile.new()
+	
+	# Load existing config to preserve API keys
+	if FileAccess.file_exists(_solutionConfigFile):
+		config.load(_solutionConfigFile)
 
 	config.set_value("SolutionSettings", "bg_color", _backgroundColor)
 	config.set_value("SolutionSettings", "show_hidden", _showHidden)
@@ -101,4 +139,4 @@ func SetSortType(value):
 #	grabberStyle.set_expand_margin_size(MARGIN_RIGHT, 10)
 #	customTheme.set_stylebox("grabber", "VScrollBar", grabberStyle)
 #	customTheme.set_stylebox("grabber", "HScrollBar", grabberStyle)
-#	return customTheme	
+#	return customTheme

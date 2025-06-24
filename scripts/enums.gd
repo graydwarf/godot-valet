@@ -13,3 +13,10 @@ enum ExportType {
 	Source,
 	Windows
 }
+
+enum ClaudeResponseType {
+	None,
+	Character,
+	Word,
+	Line
+}
