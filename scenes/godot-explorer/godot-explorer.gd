@@ -6,8 +6,8 @@ class_name ExploreManager
 
 func _ready():
 	# Connect FileExplorer signals to FilePreviewer
-	_fileTreeViewExplorer.file_selected.connect(_on_file_selected)
-	_fileTreeViewExplorer.directory_selected.connect(_on_directory_selected)
+	_fileTreeViewExplorer.FileSelected.connect(_on_file_selected)
+	_fileTreeViewExplorer.DirectorySelected.connect(_on_directory_selected)
 
 # Handle when a file is selected in the file tree view explorer
 func _on_file_selected(filePath: String):

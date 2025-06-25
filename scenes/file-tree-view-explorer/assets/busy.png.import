@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dgcmvdjsus4wo"
-path="res://.godot/imported/open-windows-explorer.png-c1da7a668097a8b0855668b395d5d1fe.ctex"
+uid="uid://dccn25v88b82i"
+path="res://.godot/imported/busy.png-fa182da7a46e04020d65720e13fbfa30.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://scenes/file-previewer/assets/open-windows-explorer.png"
-dest_files=["res://.godot/imported/open-windows-explorer.png-c1da7a668097a8b0855668b395d5d1fe.ctex"]
+source_file="res://scenes/file-tree-view-explorer/assets/busy.png"
+dest_files=["res://.godot/imported/busy.png-fa182da7a46e04020d65720e13fbfa30.ctex"]
 
 [params]
 

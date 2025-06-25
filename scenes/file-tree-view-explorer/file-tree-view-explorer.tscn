@@ -1,19 +1,30 @@
-[gd_scene load_steps=15 format=3 uid="uid://6ygqegta6dek"]
+[gd_scene load_steps=23 format=3 uid="uid://6ygqegta6dek"]
 
 [ext_resource type="Script" uid="uid://gdqxa44bc62r" path="res://scenes/file-tree-view-explorer/file-tree-view-explorer.gd" id="1_wruwl"]
+[ext_resource type="Texture2D" uid="uid://b1yqdoygqhmbs" path="res://scenes/file-tree-view-explorer/assets/flat-list.png" id="2_3ghy6"]
 [ext_resource type="Texture2D" uid="uid://de417oegex7sh" path="res://scenes/file-tree-view-explorer/assets/nav-back.png" id="2_jnomi"]
 [ext_resource type="Texture2D" uid="uid://bejkpjpt86y1g" path="res://scenes/file-tree-view-explorer/assets/open-folder.png" id="2_k063r"]
 [ext_resource type="Texture2D" uid="uid://dw5pxmkfiwtnr" path="res://scenes/file-tree-view-explorer/assets/nav-down.png" id="2_uu2th"]
 [ext_resource type="Texture2D" uid="uid://biviu8du3swnu" path="res://scenes/file-tree-view-explorer/assets/nav-down-pressed.png" id="3_aj3or"]
+[ext_resource type="Texture2D" uid="uid://bn7d73gs3g8vd" path="res://scenes/file-tree-view-explorer/assets/flat-list-pressed.png" id="3_nqtcg"]
+[ext_resource type="Texture2D" uid="uid://c173ukr4e6ht8" path="res://scenes/file-tree-view-explorer/assets/image-file-filter.png" id="3_objvc"]
 [ext_resource type="Texture2D" uid="uid://o0fp8ke64xjm" path="res://scenes/file-tree-view-explorer/assets/nav-back-pressed.png" id="3_uayya"]
+[ext_resource type="Texture2D" uid="uid://bgbs3mo6q8spw" path="res://scenes/file-tree-view-explorer/assets/flat-list-hovered.png" id="4_alyso"]
 [ext_resource type="Texture2D" uid="uid://becaohf3t25tj" path="res://scenes/file-tree-view-explorer/assets/nav-next.png" id="4_cc6nv"]
 [ext_resource type="Texture2D" uid="uid://kf8a46fs2qak" path="res://scenes/file-tree-view-explorer/assets/nav-back-hovered.png" id="4_s6k0g"]
+[ext_resource type="Texture2D" uid="uid://b53m50kxm2yfp" path="res://scenes/file-tree-view-explorer/assets/image-file-filter-enabled.png" id="4_sebkd"]
 [ext_resource type="Texture2D" uid="uid://sa2jrvnhpc60" path="res://scenes/file-tree-view-explorer/assets/nav-next-pressed.png" id="5_s6k0g"]
+[ext_resource type="Texture2D" uid="uid://c7flvnqems6p7" path="res://scenes/file-tree-view-explorer/assets/image-file-filter-hovered.png" id="5_vvuox"]
 [ext_resource type="Texture2D" uid="uid://bldq4nx8pgj2j" path="res://scenes/file-tree-view-explorer/assets/nav-up.png" id="6_3ghy6"]
 [ext_resource type="Texture2D" uid="uid://3mr63347mc0" path="res://scenes/file-tree-view-explorer/assets/nav-next-hovered.png" id="7_3ghy6"]
 [ext_resource type="Texture2D" uid="uid://f6kx83ytrqw2" path="res://scenes/file-tree-view-explorer/assets/nav-up-pressed.png" id="7_objvc"]
 [ext_resource type="Texture2D" uid="uid://dc4p7y3ap1nt6" path="res://scenes/file-tree-view-explorer/assets/nav-up-hovered.png" id="8_r6hur"]
 [ext_resource type="Texture2D" uid="uid://bs3p5uv270si5" path="res://scenes/file-tree-view-explorer/assets/nav-down-hovered.png" id="13_objvc"]
+[ext_resource type="Texture2D" uid="uid://dccn25v88b82i" path="res://scenes/file-tree-view-explorer/assets/busy.png" id="21_alyso"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_nqtcg"]
+font_size = 24
+font_color = Color(0.351563, 0.351563, 0.351563, 1)
 
 [node name="FileTreeViewExplorer" type="Control"]
 layout_mode = 3
@@ -26,7 +37,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("1_wruwl")
 
-[node name="vBoxContainer" type="VBoxContainer" parent="."]
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -34,54 +45,125 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="hBoxContainer" type="HBoxContainer" parent="vBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="FileCountLabel" type="Label" parent="VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 4
 alignment = 2
 
-[node name="PreviousButton" type="TextureButton" parent="vBoxContainer/hBoxContainer"]
+[node name="FlatListToggleButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+toggle_mode = true
+texture_normal = ExtResource("2_3ghy6")
+texture_pressed = ExtResource("3_nqtcg")
+texture_hover = ExtResource("4_alyso")
+
+[node name="FilterByImagesToggleButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+toggle_mode = true
+texture_normal = ExtResource("3_objvc")
+texture_pressed = ExtResource("4_sebkd")
+texture_hover = ExtResource("5_vvuox")
+
+[node name="PreviousButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 texture_normal = ExtResource("2_jnomi")
 texture_pressed = ExtResource("3_uayya")
 texture_hover = ExtResource("4_s6k0g")
 
-[node name="NextButton" type="TextureButton" parent="vBoxContainer/hBoxContainer"]
+[node name="NextButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 texture_normal = ExtResource("4_cc6nv")
 texture_pressed = ExtResource("5_s6k0g")
 texture_hover = ExtResource("7_3ghy6")
 
-[node name="UpButton" type="TextureButton" parent="vBoxContainer/hBoxContainer"]
+[node name="UpButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 texture_normal = ExtResource("6_3ghy6")
 texture_pressed = ExtResource("7_objvc")
 texture_hover = ExtResource("8_r6hur")
 
-[node name="DownButton" type="TextureButton" parent="vBoxContainer/hBoxContainer"]
+[node name="DownButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 texture_normal = ExtResource("2_uu2th")
 texture_pressed = ExtResource("3_aj3or")
 texture_hover = ExtResource("13_objvc")
 
-[node name="OpenFileExplorerButton" type="TextureButton" parent="vBoxContainer/hBoxContainer"]
+[node name="OpenFileExplorerButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 layout_mode = 2
 texture_normal = ExtResource("2_k063r")
 
-[node name="FileTree" type="Tree" parent="vBoxContainer"]
-unique_name_in_owner = true
+[node name="Control" type="Control" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
+
+[node name="FileTree" type="Tree" parent="VBoxContainer/Control"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
 hide_root = true
+select_mode = 2
 
-[node name="hBoxContainer2" type="HBoxContainer" parent="vBoxContainer"]
+[node name="BusyIndicator" type="ColorRect" parent="VBoxContainer/Control"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.129412, 0.129412, 0.129412, 0.733333)
+
+[node name="CenterContainer" type="CenterContainer" parent="VBoxContainer/Control/BusyIndicator"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Control/BusyIndicator/CenterContainer"]
 layout_mode = 2
+alignment = 1
 
-[connection signal="pressed" from="vBoxContainer/hBoxContainer/PreviousButton" to="." method="_on_previous_button_pressed"]
-[connection signal="pressed" from="vBoxContainer/hBoxContainer/NextButton" to="." method="_on_next_button_pressed"]
-[connection signal="pressed" from="vBoxContainer/hBoxContainer/UpButton" to="." method="_on_up_button_pressed"]
-[connection signal="pressed" from="vBoxContainer/hBoxContainer/DownButton" to="." method="_on_down_button_pressed"]
-[connection signal="pressed" from="vBoxContainer/hBoxContainer/OpenFileExplorerButton" to="." method="_on_open_file_explorer_button_pressed"]
+[node name="BusyLabel" type="Label" parent="VBoxContainer/Control/BusyIndicator/CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "Filtering..."
+label_settings = SubResource("LabelSettings_nqtcg")
+
+[node name="BusyTextureRect" type="TextureRect" parent="VBoxContainer/Control/BusyIndicator/CenterContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+texture = ExtResource("21_alyso")
+stretch_mode = 2
+
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/FlatListToggleButton" to="." method="_on_flat_list_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/FilterByImagesToggleButton" to="." method="_on_filter_by_images_toggle_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/PreviousButton" to="." method="_on_previous_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/NextButton" to="." method="_on_next_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/UpButton" to="." method="_on_up_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/DownButton" to="." method="_on_down_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/OpenFileExplorerButton" to="." method="_on_open_file_explorer_button_pressed"]
+[connection signal="multi_selected" from="VBoxContainer/Control/FileTree" to="." method="_on_file_tree_multi_selected"]
