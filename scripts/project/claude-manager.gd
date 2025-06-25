@@ -6,9 +6,9 @@ var _claudeHistoryFile = "user://claude-history.txt"
 
 # Claude Settings
 var _apiKey := ""
-var _defaultMaxMessageCount := 1
+var _defaultMaxMessageCount := 20
 var _maxMessageCount := _defaultMaxMessageCount
-var _isStoringApiKeyLocally := false
+var _isSavingKeyLocally := false
 
 # Chat History
 var _fullHistory := []  # Complete conversation history for display
@@ -21,9 +21,12 @@ func _init():
 func SetClaudeApiKey(apiKey):
 	_apiKey = apiKey
 
-func SetIsStoringApiKeyLocally(isStoringApiKeyLocally : bool):
-	_isStoringApiKeyLocally = isStoringApiKeyLocally
+func SetIsSavingKeyLocally(isSavingKeyLocally : bool):
+	_isSavingKeyLocally = isSavingKeyLocally
 
+func GetIsSavingKeyLocally():
+	return _isSavingKeyLocally
+	
 func SetMaxMessages(maxMessageCount : int):
 	_maxMessageCount = maxMessageCount
 	
@@ -80,13 +83,12 @@ func ClearHistory():
 	_conversationHistory.clear()
 	SaveChatHistory()
 
+# Keep only the most recent messages for API calls
 func TrimConversationHistory():
-	# Keep only the most recent messages for API calls
 	var maxMessages = _maxMessageCount * 2  # User + Assistant pairs
 	if _conversationHistory.size() > maxMessages:
 		_conversationHistory = _conversationHistory.slice(-maxMessages)
 
-# File Management
 func LoadChatHistory():
 	if !FileAccess.file_exists(_claudeHistoryFile):
 		return
@@ -124,7 +126,6 @@ func RebuildConversationHistory():
 			"content": entry.content
 		})
 
-# Settings Management
 func LoadClaudeSettings():
 	if !FileAccess.file_exists(_claudeConfigFile):
 		return
@@ -133,6 +134,7 @@ func LoadClaudeSettings():
 	var err = config.load(_claudeConfigFile)
 	if err == OK:
 		_apiKey = config.get_value("ClaudeSettings", "api_key", "")
+		_isSavingKeyLocally = config.get_value("ClaudeSettings", "save_key_locally", false)
 		_maxMessageCount = config.get_value("ClaudeSettings", "max_message_count", _defaultMaxMessageCount)
 	else:
 		OS.alert("An error occurred loading the Claude configuration file")
@@ -143,12 +145,13 @@ func SaveClaudeSettings():
 	if FileAccess.file_exists(_claudeConfigFile):
 		config.load(_claudeConfigFile)
 
-	if _isStoringApiKeyLocally:
+	if _isSavingKeyLocally:
 		config.set_value("ClaudeSettings", "api_key", _apiKey)
 	else:
 		config.set_value("ClaudeSettings", "api_key", "")
-		
+	
 	config.set_value("ClaudeSettings", "max_message_count", _maxMessageCount)
+	config.set_value("ClaudeSettings", "save_key_locally", _isSavingKeyLocally)
 	
 	var err = config.save(_claudeConfigFile)
 	if err != OK:

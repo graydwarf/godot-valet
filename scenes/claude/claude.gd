@@ -8,10 +8,11 @@ var _claudeManager: ClaudeManager
 # Output Animations
 var _typingSpeed = 0.001  # Can't go much faster.
 var _isTyping = false
+var _busyTween : Tween = null
 
 # Debugging Options
-var _isDebuggingOutput = true # Skip claude and just output a bit of local test text.
-var _claudeTestResponse := "" # Cache local test text
+var _isDebuggingOutput = false # Skip claude and load local test file.
+var _claudeTestResponse := "" # claude-testing-output.txt gets loaded on initial use.
 
 func _ready():
 	InitSignals()
@@ -24,10 +25,6 @@ func InitSignals():
 
 func InitClaudeManager():
 	_claudeManager = ClaudeManager.new()
-	
-	# Clear existing text
-	%OutputRichTextLabel.text = ""
-	
 	LoadClaudeHistory()
 
 func LoadClaudeHistory():
@@ -39,9 +36,22 @@ func LoadClaudeHistory():
 		elif entry.role == "assistant":
 			%OutputRichTextLabel.text += "[color=orange][b]Claude:[/b][/color] " + entry.content + "\n\n"
 
+func AnimateClaudeBusy():
+	_busyTween = create_tween()
+	_busyTween.set_loops()  # Infinite loop
+	_busyTween.tween_property(%ClaudeTextureRect, "self_modulate", Color(1.0, 1.0, 1.0, 0.5), 0.6)
+	_busyTween.tween_property(%ClaudeTextureRect, "self_modulate", Color(1.0, 1.0, 1.0, 1.0), 0.6)
+
+func StopAnimatingClaudeBusy():
+	if _busyTween == null:
+		return
+		
+	_busyTween.stop()
+	%ClaudeTextureRect.self_modulate = Color(1.0, 1.0, 1.0, 1.0)
+	
 func SaveClaudeSettings(claudeApiKey : String, isStoringApiKeyLocally : bool = false, maxMessages : int = 1):
 	_claudeManager.SetClaudeApiKey(claudeApiKey)
-	_claudeManager.SetIsStoringApiKeyLocally(isStoringApiKeyLocally)
+	_claudeManager.SetIsSavingKeyLocally(isStoringApiKeyLocally)
 	_claudeManager.SetMaxMessages(maxMessages)
 	_claudeManager.SaveClaudeSettings()
 		
@@ -49,6 +59,8 @@ func SubmitInput(textInput : String):
 	if textInput.strip_edges().is_empty():
 		return
 
+	AnimateClaudeBusy()
+	
 	var message = "[color=#00FFFF][b]You:[/b][/color] " + textInput + "\n\n"
 	_claudeManager.AddUserMessage(message)
 	%InputLineEdit.placeholder_text = "" # Only needed before for first input
@@ -64,7 +76,7 @@ func OpenClaudeSettings():
 	var claudeSettings = load("res://scenes/claude-settings/claude-settings.tscn").instantiate()
 	add_child(claudeSettings)
 	claudeSettings.connect("SaveClaudeSettings", SaveClaudeSettings)
-	claudeSettings.InitClaudeSettings(_claudeManager.GetApiKey(), _claudeManager.GetMaxMessageCount())
+	claudeSettings.InitClaudeSettings(_claudeManager.GetApiKey(), _claudeManager.GetIsSavingKeyLocally(), _claudeManager.GetMaxMessageCount())
 
 func AnimateClaudeResponse(claudeResponse: String, animationType = Enums.ClaudeResponseType.Line):
 	if _isTyping:
@@ -85,7 +97,7 @@ func AnimateClaudeResponse(claudeResponse: String, animationType = Enums.ClaudeR
 	
 	%OutputRichTextLabel.text += "\n\n"
 	_isTyping = false
-	
+	StopAnimatingClaudeBusy()
 	_claudeManager.AddClaudeMessage(claudeResponse)
 
 # Character-by-character output
@@ -197,10 +209,16 @@ func _on_http_request_completed(_result: int, responseCode: int, _headers: Packe
 			AnimateClaudeResponse(claudeResponse, Enums.ClaudeResponseType.Line)
 		else:
 			%OutputRichTextLabel.text += "Error parsing response\n\n"
+			StopAnimatingClaudeBusy()
 	else:
 		%OutputRichTextLabel.text += "API Error: " + str(responseCode) + "\n\n"
 		if str(responseCode) == "401":
 			%OutputRichTextLabel.text += "Did you configure the Claude API Key in settings (bottom right)?"
+			
+		StopAnimatingClaudeBusy()
 	
 func _on_texture_button_pressed() -> void:
 	OpenClaudeSettings()
+
+func _on_close_texture_button_pressed() -> void:
+	queue_free()

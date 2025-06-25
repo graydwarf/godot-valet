@@ -3,8 +3,9 @@ class_name ClaudeSettings
 
 signal SaveClaudeSettings
 
-func InitClaudeSettings(claudeApiKey : String = "", maxMessageCount := 1):
+func InitClaudeSettings(claudeApiKey : String = "", isSavingKeyLocally : bool = false, maxMessageCount := 1):
 	%ApiKeyLineEdit.text = claudeApiKey
+	%SaveLocallyCheckBox.button_pressed = isSavingKeyLocally
 	%SendContextAmountLineEdit.text = str(maxMessageCount)
 
 # Check if it's a valid number
@@ -34,5 +35,5 @@ func IsMaxMessageCountValid(value) -> bool:
 func _on_back_button_pressed() -> void:
 	var maxMessages = %SendContextAmountLineEdit.text
 	if IsMaxMessageCountValid(maxMessages):
-		emit_signal("SaveClaudeSettings", %ApiKeyLineEdit.text, %SaveLocallyCheckBox.button_pressed, maxMessages)
+		emit_signal("SaveClaudeSettings", %ApiKeyLineEdit.text, %SaveLocallyCheckBox.button_pressed, maxMessages.to_int())
 		queue_free()

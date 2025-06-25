@@ -8,7 +8,8 @@ var _rootItem: TreeItem
 var _isProcessingSelection: bool = false
 var _isProcessingExpansion: bool = false
 var _currentFilePath : String = ""
-var zipFileExtensions = [".zip", ".rar", ".7z", ".tar", ".gz"]
+var _zipFileExtensions = [".zip", ".rar", ".7z", ".tar", ".gz"]
+var _imageFileExtensions = [".png", ".jpg", ".jpeg", ".bmp", ".svg", ".webp", ".tga", ".exr", ".hdr"]
 var _isNavigating : bool = false
 var _currentDirectoryFiles : Array = []
 var _currentFileIndex : int = -1
@@ -92,6 +93,9 @@ func GetFolderIcon() -> Texture2D:
 func GetFileIcon() -> Texture2D:
 	return load("res://scenes/file-tree-view-explorer/assets/file.png") as Texture2D
 
+func GetImageIcon() -> Texture2D:
+	return load("res://scenes/file-tree-view-explorer/assets/image-file.png") as Texture2D
+	
 # Handle when an item is expanded
 func _on_item_collapsed(item: TreeItem):
 	if _isProcessingExpansion:
@@ -160,8 +164,8 @@ func PopulateDirectory(parentItem: TreeItem):
 	
 	dir.list_dir_end()
 	
-	print("Total directories found: " + str(directories.size()))  # Debug line
-	print("Total files found: " + str(files.size()))  # Debug line
+	#print("Total directories found: " + str(directories.size()))  # Debug line
+	#print("Total files found: " + str(files.size()))  # Debug line
 	
 	# Sort directories and files
 	directories.sort()
@@ -211,7 +215,10 @@ func PopulateDirectory(parentItem: TreeItem):
 				tempChild.set_text(0, "")
 				tempChild.set_metadata(0, null)  # Mark as temporary with null metadata
 		else:
-			fileItem.set_icon(0, GetFileIcon())
+			if IsImageFile(fullPath):
+				fileItem.set_icon(0, GetImageIcon())
+			else:
+				fileItem.set_icon(0, GetFileIcon())
 
 func PopulateZipDirectory(parentItem: TreeItem, zipPath: String, subPath: String = ""):
 	var zip = OpenZipFile(zipPath)
@@ -278,7 +285,12 @@ func PopulateZipDirectory(parentItem: TreeItem, zipPath: String, subPath: String
 		# Store zip path + internal path as metadata
 		var internalPath = searchPrefix + fileName
 		fileItem.set_metadata(0, zipPath + "::" + internalPath)
-		fileItem.set_icon(0, GetFileIcon())
+		
+		if IsImageFile(internalPath):
+			fileItem.set_icon(0, GetImageIcon())
+		else:
+			fileItem.set_icon(0, GetFileIcon())
+			
 	
 	zip.close()
 	
@@ -417,18 +429,22 @@ func ExpandToPath(targetPath: String):
 				break
 			child = child.get_next()
 
+# Check if a file is a zip archive
 func IsZipFile(filePath: String) -> bool:
-	"""Check if a file is a zip archive"""
 	var extension = filePath.get_extension().to_lower()
-	return ("." + extension) in zipFileExtensions
+	return ("." + extension) in _zipFileExtensions
 
+func IsImageFile(filePath : String) -> bool:
+	var extension = filePath.get_extension().to_lower()
+	return ("." + extension) in _imageFileExtensions
+
+# Open a zip file and return a ZIPReader
 func OpenZipFile(zipPath: String) -> ZIPReader:
-	"""Open a zip file and return a ZIPReader"""
 	var zip = ZIPReader.new()
 	var error = zip.open(zipPath)
 	if error != OK:
-		print("Failed to open zip file: " + zipPath)
 		return null
+		
 	return zip
 
 func GetZipContents(zipPath: String) -> Dictionary:

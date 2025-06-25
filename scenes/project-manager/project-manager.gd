@@ -292,6 +292,7 @@ func DisableEditButtons():
 	_changeProjectButton.disabled = true
 	_removeProjectButton.disabled = true
 	%ExploreButton.disabled = false
+	%ClaudeButton.disabled = false
 	
 func EnableEditButtons():
 	_runProjectButton.disabled = false
@@ -301,6 +302,7 @@ func EnableEditButtons():
 	_changeProjectButton.disabled = false
 	_removeProjectButton.disabled = false
 	%ExploreButton.disabled = true
+	%ClaudeButton.disabled = true
 
 func RunProject():
 	if !is_instance_valid(_selectedProjectItem):
@@ -422,11 +424,8 @@ func OpenProjectFolder():
 	OS.shell_open(projectPath)
 
 func OpenClaude():
-	if _claude == null:
-		_claude = load("res://scenes/claude/claude.tscn").instantiate()
-		add_child(_claude)
-	
-	_claude.visible = true
+	_claude = load("res://scenes/claude/claude.tscn").instantiate()
+	add_child(_claude)
 		
 func OpenExploreManager():
 	if _exploreManager == null:

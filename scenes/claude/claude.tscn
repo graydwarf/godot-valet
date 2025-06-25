@@ -1,10 +1,13 @@
-[gd_scene load_steps=6 format=3 uid="uid://w4jujpatu6b4"]
+[gd_scene load_steps=9 format=3 uid="uid://w4jujpatu6b4"]
 
 [ext_resource type="Script" uid="uid://bltgmotcc1wq8" path="res://scenes/claude/claude.gd" id="1_cc7t5"]
 [ext_resource type="Texture2D" uid="uid://ccj6g25wnde8g" path="res://scenes/claude/assets/settings.png" id="2_djybm"]
 [ext_resource type="Texture2D" uid="uid://b10q8h4uap3lt" path="res://scenes/claude/assets/claude.png" id="2_lf8bk"]
 [ext_resource type="Texture2D" uid="uid://c5mxvs24jyss2" path="res://scenes/claude/assets/settings-pressed.png" id="4_aob0g"]
 [ext_resource type="Texture2D" uid="uid://dn2iojm77u55k" path="res://scenes/claude/assets/settings-hovered.png" id="5_4l25e"]
+[ext_resource type="Texture2D" uid="uid://bl1bmbcj5ay05" path="res://scenes/claude/assets/close-button.png" id="6_4l25e"]
+[ext_resource type="Texture2D" uid="uid://dcse0yvecuvbu" path="res://scenes/claude/assets/close-button-pressed.png" id="7_24tlg"]
+[ext_resource type="Texture2D" uid="uid://cxets6emvay1k" path="res://scenes/claude/assets/close-button-hovered.png" id="8_lit52"]
 
 [node name="Claude" type="Control"]
 layout_mode = 3
@@ -27,12 +30,25 @@ theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
-[node name="CenterContainer" type="CenterContainer" parent="MarginContainer"]
-layout_mode = 2
-
 [node name="ColorRect" type="ColorRect" parent="MarginContainer"]
 layout_mode = 2
 color = Color(0, 0, 0, 0.843137)
+
+[node name="MarginContainer2" type="MarginContainer" parent="MarginContainer/ColorRect"]
+layout_mode = 2
+offset_right = 1180.0
+offset_bottom = 912.0
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+
+[node name="CloseTextureButton" type="TextureButton" parent="MarginContainer/ColorRect/MarginContainer2"]
+self_modulate = Color(1, 1, 1, 0.65098)
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
+texture_normal = ExtResource("6_4l25e")
+texture_pressed = ExtResource("7_24tlg")
+texture_hover = ExtResource("8_lit52")
 
 [node name="MarginContainer" type="MarginContainer" parent="MarginContainer/ColorRect"]
 layout_mode = 1
@@ -41,16 +57,23 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 20
+mouse_filter = 2
+theme_override_constants/margin_left = 60
+theme_override_constants/margin_top = 60
+theme_override_constants/margin_right = 60
 theme_override_constants/margin_bottom = 20
 
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/ColorRect/MarginContainer"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_constants/separation = 4
 
-[node name="OutputRichTextLabel" type="RichTextLabel" parent="MarginContainer/ColorRect/MarginContainer/VBoxContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/ColorRect/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_bottom = 10
+
+[node name="OutputRichTextLabel" type="RichTextLabel" parent="MarginContainer/ColorRect/MarginContainer/VBoxContainer/MarginContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -64,7 +87,8 @@ selection_enabled = true
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="TextureRect" type="TextureRect" parent="MarginContainer/ColorRect/MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="ClaudeTextureRect" type="TextureRect" parent="MarginContainer/ColorRect/MarginContainer/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
 texture = ExtResource("2_lf8bk")
@@ -91,5 +115,6 @@ stretch_mode = 3
 [node name="HttpRequest" type="HTTPRequest" parent="."]
 unique_name_in_owner = true
 
+[connection signal="pressed" from="MarginContainer/ColorRect/MarginContainer2/CloseTextureButton" to="." method="_on_close_texture_button_pressed"]
 [connection signal="gui_input" from="MarginContainer/ColorRect/MarginContainer/VBoxContainer/HBoxContainer/InputLineEdit" to="." method="_on_input_line_edit_gui_input"]
 [connection signal="pressed" from="MarginContainer/ColorRect/MarginContainer/VBoxContainer/HBoxContainer/SettingsTextureButton" to="." method="_on_texture_button_pressed"]
