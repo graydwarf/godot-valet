@@ -131,6 +131,51 @@ func GetFileIcon() -> Texture2D:
 
 func GetImageIcon() -> Texture2D:
 	return load("res://scenes/file-tree-view-explorer/assets/image-file.png") as Texture2D
+
+func GetZipIcon() -> Texture2D:
+	return load("res://scenes/file-tree-view-explorer/assets/zip.png") as Texture2D
+	
+func GetScriptIcon() -> Texture2D:
+	return load("res://scenes/file-tree-view-explorer/assets/file.png") as Texture2D
+
+func GetAudioIcon() -> Texture2D:
+	return load("res://scenes/file-tree-view-explorer/assets/file.png") as Texture2D
+	
+func GetSceneIcon() -> Texture2D:
+	return load("res://scenes/file-tree-view-explorer/assets/file.png") as Texture2D
+	
+func GetVideoIcon() -> Texture2D:
+	return load("res://scenes/file-tree-view-explorer/assets/file.png") as Texture2D
+	
+func Get3DModelIcon() -> Texture2D:
+	return load("res://scenes/file-tree-view-explorer/assets/file.png") as Texture2D
+	
+func GetFontIcon() -> Texture2D:
+	return load("res://scenes/file-tree-view-explorer/assets/file.png") as Texture2D
+
+func GetTextIcon() -> Texture2D:
+	return load("res://scenes/file-tree-view-explorer/assets/file.png") as Texture2D
+		
+func GetIconFromFilePath(filePath):
+	var extension = "." + filePath.get_extension().to_lower()
+	if extension in _imageExtensions:
+		return GetImageIcon()
+	elif extension in _zipExtensions:
+		return GetZipIcon()
+	elif extension in _scriptExtensions:
+		return GetScriptIcon()
+	elif extension in _audioExtensions:
+		return GetAudioIcon()
+	elif extension in _sceneExtensions:
+		return GetSceneIcon()	
+	elif extension in _videoExtensions:
+		return GetVideoIcon()
+	elif extension in _3dModelExtensions:
+		return Get3DModelIcon()
+	elif extension in _fontExtensions:
+		return GetFontIcon()
+	elif extension in _textExtensions:
+		return GetTextIcon()
 	
 # Handle when an item is expanded
 func _on_item_collapsed(item: TreeItem):
@@ -182,14 +227,14 @@ func PopulateDirectory(parentItem: TreeItem):
 	# Get all directories and files
 	dir.list_dir_begin()
 	var nextFileName = dir.get_next()
-	
 	while nextFileName != "":
 		if dir.current_is_dir():
 			# Skip hidden and system directories
 			if not nextFileName.begins_with(".") and nextFileName != "System Volume Information":
 				directories.append(nextFileName)
 		else:
-			if IsFileSupported(nextFileName):
+			# Always include zip files, filter other files normally
+			if IsZipFile(path + nextFileName) or IsFileSupported(nextFileName):
 				files.append(nextFileName)
 
 		nextFileName = dir.get_next()
@@ -220,34 +265,55 @@ func PopulateDirectory(parentItem: TreeItem):
 			tempChild.set_text(0, "")
 			tempChild.set_metadata(0, null)  # Mark as temporary with null metadata
 	
-	# Add files (existing code unchanged)
+	# Add files
 	for fileName in files:
-		var fileItem = %FileTree.create_item(parentItem)
-		if fileItem == null:
-			continue
-		fileItem.set_text(0, fileName)
-		
 		var fullPath = path + fileName
-		fileItem.set_metadata(0, fullPath)
+		var shouldInclude = true
 		
-		# Check if it's a zip file and treat it like a folder
+		# For zip files, check if they contain filtered content when filtering is active
 		if IsZipFile(fullPath):
-			fileItem.set_icon(0, GetZipIcon())
-			
-			# Check if zip has contents to make it expandable
-			var zipContents = GetZipContents(fullPath)
-			if zipContents.size() > 0 and (zipContents.directories.size() > 0 or zipContents.files.size() > 0):
-				fileItem.set_collapsed(true)
-				# Create a temporary invisible child to show expand arrow
-				var tempChild = %FileTree.create_item(fileItem)
-				tempChild.set_text(0, "")
-				tempChild.set_metadata(0, null)  # Mark as temporary with null metadata
+			if _isTreeViewFiltered:
+				shouldInclude = ZipContainsFilteredContent(fullPath)
 		else:
-			if IsImageFile(fullPath):
-				fileItem.set_icon(0, GetImageIcon())
-			else:
-				fileItem.set_icon(0, GetFileIcon())
+			# For regular files, they've already passed IsFileSupported()
+			shouldInclude = true
 		
+		if shouldInclude:
+			var fileItem = %FileTree.create_item(parentItem)
+			if fileItem == null:
+				continue
+			fileItem.set_text(0, fileName)
+			fileItem.set_metadata(0, fullPath)
+			fileItem.set_icon(0, GetIconFromFilePath(fullPath))
+			
+			# Make zip files expandable if they have contents
+			if IsZipFile(fullPath):
+				var zipContents = GetZipContents(fullPath)
+				if zipContents.size() > 0 and (zipContents.directories.size() > 0 or zipContents.files.size() > 0):
+					fileItem.set_collapsed(true)
+					var tempChild = %FileTree.create_item(fileItem)
+					tempChild.set_text(0, "")
+					tempChild.set_metadata(0, null)
+
+# Check if a zip file contains content matching current filters
+func ZipContainsFilteredContent(zipPath: String) -> bool:
+	var zip = OpenZipFile(zipPath)
+	if zip == null:
+		return false
+	
+	var files = zip.get_files()
+	for file in files:
+		if not file.ends_with("/"):
+			var fileName = file.get_file()
+			var extension = "." + fileName.get_extension().to_lower()
+			# Check if file extension matches current filters
+			if extension in _treeViewFilters:
+				zip.close()
+				return true
+	
+	zip.close()
+	return false
+	
 func PopulateZipDirectory(parentItem: TreeItem, zipPath: String, subPath: String = ""):
 	var zip = OpenZipFile(zipPath)
 	if zip == null:
@@ -318,12 +384,8 @@ func PopulateZipDirectory(parentItem: TreeItem, zipPath: String, subPath: String
 		
 		var internalPath = searchPrefix + fileName
 		fileItem.set_metadata(0, zipPath + "::" + internalPath)
-		
-		if IsImageFile(internalPath):
-			fileItem.set_icon(0, GetImageIcon())
-		else:
-			fileItem.set_icon(0, GetFileIcon())
-			
+		fileItem.set_icon(0, GetIconFromFilePath(internalPath))
+
 	zip.close()
 
 func _item_mouse_selected():
@@ -481,9 +543,6 @@ func GetZipContents(zipPath: String) -> Dictionary:
 	
 	zip.close()
 	return contents
-
-func GetZipIcon() -> Texture2D:
-	return load("res://scenes/file-tree-view-explorer/assets/zip.png") as Texture2D
 	
 func OpenCurrentFilePathInWindowsExplorer():
 	FileHelper.OpenFilePathInWindowsExplorer(_currentFilePath)
@@ -824,6 +883,10 @@ func ScanZipDirectoryRecursively(zipPath: String, basePath: String = ""):
 # Populate the tree with the flat list of files
 func PopulateFlatList():
 	for filePath in _allSupportedFiles:
+		# Skip zip files in flat list view
+		if IsZipFile(filePath):
+			continue
+			
 		var fileItem = %FileTree.create_item(_rootItem)
 		if fileItem == null:
 			continue
@@ -833,11 +896,7 @@ func PopulateFlatList():
 		fileItem.set_metadata(0, filePath)
 		
 		# Use proper icon based on file type
-		if IsImageFile(filePath):
-			fileItem.set_icon(0, GetImageIcon())
-		else:
-			fileItem.set_icon(0, GetFileIcon())
-			
+		fileItem.set_icon(0, GetIconFromFilePath(filePath))
 		fileItem.set_tooltip_text(0, filePath)
 
 # Count all visible files in the tree
@@ -947,14 +1006,12 @@ func ShowFlatList():
 
 # Recursively scan directory for all supported files
 func ScanDirectoryRecursively(dirPath: String):
-	"""Add yield points for better responsiveness during long operations"""
 	var dir = DirAccess.open(dirPath)
 	if dir == null:
 		return
 	
 	dir.list_dir_begin()
 	var fileName = dir.get_next()
-	var processedCount = 0
 	
 	while fileName != "":
 		if dir.current_is_dir():
@@ -964,22 +1021,19 @@ func ScanDirectoryRecursively(dirPath: String):
 		else:
 			if IsFileSupported(fileName):
 				var fullPath = dirPath + fileName
-				_allSupportedFiles.append(fullPath)
 				
+				# Handle zip files specially - scan their contents
 				if IsZipFile(fullPath):
 					ScanZipFileRecursively(fullPath)
+				else:
+					_allSupportedFiles.append(fullPath)
 		
 		fileName = dir.get_next()
-		
-		# Yield occasionally to keep UI responsive
-		processedCount += 1
-		if processedCount % 100 == 0:
-			await get_tree().process_frame
 	
 	dir.list_dir_end()
 
+# Update ScanZipFileRecursively to respect filters
 func ScanZipFileRecursively(zipPath: String):
-	"""Recursively scan zip file for supported files"""
 	var zip = ZIPReader.new()
 	var error = zip.open(zipPath)
 	if error != OK:
@@ -989,6 +1043,7 @@ func ScanZipFileRecursively(zipPath: String):
 	for file in files:
 		if not file.ends_with("/"):  # It's a file, not a directory
 			var fileName = file.get_file()
+			# Check if file is supported (this will respect active filters)
 			if IsFileSupported(fileName):
 				var fullPath = zipPath + "::" + file
 				_allSupportedFiles.append(fullPath)
@@ -1051,7 +1106,7 @@ func ShowFilteredFlatListByType(extensions : Array):
 		var displayName = GetDisplayNameForFlatList(filePath)
 		fileItem.set_text(0, displayName)
 		fileItem.set_metadata(0, filePath)
-		fileItem.set_icon(0, GetFileIcon())
+		fileItem.set_icon(0, GetIconFromFilePath(filePath))
 		fileItem.set_tooltip_text(0, filePath)
 
 func ShowOnlyScripts():

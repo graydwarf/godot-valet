@@ -1,35 +1,40 @@
 extends Control
 
-@onready var titleLabel: Label = %TitleLabel
+# File Previewer
+# - Previews images and other files with basic config settings
+# - Generated with assistance from Claude 4 Sonnet (Anthropic) - December 2024
 
 # Supported file types
 var supportedTextFiles = ["gd", "cs", "txt", "json", "cfg", "ini", "md", "xml", "html", "css", "js", "gdshader"]
 var supportedImageFiles = ["png", "jpg", "jpeg", "bmp", "svg", "webp", "tga"]
 var supportedSceneFiles = ["tscn", "scn"]
+var _baseSize : Vector2
+var _zoomFactor := 1.0
+var _isDragging : bool = false
+var _dragStartPos := Vector2.ZERO
+var _imageStartPos := Vector2.ZERO
+var _zoomCenter := Vector2.ZERO
 
 func _ready():
 	ClearPreview()
 
-# Add this function to FilePreviewer.gd
+# Check if the path is inside a zip file
 func IsZipPath(filePath: String) -> bool:
-	"""Check if the path is inside a zip file"""
 	return "::" in filePath
 
+# Extract a file from a zip archive and return its data
 func ExtractFileFromZip(zipFilePath: String, internalPath: String) -> PackedByteArray:
-	"""Extract a file from a zip archive and return its data"""
 	var zip = ZIPReader.new()
 	var error = zip.open(zipFilePath)
 	if error != OK:
-		print("Failed to open zip file: " + zipFilePath)
 		return PackedByteArray()
 	
 	var fileData = zip.read_file(internalPath)
 	zip.close()
 	return fileData
 
-# Update your PreviewFile function to handle zip paths:
+# Preview a file based on its extension
 func PreviewFile(filePath: String):
-	"""Preview a file based on its extension"""
 	var fileName = ""
 	var extension = ""
 	
@@ -42,8 +47,6 @@ func PreviewFile(filePath: String):
 	else:
 		fileName = filePath.get_file()
 		extension = filePath.get_extension().to_lower()
-	
-	titleLabel.text = fileName
 	
 	# Check file type and preview accordingly
 	if extension in supportedImageFiles:
@@ -62,8 +65,9 @@ func ResetContentScrollContainer():
 func PreviewImage(filePath: String):
 	var image = Image.new()
 	var error
+	_zoomFactor = 1.0 # Reset with each image
 	ResetContentScrollContainer()
-	ShowImageDisplay()	
+	ShowImageDisplay()
 	
 	if IsZipPath(filePath):
 		# Extract from zip and save to temporary file
@@ -100,15 +104,10 @@ func PreviewImage(filePath: String):
 		return
 	
 	var texture = ImageTexture.create_from_image(image)
+	_baseSize = texture.get_size()
 	%ImageViewer.texture = texture
-	
-	# Set to actual size - no scaling
-	%ImageViewer.stretch_mode = TextureRect.STRETCH_KEEP
-	%ImageViewer.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-	
-	# Set the size to match the image
-	%ImageViewer.custom_minimum_size = Vector2(image.get_width(), image.get_height())
-	
+	UpdateImageSize()
+		
 	# Show image info
 	var displayPath = filePath
 	if IsZipPath(filePath):
@@ -120,8 +119,6 @@ func PreviewImage(filePath: String):
 		displayPath.get_extension().to_upper(),
 		FormatFileSize(GetFileSize(filePath))
 	]
-	
-	print(info)
 
 func PreviewTextFile(filePath: String):
 	ShowTextEditor()
@@ -135,7 +132,7 @@ func PreviewTextFile(filePath: String):
 		
 		var fileData = ExtractFileFromZip(zipPath, internalPath)
 		if fileData.size() == 0:
-			ShowError("Failed to extract file from zip: " + internalPath)
+			%TextEdit.text = "Nothing to show in this file..."
 			return
 		
 		content = fileData.get_string_from_utf8()
@@ -149,8 +146,12 @@ func PreviewTextFile(filePath: String):
 		content = file.get_as_text()
 		file.close()
 	
-	%TextViewer.text = content
-	%TextViewer.editable = false  # Read-only preview
+	if content == "":
+		%TextEdit.text = "Nothing to show in this file..."
+	else:
+		%TextEdit.text = content
+		
+	%TextEdit.editable = false  # Read-only preview
 	
 	# Set syntax highlighting based on file type
 	var extension = ""
@@ -193,9 +194,7 @@ func GetFileSize(filePath: String) -> int:
 # Preview text files
 func PreviewSceneFile(filePath: String):
 	ShowTextEditor()
-	
 	var content = ""
-	
 	if IsZipPath(filePath):
 		# Extract from zip
 		var parts = filePath.split("::")
@@ -204,7 +203,7 @@ func PreviewSceneFile(filePath: String):
 		
 		var fileData = ExtractFileFromZip(zipPath, internalPath)
 		if fileData.size() == 0:
-			ShowError("Failed to extract scene file from zip: " + internalPath)
+			ShowError("Nothing to show in this file...")
 			return
 		
 		content = fileData.get_string_from_utf8()
@@ -218,14 +217,11 @@ func PreviewSceneFile(filePath: String):
 		content = file.get_as_text()
 		file.close()
 	
-	%TextViewer.text = content
-	%TextViewer.editable = false
-	
-	# Could add special scene file highlighting or parsing here
-	print("Scene file preview: " + filePath)
+	%TextEdit.text = content
+	%TextEdit.editable = false
 
+# Show info for unsupported file types
 func ShowUnsupportedFile(filePath: String, extension: String):
-	"""Show info for unsupported file types"""
 	ShowTextEditor()
 	
 	var fileName = ""
@@ -245,47 +241,50 @@ func ShowUnsupportedFile(filePath: String, extension: String):
 		var zipPath = filePath.split("::")[0].get_file()
 		info += "\n\nThis file is inside: " + zipPath
 	
-	%TextViewer.text = info
-	%TextViewer.editable = false
-	
-func ShowError(errorMessage: String):
-	"""Show error message"""
-	ShowTextEditor()
-	%TextViewer.text = "Error: " + errorMessage
-	%TextViewer.editable = false
+	%TextEdit.text = info
+	%TextEdit.editable = false
 
+# Show error message
+func ShowError(errorMessage: String):
+	ShowTextEditor()
+	%TextEdit.text = "Error: " + errorMessage
+	%TextEdit.editable = false
+
+# Set syntax highlighting based on file extension
 func SetSyntaxHighlighting(extension: String):
-	"""Set syntax highlighting based on file extension"""
 	# Note: You might need to configure syntax highlighting differently
 	# depending on your Godot version and available highlighters
 	match extension.to_lower():
 		".gd":
-			%TextViewer.syntax_highlighter = null  # Godot's default GDScript highlighter
+			%TextEdit.syntax_highlighter = null  # Godot's default GDScript highlighter
 		".cs":
-			%TextViewer.syntax_highlighter = null  # C# highlighter if available
+			%TextEdit.syntax_highlighter = null  # C# highlighter if available
 		".json":
-			%TextViewer.syntax_highlighter = null  # JSON highlighter if available
+			%TextEdit.syntax_highlighter = null  # JSON highlighter if available
 		_:
-			%TextViewer.syntax_highlighter = null  # No highlighting
+			%TextEdit.syntax_highlighter = null  # No highlighting
 
+# Show the text editor and hide image display
 func ShowTextEditor():
-	"""Show the text editor and hide image display"""
+	%ImageToolbar.visible = false
+	%TextToolbar.visible = true
 	%TextViewer.visible = true
-	%ImageViewer.visible = false
+	%ImageContainer.visible = false
 
+# Show the image display and hide text editor
 func ShowImageDisplay():
-	"""Show the image display and hide text editor"""
+	%ImageToolbar.visible = true
+	%TextToolbar.visible = false
 	%TextViewer.visible = false
-	%ImageViewer.visible = true
+	%ImageContainer.visible = true
 
 func ClearPreview():
-	%TitleLabel.text = "No file selected"
-	%TextViewer.text = ""
+	%TextEdit.text = ""
 	%ImageViewer.texture = null
 	ShowTextEditor()
 
+# Format file size in human-readable format
 func FormatFileSize(sizeBytes: int) -> String:
-	"""Format file size in human-readable format"""
 	if sizeBytes < 1024:
 		return str(sizeBytes) + " B"
 	elif sizeBytes < 1024 * 1024:
@@ -295,13 +294,14 @@ func FormatFileSize(sizeBytes: int) -> String:
 	else:
 		return "%.1f GB" % (sizeBytes / (1024.0 * 1024.0 * 1024.0))
 
+# Check if a file type is supported for preview
 func IsFileSupported(filePath: String) -> bool:
-	"""Check if a file type is supported for preview"""
 	var extension = filePath.get_extension().to_lower()
 	return extension in supportedTextFiles or extension in supportedImageFiles or extension in supportedSceneFiles
 
+# Add support for additional file extensions
+# TODO:
 func AddSupportedExtension(extension: String, fileType: String = "text"):
-	"""Add support for additional file extensions"""
 	match fileType:
 		"text":
 			if not extension in supportedTextFiles:
@@ -312,3 +312,80 @@ func AddSupportedExtension(extension: String, fileType: String = "text"):
 		"scene":
 			if not extension in supportedSceneFiles:
 				supportedSceneFiles.append(extension)
+
+func UpdateImageSize():
+	var newSize = _baseSize * _zoomFactor
+	%ImageViewer.custom_minimum_size = newSize
+	%ImageViewer.size = newSize
+	
+	# Center the image when it's smaller than the container
+	var containerSize = %ImageContainer.size  # Your clipping Control node
+	if newSize.x < containerSize.x:
+		%ImageViewer.position.x = (containerSize.x - newSize.x) * 0.5
+	if newSize.y < containerSize.y:
+		%ImageViewer.position.y = (containerSize.y - newSize.y) * 0.5
+
+func ZoomIn():
+	_zoomFactor = min(_zoomFactor * 1.2, 50.0)
+	UpdateImageSize()
+
+func ZoomOut():
+	_zoomFactor = max(_zoomFactor / 1.2, 0.1)
+	UpdateImageSize()
+	
+var zoom_center: Vector2  # Point to zoom into
+
+func _gui_input(event):
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				_isDragging = true
+				_dragStartPos = event.position
+				_imageStartPos = %ImageViewer.position
+			else:
+				_isDragging = false
+		elif event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			zoom_center = event.position  # Zoom into mouse position
+			ZoomIn()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			zoom_center = event.position  # Zoom out from mouse position
+			ZoomOut()
+	elif event is InputEventMouseMotion and _isDragging:
+		var delta = event.position - _dragStartPos
+		%ImageViewer.position = _imageStartPos + delta
+
+func UpdateImageSizeWithCenter(old_zoom: float):
+	var old_size = _baseSize * old_zoom
+	var new_size = _baseSize * _zoomFactor
+	
+	# Calculate the point in the image we're zooming into
+	var image_point = zoom_center - %ImageViewer.position
+	
+	# Calculate the ratio of the zoom change
+	var zoom_ratio = _zoomFactor / old_zoom
+	
+	# Adjust position so the zoom_center point stays in the same place
+	var new_image_point = image_point * zoom_ratio
+	%ImageViewer.position = zoom_center - new_image_point
+	
+	# Update the image size
+	%ImageViewer.custom_minimum_size = new_size
+	%ImageViewer.size = new_size
+
+# For zoom functions without a specific center (like reset), use container center
+func ResetZoom():
+	zoom_center = %ClippingContainer.size * 0.5  # Center of container
+	var old_zoom = _zoomFactor
+	_zoomFactor = 1.0
+	UpdateImageSizeWithCenter(old_zoom)
+
+# Optional: Constrain panning to keep image visible
+func ConstrainImagePosition():
+	var container_size = %ImageContainer.size
+	var image_size = %ImageViewer.size
+	
+	# Don't let image move too far off screen
+	%ImageViewer.position.x = clamp(%ImageViewer.position.x, 
+		container_size.x - image_size.x, 0)
+	%ImageViewer.position.y = clamp(%ImageViewer.position.y, 
+		container_size.y - image_size.y, 0)

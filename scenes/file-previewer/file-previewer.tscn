@@ -1,8 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://r8y55mlah1wy"]
+[gd_scene load_steps=4 format=3 uid="uid://r8y55mlah1wy"]
 
 [ext_resource type="Script" uid="uid://btr4i6pvvk3v3" path="res://scenes/file-previewer/file-previewer.gd" id="1_so7ii"]
+[ext_resource type="Texture2D" uid="uid://1mnohgp6net8" path="res://scenes/file-tree-view-explorer/assets/drive.png" id="2_1682l"]
+[ext_resource type="Texture2D" uid="uid://ct0x5fhgghm8m" path="res://scenes/file-tree-view-explorer/assets/folder.png" id="3_ddnpw"]
 
 [node name="FilePreviewer" type="Control"]
+clip_contents = true
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -14,6 +17,7 @@ size_flags_vertical = 3
 script = ExtResource("1_so7ii")
 
 [node name="vBoxContainer" type="VBoxContainer" parent="."]
+clip_contents = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -22,29 +26,96 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="ButtonHBoxContainer" type="HBoxContainer" parent="vBoxContainer"]
+custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 
-[node name="TitleLabel" type="Label" parent="vBoxContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="vBoxContainer/ButtonHBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 16
+
+[node name="ImageToolbar" type="Control" parent="vBoxContainer/ButtonHBoxContainer/MarginContainer"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
-text = "..."
+size_flags_horizontal = 3
 
-[node name="ContentScrollContainer" type="ScrollContainer" parent="vBoxContainer"]
+[node name="StretchImageTextureButton" type="TextureButton" parent="vBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -32.0
+offset_bottom = 32.0
+grow_horizontal = 0
+tooltip_text = "Fit to Screen."
+toggle_mode = true
+texture_normal = ExtResource("2_1682l")
+
+[node name="TextToolbar" type="Control" parent="vBoxContainer/ButtonHBoxContainer/MarginContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ShowActualSizeTextureButton" type="TextureButton" parent="vBoxContainer/ButtonHBoxContainer/MarginContainer/TextToolbar"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -32.0
+offset_bottom = 32.0
+grow_horizontal = 0
+tooltip_text = "Keep Size & Scale"
+toggle_mode = true
+button_pressed = true
+texture_normal = ExtResource("3_ddnpw")
+
+[node name="ImageContainer" type="Control" parent="vBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
+mouse_filter = 1
 
-[node name="TextViewer" type="TextEdit" parent="vBoxContainer/ContentScrollContainer"]
+[node name="ImageViewer" type="TextureRect" parent="vBoxContainer/ImageContainer"]
+unique_name_in_owner = true
+texture_filter = 1
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TextViewer" type="Control" parent="vBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ContentScrollContainer" type="ScrollContainer" parent="vBoxContainer/TextViewer"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="TextEdit" type="TextEdit" parent="vBoxContainer/TextViewer/ContentScrollContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 placeholder_text = "Select a file to preview..."
 
-[node name="ImageViewer" type="TextureRect" parent="vBoxContainer/ContentScrollContainer"]
-unique_name_in_owner = true
-visible = false
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-stretch_mode = 3
+[connection signal="pressed" from="vBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar/StretchImageTextureButton" to="." method="_on_stretch_image_texture_button_pressed"]
