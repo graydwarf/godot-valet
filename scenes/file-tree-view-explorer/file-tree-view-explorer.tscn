@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3 uid="uid://6ygqegta6dek"]
+[gd_scene load_steps=25 format=3 uid="uid://6ygqegta6dek"]
 
 [ext_resource type="Script" uid="uid://gdqxa44bc62r" path="res://scenes/file-tree-view-explorer/file-tree-view-explorer.gd" id="1_wruwl"]
 [ext_resource type="Texture2D" uid="uid://b1yqdoygqhmbs" path="res://scenes/file-tree-view-explorer/assets/flat-list.png" id="2_3ghy6"]
@@ -19,7 +19,9 @@
 [ext_resource type="Texture2D" uid="uid://3mr63347mc0" path="res://scenes/file-tree-view-explorer/assets/nav-next-hovered.png" id="7_3ghy6"]
 [ext_resource type="Texture2D" uid="uid://f6kx83ytrqw2" path="res://scenes/file-tree-view-explorer/assets/nav-up-pressed.png" id="7_objvc"]
 [ext_resource type="Texture2D" uid="uid://dc4p7y3ap1nt6" path="res://scenes/file-tree-view-explorer/assets/nav-up-hovered.png" id="8_r6hur"]
+[ext_resource type="Texture2D" uid="uid://htiowt17a314" path="res://scenes/file-tree-view-explorer/assets/nav-back-disabled.png" id="11_s873p"]
 [ext_resource type="Texture2D" uid="uid://bs3p5uv270si5" path="res://scenes/file-tree-view-explorer/assets/nav-down-hovered.png" id="13_objvc"]
+[ext_resource type="Texture2D" uid="uid://bk643sv2v87st" path="res://scenes/file-tree-view-explorer/assets/nav-next-disabled.png" id="15_mukj0"]
 [ext_resource type="Texture2D" uid="uid://dccn25v88b82i" path="res://scenes/file-tree-view-explorer/assets/busy.png" id="21_alyso"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_nqtcg"]
@@ -63,6 +65,7 @@ alignment = 2
 unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
+tooltip_text = "Display selected folder as flat list"
 toggle_mode = true
 texture_normal = ExtResource("2_3ghy6")
 texture_pressed = ExtResource("3_nqtcg")
@@ -72,24 +75,29 @@ texture_hover = ExtResource("4_alyso")
 unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
+tooltip_text = "Toggle image filter"
 toggle_mode = true
 texture_normal = ExtResource("3_objvc")
 texture_pressed = ExtResource("4_sebkd")
 texture_hover = ExtResource("5_vvuox")
 
 [node name="PreviousButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 texture_normal = ExtResource("2_jnomi")
 texture_pressed = ExtResource("3_uayya")
 texture_hover = ExtResource("4_s6k0g")
+texture_disabled = ExtResource("11_s873p")
 
 [node name="NextButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 texture_normal = ExtResource("4_cc6nv")
 texture_pressed = ExtResource("5_s6k0g")
 texture_hover = ExtResource("7_3ghy6")
+texture_disabled = ExtResource("15_mukj0")
 
 [node name="UpButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(32, 32)

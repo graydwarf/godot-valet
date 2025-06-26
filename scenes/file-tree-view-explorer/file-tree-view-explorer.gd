@@ -702,6 +702,8 @@ func SendKeyEventToTree(keycode: Key):
 
 func ShowFilteredFlatList():
 	if %FlatListToggleButton.button_pressed:
+		%PreviousButton.disabled = true
+		%NextButton.disabled = true
 		ShowFlatListForCurrentSelection()
 	else:
 		ShowTreeView()
@@ -1307,7 +1309,6 @@ func UpdateFilterIndicator():
 func ShowBusyIndicator():
 	%BusyIndicator.visible = true
 
-
 # Hide and stop the busy indicator  
 func HideBusyIndicator():
 	%BusyIndicator.visible = false
@@ -1378,10 +1379,47 @@ func ProcessWithBusyIndicator(operation_name: String, callable_operation: Callab
 	HideBusyIndicator()
 	
 func _on_up_button_pressed() -> void:
-	SendKeyEventToTree(KEY_UP)
-
+	if %FlatListToggleButton.button_pressed:
+		SelectPreviousItem()
+	else:
+		SendKeyEventToTree(KEY_UP)
+	
+func SelectPreviousItem():
+	var selected = %FileTree.get_selected()
+	if not selected:
+		return
+	
+	var prev = selected.get_prev()
+	if prev:
+		%FileTree.set_selected(prev, 0)
+		prev.select(0)
+		%FileTree.scroll_to_item(prev)
+		
 func _on_down_button_pressed() -> void:
-	SendKeyEventToTree(KEY_DOWN)
+	if %FlatListToggleButton.button_pressed:
+		SelectNextItem()
+	else:
+		SendKeyEventToTree(KEY_DOWN)
+
+# Simple flat list navigation - just go to next sibling
+func SelectNextItem():
+	%FileTree.grab_focus()
+
+	var selected = %FileTree.get_selected()
+	if not selected:
+		# Nothing selected - select first item
+		var firstItem = _rootItem.get_first_child()
+		if firstItem:
+			%FileTree.set_selected(firstItem, 0)
+			firstItem.select(0)
+			%FileTree.scroll_to_item(firstItem)
+		return
+
+	var next = selected.get_next()
+	if next:
+		%FileTree.set_selected(next, 0)
+		next.select(0)
+		%FileTree.scroll_to_item(next)
 
 func _on_file_tree_multi_selected(item: TreeItem, column: int, selected: bool) -> void:
 	if selected:
