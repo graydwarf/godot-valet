@@ -172,6 +172,12 @@ func GetFileSize(filePath: String) -> int:
 		if error != OK:
 			return 0
 		
+		# Check if the file actually exists in the zip
+		var files = zip.get_files()
+		if not internalPath in files:
+			zip.close()
+			return 0
+		
 		var fileData = zip.read_file(internalPath)
 		zip.close()
 		return fileData.size()
@@ -180,9 +186,9 @@ func GetFileSize(filePath: String) -> int:
 		if file == null:
 			return 0
 		
-		var size = file.get_length()
+		var fileSize = file.get_length()
 		file.close()
-		return size
+		return fileSize
 
 # Preview text files
 func PreviewSceneFile(filePath: String):

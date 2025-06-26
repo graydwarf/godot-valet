@@ -1,5 +1,9 @@
 extends Control
 
+# File Tree View Explorer
+# - Comprehensive file browser with zip support, filtering, and preview integration
+# - Generated with assistance from Claude 4 Sonnet (Anthropic) - December 2024
+
 # Signals
 signal FileSelected(filePath : String)
 signal DirectorySelected(dirPath : String)
@@ -16,7 +20,7 @@ var _activeFilters := []
 var _cachedFileList := []
 var _treeViewFilters := []
 var _isTreeViewFiltered := false
-var _busyTween : Tween
+var _flatListBasePath: String = ""
 
 # Supported extensions used to filter files
 var _zipExtensions := [".zip", ".rar", ".7z", ".tar", ".gz"]
@@ -75,12 +79,12 @@ func SetupTree():
 	_rootItem = %FileTree.create_item()
 
 func PopulateDrives():
-	await ProcessWithBusyIndicator("Loading drives", func():
-		_populate_drives_internal()
+	await ProcessWithBusyIndicator(func():
+		PopulateDrivesInternal()
 	)
 
-func _populate_drives_internal():
-	"""Internal function that does the actual drive population"""
+# Internal function that does the actual drive population
+func PopulateDrivesInternal():
 	var drives = GetAvailableDrives()
 	
 	for drive in drives:
@@ -355,9 +359,6 @@ func ItemSelected(selected):
 func SelectedPathChanged(path: String):
 	# Check if it's inside a zip file
 	if "::" in path:
-		var parts = path.split("::")
-		var zipPath = parts[0]
-		var internalPath = parts[1]
 		FileSelected.emit(path)  # Emit the full path including zip reference
 	elif IsZipFile(path):
 		DirectorySelected.emit(path)  # Treat zip files as directories
@@ -700,12 +701,18 @@ func SendKeyEventToTree(keycode: Key):
 	release_event.pressed = false
 	Input.parse_input_event(release_event)
 
-func ShowFilteredFlatList():
+func ToggleFlatList():
+	ShowBusyIndicator()
+	await get_tree().create_timer(0.2).timeout
+	
 	if %FlatListToggleButton.button_pressed:
 		%PreviousButton.disabled = true
 		%NextButton.disabled = true
 		ShowFlatListForCurrentSelection()
 	else:
+		_flatListBasePath = ""
+		%PreviousButton.disabled = false
+		%NextButton.disabled = false
 		ShowTreeView()
 
 func _show_flat_list_internal():
@@ -814,8 +821,8 @@ func ScanZipDirectoryRecursively(zipPath: String, basePath: String = ""):
 	
 	zip.close()
 
+# Populate the tree with the flat list of files
 func PopulateFlatList():
-	"""Populate the tree with the flat list of files"""
 	for filePath in _allSupportedFiles:
 		var fileItem = %FileTree.create_item(_rootItem)
 		if fileItem == null:
@@ -866,6 +873,29 @@ func GetDisplayNameForFlatList(filePath: String) -> String:
 func ShowTreeView():
 	%FileTree.clear()
 	_rootItem = %FileTree.create_item()
+	
+	# Check if we need to reapply filters
+	if not _activeFilters.is_empty():
+		# Preserve filter state and reapply
+		_isTreeViewFiltered = true
+		var combinedExtensions := []
+		for filterName in _activeFilters:
+			match filterName:
+				"images":
+					combinedExtensions.append_array(_imageExtensions)
+				"scripts":
+					combinedExtensions.append_array(_scriptExtensions)
+				"audio":
+					combinedExtensions.append_array(_audioExtensions)
+				"scenes":
+					combinedExtensions.append_array(_sceneExtensions)
+				"videos":
+					combinedExtensions.append_array(_videoExtensions)
+		_treeViewFilters = combinedExtensions
+	else:
+		_isTreeViewFiltered = false
+		_treeViewFilters.clear()
+	
 	PopulateDrives()
 	
 # Show all supported files in a flat list
@@ -1067,7 +1097,10 @@ func RefreshSelectedTreeFolder():
 			PopulateDirectory(selected)
 
 # Toggle a filter on/off
-func ToggleFilter(filterName : String, extensions : Array, enabled : bool):
+func ToggleFilter(filterName : String, enabled : bool):
+	ShowBusyIndicator()
+	await get_tree().create_timer(0.2).timeout
+	
 	if enabled:
 		if not filterName in _activeFilters:
 			_activeFilters.append(filterName)
@@ -1077,9 +1110,7 @@ func ToggleFilter(filterName : String, extensions : Array, enabled : bool):
 	ApplyActiveFilters()
 
 func RefreshCurrentView():
-	"""Refresh the current view (flat list or tree view)"""
 	if %FlatListToggleButton.button_pressed:
-		# Redo the flat list without filters
 		_activeFilters.clear()
 		_treeViewFilters.clear()
 		_isTreeViewFiltered = false
@@ -1122,9 +1153,11 @@ func ApplyActiveFilters():
 		_treeViewFilters = combinedExtensions
 		_isTreeViewFiltered = true
 		RefreshTreeViewWithFilters()
+	
+	HideBusyIndicator()
 
 func RefreshTreeViewWithFilters():
-	await ProcessWithBusyIndicator("Applying filters", func():
+	await ProcessWithBusyIndicator(func():
 		_refresh_tree_view_with_filters_internal()
 	)
 
@@ -1315,13 +1348,15 @@ func HideBusyIndicator():
 
 # Show flat list for currently selected directory/drive
 func ShowFlatListForCurrentSelection():
+	if _flatListBasePath == "":
+		_flatListBasePath = GetCurrentBasePath()
+		
 	ShowBusyIndicator()
-	await get_tree().create_timer(0.2).timeout
 	call_deferred("DoFlatListWork")
 
 # Do the actual work after UI has updated
 func DoFlatListWork():
-	var basePath = GetCurrentBasePath()
+	var basePath = _flatListBasePath  # Use stored path instead of GetCurrentBasePath()
 	if basePath.is_empty():
 		ShowFlatList()
 		HideBusyIndicator()
@@ -1371,18 +1406,12 @@ func DoFlatListWork():
 	HideBusyIndicator()
 
 # Execute an operation with busy indicator and proper UI updates
-func ProcessWithBusyIndicator(operation_name: String, callable_operation: Callable):
+func ProcessWithBusyIndicator(callable_operation: Callable):
 	ShowBusyIndicator()
 	await get_tree().process_frame
 	callable_operation.call()
 	await get_tree().process_frame
 	HideBusyIndicator()
-	
-func _on_up_button_pressed() -> void:
-	if %FlatListToggleButton.button_pressed:
-		SelectPreviousItem()
-	else:
-		SendKeyEventToTree(KEY_UP)
 	
 func SelectPreviousItem():
 	var selected = %FileTree.get_selected()
@@ -1394,13 +1423,7 @@ func SelectPreviousItem():
 		%FileTree.set_selected(prev, 0)
 		prev.select(0)
 		%FileTree.scroll_to_item(prev)
-		
-func _on_down_button_pressed() -> void:
-	if %FlatListToggleButton.button_pressed:
-		SelectNextItem()
-	else:
-		SendKeyEventToTree(KEY_DOWN)
-
+			
 # Simple flat list navigation - just go to next sibling
 func SelectNextItem():
 	%FileTree.grab_focus()
@@ -1421,15 +1444,119 @@ func SelectNextItem():
 		next.select(0)
 		%FileTree.scroll_to_item(next)
 
-func _on_file_tree_multi_selected(item: TreeItem, column: int, selected: bool) -> void:
+# Add this new function for tree mode navigation
+func SelectNextTreeItem():
+	%FileTree.grab_focus()
+	var selected = %FileTree.get_selected()
+	if not selected:
+		var firstItem = _rootItem.get_first_child()
+		if firstItem:
+			%FileTree.set_selected(firstItem, 0)
+			firstItem.select(0)
+			%FileTree.scroll_to_item(firstItem)
+		return
+	
+	var next = GetNextVisibleTreeItem(selected)
+	if next:
+		%FileTree.set_selected(next, 0)
+		next.select(0)
+		%FileTree.scroll_to_item(next)
+
+# Get next visible item in tree order (drills down into children, then siblings, then back up)
+func GetNextVisibleTreeItem(item: TreeItem) -> TreeItem:
+	# Check children first if expanded
+	if not item.is_collapsed() and item.get_first_child():
+		return item.get_first_child()
+	
+	# Check next sibling
+	if item.get_next():
+		return item.get_next()
+	
+	# Go up to parent and check its next sibling
+	var parent = item.get_parent()
+	while parent and parent != _rootItem:
+		if parent.get_next():
+			return parent.get_next()
+		parent = parent.get_parent()
+	
+	return null
+
+# Get previous visible item in tree order
+func GetPreviousVisibleTreeItem(item: TreeItem) -> TreeItem:
+	# Check previous sibling
+	var prev = item.get_prev()
+	if prev:
+		# Go to the last expanded descendant of the previous sibling
+		while not prev.is_collapsed() and prev.get_first_child():
+			var lastChild = prev.get_first_child()
+			while lastChild.get_next():
+				lastChild = lastChild.get_next()
+			prev = lastChild
+		return prev
+	
+	# Go to parent
+	var parent = item.get_parent()
+	if parent and parent != _rootItem:
+		return parent
+	
+	return null
+	
+func _input(event):
+	if event is InputEventKey and event.pressed:
+		if %FileTree.has_focus():
+			match event.keycode:
+				KEY_DOWN:
+					if %FlatListToggleButton.button_pressed:
+						SelectNextItem()  # Simple sibling navigation for flat list
+					else:
+						SelectNextTreeItem()  # Tree-aware navigation
+					get_viewport().set_input_as_handled()
+				KEY_UP:
+					if %FlatListToggleButton.button_pressed:
+						SelectPreviousItem()  # Simple sibling navigation for flat list
+					else:
+						SelectPreviousTreeItem()  # Tree-aware navigation
+					get_viewport().set_input_as_handled()
+				KEY_RIGHT:
+					if %FlatListToggleButton.button_pressed:
+						get_viewport().set_input_as_handled()
+				KEY_LEFT:
+					if %FlatListToggleButton.button_pressed:
+						get_viewport().set_input_as_handled()
+
+func SelectPreviousTreeItem():
+	var selected = %FileTree.get_selected()
+	if not selected:
+		return
+	
+	var prev = GetPreviousVisibleTreeItem(selected)
+	if prev:
+		%FileTree.set_selected(prev, 0)
+		prev.select(0)
+		%FileTree.scroll_to_item(prev)
+
+# Update button handlers
+func _on_down_button_pressed() -> void:
+	%FileTree.grab_focus()
+	if %FlatListToggleButton.button_pressed:
+		SelectNextItem()
+	else:
+		SelectNextTreeItem()
+
+# Update button handlers
+func _on_up_button_pressed() -> void:
+	%FileTree.grab_focus()
+	SelectPreviousItem()
+	
+func _on_file_tree_multi_selected(item: TreeItem, _column: int, selected: bool) -> void:
 	if selected:
 		ItemSelected(item) # Replace with function body.
 
 func _on_flat_list_button_pressed() -> void:
-	ShowFilteredFlatList()
+	ToggleFlatList()
 
 func _on_filter_by_images_toggle_button_pressed() -> void:
 	if %FilterByImagesToggleButton.button_pressed:
-		ToggleFilter("images", _imageExtensions, true)
+		ToggleFilter("images", true)
 	else:
-		ToggleFilter("images", _imageExtensions, false)
+		ToggleFilter("images", false)

@@ -94,6 +94,7 @@ size_flags_vertical = 3
 
 [node name="FileTreeViewExplorer" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer" instance=ExtResource("2_ocxm6")]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(400, 0)
 layout_mode = 2
 
 [node name="FilePreviewer" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer" instance=ExtResource("3_g1ls4")]
