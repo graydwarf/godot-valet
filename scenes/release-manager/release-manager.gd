@@ -989,6 +989,11 @@ func ExecuteButlerCommandsThread():
 func UpdatePublishedDate():
 	%LastPublishedLineEdit.text = Date.GetCurrentDateAsString(Date.GetCurrentDateAsDictionary())
 	_isDirty = true
+
+func IsCommandAvailable(command : String) -> bool:
+	var output = []
+	var result = OS.execute("which" if OS.get_name() != "Windows" else "where", [command], output, true)
+	return result == 0 and output.size() > 0
 	
 func ExecuteButlerCommand(butlerCommand, outputName):
 	var output = []
@@ -1019,9 +1024,30 @@ func LogButlerResults(exitCode, output, tabName):
 		for result in results:
 			butlerOutput += result + "\n"
 	else:
-		# Build failure output
-		for result in output:
-			butlerOutput += result + "\n"
+		if exitCode == -1:
+			for result in results:
+				butlerOutput += result + "\n"
+			
+			for o in output:
+				butlerOutput += o + "\n"
+				
+			butlerOutput += "Search itch.io help for installation/configuration help. If so, make sure butler works standalone and is registered under system PATH. That should happen as part of install. \n"
+			butlerOutput += "Latest Documentation: https://itch.io/docs/butler/installing.html \n"
+			butlerOutput += "Windows 11 Users: \n"
+			butlerOutput += "- Download butler from itch.io (make sure you get itch.io version) and extract it from zip into a folder Example: 'C:\\butler' \n"
+			butlerOutput += "- Go into 'Advanced System Settings'. \n"
+			butlerOutput += "- Click the 'Environment Variables' button. \n"
+			butlerOutput += "- Select 'Path' in the 'System variables' section (at bottom) and click 'Edit...' \n"
+			butlerOutput += "- Click 'New' button and copy/paste the full path to the butler.exe ('C:\\butler') (don't add the executable name (butler.exe)) and hit enter. OK your way out (and maybe double check to ensure it stuck by going back in and seeing it.) \n"
+			butlerOutput += "- Open a cmd prompt and type: butler -V and you should see some butler spew with version information. You should be able to run it from any directory. If so, goto next.\n"
+			butlerOutput += "- Make sure you're logged into itch.io with the account you want to publish to.\n"
+			butlerOutput += "- In a cmd prompt, type and run: butler login\n"
+			butlerOutput += "- Read and follow on-screen instructions. The browser will launch to an auth page for you to accept. Do so.\n"
+			butlerOutput += "- Restart (sometimes not needed) and then you should be ready to publish.\n"
+		else:
+			# Build failure output
+			for result in output:
+				butlerOutput += result + "\n"
 
 	butlerOutput = butlerOutput.replace("\\r\\n", "\n")
 	call_deferred("CreateOutputTab", butlerOutput, tabName)
