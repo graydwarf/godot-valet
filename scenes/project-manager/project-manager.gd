@@ -17,7 +17,7 @@ var _selectedProjectItem = null
 var _runProjectThread
 var _editProjectThread
 var _openGodotProjectManagerThread
-var _exploreManager : ExploreManager
+var _fileExplorer : FileExplorer
 var _claude : Claude
 
 func _ready():
@@ -151,6 +151,7 @@ func LoadProjectsIntoProjectContainer():
 			projectItem.SetCreatedDate(config.get_value("ProjectSettings", "created_date", {}))
 			projectItem.SetEditedDate(config.get_value("ProjectSettings", "edited_date", {}))
 			projectItem.SetSourceFilters(config.get_value("ProjectSettings", "source_filters", []))
+			projectItem.SetThumbnailPath(config.get_value("ProjectSettings", "thumbnail_path", "res://icon.svg"))
 			
 			if isHidden:
 				hiddenProjectCount += 1
@@ -291,7 +292,7 @@ func DisableEditButtons():
 	_openProjectFolderButton.disabled = true
 	_changeProjectButton.disabled = true
 	_removeProjectButton.disabled = true
-	%ExploreButton.disabled = false
+	#%FileExplorerButton.disabled = false
 	%ClaudeButton.disabled = false
 	
 func EnableEditButtons():
@@ -301,7 +302,7 @@ func EnableEditButtons():
 	_openProjectFolderButton.disabled = false
 	_changeProjectButton.disabled = false
 	_removeProjectButton.disabled = false
-	%ExploreButton.disabled = true
+	#%FileExplorerButton.disabled = true
 	%ClaudeButton.disabled = true
 
 func RunProject():
@@ -427,12 +428,13 @@ func OpenClaude():
 	_claude = load("res://scenes/claude/claude.tscn").instantiate()
 	add_child(_claude)
 		
-func OpenExploreManager():
-	if _exploreManager == null:
-		_exploreManager = load("res://scenes/godot-explorer/godot-explorer.tscn").instantiate()
-		add_child(_exploreManager)
+func OpenFileExplorer():
+	if _fileExplorer == null:
+		_fileExplorer = load("res://scenes/file-explorer/file-explorer.tscn").instantiate()
+		add_child(_fileExplorer)
 
-	_exploreManager.visible = true
+	_fileExplorer.visible = true
+	_fileExplorer.ConfigureProject(_selectedProjectItem)
 	
 func GetProjectItemFromIndex(indexOfSelectedProjectItem):
 	var index = 0;
@@ -515,8 +517,8 @@ func _on_option_button_item_selected(index: int) -> void:
 	ReloadProjectManager()
 	App.SetSortType(index)
 
-func _on_explore_button_pressed() -> void:
-	OpenExploreManager()
-
 func _on_claude_button_pressed() -> void:
 	OpenClaude()
+
+func _on_file_explorer_button_pressed() -> void:
+	OpenFileExplorer()

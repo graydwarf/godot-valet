@@ -33,6 +33,10 @@ var _3dModelExtensions := [".dae", ".gltf", ".glb", ".fbx", ".blend", ".obj"]
 var _fontExtensions := [".ttf", ".otf", ".woff", ".woff2"]
 var _textExtensions := [".txt", ".json", ".cfg", ".ini", ".csv", ".md", ".xml"]
 
+# Import vars
+var _filesToImport: Array[String] = []
+var _importStep: int = 1  # 1 = select files, 2 = choose destination
+
 func _ready():
 	SetupTree()
 	PopulateDrives()
@@ -41,6 +45,42 @@ func _ready():
 func InitSignals():
 	%FileTree.item_collapsed.connect(_on_item_collapsed)
 
+func GetSelectedFiles() -> Array[String]:
+	var selected: Array[String] = []
+	
+	# Get all selected items from the tree
+	var selectedItems = GetAllSelectedItems()
+	
+	for item in selectedItems:
+		if item.get_metadata(0) != null:
+			var path = item.get_metadata(0) as String
+			# Only include files, not directories
+			if not path.is_empty() and not IsDirectory(path):
+				selected.append(path)
+	
+	return selected
+
+# Get all currently selected tree items
+func GetAllSelectedItems() -> Array[TreeItem]:
+	var items: Array[TreeItem] = []
+	var root = %FileTree.get_root()
+	
+	if root:
+		CollectSelectedItems(root, items)
+	
+	return items
+
+# Recursively collect all selected items
+func CollectSelectedItems(item: TreeItem, items: Array[TreeItem]):
+	if item.is_selected(0):
+		items.append(item)
+	
+	# Check children
+	var child = item.get_first_child()
+	while child:
+		CollectSelectedItems(child, items)
+		child = child.get_next()
+		
 # Select and highlight the first visible node in the tree
 func SelectFirstNode():
 	var firstChild = _rootItem.get_first_child()

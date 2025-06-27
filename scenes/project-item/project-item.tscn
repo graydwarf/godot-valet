@@ -33,18 +33,13 @@ theme_override_constants/margin_bottom = 7
 clip_contents = true
 layout_mode = 2
 
-[node name="ColorRect" type="ColorRect" parent="MarginContainer/HBoxContainer"]
-custom_minimum_size = Vector2(100, 0)
+[node name="ThumbTextureRect" type="TextureRect" parent="MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(107, 105)
 layout_mode = 2
-size_flags_horizontal = 0
-size_flags_vertical = 0
-mouse_filter = 1
-color = Color(1, 1, 1, 0)
-
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/HBoxContainer/ColorRect"]
-scale = Vector2(0.8, 0.8)
 texture = ExtResource("3_p8n4q")
-centered = false
+expand_mode = 1
+stretch_mode = 5
 
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
 clip_contents = true
@@ -167,4 +162,5 @@ text_overrun_behavior = 3
 [connection signal="gui_input" from="." to="." method="_on_gui_input"]
 [connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
 [connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]
+[connection signal="gui_input" from="MarginContainer/HBoxContainer/ThumbTextureRect" to="." method="_on_thumb_texture_rect_gui_input"]
 [connection signal="pressed" from="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/HBoxContainer/HBoxContainer/HideProjectCheckbox" to="." method="_on_hide_check_box_pressed"]

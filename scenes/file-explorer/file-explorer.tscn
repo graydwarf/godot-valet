@@ -1,0 +1,174 @@
+[gd_scene load_steps=7 format=3 uid="uid://c1asrwu11e74m"]
+
+[ext_resource type="Script" uid="uid://bnx8iu6s5scut" path="res://scenes/file-explorer/file-explorer.gd" id="1_x3te3"]
+[ext_resource type="Texture2D" uid="uid://wop6qk8dkl40" path="res://icon.svg" id="2_jbjko"]
+[ext_resource type="PackedScene" uid="uid://6ygqegta6dek" path="res://scenes/file-tree-view-explorer/file-tree-view-explorer.tscn" id="2_p38i7"]
+[ext_resource type="PackedScene" uid="uid://r8y55mlah1wy" path="res://scenes/file-previewer/file-previewer.tscn" id="3_ssiko"]
+[ext_resource type="PackedScene" uid="uid://b2pnoerm0fxtd" path="res://scenes/project-tree-view/project-tree-view.tscn" id="4_m5vku"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_jbjko"]
+font_size = 48
+
+[node name="FileExplorer" type="Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_x3te3")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_bottom = -4
+
+[node name="TitleLabel" type="Label" parent="VBoxContainer/MarginContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "File Explorer"
+
+[node name="MarginContainer2" type="MarginContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer2"]
+layout_mode = 2
+
+[node name="ProjectContextContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer2/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ProjectNameHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/VBoxContainer/ProjectContextContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ProjectThumbnailTextureRect" type="TextureRect" parent="VBoxContainer/MarginContainer2/VBoxContainer/ProjectContextContainer/ProjectNameHBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+texture = ExtResource("2_jbjko")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/MarginContainer2/VBoxContainer/ProjectContextContainer/ProjectNameHBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+
+[node name="ProjectNameLineEdit" type="Label" parent="VBoxContainer/MarginContainer2/VBoxContainer/ProjectContextContainer/ProjectNameHBoxContainer/MarginContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(500, 128)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+text = "<project name>"
+label_settings = SubResource("LabelSettings_jbjko")
+vertical_alignment = 1
+
+[node name="ProjectPathHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/VBoxContainer/ProjectContextContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ProjectPathLabel" type="Label" parent="VBoxContainer/MarginContainer2/VBoxContainer/ProjectContextContainer/ProjectPathHBoxContainer"]
+custom_minimum_size = Vector2(128, 0)
+layout_mode = 2
+text = "Project Path:"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="ProjectPathLineEdit" type="LineEdit" parent="VBoxContainer/MarginContainer2/VBoxContainer/ProjectContextContainer/ProjectPathHBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+tooltip_text = "Path to the current project"
+editable = false
+caret_blink = true
+caret_blink_interval = 0.5
+
+[node name="OpenProjectPathFolder" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer/ProjectContextContainer/ProjectPathHBoxContainer"]
+custom_minimum_size = Vector2(125, 31)
+layout_mode = 2
+tooltip_text = "Opens folder to the specified project path."
+text = "Open Folder"
+
+[node name="HSplitContainer" type="HSplitContainer" parent="VBoxContainer/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="FileTreeViewExplorer" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/VBoxContainer" instance=ExtResource("2_p38i7")]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(400, 0)
+layout_mode = 2
+
+[node name="ProjectTreeView" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/VBoxContainer" instance=ExtResource("4_m5vku")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FilePreviewer" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer" instance=ExtResource("3_ssiko")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="hBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/VBoxContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="PathLabel" type="Label" parent="VBoxContainer/MarginContainer2/VBoxContainer/hBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+clip_text = true
+
+[node name="BackButton" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer/hBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(125, 0)
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Close"
+
+[node name="CancelButton" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer/hBoxContainer"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(125, 0)
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Cancel"
+
+[node name="ChooseDestinationButton" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer/hBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(125, 0)
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Choose Destination"
+
+[node name="ImportButton" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer/hBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(125, 0)
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Import"
+
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/VBoxContainer/ProjectContextContainer/ProjectPathHBoxContainer/OpenProjectPathFolder" to="." method="_on_open_project_path_folder_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/VBoxContainer/hBoxContainer/BackButton" to="." method="_on_back_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/VBoxContainer/hBoxContainer/CancelButton" to="." method="_on_cancel_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/VBoxContainer/hBoxContainer/ChooseDestinationButton" to="." method="_on_choose_destination_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/VBoxContainer/hBoxContainer/ImportButton" to="." method="_on_import_button_pressed"]
