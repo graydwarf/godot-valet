@@ -249,6 +249,10 @@ func ShowError(errorMessage: String):
 	%TextEdit.editable = false
 
 # Set syntax highlighting based on file extension
+# Partial implementation. Just playing around with the idea
+# We should problably add a toggle button for this and 
+# a UI to customize but why? Questionable to even have
+# it for the file previewer.
 func SetSyntaxHighlighting(extension: String):
 	match extension.to_lower():
 		"gd":

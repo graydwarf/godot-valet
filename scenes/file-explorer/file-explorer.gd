@@ -6,8 +6,6 @@ class_name FileExplorer
 @onready var _fileTreeViewExplorer: Control = %FileTreeViewExplorer
 @onready var _filePreviewer: Control = %FilePreviewer
 
-var _importStep: int = 1  # 1 = select files, 2 = choose destination
-
 func _ready():
 	InitSignals()
 	ShowFileExplorerStep()
@@ -17,7 +15,6 @@ func InitSignals():
 	_fileTreeViewExplorer.DirectorySelected.connect(_on_directory_selected)
 
 func ShowFileExplorerStep():
-	_importStep = 1
 	%FileTreeViewExplorer.visible = true
 	%ProjectTreeView.visible = false
 	%ChooseDestinationButton.visible = true
@@ -26,7 +23,6 @@ func ShowFileExplorerStep():
 	%BackButton.visible = true
 
 func ShowDestinationStep():
-	_importStep = 2
 	%FileTreeViewExplorer.visible = false
 	%ProjectTreeView.visible = true
 	%ChooseDestinationButton.visible = false
@@ -118,18 +114,10 @@ func CopyFileFromZip(zipFilePath: String, destPath: String) -> bool:
 	
 # Handle when a file is selected in the file tree view explorer
 func _on_file_selected(filePath: String):
-	# Is supported for preview?
-	if _filePreviewer.IsFileSupported(filePath):
-		_filePreviewer.PreviewFile(filePath)
-	else:
-		# Show file info for unsupported files
-		# TODO: ???? Improve
-		_filePreviewer.PreviewFile(filePath)
-	
+	_filePreviewer.PreviewFile(filePath)
 	%PathLabel.text = filePath
 
 func _on_directory_selected(dirPath: String):
-	# Clear preview when directory is selected
 	_filePreviewer.ClearPreview()
 	%PathLabel.text = dirPath
 
@@ -144,7 +132,6 @@ func _on_choose_destination_button_pressed() -> void:
 	
 	if selectedFiles.is_empty():
 		OS.alert("No files selected for import.")
-		# Could show error message
 		return
 	
 	ShowDestinationStep()

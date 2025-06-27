@@ -1,5 +1,7 @@
 extends Control
 
+# - Generated with assistance from Claude 4 Sonnet (Anthropic) - December 2024
+
 var _rootItem: TreeItem
 var _projectRootPath: String = ""
 
@@ -49,9 +51,7 @@ func PopulateDirectory(parentItem: TreeItem, dirPath: String):
 	
 	dir.list_dir_end()
 	directories.sort()
-	
-	print("Found ", directories.size(), " directories")
-	
+		
 	# Add a delay and process in smaller batches
 	for i in range(directories.size()):
 		var dirName = directories[i]
@@ -59,8 +59,6 @@ func PopulateDirectory(parentItem: TreeItem, dirPath: String):
 		# Process a frame every few items to avoid blocking
 		if i % 5 == 0:
 			await get_tree().process_frame
-		
-		print("Creating item ", i + 1, " of ", directories.size(), ": ", dirName)
 		
 		var dirItem = %Tree.create_item(parentItem)
 		if dirItem == null:

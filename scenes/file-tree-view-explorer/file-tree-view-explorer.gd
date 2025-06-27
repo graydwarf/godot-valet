@@ -417,9 +417,6 @@ func PopulateZipDirectory(parentItem: TreeItem, zipPath: String, subPath: String
 
 	zip.close()
 
-func _item_mouse_selected():
-	pass
-	
 # Handle when an item is selected
 func ItemSelected(selected):
 	# Prevent recursive calls
@@ -665,7 +662,6 @@ func NavigateToNextFile():
 		BuildCurrentDirectoryFileList()
 	
 	if _currentDirectoryFiles.is_empty():
-		print("No supported files in current directory")
 		return
 	
 	_currentFileIndex += 1
@@ -680,7 +676,6 @@ func NavigateToPreviousFile():
 		BuildCurrentDirectoryFileList()
 	
 	if _currentDirectoryFiles.is_empty():
-		print("No supported files in current directory")
 		return
 	
 	_currentFileIndex -= 1
@@ -803,8 +798,8 @@ func ToggleFlatList():
 		%NextButton.disabled = false
 		ShowTreeView()
 
+# Internal function for flat list creation
 func _show_flat_list_internal():
-	"""Internal function for flat list creation"""
 	var basePath = GetCurrentBasePath()
 	if basePath.is_empty():
 		ShowFlatList()
@@ -867,8 +862,8 @@ func GetCurrentBasePath() -> String:
 			# It's a file, use its parent directory
 			return selectedPath.get_base_dir() + "/"
 
+# Check if a path inside a zip is a directory
 func IsZipDirectory(zipPath: String, internalPath: String) -> bool:
-	"""Check if a path inside a zip is a directory"""
 	var zip = ZIPReader.new()
 	var error = zip.open(zipPath)
 	if error != OK:
@@ -888,8 +883,8 @@ func IsZipDirectory(zipPath: String, internalPath: String) -> bool:
 	zip.close()
 	return false
 
+# Recursively scan a zip directory for supported files
 func ScanZipDirectoryRecursively(zipPath: String, basePath: String = ""):
-	"""Recursively scan a zip directory for supported files"""
 	var zip = ZIPReader.new()
 	var error = zip.open(zipPath)
 	if error != OK:
@@ -945,9 +940,9 @@ func CountAllVisibleFiles(parentItem: TreeItem) -> int:
 		child = child.get_next()
 	
 	return count
-	
+
+# Get display name for flat list items
 func GetDisplayNameForFlatList(filePath: String) -> String:
-	"""Get display name for flat list items"""
 	if "::" in filePath:
 		# Zip file - show internal path
 		var parts = filePath.split("::")
@@ -1082,12 +1077,12 @@ func ScanZipFileRecursively(zipPath: String):
 func GetFlatListModeStatus() -> bool:
 	return %FlatListToggleButton.button_pressed
 
+# Get the number of files in the flat list
 func GetFlatListCount() -> int:
-	"""Get the number of files in the flat list"""
 	return _allSupportedFiles.size()
 
+# Search through the flat list
 func SearchFlatList(query: String) -> Array[String]:
-	"""Search through the flat list"""
 	var results: Array[String] = []
 	var lowerQuery = query.to_lower()
 	
@@ -1098,8 +1093,8 @@ func SearchFlatList(query: String) -> Array[String]:
 	
 	return results
 
+# Filter flat list by file extensions
 func FilterFlatListByExtension(extensions : Array) -> Array:
-	"""Filter flat list by file extensions"""
 	var filtered : Array = []
 	
 	for filePath in _allSupportedFiles:
@@ -1147,8 +1142,8 @@ func ShowOnlyAudio():
 func ShowOnlyScenes():
 	ShowFilteredFlatListByType(_sceneExtensions)
 
+# Refresh the currently selected folder in tree view
 func RefreshSelectedTreeFolder():
-	"""Refresh the currently selected folder in tree view"""
 	var selected = %FileTree.get_selected()
 	if not selected or selected.get_metadata(0) == null:
 		return
@@ -1245,8 +1240,8 @@ func RefreshTreeViewWithFilters():
 		_refresh_tree_view_with_filters_internal()
 	)
 
+# Internal function for tree view filtering
 func _refresh_tree_view_with_filters_internal():
-	"""Internal function for tree view filtering"""
 	# Save the current expanded state and selection
 	var expandedPaths = GetExpandedPaths(_rootItem)
 	var currentSelection = GetSelectedPath()
@@ -1271,8 +1266,8 @@ func _refresh_tree_view_with_filters_internal():
 	else:
 		SelectFirstNode()
 
+# Recursively collect all expanded folder paths
 func GetExpandedPaths(parentItem: TreeItem) -> Array[String]:
-	"""Recursively collect all expanded folder paths"""
 	var expandedPaths: Array[String] = []
 	var child = parentItem.get_first_child()
 	
@@ -1293,8 +1288,8 @@ func GetExpandedPaths(parentItem: TreeItem) -> Array[String]:
 	
 	return expandedPaths
 
+# Restore the expanded state of folders
 func RestoreExpandedPaths(expandedPaths: Array[String]):
-	"""Restore the expanded state of folders"""
 	for path in expandedPaths:
 		var item = FindTreeItemByPath(_rootItem, path)
 		if item:
@@ -1343,8 +1338,8 @@ func HasContent(path: String) -> bool:
 	dir.list_dir_end()
 	return false
 
+# Check if a zip directory has content matching current filters
 func HasZipFilteredContent(zipPath: String, basePath: String) -> bool:
-	"""Check if a zip directory has content matching current filters"""
 	var zip = OpenZipFile(zipPath)
 	if zip == null:
 		return false
@@ -1382,9 +1377,9 @@ func HasZipFilteredContent(zipPath: String, basePath: String) -> bool:
 	
 	zip.close()
 	return false
-	
+
+# Check if a directory has content matching current filters"""
 func HasFilteredContent(path: String) -> bool:
-	"""Check if a directory has content matching current filters"""
 	var dir = DirAccess.open(path)
 	if dir == null:
 		return false
@@ -1412,7 +1407,6 @@ func HasFilteredContent(path: String) -> bool:
 
 # Add visual indicator for filtered tree view
 func UpdateFilterIndicator():
-	"""Update UI to show filter status"""
 	var filterLabel = get_node("%FilterStatusLabel")  # Add this label to your UI
 	if filterLabel:
 		if _isTreeViewFiltered:
