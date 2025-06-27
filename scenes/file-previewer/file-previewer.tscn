@@ -5,6 +5,7 @@
 [ext_resource type="Texture2D" uid="uid://ct0x5fhgghm8m" path="res://scenes/file-tree-view-explorer/assets/folder.png" id="3_ddnpw"]
 
 [node name="FilePreviewer" type="Control"]
+self_modulate = Color(0.450059, 0.971879, 0.479856, 1)
 clip_contents = true
 layout_mode = 3
 anchors_preset = 15
@@ -118,6 +119,7 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+theme_override_colors/background_color = Color(0.11404, 0.114039, 0.122912, 1)
 placeholder_text = "Select a file to preview..."
 
 [connection signal="pressed" from="vBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar/UnknownTextureButton" to="." method="_on_stretch_image_texture_button_pressed"]

@@ -1,6 +1,9 @@
 extends Control
 class_name Claude
 
+# claude.gd
+# - Generated with assistance from Claude 4 Sonnet (Anthropic) - December 2024
+
 const CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
 
 var _claudeManager: ClaudeManager
@@ -11,8 +14,10 @@ var _isTyping = false
 var _busyTween : Tween = null
 
 # Debugging Options
-var _isDebuggingOutput = false # Skip claude and load local test file.
-var _claudeTestResponse := "" # claude-testing-output.txt gets loaded on initial use.
+# If true, skip claude and load local test file for testing output formats.
+# If true, claude-testing-output.txt gets loaded on initial use.
+var _isDebuggingOutput = false 
+var _claudeTestResponse := "" 
 
 func _ready():
 	InitSignals()
@@ -27,8 +32,8 @@ func InitClaudeManager():
 	_claudeManager = ClaudeManager.new()
 	LoadClaudeHistory()
 
+# Iterate through full history and display
 func LoadClaudeHistory():
-	# Iterate through full history and display
 	var fullHistory = _claudeManager.GetFullHistory()
 	for entry in fullHistory:
 		if entry.role == "user":
@@ -38,7 +43,7 @@ func LoadClaudeHistory():
 
 func AnimateClaudeBusy():
 	_busyTween = create_tween()
-	_busyTween.set_loops()  # Infinite loop
+	_busyTween.set_loops()
 	_busyTween.tween_property(%ClaudeTextureRect, "self_modulate", Color(1.0, 1.0, 1.0, 0.5), 0.6)
 	_busyTween.tween_property(%ClaudeTextureRect, "self_modulate", Color(1.0, 1.0, 1.0, 1.0), 0.6)
 
@@ -153,9 +158,9 @@ func LoadClaudeTestResponse() -> String:
 				_claudeTestResponse = file.get_as_text()
 				file.close()
 			else:
-				print("Failed to open claude test response file")
+				OS.alert("Failed to open claude test response file")
 		else:
-			print("Claude test response file not found at: ", filePath)
+			OS.alert("Claude test response file not found at: ", filePath)
 	
 	return _claudeTestResponse
 
@@ -169,9 +174,9 @@ func ClearConversationHistory():
 
 func TrimConversationHistory():
 	_claudeManager.TrimConversationHistory()
-		
+
+# Add user message to history
 func SendToClaude(textInput: String):
-	# Add user message to history
 	_claudeManager.GetConversationHistory().append({
 		"role": "user",
 		"content": textInput

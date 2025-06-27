@@ -1,7 +1,5 @@
 extends Control
 
-# File Previewer
-# - Previews images and other files with basic config settings
 # - Generated with assistance from Claude 4 Sonnet (Anthropic) - December 2024
 
 # Supported file types
@@ -252,17 +250,63 @@ func ShowError(errorMessage: String):
 
 # Set syntax highlighting based on file extension
 func SetSyntaxHighlighting(extension: String):
-	# Note: You might need to configure syntax highlighting differently
-	# depending on your Godot version and available highlighters
 	match extension.to_lower():
-		".gd":
-			%TextEdit.syntax_highlighter = null  # Godot's default GDScript highlighter
-		".cs":
-			%TextEdit.syntax_highlighter = null  # C# highlighter if available
-		".json":
-			%TextEdit.syntax_highlighter = null  # JSON highlighter if available
+		"gd":
+			var highlighter = CodeHighlighter.new()
+			highlighter.symbol_color = Color.WHITE
+			highlighter.member_variable_color = Color.WHITE
+			
+			# Keywords (func, if, var, etc.) - orange/red
+			var keywordColor = "#ff6666"
+			highlighter.add_keyword_color("func", Color(keywordColor))
+			highlighter.add_keyword_color("var", Color(keywordColor))
+			highlighter.add_keyword_color("if", Color(keywordColor))
+			highlighter.add_keyword_color("else", Color(keywordColor))
+			highlighter.add_keyword_color("for", Color(keywordColor))
+			highlighter.add_keyword_color("while", Color(keywordColor))
+			highlighter.add_keyword_color("class", Color(keywordColor))
+			highlighter.add_keyword_color("extends", Color(keywordColor))
+			highlighter.add_keyword_color("return", Color(keywordColor))
+			highlighter.add_keyword_color("bool", Color(keywordColor))
+			highlighter.add_keyword_color("Vector2", Color(keywordColor))
+			
+			# Built-in classes/types
+			var builtInColor = "#73f87a"
+			highlighter.add_keyword_color("FileAccess", Color(builtInColor))
+			highlighter.add_keyword_color("DirAccess", Color(builtInColor))
+			highlighter.add_keyword_color("ZIPReader", Color(builtInColor))
+			highlighter.add_keyword_color("Image", Color(builtInColor))
+			highlighter.add_keyword_color("ImageTexture", Color(builtInColor))
+			highlighter.add_keyword_color("TreeItem", Color(builtInColor))
+			highlighter.add_keyword_color("Control", Color(builtInColor))
+			highlighter.add_keyword_color("Node", Color(builtInColor))
+			highlighter.add_keyword_color("PackedByteArray", Color(builtInColor))
+
+			# Function names - blue
+			highlighter.function_color = Color("#8cc5ff")
+			
+			# Strings - green (using color regions)
+			highlighter.add_color_region("\"", "\"", Color("#ffff67"))
+			highlighter.add_color_region("'", "'", Color("#ffff67"))
+			
+			# Numbers - light blue/cyanffff40
+			highlighter.number_color = Color("#66ffff")
+			
+			# Comments - green
+			highlighter.add_color_region("#", "", Color("#66aa66"), true)
+			
+			%TextEdit.syntax_highlighter = highlighter
+		"json":
+			var highlighter = CodeHighlighter.new()
+			highlighter.add_keyword_color("true", Color("#66ffff"))
+			highlighter.add_keyword_color("false", Color("#66ffff"))
+			highlighter.add_keyword_color("null", Color("#66ffff"))
+			# Strings in JSON
+			highlighter.add_color_region("\"", "\"", Color("#66ff66"))
+			highlighter.number_color = Color("#66ffff")
+			%TextEdit.syntax_highlighter = highlighter
 		_:
-			%TextEdit.syntax_highlighter = null  # No highlighting
+			%TextEdit.syntax_highlighter = null
 
 # Show the text editor and hide image display
 func ShowTextEditor():

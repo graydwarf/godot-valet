@@ -31,18 +31,10 @@ var _godotVersion = ""
 var _projectPath = ""
 var _projectVersion = ""
 var _thumbnailPath := ""
-
 var _publishedDate : Dictionary = {}
 var _createdDate : Dictionary = {}
 var _editedDate : Dictionary = {}
-
 var _sourceFilters := []
-
-
-
-# Fields
-
-
 
 func _ready():
 	InitSignals()

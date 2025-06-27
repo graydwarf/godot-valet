@@ -13,6 +13,7 @@ script = ExtResource("1_ya4kj")
 
 [node name="Tree" type="Tree" parent="."]
 unique_name_in_owner = true
+self_modulate = Color(0.548168, 0.77138, 1, 1)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0

@@ -86,9 +86,6 @@ func IsGodotVersionInUse():
 
 	# No existing projects are using this Godot Version
 	return false
-			
-func DeleteGodotVersionConfiguration():
-	pass
 
 func DeleteGodotVersion():
 	_godotVersionItemContainer.remove_child(_selectedGodotVersionItem)

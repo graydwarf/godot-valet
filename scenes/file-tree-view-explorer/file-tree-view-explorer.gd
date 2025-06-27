@@ -1,7 +1,6 @@
 extends Control
 
 # File Tree View Explorer
-# - Comprehensive file browser with zip support, filtering, and preview integration
 # - Generated with assistance from Claude 4 Sonnet (Anthropic) - December 2024
 
 # Signals
@@ -137,18 +136,6 @@ func PopulateDrivesInternal():
 	# Select the first drive
 	SelectFirstNode()
 	
-#func PopulateDrives():
-	#var drives = GetAvailableDrives()
-	#
-	#for drive in drives:
-		#var driveItem = %FileTree.create_item(_rootItem)
-		#driveItem.set_text(0, drive)
-		#driveItem.set_metadata(0, drive)
-		#driveItem.set_icon(0, GetDriveIcon())
-		#PopulateDirectory(driveItem)
-#
-	#SelectFirstNode()
-	
 # Find and add all drives A-Z
 func GetAvailableDrives() -> Array[String]:
 	var drives: Array[String] = []
@@ -254,6 +241,7 @@ func HasBeenPopulated(item: TreeItem) -> bool:
 
 # Populate a directory item with its contents
 func PopulateDirectory(parentItem: TreeItem):
+	ShowBusyIndicator()
 	var path = parentItem.get_metadata(0) as String
 	var dir = DirAccess.open(path)
 	
@@ -334,7 +322,8 @@ func PopulateDirectory(parentItem: TreeItem):
 					var tempChild = %FileTree.create_item(fileItem)
 					tempChild.set_text(0, "")
 					tempChild.set_metadata(0, null)
-
+	HideBusyIndicator()
+	
 # Check if a zip file contains content matching current filters
 func ZipContainsFilteredContent(zipPath: String) -> bool:
 	var zip = OpenZipFile(zipPath)

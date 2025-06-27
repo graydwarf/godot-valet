@@ -243,27 +243,23 @@ static func GetFilesRecursive(path: String, allowedExtensions : Array) -> Array:
 	dir.list_dir_end()
 	return results
 
+# Open the file or folder in Windows Explorer
 static func OpenFilePathInWindowsExplorer(filePath: String):
-	"""Open the file or folder in Windows Explorer"""
 	if filePath.is_empty():
-		print("Empty file path provided")
 		return
 	
 	# Check if it's a file or directory
 	var dir = DirAccess.open(filePath)
+
 	if dir != null:
-		# It's a directory - open it directly
 		OpenDirectoryInExplorer(filePath)
 	else:
-		# It's a file - open explorer and select the file
 		OpenFileInExplorer(filePath)
 
+# Open a directory in Windows Explorer
 static func OpenDirectoryInExplorer(dirPath: String):
-	"""Open a directory in Windows Explorer"""
 	var normalizedPath = dirPath.replace("/", "\\")
 	var args = [normalizedPath]
-	
-	print("Opening directory in explorer: " + normalizedPath)
 	OS.execute("explorer.exe", args)
 
 # Open Windows Explorer and select the specified file

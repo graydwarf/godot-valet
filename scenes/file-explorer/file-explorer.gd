@@ -1,6 +1,8 @@
 extends Panel
 class_name FileExplorer
 
+# - Generated with assistance from Claude 4 Sonnet (Anthropic) - December 2024
+
 @onready var _fileTreeViewExplorer: Control = %FileTreeViewExplorer
 @onready var _filePreviewer: Control = %FilePreviewer
 
