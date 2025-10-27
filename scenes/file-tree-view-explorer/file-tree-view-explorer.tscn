@@ -124,6 +124,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_vertical = 3
+allow_rmb_select = true
 hide_root = true
 select_mode = 2
 
@@ -161,6 +162,9 @@ layout_mode = 2
 texture = ExtResource("21_alyso")
 stretch_mode = 2
 
+[node name="ContextMenu" type="PopupMenu" parent="."]
+unique_name_in_owner = true
+
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/FlatListToggleButton" to="." method="_on_flat_list_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/FilterByImagesToggleButton" to="." method="_on_filter_by_images_toggle_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/PreviousButton" to="." method="_on_previous_button_pressed"]
@@ -168,4 +172,6 @@ stretch_mode = 2
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/UpButton" to="." method="_on_up_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/DownButton" to="." method="_on_down_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/OpenFileExplorerButton" to="." method="_on_open_file_explorer_button_pressed"]
+[connection signal="item_mouse_selected" from="VBoxContainer/Control/FileTree" to="." method="_on_file_tree_item_mouse_selected"]
 [connection signal="multi_selected" from="VBoxContainer/Control/FileTree" to="." method="_on_file_tree_multi_selected"]
+[connection signal="id_pressed" from="ContextMenu" to="." method="_on_context_menu_item_selected"]

@@ -36,13 +36,18 @@ func ConfigureProject(selectedProjectItem):
 		%ProjectContextContainer.visible = false
 		%ChooseDestinationButton.visible = false
 		return
-	
+
 	%ProjectContextContainer.visible = true
 	%ChooseDestinationButton.visible = true
 	LoadThumbnailImage(selectedProjectItem.GetThumbnailPath())
 	%ProjectNameLineEdit.text = selectedProjectItem.GetProjectName()
 	%ProjectPathLineEdit.text = selectedProjectItem.GetProjectPath()
 	ShowFileExplorerStep()
+
+	# Navigate to and highlight the project folder in the file tree
+	var projectPath = selectedProjectItem.GetProjectPath()
+	if projectPath and not projectPath.is_empty():
+		_fileTreeViewExplorer.NavigateToPath(projectPath)
 
 func LoadThumbnailImage(thumbnailPath):
 	var image = Image.new()

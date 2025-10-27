@@ -40,9 +40,16 @@ func _ready():
 	SetupTree()
 	PopulateDrives()
 	InitSignals()
+	SetupContextMenu()
 
 func InitSignals():
 	%FileTree.item_collapsed.connect(_on_item_collapsed)
+
+func SetupContextMenu():
+	# Add menu items
+	%ContextMenu.add_item("Edit", 0)
+	%ContextMenu.add_item("Open in File Explorer", 1)
+	%ContextMenu.add_item("Copy Path", 2)
 
 func GetSelectedFiles() -> Array[String]:
 	var selected: Array[String] = []
@@ -1638,3 +1645,111 @@ func _on_filter_by_images_toggle_button_pressed() -> void:
 		ToggleFilter("images", true)
 	else:
 		ToggleFilter("images", false)
+
+# Handle right-click on tree items
+func _on_file_tree_item_mouse_selected(position: Vector2, mouse_button_index: int) -> void:
+	if mouse_button_index == MOUSE_BUTTON_RIGHT:
+		var selected = %FileTree.get_selected()
+		if selected:
+			var path = selected.get_metadata(0)
+			if path != null:
+				# Show context menu at mouse position
+				var global_pos = get_viewport().get_mouse_position()
+				%ContextMenu.position = Vector2i(global_pos)
+				%ContextMenu.popup()
+
+# Handle context menu item selection
+func _on_context_menu_item_selected(id: int) -> void:
+	var selected = %FileTree.get_selected()
+	if not selected:
+		return
+
+	var path = selected.get_metadata(0)
+	if path == null:
+		return
+
+	match id:
+		0:  # Edit
+			EditInDefaultEditor(path)
+		1:  # Open in File Explorer
+			OpenPathInFileExplorer(path)
+		2:  # Copy Path
+			CopyPathToClipboard(path)
+
+# Open path in system file explorer
+func OpenPathInFileExplorer(path: String) -> void:
+	# Extract actual file system path (handle zip paths)
+	var actualPath = path
+	if "::" in path:
+		# This is inside a zip, open the zip file location
+		actualPath = path.split("::")[0]
+
+	# For files, open the containing directory and select the file
+	# For directories, open the directory
+	if FileAccess.file_exists(actualPath):
+		# It's a file, open containing directory
+		FileHelper.OpenFilePathInWindowsExplorer(actualPath)
+	elif DirAccess.dir_exists_absolute(actualPath):
+		# It's a directory, open it
+		FileHelper.OpenFilePathInWindowsExplorer(actualPath)
+
+# Copy path to clipboard
+func CopyPathToClipboard(path: String) -> void:
+	DisplayServer.clipboard_set(path)
+
+# Edit file in default editor
+func EditInDefaultEditor(path: String) -> void:
+	# Extract actual file system path (handle zip paths)
+	var actualPath = path
+	if "::" in path:
+		# This is inside a zip, can't edit directly
+		return
+
+	# Only open files, not directories
+	if FileAccess.file_exists(actualPath):
+		OS.shell_open(actualPath)
+
+# Navigate to and select a specific path in the tree
+func NavigateToPath(targetPath: String) -> bool:
+	if targetPath.is_empty():
+		return false
+
+	# Normalize the path
+	var normalizedPath = targetPath.replace("\\", "/")
+
+	# Find the tree item with this path
+	var item = FindItemByPath(normalizedPath, %FileTree.get_root())
+	if item:
+		# Expand all parents
+		var parent = item.get_parent()
+		while parent:
+			parent.collapsed = false
+			parent = parent.get_parent()
+
+		# Select and scroll to the item
+		item.select(0)
+		%FileTree.scroll_to_item(item)
+		%FileTree.ensure_cursor_is_visible()
+		return true
+
+	return false
+
+# Recursively find a tree item by its path
+func FindItemByPath(targetPath: String, currentItem: TreeItem) -> TreeItem:
+	if not currentItem:
+		return null
+
+	# Check if this item matches
+	var itemPath = currentItem.get_metadata(0)
+	if itemPath and itemPath.replace("\\", "/") == targetPath:
+		return currentItem
+
+	# Check children
+	var child = currentItem.get_first_child()
+	while child:
+		var result = FindItemByPath(targetPath, child)
+		if result:
+			return result
+		child = child.get_next()
+
+	return null
