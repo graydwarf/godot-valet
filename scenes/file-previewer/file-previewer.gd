@@ -6,6 +6,16 @@ extends Control
 var supportedTextFiles = ["gd", "cs", "txt", "json", "cfg", "ini", "md", "xml", "html", "css", "js", "gdshader"]
 var supportedImageFiles = ["png", "jpg", "jpeg", "bmp", "svg", "webp", "tga"]
 var supportedSceneFiles = ["tscn", "scn"]
+
+# Image display modes
+enum ImageDisplayMode {
+	FIT_TO_SCREEN,
+	ACTUAL_SIZE,
+	STRETCH,
+	TILE
+}
+
+var _currentDisplayMode := ImageDisplayMode.FIT_TO_SCREEN
 var _baseSize : Vector2
 var _zoomFactor := 1.0
 var _isDragging : bool = false
@@ -104,13 +114,13 @@ func PreviewImage(filePath: String):
 	var texture = ImageTexture.create_from_image(image)
 	_baseSize = texture.get_size()
 	%ImageViewer.texture = texture
-	UpdateImageSize()
-		
+	ApplyImageDisplayMode(_currentDisplayMode)
+
 	# Show image info
 	var displayPath = filePath
 	if IsZipPath(filePath):
 		displayPath = filePath.split("::")[1]
-	
+
 	var info = "Image: %dx%d pixels\nFormat: %s\nSize: %s" % [
 		image.get_width(),
 		image.get_height(),
@@ -365,13 +375,49 @@ func UpdateImageSize():
 	var newSize = _baseSize * _zoomFactor
 	%ImageViewer.custom_minimum_size = newSize
 	%ImageViewer.size = newSize
-	
+
 	# Center the image when it's smaller than the container
 	var containerSize = %ImageContainer.size  # Your clipping Control node
 	if newSize.x < containerSize.x:
 		%ImageViewer.position.x = (containerSize.x - newSize.x) * 0.5
 	if newSize.y < containerSize.y:
 		%ImageViewer.position.y = (containerSize.y - newSize.y) * 0.5
+
+func ApplyImageDisplayMode(mode: ImageDisplayMode):
+	_currentDisplayMode = mode
+
+	# Update button states
+	match mode:
+		ImageDisplayMode.FIT_TO_SCREEN:
+			%FitToScreenButton.button_pressed = true
+		ImageDisplayMode.ACTUAL_SIZE:
+			%ActualSizeButton.button_pressed = true
+		ImageDisplayMode.STRETCH:
+			%StretchButton.button_pressed = true
+		ImageDisplayMode.TILE:
+			%TileButton.button_pressed = true
+
+	# Apply the display mode - simplified to just change stretch modes
+	match mode:
+		ImageDisplayMode.FIT_TO_SCREEN:
+			# Fit to screen while keeping aspect ratio
+			%ImageViewer.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			%ImageViewer.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+
+		ImageDisplayMode.ACTUAL_SIZE:
+			# Show at actual size (1:1 pixels)
+			%ImageViewer.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+			%ImageViewer.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+
+		ImageDisplayMode.STRETCH:
+			# Stretch to fill the entire area
+			%ImageViewer.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			%ImageViewer.stretch_mode = TextureRect.STRETCH_SCALE
+
+		ImageDisplayMode.TILE:
+			# Tile the image
+			%ImageViewer.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			%ImageViewer.stretch_mode = TextureRect.STRETCH_TILE
 
 func ZoomIn():
 	_zoomFactor = min(_zoomFactor * 1.2, 50.0)
@@ -431,9 +477,22 @@ func ResetZoom():
 func ConstrainImagePosition():
 	var container_size = %ImageContainer.size
 	var image_size = %ImageViewer.size
-	
+
 	# Don't let image move too far off screen
-	%ImageViewer.position.x = clamp(%ImageViewer.position.x, 
+	%ImageViewer.position.x = clamp(%ImageViewer.position.x,
 		container_size.x - image_size.x, 0)
-	%ImageViewer.position.y = clamp(%ImageViewer.position.y, 
+	%ImageViewer.position.y = clamp(%ImageViewer.position.y,
 		container_size.y - image_size.y, 0)
+
+# Toolbar button handlers
+func _on_fit_to_screen_button_pressed():
+	ApplyImageDisplayMode(ImageDisplayMode.FIT_TO_SCREEN)
+
+func _on_actual_size_button_pressed():
+	ApplyImageDisplayMode(ImageDisplayMode.ACTUAL_SIZE)
+
+func _on_stretch_button_pressed():
+	ApplyImageDisplayMode(ImageDisplayMode.STRETCH)
+
+func _on_tile_button_pressed():
+	ApplyImageDisplayMode(ImageDisplayMode.TILE)

@@ -464,5 +464,10 @@ func _on_hide_check_box_pressed():
 		Signals.emit_signal("HidingProjectItem")
 
 func _on_thumb_texture_rect_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		ShowThumbnailSelector()
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			# Left click selects the project item
+			Signals.emit_signal("ToggleProjectItemSelection", self, !_selected)
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			# Right click opens the thumbnail selector
+			ShowThumbnailSelector()

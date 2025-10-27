@@ -146,7 +146,7 @@ func AnimateByLines(claudeResponse: String, startPos: int):
 		await get_tree().create_timer(_typingSpeed * 10).timeout  # Longer pause between lines
 
 func AddUserMessage(userMessage: String):
-	%OutputRichTextLabel.text += "[b]You:[/b] " + userMessage + "\n\n"
+	%OutputRichTextLabel.text += userMessage + "\n\n"
 
 func LoadClaudeTestResponse() -> String:
 	if _claudeTestResponse == "":

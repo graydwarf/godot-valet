@@ -114,11 +114,13 @@ func CopyFileFromZip(zipFilePath: String, destPath: String) -> bool:
 	
 # Handle when a file is selected in the file tree view explorer
 func _on_file_selected(filePath: String):
-	_filePreviewer.PreviewFile(filePath)
+	if _filePreviewer:
+		_filePreviewer.PreviewFile(filePath)
 	%PathLabel.text = filePath
 
 func _on_directory_selected(dirPath: String):
-	_filePreviewer.ClearPreview()
+	if _filePreviewer:
+		_filePreviewer.ClearPreview()
 	%PathLabel.text = dirPath
 
 func _on_back_button_pressed() -> void:
