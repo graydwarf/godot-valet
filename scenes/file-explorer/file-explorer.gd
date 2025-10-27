@@ -9,7 +9,7 @@ class_name FileExplorer
 func _ready():
 	InitSignals()
 	ShowFileExplorerStep()
-	
+
 func InitSignals():
 	_fileTreeViewExplorer.FileSelected.connect(_on_file_selected)
 	_fileTreeViewExplorer.DirectorySelected.connect(_on_directory_selected)
@@ -71,6 +71,37 @@ func PerformImport(files: Array[String], destinationPath: String):
 	
 	# Return to file explorer step
 	ShowFileExplorerStep()
+
+func CheckForOverwrites(files: Array[String], destinationPath: String) -> int:
+	var overwriteCount = 0
+	for filePath in files:
+		var fileName = filePath.get_file()
+		var destFile = destinationPath.path_join(fileName)
+		if FileAccess.file_exists(destFile):
+			overwriteCount += 1
+	return overwriteCount
+
+func ShowOverwriteConfirmation(overwriteCount: int) -> bool:
+	var dialog = ConfirmationDialog.new()
+	dialog.dialog_text = "%d file(s) already exist in the destination.\nDo you want to overwrite them?" % overwriteCount
+	dialog.title = "Confirm Overwrite"
+	dialog.ok_button_text = "Overwrite"
+	dialog.cancel_button_text = "Cancel"
+
+	add_child(dialog)
+	dialog.popup_centered()
+
+	# Track whether user confirmed using an array to work around lambda capture
+	var result = [false]
+	dialog.confirmed.connect(func(): result[0] = true)
+
+	# Wait until dialog is closed
+	await dialog.visibility_changed
+	while dialog.visible:
+		await dialog.visibility_changed
+
+	dialog.queue_free()
+	return result[0]
 
 func CopyFile(sourcePath: String, destPath: String) -> bool:
 	if "::" in sourcePath:
@@ -155,3 +186,99 @@ func _on_import_button_pressed() -> void:
 
 func _on_cancel_button_pressed() -> void:
 	ShowFileExplorerStep()
+
+func _on_godot_toggle_button_toggled(toggled_on: bool) -> void:
+	# Toggle between file preview and destination tree view
+	%FilePreviewer.visible = not toggled_on
+	%DestinationTreeView.visible = toggled_on
+	%CopyButton.visible = toggled_on
+	%MoveButton.visible = toggled_on
+
+	# Initialize destination tree with project path when toggled on
+	if toggled_on and %ProjectPathLineEdit.text:
+		%DestinationTreeView.InitializeProjectTree(%ProjectPathLineEdit.text)
+
+func _on_copy_button_pressed() -> void:
+	# Get selected files from left tree view
+	var selectedFiles = _fileTreeViewExplorer.GetSelectedFiles()
+	if selectedFiles.is_empty():
+		OS.alert("No files selected to copy.")
+		return
+
+	# Get destination path from right tree view
+	var destinationPath = %DestinationTreeView.GetSelectedDestination()
+	if not destinationPath or destinationPath.is_empty():
+		OS.alert("No destination selected.")
+		return
+
+	# Check for overwrites
+	var overwriteCount = CheckForOverwrites(selectedFiles, destinationPath)
+	if overwriteCount > 0:
+		var confirmed = await ShowOverwriteConfirmation(overwriteCount)
+		if not confirmed:
+			return
+
+	# Copy files
+	var successCount = 0
+	var failCount = 0
+	for filePath in selectedFiles:
+		var fileName = filePath.get_file()
+		var destFile = destinationPath.path_join(fileName)
+
+		var error = DirAccess.copy_absolute(filePath, destFile)
+		if error == OK:
+			successCount += 1
+		else:
+			failCount += 1
+			print("Failed to copy: ", filePath, " Error: ", error)
+
+	# Show alert only for failures
+	if failCount > 0:
+		OS.alert("Failed to copy %d file(s)." % failCount)
+
+	# Refresh destination tree view to show new files
+	if successCount > 0:
+		await %DestinationTreeView.RefreshProjectTree()
+
+func _on_move_button_pressed() -> void:
+	# Get selected files from left tree view
+	var selectedFiles = _fileTreeViewExplorer.GetSelectedFiles()
+	if selectedFiles.is_empty():
+		OS.alert("No files selected to move.")
+		return
+
+	# Get destination path from right tree view
+	var destinationPath = %DestinationTreeView.GetSelectedDestination()
+	if not destinationPath or destinationPath.is_empty():
+		OS.alert("No destination selected.")
+		return
+
+	# Check for overwrites
+	var overwriteCount = CheckForOverwrites(selectedFiles, destinationPath)
+	if overwriteCount > 0:
+		var confirmed = await ShowOverwriteConfirmation(overwriteCount)
+		if not confirmed:
+			return
+
+	# Move files
+	var successCount = 0
+	var failCount = 0
+	for filePath in selectedFiles:
+		var fileName = filePath.get_file()
+		var destFile = destinationPath.path_join(fileName)
+
+		var error = DirAccess.rename_absolute(filePath, destFile)
+		if error == OK:
+			successCount += 1
+		else:
+			failCount += 1
+			print("Failed to move: ", filePath, " Error: ", error)
+
+	# Show alert only for failures
+	if failCount > 0:
+		OS.alert("Failed to move %d file(s)." % failCount)
+
+	# Refresh both tree views to reflect moved files
+	if successCount > 0:
+		await _fileTreeViewExplorer.RefreshExpandedFolders()
+		await %DestinationTreeView.RefreshProjectTree()

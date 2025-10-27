@@ -1195,6 +1195,74 @@ func ToggleFilter(filterName : String, enabled : bool):
 	
 	ApplyActiveFilters()
 
+func RefreshExpandedFolders():
+	# Smart refresh that only updates expanded folders without collapsing the tree
+	var rootItem = %FileTree.get_root()
+	if rootItem:
+		await _RefreshExpandedFoldersRecursive(rootItem)
+
+func _RefreshExpandedFoldersRecursive(item: TreeItem):
+	# Only process this item if it's expanded
+	if not item or item.is_collapsed():
+		return
+
+	var path = item.get_metadata(0)
+	if not path:
+		# Process children of root item
+		var child = item.get_first_child()
+		while child:
+			await _RefreshExpandedFoldersRecursive(child)
+			child = child.get_next()
+		return
+
+	# Get current children in the tree
+	var currentChildren: Dictionary = {}
+	var child = item.get_first_child()
+	while child:
+		var childName = child.get_text(0)
+		if childName:
+			currentChildren[childName] = child
+		child = child.get_next()
+
+	# Get actual files/folders from filesystem
+	var dir = DirAccess.open(path)
+	if dir:
+		var actualEntries: Array[String] = []
+
+		dir.list_dir_begin()
+		var entryName = dir.get_next()
+		while entryName != "":
+			if not entryName.begins_with("."):
+				actualEntries.append(entryName)
+			entryName = dir.get_next()
+		dir.list_dir_end()
+
+		# Remove children that no longer exist in filesystem
+		child = item.get_first_child()
+		while child:
+			var nextChild = child.get_next()
+			var childName = child.get_text(0)
+			if childName and not childName in actualEntries:
+				child.free()
+			child = nextChild
+
+	# Recursively refresh child folders that are expanded
+	child = item.get_first_child()
+	while child:
+		var childPath = child.get_metadata(0)
+		if childPath and DirAccess.dir_exists_absolute(childPath):
+			# Check if it has real children
+			var hasRealChildren = false
+			if child.get_child_count() > 1:
+				hasRealChildren = true
+			elif child.get_child_count() == 1:
+				var firstChild = child.get_first_child()
+				hasRealChildren = firstChild.get_metadata(0) != null
+
+			if not child.is_collapsed() and hasRealChildren:
+				await _RefreshExpandedFoldersRecursive(child)
+		child = child.get_next()
+
 func RefreshCurrentView():
 	if %FlatListToggleButton.button_pressed:
 		_activeFilters.clear()
