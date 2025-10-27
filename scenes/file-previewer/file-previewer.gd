@@ -6,6 +6,8 @@ extends Control
 var supportedTextFiles = ["gd", "cs", "txt", "json", "cfg", "ini", "md", "xml", "html", "css", "js", "gdshader"]
 var supportedImageFiles = ["png", "jpg", "jpeg", "bmp", "svg", "webp", "tga"]
 var supportedSceneFiles = ["tscn", "scn"]
+var supportedArchiveFiles = ["zip"]
+var supportedVideoFiles = ["ogv", "webm", "mp4", "mov", "avi", "mkv", "wmv", "flv", "m4v"]
 
 # Image display modes
 enum ImageDisplayMode {
@@ -57,7 +59,11 @@ func PreviewFile(filePath: String):
 		extension = filePath.get_extension().to_lower()
 	
 	# Check file type and preview accordingly
-	if extension in supportedImageFiles:
+	if extension in supportedArchiveFiles:
+		PreviewZipFile(filePath)
+	elif extension in supportedVideoFiles:
+		PreviewVideoFile(filePath)
+	elif extension in supportedImageFiles:
 		PreviewImage(filePath)
 	elif extension in supportedTextFiles:
 		PreviewTextFile(filePath)
@@ -127,6 +133,108 @@ func PreviewImage(filePath: String):
 		displayPath.get_extension().to_upper(),
 		FormatFileSize(GetFileSize(filePath))
 	]
+
+func PreviewZipFile(filePath: String):
+	ShowTextEditor()
+
+	# Extract actual zip file path if this is a path inside a zip
+	var actualZipPath = filePath
+	if IsZipPath(filePath):
+		actualZipPath = filePath.split("::")[0]
+
+	# Check if file exists
+	if not FileAccess.file_exists(actualZipPath):
+		ShowError("Zip file not found: " + actualZipPath)
+		return
+
+	var zip = ZIPReader.new()
+	var error = zip.open(actualZipPath)
+
+	if error != OK:
+		ShowError("Failed to open zip file: " + actualZipPath + "\nError code: " + str(error))
+		return
+
+	# Get file list
+	var files = zip.get_files()
+	var fileCount = files.size()
+
+	if fileCount == 0:
+		%TextEdit.text = "Empty archive: " + actualZipPath.get_file()
+		%TextEdit.editable = false
+		zip.close()
+		return
+
+	# Calculate total uncompressed size
+	var totalSize = 0
+	for file in files:
+		var fileData = zip.read_file(file)
+		totalSize += fileData.size()
+
+	zip.close()
+
+	# Get zip file size on disk
+	var zipFileSize = GetFileSize(actualZipPath)
+
+	# Build display info
+	var info = "Archive: %s\n" % actualZipPath.get_file()
+	info += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+	info += "File Count: %d\n" % fileCount
+	info += "Archive Size: %s\n" % FormatFileSize(zipFileSize)
+	info += "Uncompressed Size: %s\n" % FormatFileSize(totalSize)
+
+	if zipFileSize > 0 and totalSize > 0:
+		var compressionRatio = (1.0 - (float(zipFileSize) / float(totalSize))) * 100.0
+		info += "Compression: %.1f%%\n" % compressionRatio
+
+	info += "Path: %s\n" % actualZipPath
+
+	info += "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+	info += "Contents:\n"
+	info += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+
+	# List files (limit to first 100 to avoid performance issues)
+	var maxFiles = min(files.size(), 100)
+	for i in range(maxFiles):
+		info += "  • " + files[i] + "\n"
+
+	if files.size() > 100:
+		info += "\n  ... and %d more files\n" % (files.size() - 100)
+
+	%TextEdit.text = info
+	%TextEdit.editable = false
+
+func PreviewVideoFile(filePath: String):
+	ShowTextEditor()
+
+	# Extract actual file path if this is inside a zip
+	var actualFilePath = filePath
+	if IsZipPath(filePath):
+		actualFilePath = filePath.split("::")[1]
+
+	var extension = actualFilePath.get_extension().to_lower()
+	var fileSize = GetFileSize(filePath)
+
+	# Build display info
+	var info = "Video: %s\n" % actualFilePath.get_file()
+	info += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+	info += "Format: .%s\n" % extension.to_upper()
+	info += "Size: %s\n" % FormatFileSize(fileSize)
+	info += "Path: %s\n\n" % filePath
+	info += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+
+	# Add format-specific info
+	if extension in ["ogv", "webm"]:
+		info += "✓  Playback Supported\n\n"
+		info += "This format can be played in Godot using\n"
+		info += "the VideoStreamPlayer node.\n"
+	else:
+		info += "⚠️  Playback Not Supported\n\n"
+		info += "Godot only supports .OGV and .WEBM video playback.\n"
+		info += "This file can be viewed in external players like\n"
+		info += "VLC, Windows Media Player, or QuickTime.\n"
+
+	%TextEdit.text = info
+	%TextEdit.editable = false
 
 func PreviewTextFile(filePath: String):
 	ShowTextEditor()
@@ -341,6 +449,125 @@ func ClearPreview():
 	%ImageViewer.texture = null
 	ShowTextEditor()
 
+func PreviewDirectory(dirPath: String):
+	ShowTextEditor()
+
+	# Check if this is actually an archive file
+	var extension = dirPath.get_extension().to_lower()
+	if extension == "zip":
+		PreviewZipFile(dirPath)
+		return
+	elif extension in ["7z", "rar", "tar", "gz", "bz2", "xz"]:
+		# Unsupported archive formats
+		var info = "Archive: %s\n" % dirPath.get_file()
+		info += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+		info += "Format: .%s\n" % extension.to_upper()
+		info += "Size: %s\n" % FormatFileSize(GetFileSize(dirPath))
+		info += "Path: %s\n\n" % dirPath
+		info += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+		info += "⚠️  Archive preview not supported\n\n"
+		info += "Godot only supports .ZIP file inspection.\n"
+		info += "To view contents, please extract this archive\n"
+		info += "using an external tool like 7-Zip or WinRAR.\n"
+		%TextEdit.text = info
+		%TextEdit.editable = false
+		return
+
+	# Handle zip paths differently
+	if IsZipPath(dirPath):
+		var parts = dirPath.split("::")
+		var zipPath = parts[0]
+		var internalPath = parts[1]
+
+		# Show zip folder contents
+		var zip = ZIPReader.new()
+		var error = zip.open(zipPath)
+		if error != OK:
+			ShowError("Failed to open zip file: " + zipPath)
+			return
+
+		var files = zip.get_files()
+		var folderFiles = []
+		var folderPrefix = internalPath
+		if not folderPrefix.ends_with("/"):
+			folderPrefix += "/"
+
+		# Find files in this folder
+		for file in files:
+			if file.begins_with(folderPrefix):
+				var relativePath = file.substr(folderPrefix.length())
+				# Only show immediate children (not nested)
+				if "/" not in relativePath or relativePath.ends_with("/"):
+					folderFiles.append(file)
+
+		zip.close()
+
+		var info = "Folder: %s\n" % internalPath
+		info += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+		info += "Item Count: %d\n" % folderFiles.size()
+		info += "Location: Inside %s\n" % zipPath.get_file()
+		info += "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+		info += "Contents:\n"
+		info += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+
+		for file in folderFiles:
+			var fileName = file.substr(folderPrefix.length())
+			info += "  • " + fileName + "\n"
+
+		%TextEdit.text = info
+		%TextEdit.editable = false
+		return
+
+	# Regular directory
+	if not DirAccess.dir_exists_absolute(dirPath):
+		ShowError("Directory does not exist: " + dirPath)
+		return
+
+	var dir = DirAccess.open(dirPath)
+	if dir == null:
+		ShowError("Cannot access directory: " + dirPath)
+		return
+
+	# Count files and folders
+	var fileCount = 0
+	var folderCount = 0
+	var totalSize = 0
+	var fileList = []
+
+	dir.list_dir_begin()
+	var fileName = dir.get_next()
+	while fileName != "":
+		if fileName != "." and fileName != "..":
+			var fullPath = dirPath + "/" + fileName
+			if dir.current_is_dir():
+				folderCount += 1
+				fileList.append("📁 " + fileName)
+			else:
+				fileCount += 1
+				var size = GetFileSize(fullPath)
+				totalSize += size
+				fileList.append("📄 " + fileName)
+		fileName = dir.get_next()
+	dir.list_dir_end()
+
+	# Build display info
+	var info = "Folder: %s\n" % dirPath.get_file()
+	info += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+	info += "Folders: %d\n" % folderCount
+	info += "Files: %d\n" % fileCount
+	info += "Total Size: %s\n" % FormatFileSize(totalSize)
+	info += "Path: %s\n" % dirPath
+	info += "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+	info += "Contents:\n"
+	info += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+
+	# List contents
+	for item in fileList:
+		info += "  " + item + "\n"
+
+	%TextEdit.text = info
+	%TextEdit.editable = false
+
 # Format file size in human-readable format
 func FormatFileSize(sizeBytes: int) -> String:
 	if sizeBytes < 1024:
@@ -355,7 +582,7 @@ func FormatFileSize(sizeBytes: int) -> String:
 # Check if a file type is supported for preview
 func IsFileSupported(filePath: String) -> bool:
 	var extension = filePath.get_extension().to_lower()
-	return extension in supportedTextFiles or extension in supportedImageFiles or extension in supportedSceneFiles
+	return extension in supportedTextFiles or extension in supportedImageFiles or extension in supportedSceneFiles or extension in supportedArchiveFiles or extension in supportedVideoFiles
 
 # Add support for additional file extensions
 # TODO:
@@ -370,6 +597,12 @@ func AddSupportedExtension(extension: String, fileType: String = "text"):
 		"scene":
 			if not extension in supportedSceneFiles:
 				supportedSceneFiles.append(extension)
+		"archive":
+			if not extension in supportedArchiveFiles:
+				supportedArchiveFiles.append(extension)
+		"video":
+			if not extension in supportedVideoFiles:
+				supportedVideoFiles.append(extension)
 
 func UpdateImageSize():
 	var newSize = _baseSize * _zoomFactor

@@ -120,7 +120,7 @@ func _on_file_selected(filePath: String):
 
 func _on_directory_selected(dirPath: String):
 	if _filePreviewer:
-		_filePreviewer.ClearPreview()
+		_filePreviewer.PreviewDirectory(dirPath)
 	%PathLabel.text = dirPath
 
 func _on_back_button_pressed() -> void:
