@@ -152,7 +152,8 @@ func LoadProjectsIntoProjectContainer():
 			projectItem.SetEditedDate(config.get_value("ProjectSettings", "edited_date", {}))
 			projectItem.SetSourceFilters(config.get_value("ProjectSettings", "source_filters", []))
 			projectItem.SetThumbnailPath(config.get_value("ProjectSettings", "thumbnail_path", "res://icon.svg"))
-			
+			projectItem.SetCustomOrder(config.get_value("ProjectSettings", "custom_order", 999999))
+
 			if isHidden:
 				hiddenProjectCount += 1
 				projectItem.HideProjectItem()
@@ -184,7 +185,11 @@ func HandleCustomSorts(listOfProjectItems):
 		Enums.SortByType.EditedDate:
 			listOfProjectItems.sort_custom(Callable(CustomSorter, "sort_by_edited_date"))
 			listOfProjectItems.reverse()
-	
+		Enums.SortByType.Alphabetical:
+			listOfProjectItems.sort_custom(Callable(CustomSorter, "sort_by_name"))
+		Enums.SortByType.Custom:
+			listOfProjectItems.sort_custom(Callable(CustomSorter, "sort_by_custom_order"))
+
 	return listOfProjectItems
 	
 func GetGodotVersionFromId(godotVersionId):
@@ -223,10 +228,26 @@ func InitSignals():
 	Signals.connect("GodotVersionManagerClosing", GodotVersionManagerClosing)
 	Signals.connect("BackgroundColorChanged", BackgroundColorChanged)
 	Signals.connect("HidingProjectItem", HidingProjectItem)
+	Signals.connect("ReorderProjectItems", ReorderProjectItems)
 
 func HidingProjectItem():
 	ToggleHiddenProjectVisibility()
-	
+
+func ReorderProjectItems(dragged_item, target_item):
+	var all_items = _projectItemContainer.get_children()
+	var dragged_index = all_items.find(dragged_item)
+	var target_index = all_items.find(target_item)
+
+	if dragged_index == -1 or target_index == -1:
+		return
+
+	_projectItemContainer.move_child(dragged_item, target_index)
+
+	all_items = _projectItemContainer.get_children()
+	for i in range(all_items.size()):
+		all_items[i].SetCustomOrder(i)
+		all_items[i].SaveProjectItem()
+
 func BackgroundColorChanged(color = null):
 	LoadBackgroundColor(color)
 
@@ -514,8 +535,29 @@ func _on_check_box_pressed():
 	ToggleHiddenProjectVisibility()
 	
 func _on_option_button_item_selected(index: int) -> void:
-	ReloadProjectManager()
 	App.SetSortType(index)
+
+	# If switching to Custom sort mode, initialize custom order values
+	if index == Enums.SortByType.Custom:
+		InitializeCustomOrderIfNeeded()
+
+	ReloadProjectManager()
+
+func InitializeCustomOrderIfNeeded():
+	# Check if any project has uninitialized custom order (999999)
+	var all_items = _projectItemContainer.get_children()
+	var needs_initialization = false
+
+	for item in all_items:
+		if item.GetCustomOrder() == 999999:
+			needs_initialization = true
+			break
+
+	# If initialization is needed, set custom order based on current display order
+	if needs_initialization:
+		for i in range(all_items.size()):
+			all_items[i].SetCustomOrder(i)
+			all_items[i].SaveProjectItem()
 
 func _on_claude_button_pressed() -> void:
 	OpenClaude()

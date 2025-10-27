@@ -9,6 +9,7 @@ signal ToggleProjectItemSelection
 signal ProjectSaved
 signal LoadOpenGodotButtons
 signal HidingProjectItem
+signal ReorderProjectItems
 
 # Godot Version Management
 signal NewGodotVersionAdded

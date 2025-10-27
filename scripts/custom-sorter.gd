@@ -7,8 +7,18 @@ static func sort_by_created_date(a, b) -> bool:
 	return sort_by_date_field(a, b, "_createdDate")
 
 static func sort_by_edited_date(a, b) -> bool:
-	return sort_by_date_field(a, b, "_editedDate")	
-	
+	return sort_by_date_field(a, b, "_editedDate")
+
+static func sort_by_name(a, b) -> bool:
+	var a_name: String = a.get("_projectName") if a.get("_projectName") != null else ""
+	var b_name: String = b.get("_projectName") if b.get("_projectName") != null else ""
+	return a_name.naturalnocasecmp_to(b_name) < 0
+
+static func sort_by_custom_order(a, b) -> bool:
+	var a_order: int = a.get("_customOrder") if a.get("_customOrder") != null else 999999
+	var b_order: int = b.get("_customOrder") if b.get("_customOrder") != null else 999999
+	return a_order < b_order
+
 static func sort_by_date_field(a, b, field_name: String) -> bool:
 	var a_date: Dictionary = a.get(field_name) if typeof(a.get(field_name)) == TYPE_DICTIONARY else {}
 	var b_date: Dictionary = b.get(field_name) if typeof(b.get(field_name)) == TYPE_DICTIONARY else {}

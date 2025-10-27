@@ -5,7 +5,9 @@ enum SortByType {
 	None,
 	PublishedDate,
 	CreatedDate,
-	EditedDate
+	EditedDate,
+	Alphabetical,
+	Custom
 }
 
 enum ExportType {

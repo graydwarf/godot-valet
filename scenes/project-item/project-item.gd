@@ -35,6 +35,7 @@ var _publishedDate : Dictionary = {}
 var _createdDate : Dictionary = {}
 var _editedDate : Dictionary = {}
 var _sourceFilters := []
+var _customOrder := 999999  # Default high value for unordered items
 
 func _ready():
 	InitSignals()
@@ -152,7 +153,13 @@ func SetInstallerConfigurationFileName(value):
 
 func SetIsHidden(value):
 	_isHidden = value
-	
+
+func SetCustomOrder(value: int):
+	_customOrder = value
+
+func GetCustomOrder() -> int:
+	return _customOrder
+
 func GetProjectVersion():
 	return _projectVersionLabel.text
 	
@@ -353,7 +360,8 @@ func SaveProjectItem():
 	config.set_value("ProjectSettings", "edited_date", _editedDate)
 	config.set_value("ProjectSettings", "source_filters", _sourceFilters)
 	config.set_value("ProjectSettings", "thumbnail_path", _thumbnailPath)
-	
+	config.set_value("ProjectSettings", "custom_order", _customOrder)
+
 	# Save the config file.
 	var err = config.save("user://" + App.GetProjectItemFolder() + "/" + _projectId + ".cfg")
 
@@ -466,8 +474,33 @@ func _on_hide_check_box_pressed():
 func _on_thumb_texture_rect_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_LEFT:
-			# Left click selects the project item
 			Signals.emit_signal("ToggleProjectItemSelection", self, !_selected)
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			# Right click opens the thumbnail selector
 			ShowThumbnailSelector()
+
+# Drag and drop functionality for custom ordering
+func _get_drag_data(_at_position):
+	if not _is_custom_sort_enabled():
+		return null
+
+	var preview = Panel.new()
+	var label = Label.new()
+	label.text = _projectName
+	label.add_theme_color_override("font_color", Color.WHITE)
+	preview.add_child(label)
+	preview.custom_minimum_size = Vector2(200, 50)
+	set_drag_preview(preview)
+
+	return self
+
+# Only allow dropping project items when Custom sort is enabled
+func _can_drop_data(_at_position, data) -> bool:
+	return _is_custom_sort_enabled() and data is Panel and data.has_method("GetProjectId") and data != self
+
+func _drop_data(_at_position, data) -> void:
+	if data is Panel and data.has_method("GetProjectId"):
+		Signals.emit_signal("ReorderProjectItems", data, self)
+
+# Check if the current sort mode is Custom
+func _is_custom_sort_enabled() -> bool:
+	return App.GetSortType() == Enums.SortByType.Custom
