@@ -24,6 +24,9 @@ var _isDragging : bool = false
 var _dragStartPos := Vector2.ZERO
 var _imageStartPos := Vector2.ZERO
 var _zoomCenter := Vector2.ZERO
+var _isPanning : bool = false
+var _panStartPos := Vector2.ZERO
+var _scrollStartPos := Vector2.ZERO
 
 func _ready():
 	ClearPreview()
@@ -119,6 +122,7 @@ func PreviewImage(filePath: String):
 	
 	var texture = ImageTexture.create_from_image(image)
 	_baseSize = texture.get_size()
+	%ImageViewerDirect.texture = texture
 	%ImageViewer.texture = texture
 	ApplyImageDisplayMode(_currentDisplayMode)
 
@@ -447,6 +451,7 @@ func ShowImageDisplay():
 func ClearPreview():
 	%TextEdit.text = ""
 	%ImageViewer.texture = null
+	%ImageViewerDirect.texture = null
 	ShowTextEditor()
 
 func PreviewDirectory(dirPath: String):
@@ -630,27 +635,47 @@ func ApplyImageDisplayMode(mode: ImageDisplayMode):
 		ImageDisplayMode.TILE:
 			%TileButton.button_pressed = true
 
-	# Apply the display mode - simplified to just change stretch modes
+	# Apply the display mode
 	match mode:
 		ImageDisplayMode.FIT_TO_SCREEN:
-			# Fit to screen while keeping aspect ratio
-			%ImageViewer.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			%ImageViewer.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			# Use direct viewer (no scrolling), fit to screen while keeping aspect ratio
+			%ImageScrollContainer.visible = false
+			%ImageViewerDirect.visible = true
+			%ImageViewerDirect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			%ImageViewerDirect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			%ImageViewer.custom_minimum_size = Vector2.ZERO  # Clear zoom size
 
 		ImageDisplayMode.ACTUAL_SIZE:
-			# Show at actual size (1:1 pixels)
-			%ImageViewer.expand_mode = TextureRect.EXPAND_KEEP_SIZE
-			%ImageViewer.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
-
-		ImageDisplayMode.STRETCH:
-			# Stretch to fill the entire area
+			# Use scroll container, show at actual size (1:1 pixels) pinned to top-left
+			%ImageScrollContainer.visible = true
+			%ImageViewerDirect.visible = false
+			# Use EXPAND_IGNORE_SIZE so TextureRect respects custom_minimum_size
+			# Use STRETCH_SCALE so texture scales to fill the rect
 			%ImageViewer.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			%ImageViewer.stretch_mode = TextureRect.STRETCH_SCALE
+			# Sync texture from direct viewer if needed
+			if %ImageViewerDirect.texture != null:
+				%ImageViewer.texture = %ImageViewerDirect.texture
+			# Reset zoom to 1:1 and set initial size
+			_zoomFactor = 1.0
+			if _baseSize != Vector2.ZERO:
+				%ImageViewer.custom_minimum_size = _baseSize
+
+		ImageDisplayMode.STRETCH:
+			# Use direct viewer (no scrolling), stretch to fill the entire area
+			%ImageScrollContainer.visible = false
+			%ImageViewerDirect.visible = true
+			%ImageViewerDirect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			%ImageViewerDirect.stretch_mode = TextureRect.STRETCH_SCALE
+			%ImageViewer.custom_minimum_size = Vector2.ZERO  # Clear zoom size
 
 		ImageDisplayMode.TILE:
-			# Tile the image
-			%ImageViewer.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			%ImageViewer.stretch_mode = TextureRect.STRETCH_TILE
+			# Use direct viewer (no scrolling), tile the image
+			%ImageScrollContainer.visible = false
+			%ImageViewerDirect.visible = true
+			%ImageViewerDirect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			%ImageViewerDirect.stretch_mode = TextureRect.STRETCH_TILE
+			%ImageViewer.custom_minimum_size = Vector2.ZERO  # Clear zoom size
 
 func ZoomIn():
 	_zoomFactor = min(_zoomFactor * 1.2, 50.0)
@@ -663,23 +688,35 @@ func ZoomOut():
 var zoom_center: Vector2  # Point to zoom into
 
 func _gui_input(event):
+	# Handle middle-mouse panning
 	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_LEFT:
+		if event.button_index == MOUSE_BUTTON_MIDDLE:
 			if event.pressed:
-				_isDragging = true
-				_dragStartPos = event.position
-				_imageStartPos = %ImageViewer.position
+				_isPanning = true
+				_panStartPos = event.position
+				_scrollStartPos = Vector2(%ImageScrollContainer.scroll_horizontal, %ImageScrollContainer.scroll_vertical)
 			else:
-				_isDragging = false
-		elif event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			zoom_center = event.position  # Zoom into mouse position
-			ZoomIn()
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			zoom_center = event.position  # Zoom out from mouse position
-			ZoomOut()
-	elif event is InputEventMouseMotion and _isDragging:
-		var delta = event.position - _dragStartPos
-		%ImageViewer.position = _imageStartPos + delta
+				_isPanning = false
+			accept_event()  # Prevent event propagation
+		# Handle Ctrl+wheel for zooming in 1:1 mode
+		elif event.ctrl_pressed and (event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN):
+			if %ImageScrollContainer.visible:  # Only zoom in 1:1 mode
+				if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+					_zoomFactor = min(_zoomFactor * 1.2, 10.0)
+				else:
+					_zoomFactor = max(_zoomFactor / 1.2, 0.1)
+
+				# Update image size based on zoom
+				var new_size = _baseSize * _zoomFactor
+				%ImageViewer.custom_minimum_size = new_size
+				accept_event()  # Prevent normal scrolling when zooming
+
+	elif event is InputEventMouseMotion and _isPanning:
+		# Pan by updating scroll container position
+		var delta = event.position - _panStartPos
+		%ImageScrollContainer.scroll_horizontal = int(_scrollStartPos.x - delta.x)
+		%ImageScrollContainer.scroll_vertical = int(_scrollStartPos.y - delta.y)
+		accept_event()  # Prevent event propagation
 
 func UpdateImageSizeWithCenter(old_zoom: float):
 	var old_size = _baseSize * old_zoom

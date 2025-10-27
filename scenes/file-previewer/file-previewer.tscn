@@ -1,9 +1,21 @@
-[gd_scene load_steps=2 format=3 uid="uid://r8y55mlah1wy"]
+[gd_scene load_steps=3 format=3 uid="uid://r8y55mlah1wy"]
 
 [ext_resource type="Script" uid="uid://btr4i6pvvk3v3" path="res://scenes/file-previewer/file-previewer.gd" id="1_so7ii"]
 
 [sub_resource type="ButtonGroup" id="ButtonGroup_image_modes"]
 resource_local_to_scene = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_preview_border"]
+bg_color = Color(0.1, 0.1, 0.1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.4, 0.4, 0.4, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
 
 [node name="FilePreviewer" type="Control"]
 clip_contents = true
@@ -17,8 +29,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("1_so7ii")
 
-[node name="vBoxContainer" type="VBoxContainer" parent="."]
-clip_contents = true
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -26,24 +37,24 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="ButtonHBoxContainer" type="HBoxContainer" parent="vBoxContainer"]
+[node name="ButtonHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="vBoxContainer/ButtonHBoxContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/ButtonHBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/margin_top = 2
 theme_override_constants/margin_right = 16
 
-[node name="ImageToolbar" type="HBoxContainer" parent="vBoxContainer/ButtonHBoxContainer/MarginContainer"]
+[node name="ImageToolbar" type="HBoxContainer" parent="VBoxContainer/ButtonHBoxContainer/MarginContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 size_flags_horizontal = 3
 alignment = 2
 
-[node name="FitToScreenButton" type="Button" parent="vBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar"]
+[node name="FitToScreenButton" type="Button" parent="VBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar"]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Fit image to screen while keeping aspect ratio"
@@ -55,7 +66,7 @@ theme_override_colors/font_pressed_color = Color(0.3, 0.8, 1, 1)
 theme_override_colors/font_hover_color = Color(0.9, 0.9, 0.9, 1)
 text = "Fit"
 
-[node name="ActualSizeButton" type="Button" parent="vBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar"]
+[node name="ActualSizeButton" type="Button" parent="VBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar"]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Show image at actual size (1:1 pixels)"
@@ -66,7 +77,7 @@ theme_override_colors/font_pressed_color = Color(0.3, 0.8, 1, 1)
 theme_override_colors/font_hover_color = Color(0.9, 0.9, 0.9, 1)
 text = "1:1"
 
-[node name="StretchButton" type="Button" parent="vBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar"]
+[node name="StretchButton" type="Button" parent="VBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar"]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Stretch image to fill the preview area"
@@ -77,7 +88,7 @@ theme_override_colors/font_pressed_color = Color(0.3, 0.8, 1, 1)
 theme_override_colors/font_hover_color = Color(0.9, 0.9, 0.9, 1)
 text = "Stretch"
 
-[node name="TileButton" type="Button" parent="vBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar"]
+[node name="TileButton" type="Button" parent="VBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar"]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Tile the image"
@@ -88,13 +99,13 @@ theme_override_colors/font_pressed_color = Color(0.3, 0.8, 1, 1)
 theme_override_colors/font_hover_color = Color(0.9, 0.9, 0.9, 1)
 text = "Tile"
 
-[node name="TextToolbar" type="Control" parent="vBoxContainer/ButtonHBoxContainer/MarginContainer"]
+[node name="TextToolbar" type="Control" parent="VBoxContainer/ButtonHBoxContainer/MarginContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="EditTextTextureButton" type="TextureButton" parent="vBoxContainer/ButtonHBoxContainer/MarginContainer/TextToolbar"]
+[node name="EditTextTextureButton" type="TextureButton" parent="VBoxContainer/ButtonHBoxContainer/MarginContainer/TextToolbar"]
 visible = false
 layout_mode = 1
 anchors_preset = 1
@@ -107,38 +118,81 @@ tooltip_text = "Keep Size & Scale"
 toggle_mode = true
 button_pressed = true
 
-[node name="ImageContainer" type="Control" parent="vBoxContainer"]
-unique_name_in_owner = true
+[node name="ContentPanel" type="Panel" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
-mouse_filter = 1
+theme_override_styles/panel = SubResource("StyleBoxFlat_preview_border")
 
-[node name="ImageViewer" type="TextureRect" parent="vBoxContainer/ImageContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/ContentPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 6
+
+[node name="ContentContainer" type="Control" parent="VBoxContainer/ContentPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="ImageContainer" type="Control" parent="VBoxContainer/ContentPanel/MarginContainer/ContentContainer"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+
+[node name="ImageScrollContainer" type="ScrollContainer" parent="VBoxContainer/ContentPanel/MarginContainer/ContentContainer/ImageContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+follow_focus = true
+horizontal_scroll_mode = 1
+vertical_scroll_mode = 1
+
+[node name="ImageViewer" type="TextureRect" parent="VBoxContainer/ContentPanel/MarginContainer/ContentContainer/ImageContainer/ImageScrollContainer"]
+unique_name_in_owner = true
+texture_filter = 1
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ImageViewerDirect" type="TextureRect" parent="VBoxContainer/ContentPanel/MarginContainer/ContentContainer/ImageContainer"]
 unique_name_in_owner = true
 texture_filter = 1
 layout_mode = 1
 anchors_preset = 15
-anchor_left = 0.0
-anchor_top = 0.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="TextViewer" type="Control" parent="vBoxContainer"]
+[node name="TextViewer" type="Control" parent="VBoxContainer/ContentPanel/MarginContainer/ContentContainer"]
 unique_name_in_owner = true
 visible = false
-layout_mode = 2
-size_flags_vertical = 3
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="ContentScrollContainer" type="ScrollContainer" parent="vBoxContainer/TextViewer"]
+[node name="ContentScrollContainer" type="ScrollContainer" parent="VBoxContainer/ContentPanel/MarginContainer/ContentContainer/TextViewer"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -149,7 +203,7 @@ grow_vertical = 2
 size_flags_vertical = 3
 mouse_filter = 2
 
-[node name="TextEdit" type="TextEdit" parent="vBoxContainer/TextViewer/ContentScrollContainer"]
+[node name="TextEdit" type="TextEdit" parent="VBoxContainer/ContentPanel/MarginContainer/ContentContainer/TextViewer/ContentScrollContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -157,7 +211,7 @@ size_flags_vertical = 3
 theme_override_colors/background_color = Color(0.11404, 0.114039, 0.122912, 1)
 placeholder_text = "Select a file to preview..."
 
-[connection signal="pressed" from="vBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar/FitToScreenButton" to="." method="_on_fit_to_screen_button_pressed"]
-[connection signal="pressed" from="vBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar/ActualSizeButton" to="." method="_on_actual_size_button_pressed"]
-[connection signal="pressed" from="vBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar/StretchButton" to="." method="_on_stretch_button_pressed"]
-[connection signal="pressed" from="vBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar/TileButton" to="." method="_on_tile_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar/FitToScreenButton" to="." method="_on_fit_to_screen_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar/ActualSizeButton" to="." method="_on_actual_size_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar/StretchButton" to="." method="_on_stretch_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar/TileButton" to="." method="_on_tile_button_pressed"]
