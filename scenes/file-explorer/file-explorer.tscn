@@ -120,18 +120,19 @@ size_flags_horizontal = 3
 
 [node name="FileTreeViewExplorer" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/VBoxContainer" instance=ExtResource("2_p38i7")]
 unique_name_in_owner = true
-visible = false
 custom_minimum_size = Vector2(400, 0)
 layout_mode = 2
+size_flags_vertical = 3
 
 [node name="ProjectTreeView" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/VBoxContainer" instance=ExtResource("4_m5vku")]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 size_flags_vertical = 3
 
 [node name="MiddlePane" type="VBoxContainer" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(32, 0)
+custom_minimum_size = Vector2(64, 0)
 layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 3
@@ -139,7 +140,7 @@ alignment = 1
 
 [node name="GodotToggleButton" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(32, 32)
+custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
@@ -152,37 +153,70 @@ icon_alignment = 1
 expand_icon = true
 
 [node name="Spacer" type="Control" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane"]
-custom_minimum_size = Vector2(0, 8)
+custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
 
-[node name="CopyButton" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane"]
+[node name="CopyRightButton" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane"]
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(32, 32)
+custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
-tooltip_text = "Copy selected files to destination"
+tooltip_text = "Copy selected files from explorer to project"
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_colors/font_pressed_color = Color(0.3, 0.8, 1, 1)
 theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 16
-text = "⎘"
+theme_override_font_sizes/font_size = 32
+text = "→"
 flat = true
 
-[node name="MoveButton" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane"]
+[node name="CopyLeftButton" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane"]
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(32, 32)
+custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
-tooltip_text = "Move selected files to destination"
+tooltip_text = "Copy selected files from project to file explorer"
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_colors/font_pressed_color = Color(0.3, 0.8, 1, 1)
 theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 16
-text = "➜"
+theme_override_font_sizes/font_size = 32
+text = "←"
+flat = true
+
+[node name="Separator" type="HSeparator" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane"]
+layout_mode = 2
+
+[node name="MoveRightButton" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+tooltip_text = "Move selected files from explorer to project"
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_colors/font_pressed_color = Color(0.3, 0.8, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 32
+text = "⮩"
+flat = true
+
+[node name="MoveLeftButton" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+tooltip_text = "Move selected files from project to file explorer"
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_colors/font_pressed_color = Color(0.3, 0.8, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 32
+text = "⮨"
 flat = true
 
 [node name="RightSection" type="Control" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer"]
@@ -215,33 +249,10 @@ layout_mode = 2
 size_flags_horizontal = 8
 text = "Back"
 
-[node name="CancelButton" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer/hBoxContainer"]
-unique_name_in_owner = true
-visible = false
-custom_minimum_size = Vector2(125, 0)
-layout_mode = 2
-size_flags_horizontal = 8
-text = "Cancel"
-
-[node name="ChooseDestinationButton" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer/hBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(125, 0)
-layout_mode = 2
-size_flags_horizontal = 8
-text = "Choose Destination"
-
-[node name="ImportButton" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer/hBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(125, 0)
-layout_mode = 2
-size_flags_horizontal = 8
-text = "Import"
-
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/VBoxContainer/ProjectContextContainer/ProjectPathHBoxContainer/OpenProjectPathFolder" to="." method="_on_open_project_path_folder_pressed"]
 [connection signal="toggled" from="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane/GodotToggleButton" to="." method="_on_godot_toggle_button_toggled"]
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane/CopyButton" to="." method="_on_copy_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane/MoveButton" to="." method="_on_move_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane/CopyLeftButton" to="." method="_on_copy_left_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane/CopyRightButton" to="." method="_on_copy_right_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane/MoveLeftButton" to="." method="_on_move_left_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane/MoveRightButton" to="." method="_on_move_right_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/VBoxContainer/hBoxContainer/BackButton" to="." method="_on_back_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/VBoxContainer/hBoxContainer/CancelButton" to="." method="_on_cancel_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/VBoxContainer/hBoxContainer/ChooseDestinationButton" to="." method="_on_choose_destination_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/VBoxContainer/hBoxContainer/ImportButton" to="." method="_on_import_button_pressed"]

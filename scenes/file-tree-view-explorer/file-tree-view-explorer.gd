@@ -32,10 +32,6 @@ var _3dModelExtensions := [".dae", ".gltf", ".glb", ".fbx", ".blend", ".obj"]
 var _fontExtensions := [".ttf", ".otf", ".woff", ".woff2"]
 var _textExtensions := [".txt", ".json", ".cfg", ".ini", ".csv", ".md", ".xml"]
 
-# Import vars
-var _filesToImport: Array[String] = []
-var _importStep: int = 1  # 1 = select files, 2 = choose destination
-
 func _ready():
 	SetupTree()
 	PopulateDrives()
@@ -53,18 +49,30 @@ func SetupContextMenu():
 
 func GetSelectedFiles() -> Array[String]:
 	var selected: Array[String] = []
-	
+
 	# Get all selected items from the tree
 	var selectedItems = GetAllSelectedItems()
-	
+
 	for item in selectedItems:
 		if item.get_metadata(0) != null:
 			var path = item.get_metadata(0) as String
 			# Only include files, not directories
 			if not path.is_empty() and not IsDirectory(path):
 				selected.append(path)
-	
+
 	return selected
+
+func GetCurrentPath() -> String:
+	# Returns the currently selected directory path, or parent directory if a file is selected
+	var selected = %FileTree.get_selected()
+	if selected and selected.get_metadata(0) != null:
+		var path = selected.get_metadata(0) as String
+		if IsDirectory(path):
+			return path
+		else:
+			# If a file is selected, return its parent directory
+			return path.get_base_dir()
+	return ""
 
 # Get all currently selected tree items
 func GetAllSelectedItems() -> Array[TreeItem]:
@@ -1197,9 +1205,22 @@ func ToggleFilter(filterName : String, enabled : bool):
 
 func RefreshExpandedFolders():
 	# Smart refresh that only updates expanded folders without collapsing the tree
+	# Save currently selected items
+	var selectedPaths: Array[String] = []
+	var selected = %FileTree.get_next_selected(null)
+	while selected:
+		var path = selected.get_metadata(0)
+		if path:
+			selectedPaths.append(path)
+		selected = %FileTree.get_next_selected(selected)
+
 	var rootItem = %FileTree.get_root()
 	if rootItem:
 		await _RefreshExpandedFoldersRecursive(rootItem)
+
+	# Restore selections
+	if not selectedPaths.is_empty():
+		_RestoreSelections(rootItem, selectedPaths)
 
 func _RefreshExpandedFoldersRecursive(item: TreeItem):
 	# Only process this item if it's expanded
@@ -1207,9 +1228,11 @@ func _RefreshExpandedFoldersRecursive(item: TreeItem):
 		return
 
 	var path = item.get_metadata(0)
+	var child: TreeItem
+
 	if not path:
 		# Process children of root item
-		var child = item.get_first_child()
+		child = item.get_first_child()
 		while child:
 			await _RefreshExpandedFoldersRecursive(child)
 			child = child.get_next()
@@ -1217,7 +1240,7 @@ func _RefreshExpandedFoldersRecursive(item: TreeItem):
 
 	# Get current children in the tree
 	var currentChildren: Dictionary = {}
-	var child = item.get_first_child()
+	child = item.get_first_child()
 	while child:
 		var childName = child.get_text(0)
 		if childName:
@@ -1246,6 +1269,40 @@ func _RefreshExpandedFoldersRecursive(item: TreeItem):
 				child.free()
 			child = nextChild
 
+		# Rebuild current children dictionary after removal
+		currentChildren.clear()
+		child = item.get_first_child()
+		while child:
+			var childName = child.get_text(0)
+			if childName:
+				currentChildren[childName] = child
+			child = child.get_next()
+
+		# Add new entries that don't exist in the tree yet
+		for entry in actualEntries:
+			if not entry in currentChildren:
+				var entryPath = path.path_join(entry)
+				if DirAccess.dir_exists_absolute(entryPath):
+					# It's a directory - add it
+					var dirItem = %FileTree.create_item(item)
+					if dirItem:
+						dirItem.set_text(0, entry)
+						dirItem.set_metadata(0, entryPath)
+						dirItem.set_icon(0, GetFolderIcon())
+						dirItem.set_collapsed(true)
+						# Create a temporary child to show expand arrow
+						var tempChild = %FileTree.create_item(dirItem)
+						if tempChild:
+							tempChild.set_text(0, "")
+							tempChild.set_metadata(0, null)
+				else:
+					# It's a file - add it
+					var fileItem = %FileTree.create_item(item)
+					if fileItem:
+						fileItem.set_text(0, entry)
+						fileItem.set_metadata(0, entryPath)
+						fileItem.set_icon(0, GetIconFromFilePath(entryPath))
+
 	# Recursively refresh child folders that are expanded
 	child = item.get_first_child()
 	while child:
@@ -1261,6 +1318,19 @@ func _RefreshExpandedFoldersRecursive(item: TreeItem):
 
 			if not child.is_collapsed() and hasRealChildren:
 				await _RefreshExpandedFoldersRecursive(child)
+		child = child.get_next()
+
+func _RestoreSelections(item: TreeItem, paths: Array[String]):
+	if not item:
+		return
+
+	var path = item.get_metadata(0)
+	if path and path in paths:
+		item.select(0)
+
+	var child = item.get_first_child()
+	while child:
+		_RestoreSelections(child, paths)
 		child = child.get_next()
 
 func RefreshCurrentView():
@@ -1715,7 +1785,7 @@ func _on_filter_by_images_toggle_button_pressed() -> void:
 		ToggleFilter("images", false)
 
 # Handle right-click on tree items
-func _on_file_tree_item_mouse_selected(position: Vector2, mouse_button_index: int) -> void:
+func _on_file_tree_item_mouse_selected(_mouse_position: Vector2, mouse_button_index: int) -> void:
 	if mouse_button_index == MOUSE_BUTTON_RIGHT:
 		var selected = %FileTree.get_selected()
 		if selected:

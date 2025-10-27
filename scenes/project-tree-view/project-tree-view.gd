@@ -11,7 +11,7 @@ func _ready():
 func SetupTree():
 	%Tree.hide_root = true
 	%Tree.allow_reselect = true
-	%Tree.select_mode = Tree.SELECT_SINGLE
+	%Tree.select_mode = Tree.SELECT_MULTI
 	_rootItem = %Tree.create_item()
 	%Tree.item_collapsed.connect(_on_item_collapsed)
 
@@ -21,10 +21,23 @@ func InitializeProjectTree(projectPath: String):
 
 func RefreshProjectTree():
 	if _projectRootPath and not _projectRootPath.is_empty():
-		# Instead of rebuilding the entire tree, just refresh the contents of expanded folders
+		# Save currently selected items
+		var selectedPaths: Array[String] = []
+		var selected = %Tree.get_next_selected(null)
+		while selected:
+			var path = selected.get_metadata(0)
+			if path:
+				selectedPaths.append(path)
+			selected = %Tree.get_next_selected(selected)
+
+		# Refresh the tree contents
 		var rootItem = %Tree.get_root()
 		if rootItem:
 			await _RefreshExpandedFolders(rootItem)
+
+		# Restore selections
+		if not selectedPaths.is_empty():
+			_RestoreSelections(rootItem, selectedPaths)
 
 func _RefreshExpandedFolders(item: TreeItem):
 	# Only process this item if it's expanded
@@ -32,9 +45,11 @@ func _RefreshExpandedFolders(item: TreeItem):
 		return
 
 	var path = item.get_metadata(0)
+	var child: TreeItem
+
 	if not path:
 		# Process children of root item
-		var child = item.get_first_child()
+		child = item.get_first_child()
 		while child:
 			await _RefreshExpandedFolders(child)
 			child = child.get_next()
@@ -42,7 +57,7 @@ func _RefreshExpandedFolders(item: TreeItem):
 
 	# Get current file names in this tree item
 	var currentChildren: Dictionary = {}
-	var child = item.get_first_child()
+	child = item.get_first_child()
 	while child:
 		var childName = child.get_text(0)
 		if childName:
@@ -62,6 +77,22 @@ func _RefreshExpandedFolders(item: TreeItem):
 			entryName = dir.get_next()
 		dir.list_dir_end()
 
+		# Remove files that no longer exist in filesystem
+		for childName in currentChildren:
+			var childItem = currentChildren[childName]
+			var childPath = childItem.get_metadata(0)
+			if childPath:
+				# Check if it's a file or directory
+				var isFile = not DirAccess.dir_exists_absolute(childPath)
+				if isFile:
+					# It's a file - check if it's still in actualFiles
+					if not childName in actualFiles:
+						childItem.free()
+				else:
+					# It's a directory - check if it still exists
+					if not DirAccess.dir_exists_absolute(childPath):
+						childItem.free()
+
 		# Add new files that don't exist in the tree yet
 		for fileName in actualFiles:
 			if not fileName in currentChildren:
@@ -71,7 +102,6 @@ func _RefreshExpandedFolders(item: TreeItem):
 				var fullPath = path.path_join(fileName)
 				fileItem.set_metadata(0, fullPath)
 				fileItem.set_icon(0, GetFileIcon(fileName))
-				fileItem.set_selectable(0, false)
 
 	# Recursively refresh child folders that are ACTUALLY expanded (not just leaf directories)
 	child = item.get_first_child()
@@ -114,6 +144,19 @@ func _CollectExpandedPaths(item: TreeItem, paths: Array[String]):
 		_CollectExpandedPaths(child, paths)
 		child = child.get_next()
 
+func _RestoreSelections(item: TreeItem, paths: Array[String]):
+	if not item:
+		return
+
+	var path = item.get_metadata(0)
+	if path and path in paths:
+		item.select(0)
+
+	var child = item.get_first_child()
+	while child:
+		_RestoreSelections(child, paths)
+		child = child.get_next()
+
 func RestoreExpandedState(expandedPaths: Array[String]):
 	if expandedPaths.is_empty():
 		return
@@ -124,17 +167,19 @@ func RestoreExpandedState(expandedPaths: Array[String]):
 
 func _RestoreExpandedPaths(item: TreeItem, paths: Array[String]):
 	var path = item.get_metadata(0)
+	var child: TreeItem
+
 	if path and path in paths:
 		item.set_collapsed(false)
 
 		# If this item has lazy-loaded children (dummy child), populate it now
 		if item.get_child_count() == 1:
-			var child = item.get_first_child()
+			child = item.get_first_child()
 			if child and child.get_metadata(0) == null:
 				child.free()
 				await PopulateDirectory(item, path)
 
-	var child = item.get_first_child()
+	child = item.get_first_child()
 	while child:
 		await _RestoreExpandedPaths(child, paths)
 		child = child.get_next()
@@ -219,13 +264,23 @@ func PopulateDirectory(parentItem: TreeItem, dirPath: String):
 		var fileFullPath = dirPath + "/" + fileName
 		fileItem.set_metadata(0, fileFullPath)
 		fileItem.set_icon(0, GetFileIcon(fileName))
-		fileItem.set_selectable(0, false)  # Files shouldn't be selectable for destination
 
 func GetSelectedDestination() -> String:
 	var selected = %Tree.get_selected()
 	if selected and selected.get_metadata(0) != null:
 		return selected.get_metadata(0) as String
 	return ""
+
+func GetSelectedFiles() -> Array[String]:
+	# Returns selected files (not folders) from the project tree
+	var files: Array[String] = []
+	var selected = %Tree.get_next_selected(null)
+	while selected:
+		var path = selected.get_metadata(0)
+		if path and FileAccess.file_exists(path):
+			files.append(path)
+		selected = %Tree.get_next_selected(selected)
+	return files
 
 func HasSubdirectories(path: String) -> bool:
 	var dir = DirAccess.open(path)

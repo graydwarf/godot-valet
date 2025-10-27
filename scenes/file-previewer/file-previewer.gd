@@ -20,10 +20,6 @@ enum ImageDisplayMode {
 var _currentDisplayMode := ImageDisplayMode.FIT_TO_SCREEN
 var _baseSize : Vector2
 var _zoomFactor := 1.0
-var _isDragging : bool = false
-var _dragStartPos := Vector2.ZERO
-var _imageStartPos := Vector2.ZERO
-var _zoomCenter := Vector2.ZERO
 var _isPanning : bool = false
 var _panStartPos := Vector2.ZERO
 var _scrollStartPos := Vector2.ZERO
@@ -48,17 +44,14 @@ func ExtractFileFromZip(zipFilePath: String, internalPath: String) -> PackedByte
 
 # Preview a file based on its extension
 func PreviewFile(filePath: String):
-	var fileName = ""
 	var extension = ""
-	
+
 	# Handle zip file paths
 	if IsZipPath(filePath):
 		var parts = filePath.split("::")
 		var internalPath = parts[1]
-		fileName = internalPath.get_file()
 		extension = internalPath.get_extension().to_lower()
 	else:
-		fileName = filePath.get_file()
 		extension = filePath.get_extension().to_lower()
 	
 	# Check file type and preview accordingly
@@ -127,17 +120,6 @@ func PreviewImage(filePath: String):
 	ApplyImageDisplayMode(_currentDisplayMode)
 
 	# Show image info
-	var displayPath = filePath
-	if IsZipPath(filePath):
-		displayPath = filePath.split("::")[1]
-
-	var info = "Image: %dx%d pixels\nFormat: %s\nSize: %s" % [
-		image.get_width(),
-		image.get_height(),
-		displayPath.get_extension().to_upper(),
-		FormatFileSize(GetFileSize(filePath))
-	]
-
 func PreviewZipFile(filePath: String):
 	ShowTextEditor()
 
@@ -457,6 +439,8 @@ func ClearPreview():
 func PreviewDirectory(dirPath: String):
 	ShowTextEditor()
 
+	var info := ""  # Declare at function scope to avoid confusing redeclarations
+
 	# Check if this is actually an archive file
 	var extension = dirPath.get_extension().to_lower()
 	if extension == "zip":
@@ -464,7 +448,7 @@ func PreviewDirectory(dirPath: String):
 		return
 	elif extension in ["7z", "rar", "tar", "gz", "bz2", "xz"]:
 		# Unsupported archive formats
-		var info = "Archive: %s\n" % dirPath.get_file()
+		info = "Archive: %s\n" % dirPath.get_file()
 		info += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 		info += "Format: .%s\n" % extension.to_upper()
 		info += "Size: %s\n" % FormatFileSize(GetFileSize(dirPath))
@@ -507,7 +491,7 @@ func PreviewDirectory(dirPath: String):
 
 		zip.close()
 
-		var info = "Folder: %s\n" % internalPath
+		info = "Folder: %s\n" % internalPath
 		info += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 		info += "Item Count: %d\n" % folderFiles.size()
 		info += "Location: Inside %s\n" % zipPath.get_file()
@@ -516,8 +500,8 @@ func PreviewDirectory(dirPath: String):
 		info += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 		for file in folderFiles:
-			var fileName = file.substr(folderPrefix.length())
-			info += "  • " + fileName + "\n"
+			var fileNameInFolder = file.substr(folderPrefix.length())
+			info += "  • " + fileNameInFolder + "\n"
 
 		%TextEdit.text = info
 		%TextEdit.editable = false
@@ -549,14 +533,14 @@ func PreviewDirectory(dirPath: String):
 				fileList.append("📁 " + fileName)
 			else:
 				fileCount += 1
-				var size = GetFileSize(fullPath)
-				totalSize += size
+				var fileSize = GetFileSize(fullPath)
+				totalSize += fileSize
 				fileList.append("📄 " + fileName)
 		fileName = dir.get_next()
 	dir.list_dir_end()
 
 	# Build display info
-	var info = "Folder: %s\n" % dirPath.get_file()
+	info = "Folder: %s\n" % dirPath.get_file()
 	info += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 	info += "Folders: %d\n" % folderCount
 	info += "Files: %d\n" % fileCount
@@ -723,7 +707,6 @@ func _gui_input(event):
 		accept_event()  # Prevent event propagation
 
 func UpdateImageSizeWithCenter(old_zoom: float):
-	var old_size = _baseSize * old_zoom
 	var new_size = _baseSize * _zoomFactor
 	
 	# Calculate the point in the image we're zooming into
