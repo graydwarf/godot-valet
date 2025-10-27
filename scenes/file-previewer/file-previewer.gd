@@ -698,18 +698,22 @@ func _gui_input(event):
 			else:
 				_isPanning = false
 			accept_event()  # Prevent event propagation
-		# Handle Ctrl+wheel for zooming in 1:1 mode
+		# Handle Ctrl+wheel for zooming - auto-switch to 1:1 mode if not already
 		elif event.ctrl_pressed and (event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN):
-			if %ImageScrollContainer.visible:  # Only zoom in 1:1 mode
-				if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-					_zoomFactor = min(_zoomFactor * 1.2, 10.0)
-				else:
-					_zoomFactor = max(_zoomFactor / 1.2, 0.1)
+			# If not in 1:1 mode, switch to it first
+			if not %ImageScrollContainer.visible:
+				ApplyImageDisplayMode(ImageDisplayMode.ACTUAL_SIZE)
 
-				# Update image size based on zoom
-				var new_size = _baseSize * _zoomFactor
-				%ImageViewer.custom_minimum_size = new_size
-				accept_event()  # Prevent normal scrolling when zooming
+			# Now apply zoom
+			if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+				_zoomFactor = min(_zoomFactor * 1.2, 10.0)
+			else:
+				_zoomFactor = max(_zoomFactor / 1.2, 0.1)
+
+			# Update image size based on zoom
+			var new_size = _baseSize * _zoomFactor
+			%ImageViewer.custom_minimum_size = new_size
+			accept_event()  # Prevent normal scrolling when zooming
 
 	elif event is InputEventMouseMotion and _isPanning:
 		# Pan by updating scroll container position
