@@ -75,96 +75,20 @@ func LoadAudioStream(path: String) -> AudioStream:
 	if path.begins_with("res://"):
 		return load(path) as AudioStream
 
-	# For external files, load the raw data
-	var file = FileAccess.open(path, FileAccess.READ)
-	if not file:
-		print("Failed to open audio file: ", path)
-		return null
-
-	var data = file.get_buffer(file.get_length())
-	file.close()
-
+	# For external files, use built-in loaders
 	match extension:
 		"wav":
-			# Parse WAV file
-			return ParseWAVFile(data)
-		"ogg":
-			# OGG requires complex packet parsing - not supported for external files yet
-			print("OGG files from outside project not yet fully supported")
-			return null
-		"mp3":
-			var stream = AudioStreamMP3.new()
-			stream.data = data
+			# Use Godot's built-in WAV loader
+			var stream = AudioStreamWAV.load_from_file(path)
 			return stream
+		"ogg", "mp3":
+			# OGG and MP3 don't have load_from_file in Godot 4
+			# They need to be imported as resources
+			print("OGG and MP3 files must be inside the project for Godot 4")
+			print("Only WAV files can be loaded from external paths")
+			return null
 		_:
 			return null
-
-func ParseWAVFile(data: PackedByteArray) -> AudioStreamWAV:
-	if data.size() < 44:
-		print("WAV file too small")
-		return null
-
-	# Check RIFF header
-	var riff = data.slice(0, 4).get_string_from_ascii()
-	if riff != "RIFF":
-		print("Not a valid WAV file (missing RIFF header)")
-		return null
-
-	# Check WAVE format
-	var wave = data.slice(8, 12).get_string_from_ascii()
-	if wave != "WAVE":
-		print("Not a valid WAV file (missing WAVE format)")
-		return null
-
-	# Variables to store format info
-	var sample_rate = 44100
-	var num_channels = 2
-	var bits_per_sample = 16
-	var found_fmt = false
-
-	# Find chunks
-	var pos = 12
-	while pos < data.size() - 8:
-		var chunk_id = data.slice(pos, pos + 4).get_string_from_ascii()
-		var chunk_size = data.decode_u32(pos + 4)
-
-		if chunk_id == "fmt ":
-			# Parse format chunk
-			sample_rate = data.decode_u32(pos + 12)
-			num_channels = data.decode_u16(pos + 10)
-			bits_per_sample = data.decode_u16(pos + 22)
-			found_fmt = true
-			pos += 8 + chunk_size
-
-		elif chunk_id == "data":
-			if not found_fmt:
-				print("WAV file: data chunk before fmt chunk")
-				return null
-
-			# Found audio data - create stream
-			var audio_data = data.slice(pos + 8, pos + 8 + chunk_size)
-
-			var stream = AudioStreamWAV.new()
-			stream.data = audio_data
-			stream.mix_rate = sample_rate
-			stream.stereo = (num_channels == 2)
-			stream.loop_mode = AudioStreamWAV.LOOP_DISABLED
-
-			if bits_per_sample == 8:
-				stream.format = AudioStreamWAV.FORMAT_8_BITS
-			elif bits_per_sample == 16:
-				stream.format = AudioStreamWAV.FORMAT_16_BITS
-			else:
-				print("Unsupported bits per sample: ", bits_per_sample)
-				return null
-
-			return stream
-		else:
-			# Skip unknown chunk
-			pos += 8 + chunk_size
-
-	print("WAV file missing data chunk")
-	return null
 
 func CheckLicenseFile():
 	var licensePath = _soundPath + ".license"
