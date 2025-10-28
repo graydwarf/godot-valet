@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://r8y55mlah1wy"]
+[gd_scene load_steps=4 format=3 uid="uid://r8y55mlah1wy"]
 
 [ext_resource type="Script" uid="uid://btr4i6pvvk3v3" path="res://scenes/file-previewer/file-previewer.gd" id="1_so7ii"]
+[ext_resource type="PackedScene" uid="uid://c8qxm2k9p3wrq" path="res://scenes/sound-player-grid/sound-player-grid.tscn" id="2_sound"]
 
 [sub_resource type="ButtonGroup" id="ButtonGroup_image_modes"]
 resource_local_to_scene = false
@@ -210,6 +211,25 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_colors/background_color = Color(0.11404, 0.114039, 0.122912, 1)
 placeholder_text = "Select a file to preview..."
+
+[node name="SoundPlayerContainer" type="Control" parent="VBoxContainer/ContentPanel/MarginContainer/ContentContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SoundPlayerGrid" parent="VBoxContainer/ContentPanel/MarginContainer/ContentContainer/SoundPlayerContainer" instance=ExtResource("2_sound")]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [connection signal="pressed" from="VBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar/FitToScreenButton" to="." method="_on_fit_to_screen_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/ButtonHBoxContainer/MarginContainer/ImageToolbar/ActualSizeButton" to="." method="_on_actual_size_button_pressed"]

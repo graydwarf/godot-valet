@@ -267,6 +267,14 @@ func PreviewTextFile(filePath: String):
 	
 	SetSyntaxHighlighting(extension)
 
+# Preview audio files with sound player
+func PreviewAudioFile(filePath: String):
+	ShowSoundPlayer()
+
+	# Load single audio file into sound player
+	if has_node("%SoundPlayerGrid"):
+		%SoundPlayerGrid.LoadSounds([filePath])
+
 func GetFileSize(filePath: String) -> int:
 	if IsZipPath(filePath):
 		var parts = filePath.split("::")
@@ -425,6 +433,8 @@ func ShowTextEditor():
 	%TextToolbar.visible = true
 	%TextViewer.visible = true
 	%ImageContainer.visible = false
+	if has_node("%SoundPlayerContainer"):
+		%SoundPlayerContainer.visible = false
 
 # Show the image display and hide text editor
 func ShowImageDisplay():
@@ -432,11 +442,24 @@ func ShowImageDisplay():
 	%TextToolbar.visible = false
 	%TextViewer.visible = false
 	%ImageContainer.visible = true
+	if has_node("%SoundPlayerContainer"):
+		%SoundPlayerContainer.visible = false
+
+# Show the sound player and hide other views
+func ShowSoundPlayer():
+	%ImageToolbar.visible = false
+	%TextToolbar.visible = false
+	%TextViewer.visible = false
+	%ImageContainer.visible = false
+	if has_node("%SoundPlayerContainer"):
+		%SoundPlayerContainer.visible = true
 
 func ClearPreview():
 	%TextEdit.text = ""
 	%ImageViewer.texture = null
 	%ImageViewerDirect.texture = null
+	if has_node("%SoundPlayerGrid"):
+		%SoundPlayerGrid.ClearPlayers()
 	ShowTextEditor()
 
 func PreviewDirectory(dirPath: String):
