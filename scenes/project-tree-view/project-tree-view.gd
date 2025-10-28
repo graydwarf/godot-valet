@@ -17,7 +17,7 @@ func SetupTree():
 
 func InitializeProjectTree(projectPath: String):
 	_projectRootPath = projectPath.get_base_dir()
-	PopulateProjectTree()
+	await PopulateProjectTree()
 
 func RefreshProjectTree():
 	if _projectRootPath and not _projectRootPath.is_empty():
@@ -194,11 +194,11 @@ func PopulateProjectTree():
 	rootItem.set_metadata(0, _projectRootPath)
 	rootItem.set_icon(0, GetFolderIcon())
 
-	# Populate with project directories
-	PopulateDirectory(rootItem, _projectRootPath)
+	# Populate with project directories (recursively to show all files)
+	await PopulateDirectory(rootItem, _projectRootPath, true)
 	rootItem.set_collapsed(false)
 
-func PopulateDirectory(parentItem: TreeItem, dirPath: String):
+func PopulateDirectory(parentItem: TreeItem, dirPath: String, recursive: bool = false):
 	var dir = DirAccess.open(dirPath)
 	if dir == null:
 		return
@@ -241,7 +241,12 @@ func PopulateDirectory(parentItem: TreeItem, dirPath: String):
 		dirItem.set_metadata(0, fullPath)
 		dirItem.set_icon(0, GetFolderIcon())
 
-		if HasSubdirectories(fullPath):
+		if recursive:
+			# Recursively populate this subdirectory immediately (collapsed but populated)
+			dirItem.set_collapsed(true)
+			await PopulateDirectory(dirItem, fullPath, true)
+		elif HasSubdirectories(fullPath):
+			# Use lazy loading with dummy child
 			dirItem.set_collapsed(true)
 			var tempChild = %Tree.create_item(dirItem)
 			if tempChild:
@@ -318,4 +323,4 @@ func _on_item_collapsed(item: TreeItem):
 		if child.get_metadata(0) == null:
 			child.free()
 			var path = item.get_metadata(0) as String
-			PopulateDirectory(item, path)
+			await PopulateDirectory(item, path)

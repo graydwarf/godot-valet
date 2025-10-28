@@ -109,7 +109,7 @@ func _on_godot_toggle_button_toggled(toggled_on: bool) -> void:
 
 	# Initialize destination tree with project path when toggled on
 	if toggled_on and %ProjectPathLineEdit.text:
-		%DestinationTreeView.InitializeProjectTree(%ProjectPathLineEdit.text)
+		await %DestinationTreeView.InitializeProjectTree(%ProjectPathLineEdit.text)
 
 func _on_copy_right_button_pressed() -> void:
 	# Get selected files from left tree view
