@@ -273,7 +273,8 @@ func PreviewAudioFile(filePath: String):
 
 	# Load single audio file into sound player
 	if has_node("%SoundPlayerGrid"):
-		%SoundPlayerGrid.LoadSounds([filePath])
+		var soundPaths: Array[String] = [filePath]
+		%SoundPlayerGrid.LoadSounds(soundPaths)
 
 func GetFileSize(filePath: String) -> int:
 	if IsZipPath(filePath):
