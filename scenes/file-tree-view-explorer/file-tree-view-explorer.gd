@@ -778,6 +778,10 @@ func _on_open_file_explorer_button_pressed() -> void:
 func _on_navigate_to_project_button_pressed() -> void:
 	NavigateToProjectRequested.emit()
 
+func SetNavigateToProjectButtonVisible(visible: bool) -> void:
+	if has_node("%NavigateToProjectButton"):
+		%NavigateToProjectButton.visible = visible
+
 func _on_previous_button_pressed() -> void:
 	SendKeyEventToTree(KEY_LEFT)
 

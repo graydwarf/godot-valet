@@ -17,9 +17,11 @@ func InitSignals():
 func ConfigureProject(selectedProjectItem):
 	if selectedProjectItem == null:
 		%ProjectContextContainer.visible = false
+		_fileTreeViewExplorer.SetNavigateToProjectButtonVisible(false)
 		return
 
 	%ProjectContextContainer.visible = true
+	_fileTreeViewExplorer.SetNavigateToProjectButtonVisible(true)
 	LoadThumbnailImage(selectedProjectItem.GetThumbnailPath())
 	%ProjectNameLineEdit.text = selectedProjectItem.GetProjectName()
 	%ProjectPathLineEdit.text = selectedProjectItem.GetProjectPath()
