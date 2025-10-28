@@ -6,6 +6,7 @@ extends Control
 # Signals
 signal FileSelected(filePath : String)
 signal DirectorySelected(dirPath : String)
+signal NavigateToProjectRequested
 
 var _rootItem: TreeItem
 var _isProcessingSelection := false
@@ -773,6 +774,9 @@ func FindTreeItemByPath(parentItem: TreeItem, targetPath: String) -> TreeItem:
 	
 func _on_open_file_explorer_button_pressed() -> void:
 	OpenCurrentFilePathInWindowsExplorer()
+
+func _on_navigate_to_project_button_pressed() -> void:
+	NavigateToProjectRequested.emit()
 
 func _on_previous_button_pressed() -> void:
 	SendKeyEventToTree(KEY_LEFT)
@@ -1848,25 +1852,88 @@ func EditInDefaultEditor(path: String) -> void:
 		OS.shell_open(actualPath)
 
 # Navigate to and select a specific path in the tree
-func NavigateToPath(targetPath: String) -> bool:
+func NavigateToPath(targetPath: String, resetTree: bool = false) -> bool:
 	if targetPath.is_empty():
 		return false
 
 	# Normalize the path
 	var normalizedPath = targetPath.replace("\\", "/")
+	if not normalizedPath.ends_with("/"):
+		normalizedPath += "/"
 
-	# Find the tree item with this path
-	var item = FindItemByPath(normalizedPath, %FileTree.get_root())
-	if item:
-		# Expand all parents
-		var parent = item.get_parent()
-		while parent:
-			parent.collapsed = false
-			parent = parent.get_parent()
+	# Reset tree view if requested (only when clicking "Open Project" button)
+	if resetTree:
+		%FileTree.clear()
+		_rootItem = %FileTree.create_item()
+		await PopulateDrivesInternal()
+		await get_tree().process_frame
 
-		# Select and scroll to the item
-		item.select(0)
-		%FileTree.scroll_to_item(item)
+	# Split the path into segments
+	var pathParts = normalizedPath.split("/", false)
+	var currentPath = ""
+	var currentItem = _rootItem
+
+	print("NavigateToPath: Target = ", normalizedPath)
+	print("NavigateToPath: Path parts = ", pathParts)
+
+	# Build path progressively and expand each folder
+	for i in range(pathParts.size()):
+		var part = pathParts[i]
+
+		# Build the current path segment
+		if i == 0:
+			# First segment is the drive (e.g., "C:")
+			currentPath = part + "/"
+		else:
+			currentPath += part + "/"
+
+		print("NavigateToPath: Looking for path segment: ", currentPath)
+
+		# Find the child item with this path
+		var child = currentItem.get_first_child()
+		var found = false
+
+		while child:
+			var childPath = child.get_metadata(0)
+			if childPath and childPath == currentPath:
+				# Found the item
+				print("NavigateToPath: Found segment: ", currentPath)
+				currentItem = child
+				found = true
+
+				# Expand this folder to populate its children
+				if not child.is_collapsed():
+					# Already expanded
+					print("NavigateToPath: Already expanded: ", currentPath)
+					break
+
+				child.set_collapsed(false)
+				await get_tree().process_frame
+
+				# Populate if needed
+				if not HasBeenPopulated(child):
+					print("NavigateToPath: Populating: ", currentPath)
+					await CleanupAndPopulate(child)
+					await get_tree().process_frame
+				else:
+					print("NavigateToPath: Already populated: ", currentPath)
+
+				# Update folder icon to open state
+				child.set_icon(0, GetOpenFolderIcon())
+				break
+
+			child = child.get_next()
+
+		if not found:
+			# Path doesn't exist in tree
+			print("NavigateToPath: Path segment not found: ", currentPath)
+			return false
+
+	# Select and scroll to the final item
+	if currentItem and currentItem != _rootItem:
+		%FileTree.set_selected(currentItem, 0)
+		currentItem.select(0)
+		%FileTree.scroll_to_item(currentItem)
 		%FileTree.ensure_cursor_is_visible()
 		return true
 

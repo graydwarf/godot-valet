@@ -1,6 +1,7 @@
-[gd_scene load_steps=25 format=3 uid="uid://6ygqegta6dek"]
+[gd_scene load_steps=26 format=3 uid="uid://6ygqegta6dek"]
 
 [ext_resource type="Script" uid="uid://gdqxa44bc62r" path="res://scenes/file-tree-view-explorer/file-tree-view-explorer.gd" id="1_wruwl"]
+[ext_resource type="Texture2D" uid="uid://wop6qk8dkl40" path="res://icon.svg" id="1_godot"]
 [ext_resource type="Texture2D" uid="uid://b1yqdoygqhmbs" path="res://scenes/file-tree-view-explorer/assets/flat-list.png" id="2_3ghy6"]
 [ext_resource type="Texture2D" uid="uid://de417oegex7sh" path="res://scenes/file-tree-view-explorer/assets/nav-back.png" id="2_jnomi"]
 [ext_resource type="Texture2D" uid="uid://bejkpjpt86y1g" path="res://scenes/file-tree-view-explorer/assets/open-folder.png" id="2_k063r"]
@@ -79,6 +80,7 @@ texture_hover = ExtResource("5_vvuox")
 unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
+tooltip_text = "Prev File"
 texture_normal = ExtResource("2_jnomi")
 texture_pressed = ExtResource("3_uayya")
 texture_hover = ExtResource("4_s6k0g")
@@ -88,6 +90,7 @@ texture_disabled = ExtResource("11_s873p")
 unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
+tooltip_text = "Next File"
 texture_normal = ExtResource("4_cc6nv")
 texture_pressed = ExtResource("5_s6k0g")
 texture_hover = ExtResource("7_3ghy6")
@@ -96,6 +99,7 @@ texture_disabled = ExtResource("15_mukj0")
 [node name="UpButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
+tooltip_text = "Nav Up Tree"
 texture_normal = ExtResource("6_3ghy6")
 texture_pressed = ExtResource("7_objvc")
 texture_hover = ExtResource("8_r6hur")
@@ -103,13 +107,25 @@ texture_hover = ExtResource("8_r6hur")
 [node name="DownButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
+tooltip_text = "Nav Down Tree"
 texture_normal = ExtResource("2_uu2th")
 texture_pressed = ExtResource("3_aj3or")
 texture_hover = ExtResource("13_objvc")
 
 [node name="OpenFileExplorerButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 layout_mode = 2
+tooltip_text = "Open In Explorer"
 texture_normal = ExtResource("2_k063r")
+
+[node name="NavigateToProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+tooltip_text = "Open Project"
+icon = ExtResource("1_godot")
+flat = true
+icon_alignment = 1
+expand_icon = true
 
 [node name="Control" type="Control" parent="VBoxContainer"]
 layout_mode = 2
@@ -172,6 +188,7 @@ unique_name_in_owner = true
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/UpButton" to="." method="_on_up_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/DownButton" to="." method="_on_down_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/OpenFileExplorerButton" to="." method="_on_open_file_explorer_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/NavigateToProjectButton" to="." method="_on_navigate_to_project_button_pressed"]
 [connection signal="item_mouse_selected" from="VBoxContainer/Control/FileTree" to="." method="_on_file_tree_item_mouse_selected"]
 [connection signal="multi_selected" from="VBoxContainer/Control/FileTree" to="." method="_on_file_tree_multi_selected"]
 [connection signal="id_pressed" from="ContextMenu" to="." method="_on_context_menu_item_selected"]

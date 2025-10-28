@@ -12,6 +12,7 @@ func _ready():
 func InitSignals():
 	_fileTreeViewExplorer.FileSelected.connect(_on_file_selected)
 	_fileTreeViewExplorer.DirectorySelected.connect(_on_directory_selected)
+	_fileTreeViewExplorer.NavigateToProjectRequested.connect(_on_navigate_to_project_requested)
 
 func ConfigureProject(selectedProjectItem):
 	if selectedProjectItem == null:
@@ -94,6 +95,14 @@ func _on_back_button_pressed() -> void:
 
 func _on_open_project_path_folder_pressed() -> void:
 	FileHelper.OpenFilePathInWindowsExplorer(%ProjectPathLineEdit.text)
+
+func _on_navigate_to_project_requested() -> void:
+	# Navigate to the project root folder in the file tree view explorer
+	# Reset the tree and expand all folders in the path
+	var projectPath = %ProjectPathLineEdit.text
+	if projectPath and not projectPath.is_empty():
+		var projectRoot = projectPath.get_base_dir()
+		await _fileTreeViewExplorer.NavigateToPath(projectRoot, true)
 
 func _on_godot_toggle_button_toggled(toggled_on: bool) -> void:
 	# Toggle between file preview and destination tree view
