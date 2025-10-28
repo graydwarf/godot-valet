@@ -8,6 +8,7 @@ var supportedImageFiles = ["png", "jpg", "jpeg", "bmp", "svg", "webp", "tga"]
 var supportedSceneFiles = ["tscn", "scn"]
 var supportedArchiveFiles = ["zip"]
 var supportedVideoFiles = ["ogv", "webm", "mp4", "mov", "avi", "mkv", "wmv", "flv", "m4v"]
+var supportedAudioFiles = ["wav", "ogg", "mp3"]
 
 # Image display modes
 enum ImageDisplayMode {
@@ -61,6 +62,8 @@ func PreviewFile(filePath: String):
 		PreviewVideoFile(filePath)
 	elif extension in supportedImageFiles:
 		PreviewImage(filePath)
+	elif extension in supportedAudioFiles:
+		PreviewAudioFile(filePath)
 	elif extension in supportedTextFiles:
 		PreviewTextFile(filePath)
 	elif extension in supportedSceneFiles:

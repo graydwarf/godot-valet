@@ -1,0 +1,97 @@
+[gd_scene load_steps=2 format=3 uid="uid://dpk7qxm8a2wqe"]
+
+[ext_resource type="Script" path="res://scenes/sound-player/sound-player.gd" id="1_sound"]
+
+[node name="SoundPlayer" type="PanelContainer"]
+custom_minimum_size = Vector2(400, 0)
+script = ExtResource("1_sound")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="FilePathLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "No sound loaded"
+text_overrun_behavior = 3
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ControlsHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="PlayButton" type="Button" parent="MarginContainer/VBoxContainer/ControlsHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+tooltip_text = "Play/Pause"
+theme_override_font_sizes/font_size = 32
+text = "▶"
+
+[node name="LoopCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/ControlsHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Loop playback"
+text = "Loop"
+
+[node name="MuteButton" type="Button" parent="MarginContainer/VBoxContainer/ControlsHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+tooltip_text = "Mute/Unmute"
+theme_override_font_sizes/font_size = 24
+text = "🔊"
+
+[node name="LicenseButton" type="Button" parent="MarginContainer/VBoxContainer/ControlsHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+tooltip_text = "Add/Edit License"
+theme_override_font_sizes/font_size = 24
+text = "📄"
+
+[node name="VolumeHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="VolumeLabel" type="Label" parent="MarginContainer/VBoxContainer/VolumeHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "Volume: 100%"
+
+[node name="VolumeSlider" type="HSlider" parent="MarginContainer/VBoxContainer/VolumeHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+value = 100.0
+
+[node name="PitchHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PitchLabel" type="Label" parent="MarginContainer/VBoxContainer/PitchHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "Pitch: 1.0x"
+
+[node name="PitchSlider" type="HSlider" parent="MarginContainer/VBoxContainer/PitchHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.5
+max_value = 2.0
+step = 0.1
+value = 1.0
