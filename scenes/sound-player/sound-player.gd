@@ -132,13 +132,19 @@ func _on_play_button_pressed():
 		_playButton.text = "⏸"
 
 func _on_audio_finished():
-	_playButton.text = "▶"
+	# Only reset play button if not looping
+	if not _loopCheckBox.button_pressed:
+		_playButton.text = "▶"
 
 func _on_loop_toggled(toggled: bool):
 	if _audioPlayer.stream:
-		# Note: Loop handling depends on audio format
+		# Set loop mode based on audio format
 		if _audioPlayer.stream is AudioStreamWAV:
 			_audioPlayer.stream.loop_mode = AudioStreamWAV.LOOP_FORWARD if toggled else AudioStreamWAV.LOOP_DISABLED
+		elif _audioPlayer.stream is AudioStreamMP3:
+			_audioPlayer.stream.loop = toggled
+		elif _audioPlayer.stream is AudioStreamOggVorbis:
+			_audioPlayer.stream.loop = toggled
 
 func _on_volume_changed(value: float):
 	var db = linear_to_db(value / 100.0)

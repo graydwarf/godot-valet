@@ -1792,6 +1792,12 @@ func _on_filter_by_images_toggle_button_pressed() -> void:
 	else:
 		ToggleFilter("images", false)
 
+func _on_filter_by_audio_toggle_button_pressed() -> void:
+	if %FilterByAudioToggleButton.button_pressed:
+		ToggleFilter("audio", true)
+	else:
+		ToggleFilter("audio", false)
+
 # Handle right-click on tree items
 func _on_file_tree_item_mouse_selected(_mouse_position: Vector2, mouse_button_index: int) -> void:
 	if mouse_button_index == MOUSE_BUTTON_RIGHT:
