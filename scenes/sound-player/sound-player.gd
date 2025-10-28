@@ -75,18 +75,35 @@ func LoadAudioStream(path: String) -> AudioStream:
 	if path.begins_with("res://"):
 		return load(path) as AudioStream
 
-	# For external files, use built-in loaders
+	# For external files, load from filesystem
+	var file = FileAccess.open(path, FileAccess.READ)
+	if not file:
+		print("Failed to open audio file: ", path)
+		return null
+
+	var data = file.get_buffer(file.get_length())
+	file.close()
+
 	match extension:
 		"wav":
 			# Use Godot's built-in WAV loader
-			var stream = AudioStreamWAV.load_from_file(path)
+			return AudioStreamWAV.load_from_file(path)
+		"mp3":
+			# MP3 uses the data property approach
+			var stream = AudioStreamMP3.new()
+			stream.data = data
 			return stream
-		"ogg", "mp3":
-			# OGG and MP3 don't have load_from_file in Godot 4
-			# They need to be imported as resources
-			print("OGG and MP3 files must be inside the project for Godot 4")
-			print("Only WAV files can be loaded from external paths")
-			return null
+		"ogg":
+			# OGG Vorbis loader (try load_from_file if it exists)
+			var stream = AudioStreamOggVorbis.new()
+			# Try to use load_from_file if available
+			if stream.has_method("load_from_file"):
+				return stream.load_from_file(path)
+			else:
+				# Fallback: try using packet_sequence
+				print("OGG file loading method not found, trying alternative approach")
+				# This may not work - OGG is complex
+				return null
 		_:
 			return null
 

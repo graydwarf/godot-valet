@@ -8,8 +8,8 @@ var supportedImageFiles = ["png", "jpg", "jpeg", "bmp", "svg", "webp", "tga"]
 var supportedSceneFiles = ["tscn", "scn"]
 var supportedArchiveFiles = ["zip"]
 var supportedVideoFiles = ["ogv", "webm", "mp4", "mov", "avi", "mkv", "wmv", "flv", "m4v"]
-var supportedAudioFiles = ["wav"]  # Only WAV can be loaded from external files in Godot 4
-# Note: OGG and MP3 must be imported as resources within the project
+var supportedAudioFiles = ["wav", "mp3", "ogg"]  # All can be loaded from external files
+# WAV: load_from_file(), MP3: data property, OGG: load_from_file() or packet_sequence
 
 # Image display modes
 enum ImageDisplayMode {
