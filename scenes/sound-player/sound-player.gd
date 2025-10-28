@@ -71,22 +71,13 @@ func LoadSound(soundPath: String):
 func LoadAudioStream(path: String) -> AudioStream:
 	var extension = path.get_extension().to_lower()
 
-	match extension:
-		"wav":
-			var stream = AudioStreamWAV.new()
-			var file = FileAccess.open(path, FileAccess.READ)
-			if file:
-				var data = file.get_buffer(file.get_length())
-				file.close()
-				# Note: Proper WAV loading would require parsing the WAV header
-				# For now, we'll use Godot's resource loader
-				return load(path) as AudioStream
-		"ogg":
-			return load(path) as AudioStream
-		"mp3":
-			return load(path) as AudioStream
-		_:
-			return null
+	# Check if extension is supported
+	if extension in ["wav", "ogg", "mp3"]:
+		var stream = load(path)
+		if stream is AudioStream:
+			return stream
+
+	return null
 
 func CheckLicenseFile():
 	var licensePath = _soundPath + ".license"
