@@ -19,7 +19,7 @@ func _ready():
 	var scroll_container = %ScrollContainer
 	var v_scrollbar = scroll_container.get_v_scroll_bar()
 	if v_scrollbar:
-		v_scrollbar.custom_minimum_size = Vector2(24, 0)  # Double the default ~12px width
+		v_scrollbar.custom_minimum_size = Vector2(18, 0)  # 1.5x the default ~12px width
 
 func LoadSounds(soundPaths: Array[String]):
 	ClearPlayers()
