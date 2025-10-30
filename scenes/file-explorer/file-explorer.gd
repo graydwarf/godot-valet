@@ -182,6 +182,18 @@ func _on_godot_toggle_button_toggled(toggled_on: bool) -> void:
 	if toggled_on and %ProjectPathLineEdit.text:
 		await %DestinationTreeView.InitializeProjectTree(%ProjectPathLineEdit.text)
 
+	# When toggling off (back to normal preview), refresh preview based on current selection
+	if not toggled_on:
+		var selectedFiles = _fileTreeViewExplorer.GetSelectedFiles()
+		if selectedFiles.size() > 0:
+			# Has file selection - trigger file selected handler
+			_on_file_selected(selectedFiles[0])
+		else:
+			# Check if a directory is selected
+			var currentPath = _fileTreeViewExplorer.GetCurrentPath()
+			if currentPath and not currentPath.is_empty():
+				_on_directory_selected(currentPath)
+
 func _on_copy_right_button_pressed() -> void:
 	# Get selected files from left tree view
 	var selectedFiles = _fileTreeViewExplorer.GetSelectedFiles()
