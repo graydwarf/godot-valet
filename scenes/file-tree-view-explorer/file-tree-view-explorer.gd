@@ -21,6 +21,7 @@ var _cachedFileList := []
 var _treeViewFilters := []
 var _isTreeViewFiltered := false
 var _flatListBasePath: String = ""
+var _isProjectViewActive: bool = false
 
 # Supported extensions used to filter files
 var _zipExtensions := [".zip", ".rar", ".7z", ".tar", ".gz"]
@@ -38,6 +39,7 @@ func _ready():
 	PopulateDrives()
 	InitSignals()
 	SetupContextMenu()
+	UpdateSelectMode()  # Initialize select mode
 
 func InitSignals():
 	%FileTree.item_collapsed.connect(_on_item_collapsed)
@@ -1202,13 +1204,14 @@ func RefreshSelectedTreeFolder():
 func ToggleFilter(filterName : String, enabled : bool):
 	ShowBusyIndicator()
 	await get_tree().create_timer(0.2).timeout
-	
+
 	if enabled:
 		if not filterName in _activeFilters:
 			_activeFilters.append(filterName)
 	else:
 		_activeFilters.erase(filterName)
-	
+
+	UpdateSelectMode()  # Update multi-select state based on filter
 	ApplyActiveFilters()
 
 func RefreshExpandedFolders():
@@ -2059,6 +2062,23 @@ func NavigateToPath(targetPath: String, resetTree: bool = false) -> bool:
 		return true
 
 	return false
+
+# Update select mode based on filter state and project view state
+func UpdateSelectMode():
+	# Enable multi-select when:
+	# - Any filter is active OR
+	# - Project view is active
+	var shouldEnableMultiSelect = (not _activeFilters.is_empty()) or _isProjectViewActive
+
+	if shouldEnableMultiSelect:
+		%FileTree.select_mode = Tree.SELECT_MULTI
+	else:
+		%FileTree.select_mode = Tree.SELECT_SINGLE
+
+# Called by file-explorer when project view is toggled
+func SetProjectViewActive(active: bool):
+	_isProjectViewActive = active
+	UpdateSelectMode()
 
 # Recursively find a tree item by its path
 func FindItemByPath(targetPath: String, currentItem: TreeItem) -> TreeItem:

@@ -172,6 +172,9 @@ func _on_navigate_to_project_requested() -> void:
 		await _fileTreeViewExplorer.NavigateToPath(projectRoot, true)
 
 func _on_godot_toggle_button_toggled(toggled_on: bool) -> void:
+	# Update file tree view multi-select state
+	_fileTreeViewExplorer.SetProjectViewActive(toggled_on)
+
 	# Toggle between file preview and destination tree view
 	%FilePreviewer.visible = not toggled_on
 	_soundPlayerGrid.visible = false  # Hide sound grid when switching modes
