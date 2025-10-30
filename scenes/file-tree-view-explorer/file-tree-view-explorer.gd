@@ -1800,6 +1800,70 @@ func _on_filter_by_audio_toggle_button_pressed() -> void:
 	else:
 		ToggleFilter("audio", false)
 
+# Check if audio filter is currently active
+func IsAudioFilterActive() -> bool:
+	return "audio" in _activeFilters
+
+# Get all audio files from a directory path
+func GetAudioFilesFromDirectory(dirPath: String) -> Array[String]:
+	var audioFiles: Array[String] = []
+
+	# Check if it's a zip file path
+	if "::" in dirPath:
+		var parts = dirPath.split("::")
+		var zipPath = parts[0]
+		var internalPath = parts[1] if parts.size() > 1 else ""
+		audioFiles = GetAudioFilesFromZipDirectory(zipPath, internalPath)
+	else:
+		audioFiles = GetAudioFilesFromRegularDirectory(dirPath)
+
+	return audioFiles
+
+# Get audio files from a regular directory
+func GetAudioFilesFromRegularDirectory(dirPath: String) -> Array[String]:
+	var audioFiles: Array[String] = []
+	var dir = DirAccess.open(dirPath)
+	if not dir:
+		return audioFiles
+
+	dir.list_dir_begin()
+	var fileName = dir.get_next()
+	while fileName != "":
+		if not dir.current_is_dir():
+			var extension = "." + fileName.get_extension().to_lower()
+			if extension in _audioExtensions:
+				audioFiles.append(dirPath.path_join(fileName))
+		fileName = dir.get_next()
+	dir.list_dir_end()
+
+	audioFiles.sort()
+	return audioFiles
+
+# Get audio files from a zip directory
+func GetAudioFilesFromZipDirectory(zipPath: String, internalPath: String) -> Array[String]:
+	var audioFiles: Array[String] = []
+	var zip = OpenZipFile(zipPath)
+	if not zip:
+		return audioFiles
+
+	var files = zip.get_files()
+	var searchPrefix = internalPath
+	if searchPrefix != "" and not searchPrefix.ends_with("/"):
+		searchPrefix += "/"
+
+	for file in files:
+		if file.begins_with(searchPrefix) and not file.ends_with("/"):
+			var relativePath = file.substr(searchPrefix.length())
+			# Only files in this directory (not subdirectories)
+			if not "/" in relativePath:
+				var extension = "." + relativePath.get_extension().to_lower()
+				if extension in _audioExtensions:
+					audioFiles.append(zipPath + "::" + file)
+
+	zip.close()
+	audioFiles.sort()
+	return audioFiles
+
 func _on_refresh_button_pressed() -> void:
 	RefreshViewWithPreservation()
 

@@ -5,6 +5,7 @@ class_name FileExplorer
 
 @onready var _fileTreeViewExplorer: Control = %FileTreeViewExplorer
 @onready var _filePreviewer: Control = %FilePreviewer
+@onready var _soundPlayerGrid: SoundPlayerGrid = %SoundPlayerGrid
 
 func _ready():
 	InitSignals()
@@ -85,14 +86,53 @@ func ShowOverwriteConfirmation(overwriteCount: int) -> bool:
 
 # Handle when a file is selected in the file tree view explorer
 func _on_file_selected(filePath: String):
-	if _filePreviewer:
-		_filePreviewer.PreviewFile(filePath)
-	%PathLabel.text = filePath
+	# Check if audio filter is active and multi-select is being used
+	var selectedFiles = _fileTreeViewExplorer.GetSelectedFiles()
+	if _fileTreeViewExplorer.IsAudioFilterActive() and selectedFiles.size() > 1:
+		# Multiple audio files selected - load them in sound player grid
+		ShowSoundPlayerGrid(selectedFiles)
+		%PathLabel.text = "%d audio files selected" % selectedFiles.size()
+	else:
+		# Single file - use normal preview
+		ShowFilePreviewer()
+		if _filePreviewer:
+			_filePreviewer.PreviewFile(filePath)
+		%PathLabel.text = filePath
 
 func _on_directory_selected(dirPath: String):
-	if _filePreviewer:
-		_filePreviewer.PreviewDirectory(dirPath)
-	%PathLabel.text = dirPath
+	# Check if audio filter is active
+	if _fileTreeViewExplorer.IsAudioFilterActive():
+		# Get all audio files from this directory
+		var audioFiles = _fileTreeViewExplorer.GetAudioFilesFromDirectory(dirPath)
+		if audioFiles.size() > 0:
+			# Load audio files in sound player grid
+			ShowSoundPlayerGrid(audioFiles)
+			%PathLabel.text = "%s (%d audio files)" % [dirPath, audioFiles.size()]
+		else:
+			# No audio files in directory
+			ShowFilePreviewer()
+			if _filePreviewer:
+				_filePreviewer.PreviewDirectory(dirPath)
+			%PathLabel.text = dirPath
+	else:
+		# Normal directory preview
+		ShowFilePreviewer()
+		if _filePreviewer:
+			_filePreviewer.PreviewDirectory(dirPath)
+		%PathLabel.text = dirPath
+
+# Show the sound player grid and hide other views
+func ShowSoundPlayerGrid(soundPaths: Array[String]):
+	_soundPlayerGrid.visible = true
+	_filePreviewer.visible = false
+	%DestinationTreeView.visible = false
+	_soundPlayerGrid.LoadSounds(soundPaths)
+
+# Show the file previewer and hide other views
+func ShowFilePreviewer():
+	_filePreviewer.visible = true
+	_soundPlayerGrid.visible = false
+	# Don't hide DestinationTreeView here - it's controlled by the Godot toggle button
 
 func _on_back_button_pressed() -> void:
 	visible = false
@@ -111,6 +151,7 @@ func _on_navigate_to_project_requested() -> void:
 func _on_godot_toggle_button_toggled(toggled_on: bool) -> void:
 	# Toggle between file preview and destination tree view
 	%FilePreviewer.visible = not toggled_on
+	_soundPlayerGrid.visible = false  # Hide sound grid when switching modes
 	%DestinationTreeView.visible = toggled_on
 	%CopyLeftButton.visible = toggled_on
 	%CopyRightButton.visible = toggled_on
