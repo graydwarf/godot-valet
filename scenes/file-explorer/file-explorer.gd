@@ -86,18 +86,27 @@ func ShowOverwriteConfirmation(overwriteCount: int) -> bool:
 
 # Handle when a file is selected in the file tree view explorer
 func _on_file_selected(filePath: String):
-	# Check if audio filter is active and multi-select is being used
 	var selectedFiles = _fileTreeViewExplorer.GetSelectedFiles()
-	if _fileTreeViewExplorer.IsAudioFilterActive() and selectedFiles.size() > 1:
-		# Multiple audio files selected - load them in sound player grid
-		ShowSoundPlayerGrid(selectedFiles)
-		%PathLabel.text = "%d audio files selected" % selectedFiles.size()
-	else:
-		# Single file - use normal preview
-		ShowFilePreviewer()
-		if _filePreviewer:
-			_filePreviewer.PreviewFile(filePath)
-		%PathLabel.text = filePath
+
+	# Check if audio filter is active - if so, always use sound player grid for audio files
+	if _fileTreeViewExplorer.IsAudioFilterActive():
+		var extension = "." + filePath.get_extension().to_lower()
+		var audioExtensions = [".ogg", ".mp3", ".wav", ".aac"]
+
+		if extension in audioExtensions:
+			# Audio file(s) with audio filter active - use sound player grid
+			ShowSoundPlayerGrid(selectedFiles)
+			if selectedFiles.size() > 1:
+				%PathLabel.text = "%d audio files selected" % selectedFiles.size()
+			else:
+				%PathLabel.text = filePath
+			return
+
+	# Non-audio file or audio filter not active - use normal preview
+	ShowFilePreviewer()
+	if _filePreviewer:
+		_filePreviewer.PreviewFile(filePath)
+	%PathLabel.text = filePath
 
 func _on_directory_selected(dirPath: String):
 	# Check if audio filter is active
