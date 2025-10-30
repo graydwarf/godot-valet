@@ -175,22 +175,15 @@ func _on_godot_toggle_button_toggled(toggled_on: bool) -> void:
 	%MoveLeftButton.visible = toggled_on
 	%MoveRightButton.visible = toggled_on
 
-	# Update tooltip and apply green border when toggled on
+	# Update tooltip and modulate color to green when toggled on
 	if toggled_on:
 		%GodotToggleButton.tooltip_text = "Hide Project"
-		# Create green border style
-		var style = StyleBoxFlat.new()
-		style.border_width_left = 3
-		style.border_width_top = 3
-		style.border_width_right = 3
-		style.border_width_bottom = 3
-		style.border_color = Color(0.2, 0.8, 0.2, 1.0)  # Green
-		style.bg_color = Color(0, 0, 0, 0)  # Transparent background
-		%GodotToggleButton.add_theme_stylebox_override("normal", style)
+		# Modulate button to green
+		%GodotToggleButton.modulate = Color(0.4, 1.0, 0.4, 1.0)  # Green tint
 	else:
 		%GodotToggleButton.tooltip_text = "Show & Lock Project At Right"
-		# Remove border style
-		%GodotToggleButton.remove_theme_stylebox_override("normal")
+		# Reset to default color
+		%GodotToggleButton.modulate = Color(1.0, 1.0, 1.0, 1.0)  # White (default)
 
 	# Initialize destination tree with project path when toggled on
 	if toggled_on and %ProjectPathLineEdit.text:
