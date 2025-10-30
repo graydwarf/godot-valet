@@ -1343,16 +1343,10 @@ func _RestoreSelections(item: TreeItem, paths: Array[String]):
 
 func RefreshCurrentView():
 	if %FlatListToggleButton.button_pressed:
-		_activeFilters.clear()
-		_treeViewFilters.clear()
-		_isTreeViewFiltered = false
 		ShowFlatListForCurrentSelection()
 	else:
-		# Clear filters and refresh tree view
-		_activeFilters.clear()
-		_treeViewFilters.clear()
-		_isTreeViewFiltered = false
-		RefreshTreeViewWithFilters()
+		# Refresh tree view with current filter state preserved
+		await RefreshTreeViewWithFilters()
 		
 # Apply all currently active filters
 func ApplyActiveFilters():
@@ -1395,29 +1389,42 @@ func RefreshTreeViewWithFilters():
 
 # Internal function for tree view filtering
 func _refresh_tree_view_with_filters_internal():
-	# Save the current expanded state and selection
+	# Save the current expanded state and ALL selections
 	var expandedPaths = GetExpandedPaths(_rootItem)
-	var currentSelection = GetSelectedPath()
-	
+	var selectedPaths: Array[String] = []
+	var selectedItems = GetAllSelectedItems()
+	for item in selectedItems:
+		var path = item.get_metadata(0)
+		if path:
+			selectedPaths.append(path)
+
 	# Clear and rebuild the entire tree with filters
 	%FileTree.clear()
 	_rootItem = %FileTree.create_item()
-	PopulateDrives()
-	
+	await PopulateDrives()  # Wait for drives to populate
+
 	# Restore expanded state
-	RestoreExpandedPaths(expandedPaths)
-	
-	# Try to restore selection
-	if not currentSelection.is_empty():
-		var item = FindTreeItemByPath(_rootItem, currentSelection)
+	await RestoreExpandedPaths(expandedPaths)
+
+	# Try to restore all selections
+	var restoredAny = false
+	var firstRestoredItem: TreeItem = null
+
+	for path in selectedPaths:
+		var item = FindTreeItemByPath(_rootItem, path)
 		if item:
-			%FileTree.set_selected(item, 0)
 			item.select(0)
-			%FileTree.scroll_to_item(item)
-		else:
-			SelectFirstNode()
-	else:
+			restoredAny = true
+			if not firstRestoredItem:
+				firstRestoredItem = item
+
+	# If no selections were restored, select first node
+	if not restoredAny:
 		SelectFirstNode()
+	elif firstRestoredItem:
+		# Scroll to the first restored item to keep it visible
+		await get_tree().process_frame
+		%FileTree.scroll_to_item(firstRestoredItem)
 
 # Recursively collect all expanded folder paths
 func GetExpandedPaths(parentItem: TreeItem) -> Array[String]:
@@ -1446,17 +1453,12 @@ func RestoreExpandedPaths(expandedPaths: Array[String]):
 	for path in expandedPaths:
 		var item = FindTreeItemByPath(_rootItem, path)
 		if item:
-			# Expand the item
+			# Expand the item - this will trigger _on_item_collapsed which handles population
 			item.set_collapsed(false)
-			
-			# Make sure it's populated
-			if not HasBeenPopulated(item):
-				# Temporarily disable processing to avoid recursion
-				var wasProcessing = _isProcessingExpansion
-				_isProcessingExpansion = true
-				CleanupAndPopulate(item)
-				_isProcessingExpansion = wasProcessing
-			
+
+			# Wait for the automatic population to complete
+			await get_tree().process_frame
+
 			# Update folder icon to open state
 			item.set_icon(0, GetOpenFolderIcon())
 
@@ -1797,6 +1799,51 @@ func _on_filter_by_audio_toggle_button_pressed() -> void:
 		ToggleFilter("audio", true)
 	else:
 		ToggleFilter("audio", false)
+
+func _on_refresh_button_pressed() -> void:
+	RefreshViewWithPreservation()
+
+# Refresh the current view while preserving position and selections
+func RefreshViewWithPreservation():
+	# Save current state
+	var selectedPaths: Array[String] = []
+	var selectedItems = GetAllSelectedItems()
+	for item in selectedItems:
+		var path = item.get_metadata(0)
+		if path:
+			selectedPaths.append(path)
+
+	# Refresh based on current mode
+	if %FlatListToggleButton.button_pressed:
+		# Flat list mode - re-scan and rebuild
+		ShowFlatListForCurrentSelection()
+	else:
+		# Tree view mode - refresh expanded folders
+		await RefreshExpandedFolders()
+
+	# Try to restore selections
+	var restoredAny = false
+	var rootItem = %FileTree.get_root()
+	var firstRestoredItem: TreeItem = null
+
+	for path in selectedPaths:
+		var item = FindTreeItemByPath(rootItem, path)
+		if item:
+			item.select(0)
+			restoredAny = true
+			if not firstRestoredItem:
+				firstRestoredItem = item
+
+	# If no selections were restored and we had selections before
+	if not restoredAny and not selectedPaths.is_empty():
+		# Clear current file path so right panel knows nothing is selected
+		_currentFilePath = ""
+		# Optionally select first item if available
+		SelectFirstNode()
+	elif firstRestoredItem:
+		# Scroll to the first restored item to keep it visible
+		await get_tree().process_frame
+		%FileTree.scroll_to_item(firstRestoredItem)
 
 # Handle right-click on tree items
 func _on_file_tree_item_mouse_selected(_mouse_position: Vector2, mouse_button_index: int) -> void:
