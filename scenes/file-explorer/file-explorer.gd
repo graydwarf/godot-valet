@@ -9,6 +9,12 @@ class_name FileExplorer
 
 func _ready():
 	InitSignals()
+	RemoveGodotButtonFocusBorder()
+
+func RemoveGodotButtonFocusBorder():
+	# Remove focus border from Godot toggle button
+	var empty_style = StyleBoxEmpty.new()
+	%GodotToggleButton.add_theme_stylebox_override("focus", empty_style)
 
 func InitSignals():
 	_fileTreeViewExplorer.FileSelected.connect(_on_file_selected)
