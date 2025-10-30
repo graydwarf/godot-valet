@@ -209,5 +209,6 @@ unique_name_in_owner = true
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/OpenFileExplorerButton" to="." method="_on_open_file_explorer_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/NavigateToProjectButton" to="." method="_on_navigate_to_project_button_pressed"]
 [connection signal="item_mouse_selected" from="VBoxContainer/Control/FileTree" to="." method="_on_file_tree_item_mouse_selected"]
+[connection signal="item_selected" from="VBoxContainer/Control/FileTree" to="." method="_on_file_tree_item_selected"]
 [connection signal="multi_selected" from="VBoxContainer/Control/FileTree" to="." method="_on_file_tree_multi_selected"]
 [connection signal="id_pressed" from="ContextMenu" to="." method="_on_context_menu_item_selected"]

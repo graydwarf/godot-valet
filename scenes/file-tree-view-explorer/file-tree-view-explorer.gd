@@ -1788,6 +1788,11 @@ func _on_file_tree_multi_selected(item: TreeItem, _column: int, selected: bool) 
 	if selected:
 		ItemSelected(item) # Replace with function body.
 
+func _on_file_tree_item_selected() -> void:
+	var selected = %FileTree.get_selected()
+	if selected:
+		ItemSelected(selected)
+
 func _on_flat_list_button_pressed() -> void:
 	ToggleFlatList()
 
