@@ -50,7 +50,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/margin_left = 12
 theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 4
+theme_override_constants/margin_right = 6
 theme_override_constants/margin_bottom = 12
 
 [node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainerMain/ContentPanel/MarginContainer"]
