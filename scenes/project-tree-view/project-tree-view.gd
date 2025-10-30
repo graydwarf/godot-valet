@@ -229,6 +229,9 @@ func PopulateDirectory(parentItem: TreeItem, dirPath: String, recursive: bool = 
 		# Process a frame every few items to avoid blocking
 		if i % 5 == 0:
 			await get_tree().process_frame
+			# Check if parent item is still valid after await
+			if not is_instance_valid(parentItem):
+				return
 
 		var dirItem = %Tree.create_item(parentItem)
 		if dirItem == null:
@@ -259,6 +262,9 @@ func PopulateDirectory(parentItem: TreeItem, dirPath: String, recursive: bool = 
 
 		if j % 5 == 0:
 			await get_tree().process_frame
+			# Check if parent item is still valid after await
+			if not is_instance_valid(parentItem):
+				return
 
 		var fileItem = %Tree.create_item(parentItem)
 		if fileItem == null:
