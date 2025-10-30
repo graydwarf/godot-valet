@@ -1,4 +1,4 @@
-extends ScrollContainer
+extends Control
 class_name SoundPlayerGrid
 
 # Grid container for displaying multiple sound players

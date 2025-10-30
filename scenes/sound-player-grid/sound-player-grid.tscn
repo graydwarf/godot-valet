@@ -1,8 +1,16 @@
-[gd_scene load_steps=2 format=3 uid="uid://c8qxm2k9p3wrq"]
+[gd_scene load_steps=3 format=3 uid="uid://c8qxm2k9p3wrq"]
 
 [ext_resource type="Script" path="res://scenes/sound-player-grid/sound-player-grid.gd" id="1_grid"]
 
-[node name="SoundPlayerGrid" type="ScrollContainer"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_border"]
+bg_color = Color(0.1, 0.1, 0.1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.3, 0.3, 1)
+
+[node name="SoundPlayerGrid" type="Control"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -10,9 +18,37 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_grid")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
-unique_name_in_owner = true
+[node name="VBoxContainerMain" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ToolbarPlaceholder" type="HBoxContainer" parent="VBoxContainerMain"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainerMain"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PanelContainer" type="PanelContainer" parent="VBoxContainerMain/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_border")
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainerMain/ScrollContainer/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainerMain/ScrollContainer/PanelContainer/MarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 10
