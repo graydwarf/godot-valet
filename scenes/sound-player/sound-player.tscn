@@ -1,9 +1,22 @@
-[gd_scene load_steps=2 format=3 uid="uid://dpk7qxm8a2wqe"]
+[gd_scene load_steps=3 format=3 uid="uid://dpk7qxm8a2wqe"]
 
 [ext_resource type="Script" path="res://scenes/sound-player/sound-player.gd" id="1_sound"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_border"]
+bg_color = Color(0.15, 0.15, 0.15, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.3, 0.3, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
 [node name="SoundPlayer" type="PanelContainer"]
 custom_minimum_size = Vector2(400, 0)
+theme_override_styles/panel = SubResource("StyleBoxFlat_border")
 script = ExtResource("1_sound")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
