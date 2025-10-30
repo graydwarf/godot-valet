@@ -86,6 +86,10 @@ func ShowOverwriteConfirmation(overwriteCount: int) -> bool:
 
 # Handle when a file is selected in the file tree view explorer
 func _on_file_selected(filePath: String):
+	# Don't change preview if project view (Godot toggle) is active
+	if %GodotToggleButton.button_pressed:
+		return
+
 	var selectedFiles = _fileTreeViewExplorer.GetSelectedFiles()
 
 	# Check if audio filter is active - if so, always use sound player grid for audio files
@@ -109,6 +113,10 @@ func _on_file_selected(filePath: String):
 	%PathLabel.text = filePath
 
 func _on_directory_selected(dirPath: String):
+	# Don't change preview if project view (Godot toggle) is active
+	if %GodotToggleButton.button_pressed:
+		return
+
 	# Check if audio filter is active
 	if _fileTreeViewExplorer.IsAudioFilterActive():
 		# Get all audio files from this directory
