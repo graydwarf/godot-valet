@@ -26,6 +26,7 @@ var _isProjectViewActive: bool = false
 var _preFlatListExpandedPaths: Array[String] = []
 var _preFlatListSelectedPath: String = ""
 var _navigateToProjectButton: Button = null  # Reference to the Navigate to Project button
+var _favoriteButtons: Array[Button] = []  # References to user favorite buttons (slots 2-9)
 
 # Supported extensions used to filter files
 var _zipExtensions := [".zip", ".rar", ".7z", ".tar", ".gz"]
@@ -81,12 +82,22 @@ func _unhandled_key_input(event: InputEvent):
 func _navigate_to_favorite_by_number(number: int):
 	if number == 1:
 		# Slot 1 is always Navigate to Project
+		_flash_button(_navigateToProjectButton)
 		_on_navigate_to_project_button_pressed()
 	elif number >= 2 and number <= 9:
 		# Slots 2-9 are user favorites
 		var favoriteIndex = number - 2
 		if favoriteIndex < _favorites.size():
+			_flash_button(_favoriteButtons[favoriteIndex])
 			NavigateToFavorite(_favorites[favoriteIndex])
+
+# Flash a button to provide visual feedback
+func _flash_button(button: Button):
+	if not button:
+		return
+
+	# Grab focus to highlight the button
+	button.grab_focus()
 
 func InitSignals():
 	%FileTree.item_collapsed.connect(_on_item_collapsed)
@@ -231,6 +242,9 @@ func UpdateFavoritesBar():
 	for child in favoritesBar.get_children():
 		child.queue_free()
 
+	# Clear button references
+	_favoriteButtons.clear()
+
 	# Always add Navigate to Project button as first favorite (slot 1)
 	_navigateToProjectButton = Button.new()
 	_navigateToProjectButton.custom_minimum_size = Vector2(32, 32)
@@ -266,6 +280,7 @@ func UpdateFavoritesBar():
 		)
 
 		favoritesBar.add_child(favoriteButton)
+		_favoriteButtons.append(favoriteButton)  # Store button reference
 
 	# Favorites bar is always visible now (at least has Navigate to Project)
 	favoritesBar.visible = true
