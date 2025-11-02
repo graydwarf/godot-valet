@@ -75,6 +75,10 @@ func LoadAudioStream(path: String) -> AudioStream:
 	if path.begins_with("res://"):
 		return load(path) as AudioStream
 
+	# Check if this is a file inside a zip archive
+	if "::" in path:
+		return LoadAudioStreamFromZip(path, extension)
+
 	# For external files, load from filesystem
 	var file = FileAccess.open(path, FileAccess.READ)
 	if not file:
@@ -96,6 +100,55 @@ func LoadAudioStream(path: String) -> AudioStream:
 		"ogg":
 			# OGG Vorbis loader - load_from_file is a static method
 			return AudioStreamOggVorbis.load_from_file(path)
+		_:
+			return null
+
+func LoadAudioStreamFromZip(path: String, extension: String) -> AudioStream:
+	# Split the path into zip file and internal path
+	var parts = path.split("::")
+	if parts.size() != 2:
+		print("Invalid zip path format: ", path)
+		return null
+
+	var zipPath = parts[0]
+	var internalPath = parts[1]
+
+	# Open the zip file
+	var zip = ZIPReader.new()
+	var error = zip.open(zipPath)
+	if error != OK:
+		print("Failed to open zip file: ", zipPath, " Error: ", error)
+		return null
+
+	# Read the audio file data from zip
+	var data = zip.read_file(internalPath)
+	zip.close()
+
+	if data.is_empty():
+		print("Failed to read file from zip: ", internalPath)
+		return null
+
+	# Load audio stream from byte data
+	match extension:
+		"wav":
+			# WAV format requires parsing - create from data
+			var stream = AudioStreamWAV.new()
+			stream.data = data
+			stream.format = AudioStreamWAV.FORMAT_16_BITS  # Default format
+			return stream
+		"mp3":
+			# MP3 uses the data property approach
+			var stream = AudioStreamMP3.new()
+			stream.data = data
+			return stream
+		"ogg":
+			# OGG Vorbis from packet data
+			var stream = AudioStreamOggVorbis.new()
+			var packet_sequence = OggPacketSequence.new()
+			# This is a simplified approach - may need refinement
+			stream.packet_sequence = packet_sequence
+			stream.packet_sequence.packet_data = data
+			return stream
 		_:
 			return null
 
