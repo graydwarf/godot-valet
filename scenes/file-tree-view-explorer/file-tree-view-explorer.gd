@@ -2174,12 +2174,15 @@ func IsAudioFilterActive() -> bool:
 func GetAudioFilesFromDirectory(dirPath: String) -> Array[String]:
 	var audioFiles: Array[String] = []
 
-	# Check if it's a zip file path
+	# Check if it's a path inside a zip file
 	if "::" in dirPath:
 		var parts = dirPath.split("::")
 		var zipPath = parts[0]
 		var internalPath = parts[1] if parts.size() > 1 else ""
 		audioFiles = GetAudioFilesFromZipDirectory(zipPath, internalPath)
+	# Check if the path itself is a zip file
+	elif IsZipFile(dirPath):
+		audioFiles = GetAudioFilesFromZipDirectory(dirPath, "")
 	else:
 		audioFiles = GetAudioFilesFromRegularDirectory(dirPath)
 
