@@ -7,6 +7,7 @@ extends Control
 signal FileSelected(filePath : String)
 signal DirectorySelected(dirPath : String)
 signal NavigateToProjectRequested
+signal ProjectViewRestoreRequested
 
 var _rootItem: TreeItem
 var _isProcessingSelection := false
@@ -22,6 +23,9 @@ var _treeViewFilters := []
 var _isTreeViewFiltered := false
 var _flatListBasePath: String = ""
 var _isProjectViewActive: bool = false
+var _preFlatListExpandedPaths: Array[String] = []
+var _preFlatListSelectedPath: String = ""
+var _navigateToProjectButton: Button = null  # Reference to the Navigate to Project button
 
 # Supported extensions used to filter files
 var _zipExtensions := [".zip", ".rar", ".7z", ".tar", ".gz"]
@@ -36,7 +40,7 @@ var _textExtensions := [".txt", ".json", ".cfg", ".ini", ".csv", ".md", ".xml"]
 
 # Favorites system
 var _favorites: Array[String] = []
-var _maxFavorites := 9
+var _maxFavorites := 8  # Max user favorites (slot 1 is reserved for Navigate to Project)
 var _configFilePath := "user://file-explorer-settings.cfg"
 
 func _ready():
@@ -49,6 +53,41 @@ func _ready():
 	UpdateFavoritesBar()  # Initialize favorites UI
 	ApplySavedFilterState()  # Apply saved filter state
 
+# Handle keyboard shortcuts for favorite navigation (1-9)
+func _unhandled_key_input(event: InputEvent):
+	if event is InputEventKey and event.pressed and not event.echo:
+		# Check for number keys 1-9
+		match event.keycode:
+			KEY_1:
+				_navigate_to_favorite_by_number(1)
+			KEY_2:
+				_navigate_to_favorite_by_number(2)
+			KEY_3:
+				_navigate_to_favorite_by_number(3)
+			KEY_4:
+				_navigate_to_favorite_by_number(4)
+			KEY_5:
+				_navigate_to_favorite_by_number(5)
+			KEY_6:
+				_navigate_to_favorite_by_number(6)
+			KEY_7:
+				_navigate_to_favorite_by_number(7)
+			KEY_8:
+				_navigate_to_favorite_by_number(8)
+			KEY_9:
+				_navigate_to_favorite_by_number(9)
+
+# Navigate to favorite by number (1 = Navigate to Project, 2-9 = user favorites)
+func _navigate_to_favorite_by_number(number: int):
+	if number == 1:
+		# Slot 1 is always Navigate to Project
+		_on_navigate_to_project_button_pressed()
+	elif number >= 2 and number <= 9:
+		# Slots 2-9 are user favorites
+		var favoriteIndex = number - 2
+		if favoriteIndex < _favorites.size():
+			NavigateToFavorite(_favorites[favoriteIndex])
+
 func InitSignals():
 	%FileTree.item_collapsed.connect(_on_item_collapsed)
 
@@ -58,7 +97,7 @@ func SetupContextMenu():
 	%ContextMenu.add_item("Open in File Explorer", 1)
 	%ContextMenu.add_item("Copy Path", 2)
 
-# Save favorites and filter state to config file
+# Save favorites, filter state, and tree view state to config file
 func SaveSettings():
 	var config = ConfigFile.new()
 
@@ -67,7 +106,18 @@ func SaveSettings():
 
 	# Save filter state
 	config.set_value("Filters", "active_filters", _activeFilters)
-	config.set_value("Filters", "flat_list_enabled", %FlatListToggleButton.button_pressed if has_node("%FlatListToggleButton") else false)
+
+	# Save tree view state
+	var expandedPaths = GetExpandedPaths(_rootItem)
+	config.set_value("TreeView", "expanded_paths", expandedPaths)
+
+	# Save selected item path
+	var selected = %FileTree.get_selected()
+	var selectedPath = selected.get_metadata(0) if selected else ""
+	config.set_value("TreeView", "selected_path", selectedPath)
+
+	# Save project view state
+	config.set_value("TreeView", "project_view_active", _isProjectViewActive)
 
 	var err = config.save(_configFilePath)
 	if err != OK:
@@ -90,25 +140,33 @@ func LoadSettings():
 	# Load filter state (but don't apply yet - wait for UI to be ready)
 	_activeFilters = config.get_value("Filters", "active_filters", [])
 
-# Apply saved filter state after UI is ready
+	# Load project view state (but don't apply yet - wait for UI to be ready)
+	_isProjectViewActive = config.get_value("TreeView", "project_view_active", false)
+
+# Apply saved filter state and tree view state after UI is ready
 func ApplySavedFilterState():
 	if not has_node("%FlatListToggleButton"):
 		return
 
 	var config = ConfigFile.new()
 	if config.load(_configFilePath) == OK:
-		var flatListEnabled = config.get_value("Filters", "flat_list_enabled", false)
-		%FlatListToggleButton.button_pressed = flatListEnabled
+		# Apply active filters by setting OptionButton selection
+		if has_node("%FilterOptionButton"):
+			var selectedIndex = 0  # Default to "All"
 
-		# Apply active filters by setting button states
-		if "images" in _activeFilters and has_node("%FilterByImagesToggleButton"):
-			%FilterByImagesToggleButton.button_pressed = true
-		if "audio" in _activeFilters and has_node("%FilterByAudioToggleButton"):
-			%FilterByAudioToggleButton.button_pressed = true
+			if "images" in _activeFilters:
+				selectedIndex = 1  # Images
+			elif "audio" in _activeFilters:
+				selectedIndex = 2  # Sounds
+
+			%FilterOptionButton.selected = selectedIndex
 
 		# Trigger filter application if filters were active
 		if not _activeFilters.is_empty():
 			ApplyActiveFilters()
+
+		# Restore tree view state (expanded paths and selection)
+		await RestoreTreeViewState(config)
 
 # Add current selection to favorites
 func AddToFavorites():
@@ -173,10 +231,28 @@ func UpdateFavoritesBar():
 	for child in favoritesBar.get_children():
 		child.queue_free()
 
-	# Create buttons for each favorite
+	# Always add Navigate to Project button as first favorite (slot 1)
+	_navigateToProjectButton = Button.new()
+	_navigateToProjectButton.custom_minimum_size = Vector2(32, 32)
+	_navigateToProjectButton.tooltip_text = "Navigate To Project In Treeview"
+	_navigateToProjectButton.flat = true
+	_navigateToProjectButton.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	# Load Godot icon
+	var godotIcon = load("res://icon.svg") as Texture2D
+	if godotIcon:
+		_navigateToProjectButton.icon = godotIcon
+		_navigateToProjectButton.expand_icon = true
+
+	# Left click - navigate to project
+	_navigateToProjectButton.pressed.connect(_on_navigate_to_project_button_pressed)
+
+	favoritesBar.add_child(_navigateToProjectButton)
+
+	# Create buttons for each user favorite (starting at slot 2)
 	for i in range(_favorites.size()):
 		var favoriteButton = Button.new()
-		favoriteButton.text = str(i + 1)
+		favoriteButton.text = str(i + 2)  # Start numbering at 2
 		favoriteButton.custom_minimum_size = Vector2(32, 32)
 		favoriteButton.tooltip_text = _favorites[i].get_file() if _favorites[i].get_file() != "" else _favorites[i]
 
@@ -191,8 +267,8 @@ func UpdateFavoritesBar():
 
 		favoritesBar.add_child(favoriteButton)
 
-	# Show/hide bar based on whether there are favorites
-	favoritesBar.visible = _favorites.size() > 0
+	# Favorites bar is always visible now (at least has Navigate to Project)
+	favoritesBar.visible = true
 
 # Show context menu for favorite deletion
 func _show_favorite_context_menu(favoriteIndex: int, menuPosition: Vector2):
@@ -394,28 +470,31 @@ func GetIconFromFilePath(filePath):
 func _on_item_collapsed(item: TreeItem):
 	if _isProcessingExpansion:
 		return
-	
+
 	_isProcessingExpansion = true
-	
+
 	# Update folder icon based on collapsed state
 	var metadata = item.get_metadata(0)
 	if metadata != null:
 		var path = metadata as String
 		var isDirectory = IsDirectory(path)
-		
+
 		if isDirectory:
 			if item.is_collapsed():
 				item.set_icon(0, GetFolderIcon())  # Closed folder
 			else:
 				item.set_icon(0, GetOpenFolderIcon())  # Open folder
-	
+
 	# When an item is expanded (collapsed = false), check if we need to populate it
 	if not item.is_collapsed():
 		if not HasBeenPopulated(item):
 			# Defer the population to avoid "blocked" error
 			call_deferred("CleanupAndPopulate", item)
-	
+
 	_isProcessingExpansion = false
+
+	# Save tree state when expansion changes
+	SaveSettings()
 
 # Check if an item has already been populated with its children
 func HasBeenPopulated(item: TreeItem) -> bool:
@@ -908,8 +987,10 @@ func _on_navigate_to_project_button_pressed() -> void:
 	NavigateToProjectRequested.emit()
 
 func SetNavigateToProjectButtonVisible(isVisible: bool) -> void:
-	if has_node("%NavigateToProjectButton"):
-		%NavigateToProjectButton.visible = isVisible
+	# Now the Navigate to Project button is in the favorites bar
+	# Enable/disable it based on whether a project is selected
+	if _navigateToProjectButton:
+		_navigateToProjectButton.disabled = not isVisible
 
 func _on_previous_button_pressed() -> void:
 	SendKeyEventToTree(KEY_LEFT)
@@ -941,16 +1022,51 @@ func ToggleFlatList():
 	await get_tree().create_timer(0.2).timeout
 
 	if %FlatListToggleButton.button_pressed:
+		# Save current tree state before entering flat-list mode
+		_preFlatListExpandedPaths = GetExpandedPaths(_rootItem)
+		var selected = %FileTree.get_selected()
+		_preFlatListSelectedPath = selected.get_metadata(0) if selected else ""
+
 		%PreviousButton.disabled = true
 		%NextButton.disabled = true
+
+		# Hide favorites bar, show flat-list path container
+		%FavoritesBar.visible = false
+		if has_node("%FlatListPathContainer"):
+			%FlatListPathContainer.visible = true
+			# Set the path in the LineEdit (not including "Flat List:" prefix)
+			var basePath = GetCurrentBasePath()
+			%PathLineEdit.text = basePath
+
 		ShowFlatListForCurrentSelection()
 	else:
 		_flatListBasePath = ""
 		%PreviousButton.disabled = false
 		%NextButton.disabled = false
-		ShowTreeView()
 
-	SaveSettings()  # Save flat list toggle state
+		# Show favorites bar, hide flat-list path container
+		%FavoritesBar.visible = true
+		if has_node("%FlatListPathContainer"):
+			%FlatListPathContainer.visible = false
+
+		# Restore tree view with saved state
+		ShowTreeView()
+		await get_tree().process_frame
+
+		# Restore expanded paths and selection
+		if not _preFlatListExpandedPaths.is_empty():
+			await RestoreExpandedPaths(_preFlatListExpandedPaths)
+
+		if not _preFlatListSelectedPath.is_empty():
+			var item = FindTreeItemByPath(_rootItem, _preFlatListSelectedPath)
+			if item:
+				%FileTree.set_selected(item, 0)
+				item.select(0)
+				%FileTree.scroll_to_item(item)
+
+		# Clear saved state
+		_preFlatListExpandedPaths.clear()
+		_preFlatListSelectedPath = ""
 
 # Internal function for flat list creation
 func _show_flat_list_internal():
@@ -1654,6 +1770,30 @@ func RestoreExpandedPaths(expandedPaths: Array[String]):
 			# Update folder icon to open state
 			item.set_icon(0, GetOpenFolderIcon())
 
+# Restore tree view state (expanded folders and selected item)
+func RestoreTreeViewState(config: ConfigFile):
+	# Restore expanded paths
+	var expandedPaths = config.get_value("TreeView", "expanded_paths", [])
+	if not expandedPaths.is_empty():
+		await RestoreExpandedPaths(expandedPaths)
+
+	# Restore selected item
+	var selectedPath = config.get_value("TreeView", "selected_path", "")
+	if not selectedPath.is_empty():
+		var item = FindTreeItemByPath(_rootItem, selectedPath)
+		if item:
+			%FileTree.set_selected(item, 0)
+			item.select(0)
+			%FileTree.scroll_to_item(item)
+			# Emit selection signal to update preview
+			ItemSelected(item)
+
+	# Restore project view if it was active
+	# Defer to next frame to ensure parent (file-explorer) has connected to the signal
+	if _isProjectViewActive:
+		await get_tree().process_frame
+		ProjectViewRestoreRequested.emit()
+
 # Check if a directory has any content (subdirectories or supported files)
 func HasContent(path: String) -> bool:
 	var dir = DirAccess.open(path)
@@ -1981,21 +2121,29 @@ func _on_file_tree_item_selected() -> void:
 	var selected = %FileTree.get_selected()
 	if selected:
 		ItemSelected(selected)
+		# Save selection state
+		SaveSettings()
 
 func _on_flat_list_button_pressed() -> void:
 	ToggleFlatList()
 
-func _on_filter_by_images_toggle_button_pressed() -> void:
-	if %FilterByImagesToggleButton.button_pressed:
-		ToggleFilter("images", true)
-	else:
-		ToggleFilter("images", false)
+func _on_filter_option_selected(index: int) -> void:
+	# Clear all active filters first
+	_activeFilters.clear()
 
-func _on_filter_by_audio_toggle_button_pressed() -> void:
-	if %FilterByAudioToggleButton.button_pressed:
-		ToggleFilter("audio", true)
-	else:
-		ToggleFilter("audio", false)
+	# Apply selected filter based on index
+	match index:
+		0:  # All
+			# No filters active
+			pass
+		1:  # Images
+			_activeFilters.append("images")
+		2:  # Sounds
+			_activeFilters.append("audio")
+
+	UpdateSelectMode()
+	SaveSettings()
+	ApplyActiveFilters()
 
 func _on_add_favorite_button_pressed() -> void:
 	AddToFavorites()
@@ -2276,6 +2424,7 @@ func UpdateSelectMode():
 func SetProjectViewActive(active: bool):
 	_isProjectViewActive = active
 	UpdateSelectMode()
+	SaveSettings()  # Save project view state
 
 # Recursively find a tree item by its path
 func FindItemByPath(targetPath: String, currentItem: TreeItem) -> TreeItem:

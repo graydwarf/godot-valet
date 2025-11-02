@@ -196,7 +196,10 @@ func PopulateProjectTree():
 
 	# Populate with project directories (recursively to show all files)
 	await PopulateDirectory(rootItem, _projectRootPath, true)
-	rootItem.set_collapsed(false)
+
+	# Check if rootItem is still valid after awaits
+	if is_instance_valid(rootItem):
+		rootItem.set_collapsed(false)
 
 func PopulateDirectory(parentItem: TreeItem, dirPath: String, recursive: bool = false):
 	var dir = DirAccess.open(dirPath)

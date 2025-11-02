@@ -20,6 +20,7 @@ func InitSignals():
 	_fileTreeViewExplorer.FileSelected.connect(_on_file_selected)
 	_fileTreeViewExplorer.DirectorySelected.connect(_on_directory_selected)
 	_fileTreeViewExplorer.NavigateToProjectRequested.connect(_on_navigate_to_project_requested)
+	_fileTreeViewExplorer.ProjectViewRestoreRequested.connect(_on_project_view_restore_requested)
 
 func ConfigureProject(selectedProjectItem):
 	if selectedProjectItem == null:
@@ -170,6 +171,12 @@ func _on_navigate_to_project_requested() -> void:
 	if projectPath and not projectPath.is_empty():
 		var projectRoot = projectPath.get_base_dir()
 		await _fileTreeViewExplorer.NavigateToPath(projectRoot, true)
+
+func _on_project_view_restore_requested() -> void:
+	# Restore project view state by programmatically toggling the Godot button
+	%GodotToggleButton.button_pressed = true
+	# Call the toggle handler to update UI
+	_on_godot_toggle_button_toggled(true)
 
 func _on_godot_toggle_button_toggled(toggled_on: bool) -> void:
 	# Update file tree view multi-select state
