@@ -2111,7 +2111,10 @@ func _on_down_button_pressed() -> void:
 # Update button handlers
 func _on_up_button_pressed() -> void:
 	%FileTree.grab_focus()
-	SelectPreviousItem()
+	if %FlatListToggleButton.button_pressed:
+		SelectPreviousItem()
+	else:
+		SelectPreviousTreeItem()
 	
 func _on_file_tree_multi_selected(item: TreeItem, _column: int, selected: bool) -> void:
 	if selected:
