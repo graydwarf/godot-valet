@@ -34,12 +34,20 @@ var _3dModelExtensions := [".dae", ".gltf", ".glb", ".fbx", ".blend", ".obj"]
 var _fontExtensions := [".ttf", ".otf", ".woff", ".woff2"]
 var _textExtensions := [".txt", ".json", ".cfg", ".ini", ".csv", ".md", ".xml"]
 
+# Favorites system
+var _favorites: Array[String] = []
+var _maxFavorites := 9
+var _configFilePath := "user://file-explorer-settings.cfg"
+
 func _ready():
+	LoadSettings()  # Load favorites and filter state
 	SetupTree()
 	PopulateDrives()
 	InitSignals()
 	SetupContextMenu()
 	UpdateSelectMode()  # Initialize select mode
+	UpdateFavoritesBar()  # Initialize favorites UI
+	ApplySavedFilterState()  # Apply saved filter state
 
 func InitSignals():
 	%FileTree.item_collapsed.connect(_on_item_collapsed)
@@ -49,6 +57,166 @@ func SetupContextMenu():
 	%ContextMenu.add_item("Edit", 0)
 	%ContextMenu.add_item("Open in File Explorer", 1)
 	%ContextMenu.add_item("Copy Path", 2)
+
+# Save favorites and filter state to config file
+func SaveSettings():
+	var config = ConfigFile.new()
+
+	# Save favorites
+	config.set_value("Favorites", "paths", _favorites)
+
+	# Save filter state
+	config.set_value("Filters", "active_filters", _activeFilters)
+	config.set_value("Filters", "flat_list_enabled", %FlatListToggleButton.button_pressed if has_node("%FlatListToggleButton") else false)
+
+	var err = config.save(_configFilePath)
+	if err != OK:
+		push_error("Failed to save file explorer settings: " + str(err))
+
+# Load favorites and filter state from config file
+func LoadSettings():
+	if not FileAccess.file_exists(_configFilePath):
+		return
+
+	var config = ConfigFile.new()
+	var err = config.load(_configFilePath)
+	if err != OK:
+		push_error("Failed to load file explorer settings: " + str(err))
+		return
+
+	# Load favorites
+	_favorites = config.get_value("Favorites", "paths", [])
+
+	# Load filter state (but don't apply yet - wait for UI to be ready)
+	_activeFilters = config.get_value("Filters", "active_filters", [])
+
+# Apply saved filter state after UI is ready
+func ApplySavedFilterState():
+	if not has_node("%FlatListToggleButton"):
+		return
+
+	var config = ConfigFile.new()
+	if config.load(_configFilePath) == OK:
+		var flatListEnabled = config.get_value("Filters", "flat_list_enabled", false)
+		%FlatListToggleButton.button_pressed = flatListEnabled
+
+		# Apply active filters by setting button states
+		if "images" in _activeFilters and has_node("%FilterByImagesToggleButton"):
+			%FilterByImagesToggleButton.button_pressed = true
+		if "audio" in _activeFilters and has_node("%FilterByAudioToggleButton"):
+			%FilterByAudioToggleButton.button_pressed = true
+
+		# Trigger filter application if filters were active
+		if not _activeFilters.is_empty():
+			ApplyActiveFilters()
+
+# Add current selection to favorites
+func AddToFavorites():
+	var selected = %FileTree.get_selected()
+	if not selected or selected.get_metadata(0) == null:
+		return
+
+	var path = selected.get_metadata(0) as String
+	if path.is_empty():
+		return
+
+	# Check if already in favorites
+	if path in _favorites:
+		return
+
+	# Check if at max capacity
+	if _favorites.size() >= _maxFavorites:
+		OS.alert("Maximum %d favorites reached. Remove one to add another." % _maxFavorites)
+		return
+
+	_favorites.append(path)
+	SaveSettings()
+	UpdateFavoritesBar()
+
+# Remove a favorite by index
+func RemoveFavorite(index: int):
+	if index < 0 or index >= _favorites.size():
+		return
+
+	_favorites.remove_at(index)
+	SaveSettings()
+	UpdateFavoritesBar()
+
+# Navigate to a favorite path
+func NavigateToFavorite(favoritePath: String):
+	if favoritePath.is_empty():
+		return
+
+	# Check if path still exists
+	var isFile = FileAccess.file_exists(favoritePath)
+	var isDir = DirAccess.dir_exists_absolute(favoritePath)
+
+	if not isFile and not isDir:
+		OS.alert("Path no longer exists:\n" + favoritePath)
+		return
+
+	# Navigate to the path
+	await NavigateToPath(favoritePath)
+
+	# If it's a file, emit file selected signal to show preview
+	if isFile:
+		FileSelected.emit(favoritePath)
+
+# Update favorites bar UI with current favorites
+func UpdateFavoritesBar():
+	if not has_node("%FavoritesBar"):
+		return
+
+	var favoritesBar = %FavoritesBar
+
+	# Clear existing buttons
+	for child in favoritesBar.get_children():
+		child.queue_free()
+
+	# Create buttons for each favorite
+	for i in range(_favorites.size()):
+		var favoriteButton = Button.new()
+		favoriteButton.text = str(i + 1)
+		favoriteButton.custom_minimum_size = Vector2(32, 32)
+		favoriteButton.tooltip_text = _favorites[i].get_file() if _favorites[i].get_file() != "" else _favorites[i]
+
+		# Left click - navigate
+		favoriteButton.pressed.connect(func(): NavigateToFavorite(_favorites[i]))
+
+		# Right click - show delete menu
+		favoriteButton.gui_input.connect(func(event: InputEvent):
+			if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+				_show_favorite_context_menu(i, event.global_position)
+		)
+
+		favoritesBar.add_child(favoriteButton)
+
+	# Show/hide bar based on whether there are favorites
+	favoritesBar.visible = _favorites.size() > 0
+
+# Show context menu for favorite deletion
+func _show_favorite_context_menu(favoriteIndex: int, menuPosition: Vector2):
+	if not has_node("%FavoriteContextMenu"):
+		return
+
+	var menu = %FavoriteContextMenu
+	menu.clear()
+	menu.add_item("Remove Favorite", 0)
+
+	# Disconnect previous connections if any
+	if menu.id_pressed.is_connected(_on_favorite_context_menu_id_pressed):
+		menu.id_pressed.disconnect(_on_favorite_context_menu_id_pressed)
+
+	# Connect with favorite index
+	menu.id_pressed.connect(func(id): _on_favorite_context_menu_id_pressed(id, favoriteIndex))
+
+	menu.position = Vector2i(menuPosition)
+	menu.popup()
+
+# Handle favorite context menu selection
+func _on_favorite_context_menu_id_pressed(id: int, favoriteIndex: int):
+	if id == 0:  # Remove Favorite
+		RemoveFavorite(favoriteIndex)
 
 func GetSelectedFiles() -> Array[String]:
 	var selected: Array[String] = []
@@ -261,86 +429,45 @@ func HasBeenPopulated(item: TreeItem) -> bool:
 func PopulateDirectory(parentItem: TreeItem):
 	ShowBusyIndicator()
 	var path = parentItem.get_metadata(0) as String
-	var dir = DirAccess.open(path)
-	
-	if dir == null:
-		print("Failed to open directory: " + path)
-		return
-	
-	var directories: Array[String] = []
-	var files: Array[String] = []
-	
-	# Get all directories and files
-	dir.list_dir_begin()
-	var nextFileName = dir.get_next()
-	while nextFileName != "":
-		if dir.current_is_dir():
-			# Skip hidden and system directories
-			if not nextFileName.begins_with(".") and nextFileName != "System Volume Information":
-				directories.append(nextFileName)
-		else:
-			# Always include zip files, filter other files normally
-			if IsZipFile(path + nextFileName) or IsFileSupported(nextFileName):
-				files.append(nextFileName)
 
-		nextFileName = dir.get_next()
-	
-	dir.list_dir_end()
-	
-	# Sort directories and files
-	directories.sort()
-	files.sort()
-	
-	# Add directories first - but only if they have content
-	for dirName in directories:
-		var fullPath = path + dirName + "/"
-		
-		# Check if directory has content (respects filtering)
-		if HasContent(fullPath):
-			var dirItem = %FileTree.create_item(parentItem)
-			if dirItem == null:
-				continue
-			dirItem.set_text(0, dirName)
-			dirItem.set_metadata(0, fullPath)
-			dirItem.set_icon(0, GetFolderIcon())
-			
-			# Set as expandable
-			dirItem.set_collapsed(true)
-			# Create a temporary invisible child to show expand arrow
-			var tempChild = %FileTree.create_item(dirItem)
-			tempChild.set_text(0, "")
-			tempChild.set_metadata(0, null)  # Mark as temporary with null metadata
-	
-	# Add files
-	for fileName in files:
-		var fullPath = path + fileName
-		var shouldInclude = true
-		
-		# For zip files, check if they contain filtered content when filtering is active
-		if IsZipFile(fullPath):
-			if _isTreeViewFiltered:
-				shouldInclude = ZipContainsFilteredContent(fullPath)
-		else:
-			# For regular files, they've already passed IsFileSupported()
-			shouldInclude = true
-		
-		if shouldInclude:
-			var fileItem = %FileTree.create_item(parentItem)
-			if fileItem == null:
-				continue
-			fileItem.set_text(0, fileName)
-			fileItem.set_metadata(0, fullPath)
-			fileItem.set_icon(0, GetIconFromFilePath(fullPath))
-			
-			# Make zip files expandable if they have contents
-			if IsZipFile(fullPath):
-				var zipContents = GetZipContents(fullPath)
-				if zipContents.size() > 0 and (zipContents.directories.size() > 0 or zipContents.files.size() > 0):
-					fileItem.set_collapsed(true)
-					var tempChild = %FileTree.create_item(fileItem)
-					tempChild.set_text(0, "")
-					tempChild.set_metadata(0, null)
+	# Use the same logic as refresh to ensure consistency
+	var entries = _GetSortedDirectoryEntries(path)
+	_PopulateDirectoryWithEntries(parentItem, path, entries)
+
 	HideBusyIndicator()
+
+# Populate directory tree with given entries (shared logic for initial + refresh)
+func _PopulateDirectoryWithEntries(parentItem: TreeItem, dirPath: String, entries: Array[String]):
+	for entry in entries:
+		var entryPath = dirPath.path_join(entry)
+
+		if DirAccess.dir_exists_absolute(entryPath):
+			# Directory - only add if it has content
+			if HasContent(entryPath):
+				_CreateDirectoryTreeItem(parentItem, entry, entryPath)
+		else:
+			# File - check if should be included
+			if _ShouldIncludeFile(entryPath):
+				_CreateFileTreeItem(parentItem, entry, entryPath)
+
+				# Make zip files expandable if they have contents
+				if IsZipFile(entryPath):
+					var fileItem = parentItem.get_child(parentItem.get_child_count() - 1)
+					var zipContents = GetZipContents(entryPath)
+					if zipContents.size() > 0 and (zipContents.directories.size() > 0 or zipContents.files.size() > 0):
+						fileItem.set_collapsed(true)
+						var tempChild = %FileTree.create_item(fileItem)
+						tempChild.set_text(0, "")
+						tempChild.set_metadata(0, null)
+
+# Check if a file should be included (handles zip filtering)
+func _ShouldIncludeFile(filePath: String) -> bool:
+	# For zip files, check if they contain filtered content when filtering is active
+	if IsZipFile(filePath):
+		if _isTreeViewFiltered:
+			return ZipContainsFilteredContent(filePath)
+	# All other files have already been filtered by _GetSortedDirectoryEntries
+	return true
 	
 # Check if a zip file contains content matching current filters
 func ZipContainsFilteredContent(zipPath: String) -> bool:
@@ -780,9 +907,9 @@ func _on_open_file_explorer_button_pressed() -> void:
 func _on_navigate_to_project_button_pressed() -> void:
 	NavigateToProjectRequested.emit()
 
-func SetNavigateToProjectButtonVisible(visible: bool) -> void:
+func SetNavigateToProjectButtonVisible(isVisible: bool) -> void:
 	if has_node("%NavigateToProjectButton"):
-		%NavigateToProjectButton.visible = visible
+		%NavigateToProjectButton.visible = isVisible
 
 func _on_previous_button_pressed() -> void:
 	SendKeyEventToTree(KEY_LEFT)
@@ -812,7 +939,7 @@ func SendKeyEventToTree(keycode: Key):
 func ToggleFlatList():
 	ShowBusyIndicator()
 	await get_tree().create_timer(0.2).timeout
-	
+
 	if %FlatListToggleButton.button_pressed:
 		%PreviousButton.disabled = true
 		%NextButton.disabled = true
@@ -822,6 +949,8 @@ func ToggleFlatList():
 		%PreviousButton.disabled = false
 		%NextButton.disabled = false
 		ShowTreeView()
+
+	SaveSettings()  # Save flat list toggle state
 
 # Internal function for flat list creation
 func _show_flat_list_internal():
@@ -1212,6 +1341,7 @@ func ToggleFilter(filterName : String, enabled : bool):
 		_activeFilters.erase(filterName)
 
 	UpdateSelectMode()  # Update multi-select state based on filter
+	SaveSettings()  # Save filter state
 	ApplyActiveFilters()
 
 func RefreshExpandedFolders():
@@ -1233,101 +1363,160 @@ func RefreshExpandedFolders():
 	if not selectedPaths.is_empty():
 		_RestoreSelections(rootItem, selectedPaths)
 
+# Get sorted and filtered directory entries from filesystem
+func _GetSortedDirectoryEntries(dirPath: String) -> Array[String]:
+	var dir = DirAccess.open(dirPath)
+	if not dir:
+		return []
+
+	var directories: Array[String] = []
+	var files: Array[String] = []
+
+	dir.list_dir_begin()
+	var entryName = dir.get_next()
+	while entryName != "":
+		if dir.current_is_dir():
+			# Skip hidden and system directories
+			if not entryName.begins_with(".") and entryName != "System Volume Information":
+				directories.append(entryName)
+		else:
+			# Always include zip files, filter other files normally
+			var fullPath = dirPath.path_join(entryName)
+			if IsZipFile(fullPath) or IsFileSupported(entryName):
+				files.append(entryName)
+		entryName = dir.get_next()
+	dir.list_dir_end()
+
+	# Sort separately, then combine
+	directories.sort()
+	files.sort()
+
+	var result: Array[String] = []
+	result.append_array(directories)
+	result.append_array(files)
+	return result
+
+# Build a map of current tree item children by name
+func _BuildChildrenMap(item: TreeItem) -> Dictionary:
+	var childrenMap: Dictionary = {}
+	var child = item.get_first_child()
+	while child:
+		var childName = child.get_text(0)
+		if childName:
+			childrenMap[childName] = child
+		child = child.get_next()
+	return childrenMap
+
+# Remove tree items that no longer exist in filesystem
+func _RemoveObsoleteChildren(item: TreeItem, validEntries: Array[String]):
+	var child = item.get_first_child()
+	while child:
+		var nextChild = child.get_next()
+		var childName = child.get_text(0)
+		if childName and not childName in validEntries:
+			child.free()
+		child = nextChild
+
+# Add missing filesystem entries to tree
+func _AddMissingEntries(parentItem: TreeItem, parentPath: String, entries: Array[String], existingChildren: Dictionary):
+	for entry in entries:
+		if entry in existingChildren:
+			continue  # Already exists
+
+		var entryPath = parentPath.path_join(entry)
+
+		if DirAccess.dir_exists_absolute(entryPath):
+			# Directory - only add if it has content
+			if HasContent(entryPath):
+				_CreateDirectoryTreeItem(parentItem, entry, entryPath)
+		else:
+			# File - check if should be included (handles zip filtering)
+			if _ShouldIncludeFile(entryPath):
+				_CreateFileTreeItem(parentItem, entry, entryPath)
+
+				# Make zip files expandable if they have contents
+				if IsZipFile(entryPath):
+					var fileItem = parentItem.get_child(parentItem.get_child_count() - 1)
+					var zipContents = GetZipContents(entryPath)
+					if zipContents.size() > 0 and (zipContents.directories.size() > 0 or zipContents.files.size() > 0):
+						fileItem.set_collapsed(true)
+						var tempChild = %FileTree.create_item(fileItem)
+						tempChild.set_text(0, "")
+						tempChild.set_metadata(0, null)
+
+# Create a tree item for a directory
+func _CreateDirectoryTreeItem(parentItem: TreeItem, dirName: String, dirPath: String):
+	var dirItem = %FileTree.create_item(parentItem)
+	if dirItem:
+		# Ensure directory path has trailing slash for consistency
+		var normalizedPath = dirPath if dirPath.ends_with("/") else dirPath + "/"
+
+		dirItem.set_text(0, dirName)
+		dirItem.set_metadata(0, normalizedPath)
+		dirItem.set_icon(0, GetFolderIcon())
+		dirItem.set_collapsed(true)
+		# Create temporary child to show expand arrow
+		var tempChild = %FileTree.create_item(dirItem)
+		if tempChild:
+			tempChild.set_text(0, "")
+			tempChild.set_metadata(0, null)
+
+# Create a tree item for a file
+func _CreateFileTreeItem(parentItem: TreeItem, fileName: String, filePath: String):
+	var fileItem = %FileTree.create_item(parentItem)
+	if fileItem:
+		fileItem.set_text(0, fileName)
+		fileItem.set_metadata(0, filePath)
+		fileItem.set_icon(0, GetIconFromFilePath(filePath))
+
+# Check if a tree item has real children (not just temporary placeholders)
+func _HasRealChildren(item: TreeItem) -> bool:
+	if item.get_child_count() > 1:
+		return true
+	if item.get_child_count() == 1:
+		var firstChild = item.get_first_child()
+		return firstChild.get_metadata(0) != null
+	return false
+
+# Sync tree items with filesystem for a single directory
+func _SyncTreeItemsWithFilesystem(item: TreeItem, dirPath: String):
+	# Get what's in the filesystem
+	var filesystemEntries = _GetSortedDirectoryEntries(dirPath)
+
+	# Remove tree items that no longer exist
+	_RemoveObsoleteChildren(item, filesystemEntries)
+
+	# Get updated map of existing children
+	var existingChildren = _BuildChildrenMap(item)
+
+	# Add new entries that aren't in the tree yet
+	_AddMissingEntries(item, dirPath, filesystemEntries, existingChildren)
+
+# Recursively refresh all expanded folders
 func _RefreshExpandedFoldersRecursive(item: TreeItem):
-	# Only process this item if it's expanded
+	# Guard: Only process expanded items
 	if not item or item.is_collapsed():
 		return
 
 	var path = item.get_metadata(0)
-	var child: TreeItem
 
+	# Handle root item (no path)
 	if not path:
-		# Process children of root item
-		child = item.get_first_child()
-		while child:
-			await _RefreshExpandedFoldersRecursive(child)
-			child = child.get_next()
+		var rootChild = item.get_first_child()
+		while rootChild:
+			await _RefreshExpandedFoldersRecursive(rootChild)
+			rootChild = rootChild.get_next()
 		return
 
-	# Get current children in the tree
-	var currentChildren: Dictionary = {}
-	child = item.get_first_child()
-	while child:
-		var childName = child.get_text(0)
-		if childName:
-			currentChildren[childName] = child
-		child = child.get_next()
+	# Sync this directory's tree items with filesystem
+	_SyncTreeItemsWithFilesystem(item, path)
 
-	# Get actual files/folders from filesystem
-	var dir = DirAccess.open(path)
-	if dir:
-		var actualEntries: Array[String] = []
-
-		dir.list_dir_begin()
-		var entryName = dir.get_next()
-		while entryName != "":
-			if not entryName.begins_with("."):
-				actualEntries.append(entryName)
-			entryName = dir.get_next()
-		dir.list_dir_end()
-
-		# Remove children that no longer exist in filesystem
-		child = item.get_first_child()
-		while child:
-			var nextChild = child.get_next()
-			var childName = child.get_text(0)
-			if childName and not childName in actualEntries:
-				child.free()
-			child = nextChild
-
-		# Rebuild current children dictionary after removal
-		currentChildren.clear()
-		child = item.get_first_child()
-		while child:
-			var childName = child.get_text(0)
-			if childName:
-				currentChildren[childName] = child
-			child = child.get_next()
-
-		# Add new entries that don't exist in the tree yet
-		for entry in actualEntries:
-			if not entry in currentChildren:
-				var entryPath = path.path_join(entry)
-				if DirAccess.dir_exists_absolute(entryPath):
-					# It's a directory - add it
-					var dirItem = %FileTree.create_item(item)
-					if dirItem:
-						dirItem.set_text(0, entry)
-						dirItem.set_metadata(0, entryPath)
-						dirItem.set_icon(0, GetFolderIcon())
-						dirItem.set_collapsed(true)
-						# Create a temporary child to show expand arrow
-						var tempChild = %FileTree.create_item(dirItem)
-						if tempChild:
-							tempChild.set_text(0, "")
-							tempChild.set_metadata(0, null)
-				else:
-					# It's a file - add it
-					var fileItem = %FileTree.create_item(item)
-					if fileItem:
-						fileItem.set_text(0, entry)
-						fileItem.set_metadata(0, entryPath)
-						fileItem.set_icon(0, GetIconFromFilePath(entryPath))
-
-	# Recursively refresh child folders that are expanded
-	child = item.get_first_child()
+	# Recursively process expanded child directories
+	var child = item.get_first_child()
 	while child:
 		var childPath = child.get_metadata(0)
 		if childPath and DirAccess.dir_exists_absolute(childPath):
-			# Check if it has real children
-			var hasRealChildren = false
-			if child.get_child_count() > 1:
-				hasRealChildren = true
-			elif child.get_child_count() == 1:
-				var firstChild = child.get_first_child()
-				hasRealChildren = firstChild.get_metadata(0) != null
-
-			if not child.is_collapsed() and hasRealChildren:
+			if not child.is_collapsed() and _HasRealChildren(child):
 				await _RefreshExpandedFoldersRecursive(child)
 		child = child.get_next()
 
@@ -1470,14 +1659,14 @@ func HasContent(path: String) -> bool:
 	var dir = DirAccess.open(path)
 	if dir == null:
 		return false
-	
+
 	dir.list_dir_begin()
 	var nextFileName = dir.get_next()
-	
+
 	while nextFileName != "":
 		if dir.current_is_dir():
 			if not nextFileName.begins_with(".") and nextFileName != "System Volume Information":
-				var subPath = path + nextFileName + "/"
+				var subPath = path.path_join(nextFileName) + "/"
 				# If filtering is active, check if subdirectory has filtered content
 				if _isTreeViewFiltered and not %FlatListToggleButton.button_pressed:
 					if HasFilteredContent(subPath):
@@ -1492,7 +1681,7 @@ func HasContent(path: String) -> bool:
 				dir.list_dir_end()
 				return true
 		nextFileName = dir.get_next()
-	
+
 	dir.list_dir_end()
 	return false
 
@@ -1536,19 +1725,19 @@ func HasZipFilteredContent(zipPath: String, basePath: String) -> bool:
 	zip.close()
 	return false
 
-# Check if a directory has content matching current filters"""
+# Check if a directory has content matching current filters
 func HasFilteredContent(path: String) -> bool:
 	var dir = DirAccess.open(path)
 	if dir == null:
 		return false
-	
+
 	dir.list_dir_begin()
 	var nextFileName = dir.get_next()
-	
+
 	while nextFileName != "":
 		if dir.current_is_dir():
 			if not nextFileName.begins_with(".") and nextFileName != "System Volume Information":
-				var subPath = path + nextFileName + "/"
+				var subPath = path.path_join(nextFileName) + "/"
 				if HasFilteredContent(subPath):
 					dir.list_dir_end()
 					return true
@@ -1559,7 +1748,7 @@ func HasFilteredContent(path: String) -> bool:
 				dir.list_dir_end()
 				return true
 		nextFileName = dir.get_next()
-	
+
 	dir.list_dir_end()
 	return false
 
@@ -1807,6 +1996,9 @@ func _on_filter_by_audio_toggle_button_pressed() -> void:
 		ToggleFilter("audio", true)
 	else:
 		ToggleFilter("audio", false)
+
+func _on_add_favorite_button_pressed() -> void:
+	AddToFavorites()
 
 # Check if audio filter is currently active
 func IsAudioFilterActive() -> bool:

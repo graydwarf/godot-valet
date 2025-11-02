@@ -94,16 +94,8 @@ func LoadAudioStream(path: String) -> AudioStream:
 			stream.data = data
 			return stream
 		"ogg":
-			# OGG Vorbis loader (try load_from_file if it exists)
-			var stream = AudioStreamOggVorbis.new()
-			# Try to use load_from_file if available
-			if stream.has_method("load_from_file"):
-				return stream.load_from_file(path)
-			else:
-				# Fallback: try using packet_sequence
-				print("OGG file loading method not found, trying alternative approach")
-				# This may not work - OGG is complex
-				return null
+			# OGG Vorbis loader - load_from_file is a static method
+			return AudioStreamOggVorbis.load_from_file(path)
 		_:
 			return null
 
@@ -156,7 +148,7 @@ func _on_pitch_changed(value: float):
 	UpdatePitchLabel()
 
 func _on_mute_button_pressed():
-	_audioPlayer.volume_db = -80 if _audioPlayer.volume_db > -80 else linear_to_db(_volumeSlider.value / 100.0)
+	_audioPlayer.volume_db = -80.0 if _audioPlayer.volume_db > -80 else linear_to_db(_volumeSlider.value / 100.0)
 	_muteButton.text = "🔇" if _audioPlayer.volume_db <= -80 else "🔊"
 
 func _on_license_button_pressed():

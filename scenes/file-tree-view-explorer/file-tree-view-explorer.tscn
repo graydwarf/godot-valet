@@ -144,6 +144,20 @@ flat = true
 icon_alignment = 1
 expand_icon = true
 
+[node name="AddFavoriteButton" type="Button" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+tooltip_text = "Add to Favorites"
+text = "⭐"
+flat = true
+
+[node name="FavoritesBar" type="HBoxContainer" parent="VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 4
+
 [node name="Control" type="Control" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -198,6 +212,9 @@ stretch_mode = 2
 [node name="ContextMenu" type="PopupMenu" parent="."]
 unique_name_in_owner = true
 
+[node name="FavoriteContextMenu" type="PopupMenu" parent="."]
+unique_name_in_owner = true
+
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/FlatListToggleButton" to="." method="_on_flat_list_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/FilterByImagesToggleButton" to="." method="_on_filter_by_images_toggle_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/FilterByAudioToggleButton" to="." method="_on_filter_by_audio_toggle_button_pressed"]
@@ -208,6 +225,7 @@ unique_name_in_owner = true
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/DownButton" to="." method="_on_down_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/OpenFileExplorerButton" to="." method="_on_open_file_explorer_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/NavigateToProjectButton" to="." method="_on_navigate_to_project_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/AddFavoriteButton" to="." method="_on_add_favorite_button_pressed"]
 [connection signal="item_mouse_selected" from="VBoxContainer/Control/FileTree" to="." method="_on_file_tree_item_mouse_selected"]
 [connection signal="item_selected" from="VBoxContainer/Control/FileTree" to="." method="_on_file_tree_item_selected"]
 [connection signal="multi_selected" from="VBoxContainer/Control/FileTree" to="." method="_on_file_tree_multi_selected"]
