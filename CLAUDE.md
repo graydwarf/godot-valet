@@ -1,0 +1,1 @@
+- don't launch godot-valet for any other reason besides running unit-tests or checking for build errors. Don't kill any godot tasks we didn't explicitly start.

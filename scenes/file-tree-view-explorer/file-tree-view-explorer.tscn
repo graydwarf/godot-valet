@@ -1,6 +1,5 @@
-[gd_scene load_steps=26 format=3 uid="uid://6ygqegta6dek"]
+[gd_scene load_steps=22 format=3 uid="uid://6ygqegta6dek"]
 
-[ext_resource type="Texture2D" uid="uid://wop6qk8dkl40" path="res://icon.svg" id="1_godot"]
 [ext_resource type="Script" uid="uid://gdqxa44bc62r" path="res://scenes/file-tree-view-explorer/file-tree-view-explorer.gd" id="1_wruwl"]
 [ext_resource type="Texture2D" uid="uid://b1yqdoygqhmbs" path="res://scenes/file-tree-view-explorer/assets/flat-list.png" id="2_3ghy6"]
 [ext_resource type="Texture2D" uid="uid://de417oegex7sh" path="res://scenes/file-tree-view-explorer/assets/nav-back.png" id="2_jnomi"]
@@ -8,14 +7,11 @@
 [ext_resource type="Texture2D" uid="uid://dw5pxmkfiwtnr" path="res://scenes/file-tree-view-explorer/assets/nav-down.png" id="2_uu2th"]
 [ext_resource type="Texture2D" uid="uid://biviu8du3swnu" path="res://scenes/file-tree-view-explorer/assets/nav-down-pressed.png" id="3_aj3or"]
 [ext_resource type="Texture2D" uid="uid://bn7d73gs3g8vd" path="res://scenes/file-tree-view-explorer/assets/flat-list-pressed.png" id="3_nqtcg"]
-[ext_resource type="Texture2D" uid="uid://c173ukr4e6ht8" path="res://scenes/file-tree-view-explorer/assets/image-file-filter.png" id="3_objvc"]
 [ext_resource type="Texture2D" uid="uid://o0fp8ke64xjm" path="res://scenes/file-tree-view-explorer/assets/nav-back-pressed.png" id="3_uayya"]
 [ext_resource type="Texture2D" uid="uid://bgbs3mo6q8spw" path="res://scenes/file-tree-view-explorer/assets/flat-list-hovered.png" id="4_alyso"]
 [ext_resource type="Texture2D" uid="uid://becaohf3t25tj" path="res://scenes/file-tree-view-explorer/assets/nav-next.png" id="4_cc6nv"]
 [ext_resource type="Texture2D" uid="uid://kf8a46fs2qak" path="res://scenes/file-tree-view-explorer/assets/nav-back-hovered.png" id="4_s6k0g"]
-[ext_resource type="Texture2D" uid="uid://b53m50kxm2yfp" path="res://scenes/file-tree-view-explorer/assets/image-file-filter-enabled.png" id="4_sebkd"]
 [ext_resource type="Texture2D" uid="uid://sa2jrvnhpc60" path="res://scenes/file-tree-view-explorer/assets/nav-next-pressed.png" id="5_s6k0g"]
-[ext_resource type="Texture2D" uid="uid://c7flvnqems6p7" path="res://scenes/file-tree-view-explorer/assets/image-file-filter-hovered.png" id="5_vvuox"]
 [ext_resource type="Texture2D" uid="uid://bldq4nx8pgj2j" path="res://scenes/file-tree-view-explorer/assets/nav-up.png" id="6_3ghy6"]
 [ext_resource type="Texture2D" uid="uid://3mr63347mc0" path="res://scenes/file-tree-view-explorer/assets/nav-next-hovered.png" id="7_3ghy6"]
 [ext_resource type="Texture2D" uid="uid://f6kx83ytrqw2" path="res://scenes/file-tree-view-explorer/assets/nav-up-pressed.png" id="7_objvc"]
@@ -66,23 +62,12 @@ texture_normal = ExtResource("2_3ghy6")
 texture_pressed = ExtResource("3_nqtcg")
 texture_hover = ExtResource("4_alyso")
 
-[node name="FilterByImagesToggleButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
+[node name="AddFavoriteButton" type="Button" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
-tooltip_text = "Toggle image filter"
-toggle_mode = true
-texture_normal = ExtResource("3_objvc")
-texture_pressed = ExtResource("4_sebkd")
-texture_hover = ExtResource("5_vvuox")
-
-[node name="FilterByAudioToggleButton" type="Button" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(32, 32)
-layout_mode = 2
-tooltip_text = "Toggle audio filter"
-toggle_mode = true
-text = "🔊"
+tooltip_text = "Add to Favorites"
+text = "⭐"
 flat = true
 
 [node name="RefreshButton" type="Button" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
@@ -92,6 +77,36 @@ layout_mode = 2
 tooltip_text = "Refresh current view"
 text = "🔄"
 flat = true
+
+[node name="OpenFileExplorerButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
+layout_mode = 2
+tooltip_text = "Open In Explorer"
+texture_normal = ExtResource("2_k063r")
+
+[node name="ActionsSeparator" type="VSeparator" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="FilterLabel" type="Label" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Filter:"
+vertical_alignment = 1
+
+[node name="FilterOptionButton" type="OptionButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+tooltip_text = "Filter files by type"
+selected = 0
+item_count = 3
+popup/item_0/text = "All"
+popup/item_0/id = 0
+popup/item_1/text = "Images"
+popup/item_1/id = 1
+popup/item_2/text = "Sounds"
+popup/item_2/id = 2
+
+[node name="FiltersSeparator" type="VSeparator" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
+layout_mode = 2
 
 [node name="PreviousButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 unique_name_in_owner = true
@@ -129,34 +144,29 @@ texture_normal = ExtResource("2_uu2th")
 texture_pressed = ExtResource("3_aj3or")
 texture_hover = ExtResource("13_objvc")
 
-[node name="OpenFileExplorerButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
-layout_mode = 2
-tooltip_text = "Open In Explorer"
-texture_normal = ExtResource("2_k063r")
-
-[node name="NavigateToProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(32, 32)
-layout_mode = 2
-tooltip_text = "Navigate To Project In Treeview"
-icon = ExtResource("1_godot")
-flat = true
-icon_alignment = 1
-expand_icon = true
-
-[node name="AddFavoriteButton" type="Button" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(32, 32)
-layout_mode = 2
-tooltip_text = "Add to Favorites"
-text = "⭐"
-flat = true
-
 [node name="FavoritesBar" type="HBoxContainer" parent="VBoxContainer"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 4
+
+[node name="FlatListPathContainer" type="HBoxContainer" parent="VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Label" type="Label" parent="VBoxContainer/FlatListPathContainer"]
+layout_mode = 2
+text = "Flat List:"
+vertical_alignment = 1
+
+[node name="PathLineEdit" type="LineEdit" parent="VBoxContainer/FlatListPathContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+editable = false
+flat = true
 
 [node name="Control" type="Control" parent="VBoxContainer"]
 layout_mode = 2
@@ -216,16 +226,14 @@ unique_name_in_owner = true
 unique_name_in_owner = true
 
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/FlatListToggleButton" to="." method="_on_flat_list_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/FilterByImagesToggleButton" to="." method="_on_filter_by_images_toggle_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/FilterByAudioToggleButton" to="." method="_on_filter_by_audio_toggle_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/AddFavoriteButton" to="." method="_on_add_favorite_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/RefreshButton" to="." method="_on_refresh_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/OpenFileExplorerButton" to="." method="_on_open_file_explorer_button_pressed"]
+[connection signal="item_selected" from="VBoxContainer/HBoxContainer/HBoxContainer/FilterOptionButton" to="." method="_on_filter_option_selected"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/PreviousButton" to="." method="_on_previous_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/NextButton" to="." method="_on_next_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/UpButton" to="." method="_on_up_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/DownButton" to="." method="_on_down_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/OpenFileExplorerButton" to="." method="_on_open_file_explorer_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/NavigateToProjectButton" to="." method="_on_navigate_to_project_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/AddFavoriteButton" to="." method="_on_add_favorite_button_pressed"]
 [connection signal="item_mouse_selected" from="VBoxContainer/Control/FileTree" to="." method="_on_file_tree_item_mouse_selected"]
 [connection signal="item_selected" from="VBoxContainer/Control/FileTree" to="." method="_on_file_tree_item_selected"]
 [connection signal="multi_selected" from="VBoxContainer/Control/FileTree" to="." method="_on_file_tree_multi_selected"]
