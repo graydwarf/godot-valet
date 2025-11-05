@@ -1,10 +1,14 @@
-[gd_scene load_steps=8 format=3 uid="uid://c1asrwu11e74m"]
+[gd_scene load_steps=12 format=3 uid="uid://c1asrwu11e74m"]
 
 [ext_resource type="Script" uid="uid://bnx8iu6s5scut" path="res://scenes/file-explorer/file-explorer.gd" id="1_x3te3"]
 [ext_resource type="Texture2D" uid="uid://wop6qk8dkl40" path="res://icon.svg" id="2_jbjko"]
 [ext_resource type="PackedScene" uid="uid://6ygqegta6dek" path="res://scenes/file-tree-view-explorer/file-tree-view-explorer.tscn" id="2_p38i7"]
+[ext_resource type="Texture2D" uid="uid://clipboard_plus_right" path="res://scenes/file-explorer/assets/fluent-icons/clipboard-plus-right.svg" id="3_copy_right"]
+[ext_resource type="Texture2D" uid="uid://clipboard_plus_left" path="res://scenes/file-explorer/assets/fluent-icons/clipboard-plus-left.svg" id="4_copy_left"]
 [ext_resource type="PackedScene" uid="uid://r8y55mlah1wy" path="res://scenes/file-previewer/file-previewer.tscn" id="3_ssiko"]
 [ext_resource type="PackedScene" uid="uid://b2pnoerm0fxtd" path="res://scenes/project-tree-view/project-tree-view.tscn" id="4_m5vku"]
+[ext_resource type="Texture2D" uid="uid://clipboard_arrow_right" path="res://scenes/file-explorer/assets/fluent-icons/clipboard-arrow-right.svg" id="5_move_right"]
+[ext_resource type="Texture2D" uid="uid://clipboard_arrow_left" path="res://scenes/file-explorer/assets/fluent-icons/clipboard-arrow-left.svg" id="6_move_left"]
 [ext_resource type="PackedScene" uid="uid://c60qhhvq0k5yc" path="res://scenes/sound-player-grid/sound-player-grid.tscn" id="5_m5vku"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_jbjko"]
@@ -158,69 +162,53 @@ expand_icon = true
 custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
 
-[node name="CopyRightButton" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane"]
+[node name="CopyRightButton" type="TextureButton" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane"]
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(64, 64)
+custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 tooltip_text = "Copy selected files from explorer to project"
-theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
-theme_override_colors/font_pressed_color = Color(0.3, 0.8, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 32
-text = "→"
-flat = true
-
-[node name="CopyLeftButton" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane"]
+texture_normal = ExtResource("3_copy_right")
+ignore_texture_size = true
+stretch_mode = 5
+[node name="CopyLeftButton" type="TextureButton" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane"]
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(64, 64)
+custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 tooltip_text = "Copy selected files from project to file explorer"
-theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
-theme_override_colors/font_pressed_color = Color(0.3, 0.8, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 32
-text = "←"
-flat = true
-
+texture_normal = ExtResource("4_copy_left")
+ignore_texture_size = true
+stretch_mode = 5
 [node name="Separator" type="HSeparator" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane"]
 layout_mode = 2
 
-[node name="MoveRightButton" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane"]
+[node name="MoveRightButton" type="TextureButton" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane"]
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(64, 64)
+custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 tooltip_text = "Move selected files from explorer to project"
-theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
-theme_override_colors/font_pressed_color = Color(0.3, 0.8, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 32
-text = "⮩"
-flat = true
-
-[node name="MoveLeftButton" type="Button" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane"]
+texture_normal = ExtResource("5_move_right")
+ignore_texture_size = true
+stretch_mode = 5
+[node name="MoveLeftButton" type="TextureButton" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer/LeftSection/MiddlePane"]
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(64, 64)
+custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 tooltip_text = "Move selected files from project to file explorer"
-theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
-theme_override_colors/font_pressed_color = Color(0.3, 0.8, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 32
-text = "⮨"
-flat = true
-
+texture_normal = ExtResource("6_move_left")
+ignore_texture_size = true
+stretch_mode = 5
 [node name="RightSection" type="Control" parent="VBoxContainer/MarginContainer2/VBoxContainer/HSplitContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
