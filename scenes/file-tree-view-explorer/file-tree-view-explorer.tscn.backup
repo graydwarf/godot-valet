@@ -1,15 +1,24 @@
-[gd_scene load_steps=13 format=3 uid="uid://6ygqegta6dek"]
+[gd_scene load_steps=22 format=3 uid="uid://6ygqegta6dek"]
 
 [ext_resource type="Script" uid="uid://gdqxa44bc62r" path="res://scenes/file-tree-view-explorer/file-tree-view-explorer.gd" id="1_wruwl"]
-[ext_resource type="Texture2D" uid="uid://bhmnb3bgeepka" path="res://scenes/file-tree-view-explorer/assets/fluent-icons/arrow-left.svg" id="2_jnomi"]
-[ext_resource type="Texture2D" uid="uid://7veyj56jla75" path="res://scenes/file-tree-view-explorer/assets/fluent-icons/folder.svg" id="2_k063r"]
-[ext_resource type="Texture2D" uid="uid://jhnkii5opjmn" path="res://scenes/file-tree-view-explorer/assets/fluent-icons/arrow-down-nav.svg" id="2_uu2th"]
-[ext_resource type="Texture2D" uid="uid://dfy30yy7yw4ya" path="res://scenes/file-tree-view-explorer/assets/fluent-icons/arrow-right.svg" id="4_cc6nv"]
-[ext_resource type="Texture2D" uid="uid://bxdw5ch0vklxt" path="res://scenes/file-tree-view-explorer/assets/fluent-icons/arrow-up-nav.svg" id="6_3ghy6"]
-[ext_resource type="Texture2D" uid="uid://chrws4a2tos4i" path="res://scenes/file-tree-view-explorer/assets/fluent-icons/text-bullet-list-ltr.svg" id="7_flat"]
-[ext_resource type="Texture2D" uid="uid://tl8uuuxokagh" path="res://scenes/file-tree-view-explorer/assets/fluent-icons/text-bullet-list-tree.svg" id="7_tree"]
-[ext_resource type="Texture2D" uid="uid://3jhs538r216h" path="res://scenes/file-tree-view-explorer/assets/fluent-icons/star.svg" id="8_star"]
-[ext_resource type="Texture2D" uid="uid://cbv31u28fjkj4" path="res://scenes/file-tree-view-explorer/assets/fluent-icons/refresh.svg" id="9_refresh"]
+[ext_resource type="Texture2D" uid="uid://b1yqdoygqhmbs" path="res://scenes/file-tree-view-explorer/assets/flat-list.png" id="2_3ghy6"]
+[ext_resource type="Texture2D" uid="uid://de417oegex7sh" path="res://scenes/file-tree-view-explorer/assets/nav-back.png" id="2_jnomi"]
+[ext_resource type="Texture2D" uid="uid://bejkpjpt86y1g" path="res://scenes/file-tree-view-explorer/assets/open-folder.png" id="2_k063r"]
+[ext_resource type="Texture2D" uid="uid://dw5pxmkfiwtnr" path="res://scenes/file-tree-view-explorer/assets/nav-down.png" id="2_uu2th"]
+[ext_resource type="Texture2D" uid="uid://biviu8du3swnu" path="res://scenes/file-tree-view-explorer/assets/nav-down-pressed.png" id="3_aj3or"]
+[ext_resource type="Texture2D" uid="uid://bn7d73gs3g8vd" path="res://scenes/file-tree-view-explorer/assets/flat-list-pressed.png" id="3_nqtcg"]
+[ext_resource type="Texture2D" uid="uid://o0fp8ke64xjm" path="res://scenes/file-tree-view-explorer/assets/nav-back-pressed.png" id="3_uayya"]
+[ext_resource type="Texture2D" uid="uid://bgbs3mo6q8spw" path="res://scenes/file-tree-view-explorer/assets/flat-list-hovered.png" id="4_alyso"]
+[ext_resource type="Texture2D" uid="uid://becaohf3t25tj" path="res://scenes/file-tree-view-explorer/assets/nav-next.png" id="4_cc6nv"]
+[ext_resource type="Texture2D" uid="uid://kf8a46fs2qak" path="res://scenes/file-tree-view-explorer/assets/nav-back-hovered.png" id="4_s6k0g"]
+[ext_resource type="Texture2D" uid="uid://sa2jrvnhpc60" path="res://scenes/file-tree-view-explorer/assets/nav-next-pressed.png" id="5_s6k0g"]
+[ext_resource type="Texture2D" uid="uid://bldq4nx8pgj2j" path="res://scenes/file-tree-view-explorer/assets/nav-up.png" id="6_3ghy6"]
+[ext_resource type="Texture2D" uid="uid://3mr63347mc0" path="res://scenes/file-tree-view-explorer/assets/nav-next-hovered.png" id="7_3ghy6"]
+[ext_resource type="Texture2D" uid="uid://f6kx83ytrqw2" path="res://scenes/file-tree-view-explorer/assets/nav-up-pressed.png" id="7_objvc"]
+[ext_resource type="Texture2D" uid="uid://dc4p7y3ap1nt6" path="res://scenes/file-tree-view-explorer/assets/nav-up-hovered.png" id="8_r6hur"]
+[ext_resource type="Texture2D" uid="uid://htiowt17a314" path="res://scenes/file-tree-view-explorer/assets/nav-back-disabled.png" id="11_s873p"]
+[ext_resource type="Texture2D" uid="uid://bs3p5uv270si5" path="res://scenes/file-tree-view-explorer/assets/nav-down-hovered.png" id="13_objvc"]
+[ext_resource type="Texture2D" uid="uid://bk643sv2v87st" path="res://scenes/file-tree-view-explorer/assets/nav-next-disabled.png" id="15_mukj0"]
 [ext_resource type="Texture2D" uid="uid://dccn25v88b82i" path="res://scenes/file-tree-view-explorer/assets/busy.png" id="21_alyso"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_nqtcg"]
@@ -47,38 +56,32 @@ alignment = 2
 unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
-tooltip_text = "Toggle between flat list and tree view"
+tooltip_text = "Display selected folder as flat list"
 toggle_mode = true
-texture_normal = ExtResource("7_tree")
-texture_pressed = ExtResource("7_flat")
-ignore_texture_size = true
-stretch_mode = 5
+texture_normal = ExtResource("2_3ghy6")
+texture_pressed = ExtResource("3_nqtcg")
+texture_hover = ExtResource("4_alyso")
 
-[node name="AddFavoriteButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
+[node name="AddFavoriteButton" type="Button" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 tooltip_text = "Add to Favorites"
-texture_normal = ExtResource("8_star")
-ignore_texture_size = true
-stretch_mode = 5
+text = "⭐"
+flat = true
 
-[node name="RefreshButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
+[node name="RefreshButton" type="Button" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 tooltip_text = "Refresh current view"
-texture_normal = ExtResource("9_refresh")
-ignore_texture_size = true
-stretch_mode = 5
+text = "🔄"
+flat = true
 
 [node name="OpenFileExplorerButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
-custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 tooltip_text = "Open In Explorer"
 texture_normal = ExtResource("2_k063r")
-ignore_texture_size = true
-stretch_mode = 5
 
 [node name="ActionsSeparator" type="VSeparator" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 layout_mode = 2
@@ -111,10 +114,11 @@ layout_mode = 2
 unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
-tooltip_text = "Previous File"
+tooltip_text = "Prev File"
 texture_normal = ExtResource("2_jnomi")
-ignore_texture_size = true
-stretch_mode = 5
+texture_pressed = ExtResource("3_uayya")
+texture_hover = ExtResource("4_s6k0g")
+texture_disabled = ExtResource("11_s873p")
 
 [node name="NextButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 unique_name_in_owner = true
@@ -122,24 +126,25 @@ custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 tooltip_text = "Next File"
 texture_normal = ExtResource("4_cc6nv")
-ignore_texture_size = true
-stretch_mode = 5
+texture_pressed = ExtResource("5_s6k0g")
+texture_hover = ExtResource("7_3ghy6")
+texture_disabled = ExtResource("15_mukj0")
 
 [node name="UpButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
-tooltip_text = "Navigate Up Tree"
+tooltip_text = "Nav Up Tree"
 texture_normal = ExtResource("6_3ghy6")
-ignore_texture_size = true
-stretch_mode = 5
+texture_pressed = ExtResource("7_objvc")
+texture_hover = ExtResource("8_r6hur")
 
 [node name="DownButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
-tooltip_text = "Navigate Down Tree"
+tooltip_text = "Nav Down Tree"
 texture_normal = ExtResource("2_uu2th")
-ignore_texture_size = true
-stretch_mode = 5
+texture_pressed = ExtResource("3_aj3or")
+texture_hover = ExtResource("13_objvc")
 
 [node name="FavoritesBar" type="HBoxContainer" parent="VBoxContainer"]
 unique_name_in_owner = true

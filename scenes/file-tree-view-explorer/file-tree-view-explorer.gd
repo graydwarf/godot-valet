@@ -25,8 +25,8 @@ var _flatListBasePath: String = ""
 var _isProjectViewActive: bool = false
 var _preFlatListExpandedPaths: Array[String] = []
 var _preFlatListSelectedPath: String = ""
-var _navigateToProjectButton: Button = null  # Reference to the Navigate to Project button
-var _favoriteButtons: Array[Button] = []  # References to user favorite buttons (slots 2-9)
+var _navigateToProjectButton: TextureButton = null  # Reference to the Navigate to Project button
+var _favoriteButtons: Array[TextureButton] = []  # References to user favorite buttons (slots 2-9)
 
 # Supported extensions used to filter files
 var _zipExtensions := [".zip", ".rar", ".7z", ".tar", ".gz"]
@@ -93,7 +93,7 @@ func _navigate_to_favorite_by_number(number: int):
 			NavigateToFavorite(_favorites[favoriteIndex])
 
 # Flash a button to provide visual feedback
-func _flash_button(button: Button):
+func _flash_button(button: TextureButton):
 	if not button:
 		return
 
@@ -299,17 +299,16 @@ func UpdateFavoritesBar():
 	_favoriteButtons.clear()
 
 	# Always add Navigate to Project button as first favorite (slot 1)
-	_navigateToProjectButton = Button.new()
-	_navigateToProjectButton.custom_minimum_size = Vector2(32, 32)
-	_navigateToProjectButton.tooltip_text = "Navigate To Project In Treeview"
-	_navigateToProjectButton.flat = true
-	_navigateToProjectButton.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_navigateToProjectButton = TextureButton.new()
+	_navigateToProjectButton.custom_minimum_size = Vector2(24, 24)
+	_navigateToProjectButton.tooltip_text = "Navigate To Project In Treeview (Shortcut: 1)"
+	_navigateToProjectButton.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+	_navigateToProjectButton.ignore_texture_size = true
 
-	# Load Godot icon
+	# Load Godot icon (using TextureButton for consistent sizing with numbered icons)
 	var godotIcon = load("res://icon.svg") as Texture2D
 	if godotIcon:
-		_navigateToProjectButton.icon = godotIcon
-		_navigateToProjectButton.expand_icon = true
+		_navigateToProjectButton.texture_normal = godotIcon
 
 	# Left click - navigate to project
 	_navigateToProjectButton.pressed.connect(_on_navigate_to_project_button_pressed)
@@ -318,10 +317,20 @@ func UpdateFavoritesBar():
 
 	# Create buttons for each user favorite (starting at slot 2)
 	for i in range(_favorites.size()):
-		var favoriteButton = Button.new()
-		favoriteButton.text = str(i + 2)  # Start numbering at 2
-		favoriteButton.custom_minimum_size = Vector2(32, 32)
-		favoriteButton.tooltip_text = _favorites[i].get_file() if _favorites[i].get_file() != "" else _favorites[i]
+		var favoriteButton = TextureButton.new()
+		var slotNumber = i + 2  # Start numbering at 2
+
+		# Load numbered circle icon
+		var iconPath = "res://scenes/file-tree-view-explorer/assets/fluent-icons/number-" + str(slotNumber) + ".svg"
+		var numberIcon = load(iconPath) as Texture2D
+		if numberIcon:
+			favoriteButton.texture_normal = numberIcon
+
+		favoriteButton.custom_minimum_size = Vector2(24, 24)
+		favoriteButton.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+		favoriteButton.ignore_texture_size = true
+		var fileName = _favorites[i].get_file() if _favorites[i].get_file() != "" else _favorites[i]
+		favoriteButton.tooltip_text = fileName + " (Shortcut: " + str(slotNumber) + ")"
 
 		# Left click - navigate
 		favoriteButton.pressed.connect(func(): NavigateToFavorite(_favorites[i]))
