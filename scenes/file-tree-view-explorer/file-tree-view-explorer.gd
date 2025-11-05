@@ -38,6 +38,7 @@ var _videoExtensions := [".ogv", ".webm", ".mp4", ".mov", ".avi", ".mkv", ".wmv"
 var _3dModelExtensions := [".dae", ".gltf", ".glb", ".fbx", ".blend", ".obj"]
 var _fontExtensions := [".ttf", ".otf", ".woff", ".woff2"]
 var _textExtensions := [".txt", ".json", ".cfg", ".ini", ".csv", ".md", ".xml"]
+var _executableExtensions := [".exe", ".dll", ".so", ".dylib", ".bin", ".msi", ".app"]
 
 # Favorites system
 var _favorites: Array[String] = []
@@ -103,10 +104,60 @@ func InitSignals():
 	%FileTree.item_collapsed.connect(_on_item_collapsed)
 
 func SetupContextMenu():
-	# Add menu items
+	# Add menu items (labels will be updated dynamically based on file type)
 	%ContextMenu.add_item("Edit", 0)
 	%ContextMenu.add_item("Open in File Explorer", 1)
 	%ContextMenu.add_item("Copy Path", 2)
+
+# Check if a file is likely binary by reading first chunk
+func IsBinaryFile(filePath: String) -> bool:
+	# Don't try to read files inside zips
+	if "::" in filePath:
+		var extension = filePath.split("::")[1].get_extension().to_lower()
+		return IsExtensionBinary(extension)
+
+	# Check if it's a directory
+	if not FileAccess.file_exists(filePath):
+		return false
+
+	# Check extension first for common binary types
+	var extension = filePath.get_extension().to_lower()
+	if IsExtensionBinary(extension):
+		return true
+
+	# Read first chunk to detect binary content
+	var file = FileAccess.open(filePath, FileAccess.READ)
+	if not file:
+		return false
+
+	var sampleSize = min(512, file.get_length())
+	var data = file.get_buffer(sampleSize)
+	file.close()
+
+	# Check for null bytes or high percentage of non-printable chars
+	var nonPrintableCount = 0
+	for i in range(data.size()):
+		var byte = data[i]
+		if byte == 0:
+			return true
+		if byte < 32 and byte != 9 and byte != 10 and byte != 13:
+			nonPrintableCount += 1
+
+	return (float(nonPrintableCount) / float(data.size())) > 0.3
+
+# Check if extension is typically binary
+func IsExtensionBinary(extension: String) -> bool:
+	var binaryExtensions = [
+		"exe", "dll", "so", "dylib", "bin", "dat",
+		"zip", "rar", "7z", "tar", "gz", "bz2",
+		"png", "jpg", "jpeg", "gif", "bmp", "ico", "webp", "tga", "exr", "hdr",
+		"mp3", "wav", "ogg", "aac", "flac", "m4a",
+		"mp4", "avi", "mkv", "mov", "webm", "flv", "wmv",
+		"pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
+		"ttf", "otf", "woff", "woff2",
+		"blend", "fbx", "obj", "gltf", "glb", "dae"
+	]
+	return extension in binaryExtensions
 
 # Save favorites, filter state, and tree view state to config file
 func SaveSettings():
@@ -169,6 +220,8 @@ func ApplySavedFilterState():
 				selectedIndex = 1  # Images
 			elif "audio" in _activeFilters:
 				selectedIndex = 2  # Sounds
+			elif "text" in _activeFilters:
+				selectedIndex = 3  # Text
 
 			%FilterOptionButton.selected = selectedIndex
 
@@ -367,11 +420,15 @@ func SelectFirstNode():
 		
 func IsFileSupported(fileName: String) -> bool:
 	var extension = "." + fileName.get_extension().to_lower()
-	
+
 	# If tree view filtering is active, only show filtered extensions
 	if _isTreeViewFiltered and not %FlatListToggleButton.button_pressed:
 		return extension in _treeViewFilters
-	
+
+	# If no filters are active, show ALL files (including unsupported extensions)
+	if _activeFilters.is_empty():
+		return true
+
 	# Otherwise use the full supported list
 	return extension in GetAllSupportedExtensions()
 
@@ -386,11 +443,12 @@ func GetAllSupportedExtensions():
 	allExtensions.append_array(_3dModelExtensions)
 	allExtensions.append_array(_fontExtensions)
 	allExtensions.append_array(_textExtensions)
+	allExtensions.append_array(_executableExtensions)
 	return allExtensions
 
 func GetOpenFolderIcon() -> Texture2D:
-	return load("res://scenes/file-tree-view-explorer/assets/open-folder.png") as Texture2D
-		
+	return load("res://scenes/file-tree-view-explorer/assets/fluent-icons/folder-open.svg") as Texture2D
+
 func SetupTree():
 	_rootItem = %FileTree.create_item()
 
@@ -407,7 +465,7 @@ func PopulateDrivesInternal():
 		var driveItem = %FileTree.create_item(_rootItem)
 		driveItem.set_text(0, drive)
 		driveItem.set_metadata(0, drive)
-		driveItem.set_icon(0, GetDriveIcon())
+		SetTreeItemIcon(driveItem, 0, GetDriveIcon())
 		PopulateDirectory(driveItem)
 	
 	# Select the first drive
@@ -425,44 +483,54 @@ func GetAvailableDrives() -> Array[String]:
 	return drives
 
 func GetDriveIcon() -> Texture2D:
-	return load("res://scenes/file-tree-view-explorer/assets/drive.png") as Texture2D
+	return load("res://scenes/file-tree-view-explorer/assets/fluent-icons/drive.svg") as Texture2D
 
 func GetFolderIcon() -> Texture2D:
-	return load("res://scenes/file-tree-view-explorer/assets/folder.png") as Texture2D
+	return load("res://scenes/file-tree-view-explorer/assets/fluent-icons/folder.svg") as Texture2D
 
 func GetFileIcon() -> Texture2D:
-	return load("res://scenes/file-tree-view-explorer/assets/file.png") as Texture2D
+	return load("res://scenes/file-tree-view-explorer/assets/fluent-icons/document.svg") as Texture2D
 
 func GetImageIcon() -> Texture2D:
-	return load("res://scenes/file-tree-view-explorer/assets/image-file.png") as Texture2D
+	return load("res://scenes/file-tree-view-explorer/assets/fluent-icons/image.svg") as Texture2D
 
 func GetZipIcon() -> Texture2D:
-	return load("res://scenes/file-tree-view-explorer/assets/zip.png") as Texture2D
-	
+	return load("res://scenes/file-tree-view-explorer/assets/fluent-icons/archive.svg") as Texture2D
+
 func GetScriptIcon() -> Texture2D:
-	return load("res://scenes/file-tree-view-explorer/assets/file.png") as Texture2D
+	return load("res://scenes/file-tree-view-explorer/assets/fluent-icons/code.svg") as Texture2D
 
 func GetAudioIcon() -> Texture2D:
-	return load("res://scenes/file-tree-view-explorer/assets/file.png") as Texture2D
-	
+	return load("res://scenes/file-tree-view-explorer/assets/fluent-icons/audio.svg") as Texture2D
+
 func GetSceneIcon() -> Texture2D:
-	return load("res://scenes/file-tree-view-explorer/assets/file.png") as Texture2D
-	
+	return load("res://scenes/file-tree-view-explorer/assets/fluent-icons/document.svg") as Texture2D
+
 func GetVideoIcon() -> Texture2D:
-	return load("res://scenes/file-tree-view-explorer/assets/file.png") as Texture2D
-	
+	return load("res://scenes/file-tree-view-explorer/assets/fluent-icons/video.svg") as Texture2D
+
 func Get3DModelIcon() -> Texture2D:
-	return load("res://scenes/file-tree-view-explorer/assets/file.png") as Texture2D
-	
+	return load("res://scenes/file-tree-view-explorer/assets/fluent-icons/3d-model.svg") as Texture2D
+
 func GetFontIcon() -> Texture2D:
-	return load("res://scenes/file-tree-view-explorer/assets/file.png") as Texture2D
+	return load("res://scenes/file-tree-view-explorer/assets/fluent-icons/font.svg") as Texture2D
 
 func GetTextIcon() -> Texture2D:
-	return load("res://scenes/file-tree-view-explorer/assets/file.png") as Texture2D
-		
+	return load("res://scenes/file-tree-view-explorer/assets/fluent-icons/document.svg") as Texture2D
+
+func GetExecutableIcon() -> Texture2D:
+	return load("res://scenes/file-tree-view-explorer/assets/fluent-icons/app.svg") as Texture2D
+
+# Helper function to set icon with light gray modulation for better visibility
+func SetTreeItemIcon(item: TreeItem, column: int, texture: Texture2D):
+	item.set_icon(column, texture)
+	item.set_icon_modulate(column, Color.WHITE)  # White for maximum contrast - test value
+
 func GetIconFromFilePath(filePath):
 	var extension = "." + filePath.get_extension().to_lower()
-	if extension in _imageExtensions:
+	if extension in _executableExtensions:
+		return GetExecutableIcon()
+	elif extension in _imageExtensions:
 		return GetImageIcon()
 	elif extension in _zipExtensions:
 		return GetZipIcon()
@@ -471,7 +539,7 @@ func GetIconFromFilePath(filePath):
 	elif extension in _audioExtensions:
 		return GetAudioIcon()
 	elif extension in _sceneExtensions:
-		return GetSceneIcon()	
+		return GetSceneIcon()
 	elif extension in _videoExtensions:
 		return GetVideoIcon()
 	elif extension in _3dModelExtensions:
@@ -480,6 +548,9 @@ func GetIconFromFilePath(filePath):
 		return GetFontIcon()
 	elif extension in _textExtensions:
 		return GetTextIcon()
+	else:
+		# Unknown extension - use generic document icon
+		return GetFileIcon()
 	
 # Handle when an item is expanded
 func _on_item_collapsed(item: TreeItem):
@@ -496,9 +567,9 @@ func _on_item_collapsed(item: TreeItem):
 
 		if isDirectory:
 			if item.is_collapsed():
-				item.set_icon(0, GetFolderIcon())  # Closed folder
+				SetTreeItemIcon(item, 0, GetFolderIcon())  # Closed folder
 			else:
-				item.set_icon(0, GetOpenFolderIcon())  # Open folder
+				SetTreeItemIcon(item, 0, GetOpenFolderIcon())  # Open folder
 
 	# When an item is expanded (collapsed = false), check if we need to populate it
 	if not item.is_collapsed():
@@ -628,7 +699,7 @@ func PopulateZipDirectory(parentItem: TreeItem, zipPath: String, subPath: String
 				continue
 			dirItem.set_text(0, dirName)
 			dirItem.set_metadata(0, zipPath + "::" + internalPath)
-			dirItem.set_icon(0, GetFolderIcon())
+			SetTreeItemIcon(dirItem, 0, GetFolderIcon())
 			
 			# Check if this directory has contents for expandability
 			var hasContents = false
@@ -652,7 +723,7 @@ func PopulateZipDirectory(parentItem: TreeItem, zipPath: String, subPath: String
 		
 		var internalPath = searchPrefix + fileName
 		fileItem.set_metadata(0, zipPath + "::" + internalPath)
-		fileItem.set_icon(0, GetIconFromFilePath(internalPath))
+		SetTreeItemIcon(fileItem, 0, GetIconFromFilePath(internalPath))
 
 	zip.close()
 
@@ -1205,7 +1276,7 @@ func PopulateFlatList():
 		fileItem.set_metadata(0, filePath)
 		
 		# Use proper icon based on file type
-		fileItem.set_icon(0, GetIconFromFilePath(filePath))
+		SetTreeItemIcon(fileItem, 0, GetIconFromFilePath(filePath))
 		fileItem.set_tooltip_text(0, filePath)
 
 # Count all visible files in the tree
@@ -1415,7 +1486,7 @@ func ShowFilteredFlatListByType(extensions : Array):
 		var displayName = GetDisplayNameForFlatList(filePath)
 		fileItem.set_text(0, displayName)
 		fileItem.set_metadata(0, filePath)
-		fileItem.set_icon(0, GetIconFromFilePath(filePath))
+		SetTreeItemIcon(fileItem, 0, GetIconFromFilePath(filePath))
 		fileItem.set_tooltip_text(0, filePath)
 
 func ShowOnlyScripts():
@@ -1584,7 +1655,7 @@ func _CreateDirectoryTreeItem(parentItem: TreeItem, dirName: String, dirPath: St
 
 		dirItem.set_text(0, dirName)
 		dirItem.set_metadata(0, normalizedPath)
-		dirItem.set_icon(0, GetFolderIcon())
+		SetTreeItemIcon(dirItem, 0, GetFolderIcon())
 		dirItem.set_collapsed(true)
 		# Create temporary child to show expand arrow
 		var tempChild = %FileTree.create_item(dirItem)
@@ -1598,7 +1669,7 @@ func _CreateFileTreeItem(parentItem: TreeItem, fileName: String, filePath: Strin
 	if fileItem:
 		fileItem.set_text(0, fileName)
 		fileItem.set_metadata(0, filePath)
-		fileItem.set_icon(0, GetIconFromFilePath(filePath))
+		SetTreeItemIcon(fileItem, 0, GetIconFromFilePath(filePath))
 
 # Check if a tree item has real children (not just temporary placeholders)
 func _HasRealChildren(item: TreeItem) -> bool:
@@ -1678,10 +1749,10 @@ func ApplyActiveFilters():
 		_isTreeViewFiltered = false
 		RefreshCurrentView()
 		return
-	
+
 	# Combine all active filter extensions
 	var combinedExtensions := []
-	
+
 	for filterName in _activeFilters:
 		match filterName:
 			"images":
@@ -1694,6 +1765,9 @@ func ApplyActiveFilters():
 				combinedExtensions.append_array(_sceneExtensions)
 			"videos":
 				combinedExtensions.append_array(_videoExtensions)
+			"text":
+				combinedExtensions.append_array(_textExtensions)
+				combinedExtensions.append_array(_scriptExtensions)  # Include script files
 
 	if %FlatListToggleButton.button_pressed:
 		ShowFilteredFlatListByType(combinedExtensions)
@@ -1702,7 +1776,7 @@ func ApplyActiveFilters():
 		_treeViewFilters = combinedExtensions
 		_isTreeViewFiltered = true
 		RefreshTreeViewWithFilters()
-	
+
 	HideBusyIndicator()
 
 func RefreshTreeViewWithFilters():
@@ -1783,7 +1857,7 @@ func RestoreExpandedPaths(expandedPaths: Array[String]):
 			await get_tree().process_frame
 
 			# Update folder icon to open state
-			item.set_icon(0, GetOpenFolderIcon())
+			SetTreeItemIcon(item, 0, GetOpenFolderIcon())
 
 # Restore tree view state (expanded folders and selected item)
 func RestoreTreeViewState(config: ConfigFile):
@@ -2152,12 +2226,14 @@ func _on_filter_option_selected(index: int) -> void:
 	# Apply selected filter based on index
 	match index:
 		0:  # All
-			# No filters active
+			# No filters active - show everything
 			pass
 		1:  # Images
 			_activeFilters.append("images")
 		2:  # Sounds
 			_activeFilters.append("audio")
+		3:  # Text
+			_activeFilters.append("text")
 
 	UpdateSelectMode()
 	SaveSettings()
@@ -2285,6 +2361,23 @@ func _on_file_tree_item_mouse_selected(_mouse_position: Vector2, mouse_button_in
 		if selected:
 			var path = selected.get_metadata(0)
 			if path != null:
+				var isInsideZip = "::" in path
+				var isBinary = IsBinaryFile(path)
+
+				# Update context menu based on file type and location
+				if isBinary and isInsideZip:
+					# Binary files inside zips can't be opened directly - hide the option
+					%ContextMenu.set_item_disabled(0, true)
+					%ContextMenu.set_item_text(0, "Open (Not supported in archives)")
+				elif isBinary:
+					# Binary file not in zip - can be opened
+					%ContextMenu.set_item_disabled(0, false)
+					%ContextMenu.set_item_text(0, "Open")
+				else:
+					# Text file - can be edited (both in zip and regular)
+					%ContextMenu.set_item_disabled(0, false)
+					%ContextMenu.set_item_text(0, "Edit")
+
 				# Show context menu at mouse position
 				var global_pos = get_viewport().get_mouse_position()
 				%ContextMenu.position = Vector2i(global_pos)
@@ -2409,7 +2502,7 @@ func NavigateToPath(targetPath: String, resetTree: bool = false) -> bool:
 					print("NavigateToPath: Already populated: ", currentPath)
 
 				# Update folder icon to open state
-				child.set_icon(0, GetOpenFolderIcon())
+				SetTreeItemIcon(child, 0, GetOpenFolderIcon())
 				break
 
 			child = child.get_next()

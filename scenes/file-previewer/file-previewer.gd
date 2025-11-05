@@ -2,14 +2,11 @@ extends Control
 
 # - Generated with assistance from Claude 4 Sonnet (Anthropic) - December 2024
 
-# Supported file types
-var supportedTextFiles = ["gd", "cs", "txt", "json", "cfg", "ini", "md", "xml", "html", "css", "js", "gdshader"]
-var supportedImageFiles = ["png", "jpg", "jpeg", "bmp", "svg", "webp", "tga"]
-var supportedSceneFiles = ["tscn", "scn"]
-var supportedArchiveFiles = ["zip"]
+# Supported file types for special preview modes
+var supportedImageFiles = ["png", "jpg", "jpeg", "bmp", "svg", "webp", "tga", "exr", "hdr"]
+var supportedArchiveFiles = ["zip", "rar", "7z", "tar", "gz"]
 var supportedVideoFiles = ["ogv", "webm", "mp4", "mov", "avi", "mkv", "wmv", "flv", "m4v"]
-var supportedAudioFiles = ["wav", "mp3", "ogg"]  # All can be loaded from external files
-# WAV: load_from_file(), MP3: data property, OGG: load_from_file() or packet_sequence
+var supportedAudioFiles = ["wav", "mp3", "ogg", "aac"]
 
 # Image display modes
 enum ImageDisplayMode {
@@ -55,8 +52,9 @@ func PreviewFile(filePath: String):
 		extension = internalPath.get_extension().to_lower()
 	else:
 		extension = filePath.get_extension().to_lower()
-	
+
 	# Check file type and preview accordingly
+	# Special preview modes for specific file types
 	if extension in supportedArchiveFiles:
 		PreviewZipFile(filePath)
 	elif extension in supportedVideoFiles:
@@ -65,12 +63,10 @@ func PreviewFile(filePath: String):
 		PreviewImage(filePath)
 	elif extension in supportedAudioFiles:
 		PreviewAudioFile(filePath)
-	elif extension in supportedTextFiles:
-		PreviewTextFile(filePath)
-	elif extension in supportedSceneFiles:
-		PreviewSceneFile(filePath)
 	else:
-		ShowUnsupportedFile(filePath, extension)
+		# Try to preview as text file (works for most text-based formats)
+		# If it's binary, PreviewTextFile will detect and show file info instead
+		PreviewTextFile(filePath)
 
 func ResetContentScrollContainer():
 	%ContentScrollContainer.scroll_horizontal = 0
@@ -229,44 +225,101 @@ func PreviewVideoFile(filePath: String):
 func PreviewTextFile(filePath: String):
 	ShowTextEditor()
 	var content = ""
-	
+	var fileData: PackedByteArray
+
 	if IsZipPath(filePath):
 		# Extract from zip
 		var parts = filePath.split("::")
 		var zipPath = parts[0]
 		var internalPath = parts[1]
-		
-		var fileData = ExtractFileFromZip(zipPath, internalPath)
+
+		fileData = ExtractFileFromZip(zipPath, internalPath)
 		if fileData.size() == 0:
 			%TextEdit.text = "Nothing to show in this file..."
 			return
-		
-		content = fileData.get_string_from_utf8()
 	else:
 		# Load from regular file
 		var file = FileAccess.open(filePath, FileAccess.READ)
 		if file == null:
 			ShowError("Failed to open file: " + filePath)
 			return
-		
-		content = file.get_as_text()
+
+		fileData = file.get_buffer(file.get_length())
 		file.close()
-	
+
+	# Check if file appears to be binary
+	if IsBinaryData(fileData):
+		# Show file info instead of trying to display binary data
+		var extension = ""
+		if IsZipPath(filePath):
+			extension = filePath.split("::")[1].get_extension()
+		else:
+			extension = filePath.get_extension()
+		ShowBinaryFileInfo(filePath, extension, fileData.size())
+		return
+
+	# Convert to text
+	content = fileData.get_string_from_utf8()
+
 	if content == "":
 		%TextEdit.text = "Nothing to show in this file..."
 	else:
 		%TextEdit.text = content
-		
+
 	%TextEdit.editable = false  # Read-only preview
-	
+
 	# Set syntax highlighting based on file type
 	var extension = ""
 	if IsZipPath(filePath):
 		extension = filePath.split("::")[1].get_extension()
 	else:
 		extension = filePath.get_extension()
-	
+
 	SetSyntaxHighlighting(extension)
+
+# Check if data appears to be binary (contains null bytes or high percentage of non-printable chars)
+func IsBinaryData(data: PackedByteArray) -> bool:
+	if data.size() == 0:
+		return false
+
+	var sampleSize = min(512, data.size())
+	var nonPrintableCount = 0
+
+	for i in range(sampleSize):
+		var byte = data[i]
+		# Null byte is a strong indicator of binary
+		if byte == 0:
+			return true
+		# Count non-printable characters (excluding common whitespace)
+		if byte < 32 and byte != 9 and byte != 10 and byte != 13:
+			nonPrintableCount += 1
+
+	# If more than 30% non-printable, consider it binary
+	return (float(nonPrintableCount) / float(sampleSize)) > 0.3
+
+# Show info for binary files
+func ShowBinaryFileInfo(filePath: String, extension: String, fileSize: int):
+	var fileName = ""
+	if IsZipPath(filePath):
+		fileName = filePath.split("::")[1].get_file()
+	else:
+		fileName = filePath.get_file()
+
+	var info = "Binary File: %s\n" % fileName
+	info += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+	info += "Extension: .%s\n" % extension
+	info += "Size: %s\n" % FormatFileSize(fileSize)
+	info += "Path: %s\n\n" % filePath
+	info += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+	info += "This file contains binary data and cannot be\n"
+	info += "previewed as text.\n\n"
+
+	if IsZipPath(filePath):
+		var zipPath = filePath.split("::")[0].get_file()
+		info += "Location: Inside %s\n" % zipPath
+
+	%TextEdit.text = info
+	%TextEdit.editable = false
 
 # Preview audio files with sound player
 func PreviewAudioFile(filePath: String):
@@ -306,58 +359,6 @@ func GetFileSize(filePath: String) -> int:
 		file.close()
 		return fileSize
 
-# Preview text files
-func PreviewSceneFile(filePath: String):
-	ShowTextEditor()
-	var content = ""
-	if IsZipPath(filePath):
-		# Extract from zip
-		var parts = filePath.split("::")
-		var zipPath = parts[0]
-		var internalPath = parts[1]
-		
-		var fileData = ExtractFileFromZip(zipPath, internalPath)
-		if fileData.size() == 0:
-			ShowError("Nothing to show in this file...")
-			return
-		
-		content = fileData.get_string_from_utf8()
-	else:
-		# Load from regular file
-		var file = FileAccess.open(filePath, FileAccess.READ)
-		if file == null:
-			ShowError("Failed to open scene file: " + filePath)
-			return
-		
-		content = file.get_as_text()
-		file.close()
-	
-	%TextEdit.text = content
-	%TextEdit.editable = false
-
-# Show info for unsupported file types
-func ShowUnsupportedFile(filePath: String, extension: String):
-	ShowTextEditor()
-	
-	var fileName = ""
-	if IsZipPath(filePath):
-		fileName = filePath.split("::")[1].get_file()
-	else:
-		fileName = filePath.get_file()
-	
-	var fileSize = GetFileSize(filePath)
-	var info = "File: %s\nExtension: %s\nSize: %s\n\nThis file type is not supported for preview." % [
-		fileName,
-		extension,
-		FormatFileSize(fileSize)
-	]
-	
-	if IsZipPath(filePath):
-		var zipPath = filePath.split("::")[0].get_file()
-		info += "\n\nThis file is inside: " + zipPath
-	
-	%TextEdit.text = info
-	%TextEdit.editable = false
 
 # Show error message
 func ShowError(errorMessage: String):
@@ -597,29 +598,10 @@ func FormatFileSize(sizeBytes: int) -> String:
 		return "%.1f GB" % (sizeBytes / (1024.0 * 1024.0 * 1024.0))
 
 # Check if a file type is supported for preview
+# Note: Previewer now attempts to preview all files - returns true for everything
 func IsFileSupported(filePath: String) -> bool:
-	var extension = filePath.get_extension().to_lower()
-	return extension in supportedTextFiles or extension in supportedImageFiles or extension in supportedSceneFiles or extension in supportedArchiveFiles or extension in supportedVideoFiles
+	return true
 
-# Add support for additional file extensions
-# TODO:
-func AddSupportedExtension(extension: String, fileType: String = "text"):
-	match fileType:
-		"text":
-			if not extension in supportedTextFiles:
-				supportedTextFiles.append(extension)
-		"image":
-			if not extension in supportedImageFiles:
-				supportedImageFiles.append(extension)
-		"scene":
-			if not extension in supportedSceneFiles:
-				supportedSceneFiles.append(extension)
-		"archive":
-			if not extension in supportedArchiveFiles:
-				supportedArchiveFiles.append(extension)
-		"video":
-			if not extension in supportedVideoFiles:
-				supportedVideoFiles.append(extension)
 
 func UpdateImageSize():
 	var newSize = _baseSize * _zoomFactor

@@ -97,13 +97,15 @@ custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 tooltip_text = "Filter files by type"
 selected = 0
-item_count = 3
+item_count = 4
 popup/item_0/text = "All"
 popup/item_0/id = 0
 popup/item_1/text = "Images"
 popup/item_1/id = 1
 popup/item_2/text = "Sounds"
 popup/item_2/id = 2
+popup/item_3/text = "Text"
+popup/item_3/id = 3
 
 [node name="FiltersSeparator" type="VSeparator" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 layout_mode = 2
