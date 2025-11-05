@@ -9,7 +9,7 @@
 [ext_resource type="PackedScene" uid="uid://b2pnoerm0fxtd" path="res://scenes/project-tree-view/project-tree-view.tscn" id="4_m5vku"]
 [ext_resource type="Texture2D" uid="uid://cv7r3ajrm14n8" path="res://scenes/file-explorer/assets/fluent-icons/clipboard-arrow-right.svg" id="5_move_right"]
 [ext_resource type="Texture2D" uid="uid://88noiaaajneu" path="res://scenes/file-explorer/assets/fluent-icons/clipboard-arrow-left.svg" id="6_move_left"]
-[ext_resource type="PackedScene" uid="uid://c60qhhvq0k5yc" path="res://scenes/sound-player-grid/sound-player-grid.tscn" id="5_m5vku"]
+[ext_resource type="PackedScene" uid="uid://c8qxm2k9p3wrq" path="res://scenes/sound-player-grid/sound-player-grid.tscn" id="5_m5vku"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_jbjko"]
 font_size = 48
