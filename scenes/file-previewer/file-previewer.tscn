@@ -210,6 +210,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_colors/background_color = Color(0.11404, 0.114039, 0.122912, 1)
+wrap_mode = 1
 placeholder_text = "Select a file to preview..."
 
 [node name="SoundPlayerContainer" type="Control" parent="VBoxContainer/ContentPanel/MarginContainer/ContentContainer"]
