@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://6ygqegta6dek"]
+[gd_scene load_steps=14 format=3 uid="uid://6ygqegta6dek"]
 
 [ext_resource type="Script" uid="uid://gdqxa44bc62r" path="res://scenes/file-tree-view-explorer/file-tree-view-explorer.gd" id="1_wruwl"]
 [ext_resource type="Texture2D" uid="uid://bhmnb3bgeepka" path="res://scenes/file-tree-view-explorer/assets/fluent-icons/arrow-left.svg" id="2_jnomi"]
@@ -10,7 +10,16 @@
 [ext_resource type="Texture2D" uid="uid://tl8uuuxokagh" path="res://scenes/file-tree-view-explorer/assets/fluent-icons/text-bullet-list-tree.svg" id="7_tree"]
 [ext_resource type="Texture2D" uid="uid://3jhs538r216h" path="res://scenes/file-tree-view-explorer/assets/fluent-icons/star.svg" id="8_star"]
 [ext_resource type="Texture2D" uid="uid://cbv31u28fjkj4" path="res://scenes/file-tree-view-explorer/assets/fluent-icons/refresh.svg" id="9_refresh"]
+[ext_resource type="Texture2D" path="res://scenes/file-tree-view-explorer/assets/fluent-icons/settings.svg" id="10_settings"]
+[ext_resource type="PackedScene" uid="uid://dyp0qsqx8o8vx" path="res://scenes/file-tree-view-explorer/file-tree-view-filter-settings.tscn" id="11_filter_settings"]
 [ext_resource type="Texture2D" uid="uid://dccn25v88b82i" path="res://scenes/file-tree-view-explorer/assets/busy.png" id="21_alyso"]
+
+[sub_resource type="StyleBoxLine" id="StyleBoxLine_separator"]
+color = Color(0.666667, 0.666667, 0.666667, 1)
+thickness = 3
+vertical = true
+grow_begin = 8.0
+grow_end = 8.0
 
 [sub_resource type="LabelSettings" id="LabelSettings_nqtcg"]
 font_size = 24
@@ -35,116 +44,16 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
-layout_mode = 2
-
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HBoxContainer"]
+[node name="LeftPaneSubToolbar" type="HBoxContainer" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 theme_override_constants/separation = 4
-alignment = 2
 
-[node name="FlatListToggleButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(32, 32)
-layout_mode = 2
-tooltip_text = "Toggle between flat list and tree view"
-toggle_mode = true
-texture_normal = ExtResource("7_tree")
-texture_pressed = ExtResource("7_flat")
-ignore_texture_size = true
-stretch_mode = 5
-
-[node name="AddFavoriteButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(32, 32)
-layout_mode = 2
-tooltip_text = "Add to Favorites"
-texture_normal = ExtResource("8_star")
-ignore_texture_size = true
-stretch_mode = 5
-
-[node name="RefreshButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(32, 32)
-layout_mode = 2
-tooltip_text = "Refresh current view"
-texture_normal = ExtResource("9_refresh")
-ignore_texture_size = true
-stretch_mode = 5
-
-[node name="OpenFileExplorerButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
-custom_minimum_size = Vector2(32, 32)
-layout_mode = 2
-tooltip_text = "Open In Explorer"
-texture_normal = ExtResource("2_k063r")
-ignore_texture_size = true
-stretch_mode = 5
-
-[node name="ActionsSeparator" type="VSeparator" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
-layout_mode = 2
-
-[node name="FilterLabel" type="Label" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
-layout_mode = 2
-text = "Filter:"
-vertical_alignment = 1
-
-[node name="FilterOptionButton" type="OptionButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 0)
-layout_mode = 2
-tooltip_text = "Filter files by type"
-selected = 0
-item_count = 4
-popup/item_0/text = "All"
-popup/item_0/id = 0
-popup/item_1/text = "Images"
-popup/item_1/id = 1
-popup/item_2/text = "Sounds"
-popup/item_2/id = 2
-popup/item_3/text = "Text"
-popup/item_3/id = 3
-
-[node name="FiltersSeparator" type="VSeparator" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
-layout_mode = 2
-
-[node name="PreviousButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(32, 32)
-layout_mode = 2
-tooltip_text = "Previous File"
-texture_normal = ExtResource("2_jnomi")
-ignore_texture_size = true
-stretch_mode = 5
-
-[node name="NextButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(32, 32)
-layout_mode = 2
-tooltip_text = "Next File"
-texture_normal = ExtResource("4_cc6nv")
-ignore_texture_size = true
-stretch_mode = 5
-
-[node name="UpButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
-custom_minimum_size = Vector2(32, 32)
-layout_mode = 2
-tooltip_text = "Navigate Up Tree"
-texture_normal = ExtResource("6_3ghy6")
-ignore_texture_size = true
-stretch_mode = 5
-
-[node name="DownButton" type="TextureButton" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
-custom_minimum_size = Vector2(32, 32)
-layout_mode = 2
-tooltip_text = "Navigate Down Tree"
-texture_normal = ExtResource("2_uu2th")
-ignore_texture_size = true
-stretch_mode = 5
-
-[node name="FavoritesBar" type="HBoxContainer" parent="VBoxContainer"]
+[node name="FavoritesBar" type="HBoxContainer" parent="VBoxContainer/LeftPaneSubToolbar"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 4
 
 [node name="FlatListPathContainer" type="HBoxContainer" parent="VBoxContainer"]
@@ -219,19 +128,20 @@ stretch_mode = 2
 [node name="ContextMenu" type="PopupMenu" parent="."]
 unique_name_in_owner = true
 
+[node name="FilterSettings" parent="VBoxContainer/Control" instance=ExtResource("11_filter_settings")]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
 [node name="FavoriteContextMenu" type="PopupMenu" parent="."]
 unique_name_in_owner = true
 
-[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/FlatListToggleButton" to="." method="_on_flat_list_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/AddFavoriteButton" to="." method="_on_add_favorite_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/RefreshButton" to="." method="_on_refresh_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/OpenFileExplorerButton" to="." method="_on_open_file_explorer_button_pressed"]
-[connection signal="item_selected" from="VBoxContainer/HBoxContainer/HBoxContainer/FilterOptionButton" to="." method="_on_filter_option_selected"]
-[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/PreviousButton" to="." method="_on_previous_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/NextButton" to="." method="_on_next_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/UpButton" to="." method="_on_up_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/HBoxContainer/HBoxContainer/DownButton" to="." method="_on_down_button_pressed"]
 [connection signal="item_mouse_selected" from="VBoxContainer/Control/FileTree" to="." method="_on_file_tree_item_mouse_selected"]
 [connection signal="item_selected" from="VBoxContainer/Control/FileTree" to="." method="_on_file_tree_item_selected"]
 [connection signal="multi_selected" from="VBoxContainer/Control/FileTree" to="." method="_on_file_tree_multi_selected"]
 [connection signal="id_pressed" from="ContextMenu" to="." method="_on_context_menu_item_selected"]
+[connection signal="settings_applied" from="FilterSettings" to="." method="_on_filter_settings_applied"]

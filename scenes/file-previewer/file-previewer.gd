@@ -247,14 +247,16 @@ func PreviewTextFile(filePath: String):
 		fileData = file.get_buffer(file.get_length())
 		file.close()
 
+	# Determine file extension
+	var extension: String = ""
+	if IsZipPath(filePath):
+		extension = filePath.split("::")[1].get_extension()
+	else:
+		extension = filePath.get_extension()
+
 	# Check if file appears to be binary
 	if IsBinaryData(fileData):
 		# Show file info instead of trying to display binary data
-		var extension = ""
-		if IsZipPath(filePath):
-			extension = filePath.split("::")[1].get_extension()
-		else:
-			extension = filePath.get_extension()
 		ShowBinaryFileInfo(filePath, extension, fileData.size())
 		return
 
@@ -269,12 +271,6 @@ func PreviewTextFile(filePath: String):
 	%TextEdit.editable = false  # Read-only preview
 
 	# Set syntax highlighting based on file type
-	var extension = ""
-	if IsZipPath(filePath):
-		extension = filePath.split("::")[1].get_extension()
-	else:
-		extension = filePath.get_extension()
-
 	SetSyntaxHighlighting(extension)
 
 # Check if data appears to be binary (contains null bytes or high percentage of non-printable chars)
@@ -432,8 +428,6 @@ func SetSyntaxHighlighting(extension: String):
 
 # Show the text editor and hide image display
 func ShowTextEditor():
-	%ImageToolbar.visible = false
-	%TextToolbar.visible = true
 	%TextViewer.visible = true
 	%ImageContainer.visible = false
 	if has_node("%SoundPlayerContainer"):
@@ -441,8 +435,6 @@ func ShowTextEditor():
 
 # Show the image display and hide text editor
 func ShowImageDisplay():
-	%ImageToolbar.visible = true
-	%TextToolbar.visible = false
 	%TextViewer.visible = false
 	%ImageContainer.visible = true
 	if has_node("%SoundPlayerContainer"):
@@ -450,8 +442,6 @@ func ShowImageDisplay():
 
 # Show the sound player and hide other views
 func ShowSoundPlayer():
-	%ImageToolbar.visible = false
-	%TextToolbar.visible = false
 	%TextViewer.visible = false
 	%ImageContainer.visible = false
 	if has_node("%SoundPlayerContainer"):
@@ -599,7 +589,7 @@ func FormatFileSize(sizeBytes: int) -> String:
 
 # Check if a file type is supported for preview
 # Note: Previewer now attempts to preview all files - returns true for everything
-func IsFileSupported(filePath: String) -> bool:
+func IsFileSupported(_filePath: String) -> bool:
 	return true
 
 
@@ -618,16 +608,17 @@ func UpdateImageSize():
 func ApplyImageDisplayMode(mode: ImageDisplayMode):
 	_currentDisplayMode = mode
 
-	# Update button states
-	match mode:
-		ImageDisplayMode.FIT_TO_SCREEN:
-			%FitToScreenButton.button_pressed = true
-		ImageDisplayMode.ACTUAL_SIZE:
-			%ActualSizeButton.button_pressed = true
-		ImageDisplayMode.STRETCH:
-			%StretchButton.button_pressed = true
-		ImageDisplayMode.TILE:
-			%TileButton.button_pressed = true
+	# Update button states if buttons exist
+	if has_node("%FitToScreenButton"):
+		match mode:
+			ImageDisplayMode.FIT_TO_SCREEN:
+				%FitToScreenButton.button_pressed = true
+			ImageDisplayMode.ACTUAL_SIZE:
+				%ActualSizeButton.button_pressed = true
+			ImageDisplayMode.STRETCH:
+				%StretchButton.button_pressed = true
+			ImageDisplayMode.TILE:
+				%TileButton.button_pressed = true
 
 	# Apply the display mode
 	match mode:

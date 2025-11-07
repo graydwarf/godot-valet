@@ -441,3 +441,47 @@ func _on_move_left_button_pressed() -> void:
 	if successCount > 0:
 		await %DestinationTreeView.RefreshProjectTree()
 		await _fileTreeViewExplorer.RefreshExpandedFolders()
+
+# Toolbar button signal handlers - delegate to FileTreeViewExplorer
+func _on_flat_list_button_pressed() -> void:
+	_fileTreeViewExplorer._on_flat_list_button_pressed()
+
+func _on_add_favorite_button_pressed() -> void:
+	_fileTreeViewExplorer._on_add_favorite_button_pressed()
+
+func _on_refresh_button_pressed() -> void:
+	_fileTreeViewExplorer._on_refresh_button_pressed()
+
+func _on_open_file_explorer_button_pressed() -> void:
+	_fileTreeViewExplorer._on_open_file_explorer_button_pressed()
+
+func _on_filter_option_selected(index: int) -> void:
+	_fileTreeViewExplorer._on_filter_option_selected(index)
+
+func _on_previous_button_pressed() -> void:
+	_fileTreeViewExplorer._on_previous_button_pressed()
+
+func _on_next_button_pressed() -> void:
+	_fileTreeViewExplorer._on_next_button_pressed()
+
+func _on_up_button_pressed() -> void:
+	_fileTreeViewExplorer._on_up_button_pressed()
+
+func _on_down_button_pressed() -> void:
+	_fileTreeViewExplorer._on_down_button_pressed()
+
+func _on_filter_settings_button_pressed() -> void:
+	_fileTreeViewExplorer._on_filter_settings_button_pressed()
+
+# Image zoom button signal handlers - delegate to FilePreviewer
+func _on_fit_to_screen_button_pressed() -> void:
+	_filePreviewer.ApplyImageDisplayMode(0) # FIT_TO_SCREEN
+
+func _on_actual_size_button_pressed() -> void:
+	_filePreviewer.ApplyImageDisplayMode(1) # ACTUAL_SIZE
+
+func _on_stretch_button_pressed() -> void:
+	_filePreviewer.ApplyImageDisplayMode(2) # STRETCH
+
+func _on_tile_button_pressed() -> void:
+	_filePreviewer.ApplyImageDisplayMode(3) # TILE

@@ -28,7 +28,7 @@ var _preFlatListSelectedPath: String = ""
 var _navigateToProjectButton: TextureButton = null  # Reference to the Navigate to Project button
 var _favoriteButtons: Array[TextureButton] = []  # References to user favorite buttons (slots 2-9)
 
-# Supported extensions used to filter files
+# Supported extensions used to filter files (configurable via settings)
 var _zipExtensions := [".zip", ".rar", ".7z", ".tar", ".gz"]
 var _imageExtensions := [".png", ".jpg", ".jpeg", ".bmp", ".svg", ".webp", ".tga", ".exr", ".hdr"]
 var _scriptExtensions := [".gd", ".cs"]
@@ -39,6 +39,19 @@ var _3dModelExtensions := [".dae", ".gltf", ".glb", ".fbx", ".blend", ".obj"]
 var _fontExtensions := [".ttf", ".otf", ".woff", ".woff2"]
 var _textExtensions := [".txt", ".json", ".cfg", ".ini", ".csv", ".md", ".xml"]
 var _executableExtensions := [".exe", ".dll", ".so", ".dylib", ".bin", ".msi", ".app"]
+
+# Default filter extensions (for reset)
+const DEFAULT_FILTER_EXTENSIONS = {
+	"all": [],
+	"images": [".png", ".jpg", ".jpeg", ".bmp", ".svg", ".webp", ".tga", ".exr", ".hdr"],
+	"sounds": [".ogg", ".mp3", ".wav", ".aac"],
+	"text": [".txt", ".json", ".cfg", ".ini", ".csv", ".md", ".xml"],
+	"videos": [".ogv", ".webm", ".mp4", ".mov", ".avi", ".mkv", ".wmv", ".flv", ".m4v"],
+	"models": [".dae", ".gltf", ".glb", ".fbx", ".blend", ".obj"],
+	"fonts": [".ttf", ".otf", ".woff", ".woff2"],
+	"executables": [".exe", ".dll", ".so", ".dylib", ".bin", ".msi", ".app"],
+	"zip": [".zip", ".rar", ".7z", ".tar", ".gz"]
+}
 
 # Favorites system
 var _favorites: Array[String] = []
@@ -111,9 +124,12 @@ func SetupContextMenu():
 
 # Check if a file is likely binary by reading first chunk
 func IsBinaryFile(filePath: String) -> bool:
+	# Determine extension first
+	var extension: String
+
 	# Don't try to read files inside zips
 	if "::" in filePath:
-		var extension = filePath.split("::")[1].get_extension().to_lower()
+		extension = filePath.split("::")[1].get_extension().to_lower()
 		return IsExtensionBinary(extension)
 
 	# Check if it's a directory
@@ -121,7 +137,7 @@ func IsBinaryFile(filePath: String) -> bool:
 		return false
 
 	# Check extension first for common binary types
-	var extension = filePath.get_extension().to_lower()
+	extension = filePath.get_extension().to_lower()
 	if IsExtensionBinary(extension):
 		return true
 
@@ -169,6 +185,16 @@ func SaveSettings():
 	# Save filter state
 	config.set_value("Filters", "active_filters", _activeFilters)
 
+	# Save filter extensions
+	config.set_value("FilterExtensions", "images", _imageExtensions)
+	config.set_value("FilterExtensions", "sounds", _audioExtensions)
+	config.set_value("FilterExtensions", "text", _textExtensions)
+	config.set_value("FilterExtensions", "videos", _videoExtensions)
+	config.set_value("FilterExtensions", "models", _3dModelExtensions)
+	config.set_value("FilterExtensions", "fonts", _fontExtensions)
+	config.set_value("FilterExtensions", "executables", _executableExtensions)
+	config.set_value("FilterExtensions", "zip", _zipExtensions)
+
 	# Save tree view state
 	var expandedPaths = GetExpandedPaths(_rootItem)
 	config.set_value("TreeView", "expanded_paths", expandedPaths)
@@ -199,8 +225,18 @@ func LoadSettings():
 	# Load favorites
 	_favorites = config.get_value("Favorites", "paths", [])
 
-	# Load filter state (but don't apply yet - wait for UI to be ready)
-	_activeFilters = config.get_value("Filters", "active_filters", [])
+	# Don't load filter state on startup - always default to "All" to avoid long launch times
+	_activeFilters = []
+
+	# Load filter extensions (use defaults if not found)
+	_imageExtensions = config.get_value("FilterExtensions", "images", DEFAULT_FILTER_EXTENSIONS.images)
+	_audioExtensions = config.get_value("FilterExtensions", "sounds", DEFAULT_FILTER_EXTENSIONS.sounds)
+	_textExtensions = config.get_value("FilterExtensions", "text", DEFAULT_FILTER_EXTENSIONS.text)
+	_videoExtensions = config.get_value("FilterExtensions", "videos", DEFAULT_FILTER_EXTENSIONS.videos)
+	_3dModelExtensions = config.get_value("FilterExtensions", "models", DEFAULT_FILTER_EXTENSIONS.models)
+	_fontExtensions = config.get_value("FilterExtensions", "fonts", DEFAULT_FILTER_EXTENSIONS.fonts)
+	_executableExtensions = config.get_value("FilterExtensions", "executables", DEFAULT_FILTER_EXTENSIONS.executables)
+	_zipExtensions = config.get_value("FilterExtensions", "zip", DEFAULT_FILTER_EXTENSIONS.zip)
 
 	# Load project view state (but don't apply yet - wait for UI to be ready)
 	_isProjectViewActive = config.get_value("TreeView", "project_view_active", false)
@@ -222,6 +258,16 @@ func ApplySavedFilterState():
 				selectedIndex = 2  # Sounds
 			elif "text" in _activeFilters:
 				selectedIndex = 3  # Text
+			elif "videos" in _activeFilters:
+				selectedIndex = 4  # Videos
+			elif "models" in _activeFilters:
+				selectedIndex = 5  # 3D Models
+			elif "fonts" in _activeFilters:
+				selectedIndex = 6  # Fonts
+			elif "executables" in _activeFilters:
+				selectedIndex = 7  # Executables
+			elif "zip" in _activeFilters:
+				selectedIndex = 8  # Archives
 
 			%FilterOptionButton.selected = selectedIndex
 
@@ -301,7 +347,7 @@ func UpdateFavoritesBar():
 	# Always add Navigate to Project button as first favorite (slot 1)
 	_navigateToProjectButton = TextureButton.new()
 	_navigateToProjectButton.custom_minimum_size = Vector2(24, 24)
-	_navigateToProjectButton.tooltip_text = "Navigate To Project In Treeview (Shortcut: 1)"
+	_navigateToProjectButton.tooltip_text = "Navigate To Project In Treeview (Shortcut: Alt+1)"
 	_navigateToProjectButton.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
 	_navigateToProjectButton.ignore_texture_size = true
 
@@ -330,7 +376,7 @@ func UpdateFavoritesBar():
 		favoriteButton.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
 		favoriteButton.ignore_texture_size = true
 		var fileName = _favorites[i].get_file() if _favorites[i].get_file() != "" else _favorites[i]
-		favoriteButton.tooltip_text = fileName + " (Shortcut: " + str(slotNumber) + ")"
+		favoriteButton.tooltip_text = fileName + " (Shortcut: Alt+" + str(slotNumber) + ")"
 
 		# Left click - navigate
 		favoriteButton.pressed.connect(func(): NavigateToFavorite(_favorites[i]))
@@ -639,6 +685,11 @@ func _ShouldIncludeFile(filePath: String) -> bool:
 	# For zip files, check if they contain filtered content when filtering is active
 	if IsZipFile(filePath):
 		if _isTreeViewFiltered:
+			# If we're filtering FOR zip files (Archives filter), always show them
+			var extension = "." + filePath.get_extension().to_lower()
+			if extension in _treeViewFilters:
+				return true
+			# Otherwise, check if zip contains content matching the filter
 			return ZipContainsFilteredContent(filePath)
 	# All other files have already been filtered by _GetSortedDirectoryEntries
 	return true
@@ -1774,6 +1825,14 @@ func ApplyActiveFilters():
 				combinedExtensions.append_array(_sceneExtensions)
 			"videos":
 				combinedExtensions.append_array(_videoExtensions)
+			"models":
+				combinedExtensions.append_array(_3dModelExtensions)
+			"fonts":
+				combinedExtensions.append_array(_fontExtensions)
+			"executables":
+				combinedExtensions.append_array(_executableExtensions)
+			"zip":
+				combinedExtensions.append_array(_zipExtensions)
 			"text":
 				combinedExtensions.append_array(_textExtensions)
 				combinedExtensions.append_array(_scriptExtensions)  # Include script files
@@ -2243,6 +2302,16 @@ func _on_filter_option_selected(index: int) -> void:
 			_activeFilters.append("audio")
 		3:  # Text
 			_activeFilters.append("text")
+		4:  # Videos
+			_activeFilters.append("videos")
+		5:  # 3D Models
+			_activeFilters.append("models")
+		6:  # Fonts
+			_activeFilters.append("fonts")
+		7:  # Executables
+			_activeFilters.append("executables")
+		8:  # Archives
+			_activeFilters.append("zip")
 
 	UpdateSelectMode()
 	SaveSettings()
@@ -2250,6 +2319,43 @@ func _on_filter_option_selected(index: int) -> void:
 
 func _on_add_favorite_button_pressed() -> void:
 	AddToFavorites()
+
+func _on_filter_settings_button_pressed() -> void:
+	# Build current extensions dictionary
+	var current_extensions = {
+		"all": [],
+		"images": _imageExtensions,
+		"sounds": _audioExtensions,
+		"text": _textExtensions,
+		"videos": _videoExtensions,
+		"models": _3dModelExtensions,
+		"fonts": _fontExtensions,
+		"executables": _executableExtensions,
+		"zip": _zipExtensions
+	}
+
+	# Load current extensions into settings panel
+	%FilterSettings.load_extensions(current_extensions)
+
+	# Show settings panel
+	%FilterSettings.show_panel()
+
+func _on_filter_settings_applied(filter_extensions: Dictionary) -> void:
+	# Apply new filter extensions
+	_imageExtensions = filter_extensions.get("images", DEFAULT_FILTER_EXTENSIONS.images)
+	_audioExtensions = filter_extensions.get("sounds", DEFAULT_FILTER_EXTENSIONS.sounds)
+	_textExtensions = filter_extensions.get("text", DEFAULT_FILTER_EXTENSIONS.text)
+	_videoExtensions = filter_extensions.get("videos", DEFAULT_FILTER_EXTENSIONS.videos)
+	_3dModelExtensions = filter_extensions.get("models", DEFAULT_FILTER_EXTENSIONS.models)
+	_fontExtensions = filter_extensions.get("fonts", DEFAULT_FILTER_EXTENSIONS.fonts)
+	_executableExtensions = filter_extensions.get("executables", DEFAULT_FILTER_EXTENSIONS.executables)
+	_zipExtensions = filter_extensions.get("zip", DEFAULT_FILTER_EXTENSIONS.zip)
+
+	# Save to config
+	SaveSettings()
+
+	# Refresh the tree view with new filter settings
+	ApplyActiveFilters()
 
 # Check if audio filter is currently active
 func IsAudioFilterActive() -> bool:

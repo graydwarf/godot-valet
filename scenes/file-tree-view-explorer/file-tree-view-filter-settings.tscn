@@ -1,0 +1,216 @@
+[gd_scene load_steps=2 format=3 uid="uid://dyp0qsqx8o8vx"]
+
+[ext_resource type="Script" path="res://scenes/file-tree-view-explorer/file-tree-view-filter-settings.gd" id="1_filter_settings"]
+
+[node name="FilterSettings" type="Panel"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_filter_settings")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_bottom = -4
+
+[node name="TitleLabel" type="Label" parent="VBoxContainer/MarginContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Filter Settings"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer/HBoxContainer/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 15
+
+[node name="AllFilterSection" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/AllFilterSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "All Files Filter"
+
+[node name="AllLineEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/AllFilterSection"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Leave empty for all files"
+
+[node name="ImagesFilterSection" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/ImagesFilterSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Images Filter"
+
+[node name="ImagesLineEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/ImagesFilterSection"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = ".png, .jpg, .jpeg, .bmp, .svg, .webp, .tga, .exr, .hdr"
+
+[node name="SoundsFilterSection" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/SoundsFilterSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Sounds Filter"
+
+[node name="SoundsLineEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/SoundsFilterSection"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = ".ogg, .mp3, .wav, .aac"
+
+[node name="TextFilterSection" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/TextFilterSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Text Filter"
+
+[node name="TextLineEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/TextFilterSection"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = ".txt, .json, .cfg, .ini, .csv, .md, .xml"
+
+[node name="VideosFilterSection" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/VideosFilterSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Videos Filter"
+
+[node name="VideosLineEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/VideosFilterSection"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = ".ogv, .webm, .mp4, .mov, .avi, .mkv, .wmv, .flv, .m4v"
+
+[node name="ModelsFilterSection" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/ModelsFilterSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "3D Models Filter"
+
+[node name="ModelsLineEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/ModelsFilterSection"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = ".dae, .gltf, .glb, .fbx, .blend, .obj"
+
+[node name="FontsFilterSection" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/FontsFilterSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Fonts Filter"
+
+[node name="FontsLineEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/FontsFilterSection"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = ".ttf, .otf, .woff, .woff2"
+
+[node name="ExecutablesFilterSection" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/ExecutablesFilterSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Executables Filter"
+
+[node name="ExecutablesLineEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/ExecutablesFilterSection"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = ".exe, .dll, .so, .dylib, .bin, .msi, .app"
+
+[node name="ZipFilterSection" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/ZipFilterSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Archives Filter"
+
+[node name="ZipLineEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/ZipFilterSection"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = ".zip, .rar, .7z, .tar, .gz"
+
+[node name="MarginContainer2" type="MarginContainer" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer2"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+
+[node name="ResetButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Reset to Defaults"
+
+[node name="CancelButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Cancel"
+
+[node name="ApplyButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Apply"
