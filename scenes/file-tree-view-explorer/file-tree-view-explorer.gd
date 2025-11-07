@@ -1140,23 +1140,33 @@ func SetNavigateToProjectButtonVisible(isVisible: bool) -> void:
 
 func _on_previous_button_pressed() -> void:
 	SendKeyEventToTree(KEY_LEFT)
+	# Manually trigger preview after navigation
+	await get_tree().process_frame
+	var selected = %FileTree.get_selected()
+	if selected:
+		ItemSelected(selected)
 
 func _on_next_button_pressed() -> void:
 	SendKeyEventToTree(KEY_RIGHT)
+	# Manually trigger preview after navigation
+	await get_tree().process_frame
+	var selected = %FileTree.get_selected()
+	if selected:
+		ItemSelected(selected)
 
 # Send a key event to the Tree control via the input system
 func SendKeyEventToTree(keycode: Key):
 	# Make sure the tree has focus
 	%FileTree.grab_focus()
-	
+
 	# Create and inject the key event
 	var event = InputEventKey.new()
 	event.keycode = keycode
 	event.pressed = true
-	
+
 	# Send press event
 	Input.parse_input_event(event)
-	
+
 	# Send release event
 	var release_event = InputEventKey.new()
 	release_event.keycode = keycode
