@@ -2660,7 +2660,7 @@ func _handle_delete_selected() -> void:
 						var nextChild = child.get_next()
 						child.free()
 						child = nextChild
-					PopulateDirectory(parent_item, parent_folder)
+					PopulateDirectory(parent_item)
 
 # Find a tree item by its path
 func _find_tree_item_by_path(path: String) -> TreeItem:
