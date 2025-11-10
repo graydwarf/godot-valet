@@ -144,4 +144,3 @@ unique_name_in_owner = true
 [connection signal="item_selected" from="VBoxContainer/Control/FileTree" to="." method="_on_file_tree_item_selected"]
 [connection signal="multi_selected" from="VBoxContainer/Control/FileTree" to="." method="_on_file_tree_multi_selected"]
 [connection signal="id_pressed" from="ContextMenu" to="." method="_on_context_menu_item_selected"]
-[connection signal="settings_applied" from="FilterSettings" to="." method="_on_filter_settings_applied"]

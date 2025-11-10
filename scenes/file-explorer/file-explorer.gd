@@ -7,6 +7,8 @@ class_name FileExplorer
 @onready var _filePreviewer: Control = %FilePreviewer
 @onready var _soundPlayerGrid: SoundPlayerGrid = %SoundPlayerGrid
 
+var _currentProjectConfigured: bool = false
+
 func _ready():
 	InitSignals()
 	RemoveGodotButtonFocusBorder()
@@ -16,19 +18,34 @@ func RemoveGodotButtonFocusBorder():
 	var empty_style = StyleBoxEmpty.new()
 	%GodotToggleButton.add_theme_stylebox_override("focus", empty_style)
 
+# Gently strobe a button to draw user's attention
+func _strobe_button(button: BaseButton):
+	var original_modulate = button.modulate
+	var tween = create_tween()
+
+	# Strobe once: gentle brighten -> return to original
+	tween.tween_property(button, "modulate", Color(1.3, 1.3, 1.3, 1.0), 0.3)
+	tween.tween_property(button, "modulate", original_modulate, 0.3)
+
 func InitSignals():
 	_fileTreeViewExplorer.FileSelected.connect(_on_file_selected)
 	_fileTreeViewExplorer.DirectorySelected.connect(_on_directory_selected)
 	_fileTreeViewExplorer.NavigateToProjectRequested.connect(_on_navigate_to_project_requested)
 	_fileTreeViewExplorer.ProjectViewRestoreRequested.connect(_on_project_view_restore_requested)
 
+	# Connect FilterSettings signals
+	%FilterSettings.settings_applied.connect(_on_filter_settings_applied)
+	%FilterSettings.settings_canceled.connect(_on_filter_settings_closed)
+
 func ConfigureProject(selectedProjectItem):
 	if selectedProjectItem == null:
+		_currentProjectConfigured = false
 		%ProjectContextContainer.visible = false
 		_fileTreeViewExplorer.SetNavigateToProjectButtonVisible(false)
 		%GodotToggleButton.visible = false
 		return
 
+	_currentProjectConfigured = true
 	%ProjectContextContainer.visible = true
 	_fileTreeViewExplorer.SetNavigateToProjectButtonVisible(true)
 	%GodotToggleButton.visible = true
@@ -95,6 +112,19 @@ func ShowOverwriteConfirmation(overwriteCount: int) -> bool:
 func _on_file_selected(filePath: String):
 	# Don't change preview if project view (Godot toggle) is active
 	if %GodotToggleButton.button_pressed:
+		# Check if this file would normally show a preview (not audio when audio filter is active)
+		var would_show_preview = true
+
+		# Only skip strobe for audio files when audio filter is active
+		if _fileTreeViewExplorer.IsAudioFilterActive():
+			var extension = "." + filePath.get_extension().to_lower()
+			var audioExtensions = [".ogg", ".mp3", ".wav", ".aac"]
+			if extension in audioExtensions:
+				would_show_preview = false
+
+		# Strobe the toggle button to hint the user can hide project view
+		if would_show_preview:
+			_strobe_button(%GodotToggleButton)
 		return
 
 	var selectedFiles = _fileTreeViewExplorer.GetSelectedFiles()
@@ -115,8 +145,7 @@ func _on_file_selected(filePath: String):
 
 	# Non-audio file or audio filter not active - use normal preview
 	ShowFilePreviewer()
-	if _filePreviewer:
-		_filePreviewer.PreviewFile(filePath)
+	_filePreviewer.PreviewFile(filePath)
 	%PathLabel.text = filePath
 
 func _on_directory_selected(dirPath: String):
@@ -471,7 +500,39 @@ func _on_down_button_pressed() -> void:
 	_fileTreeViewExplorer._on_down_button_pressed()
 
 func _on_filter_settings_button_pressed() -> void:
-	_fileTreeViewExplorer._on_filter_settings_button_pressed()
+	# Toggle full-screen filter settings view
+	if %FilterSettings.visible:
+		# Already showing - close it
+		HideFilterSettingsFullScreen()
+	else:
+		# Show filter settings in full-screen mode
+		ShowFilterSettingsFullScreen()
+
+func ShowFilterSettingsFullScreen() -> void:
+	# Hide main content, show filter settings
+	%MainContent.visible = false
+
+	# Get current filter extensions from file tree view explorer
+	var current_extensions = _fileTreeViewExplorer.get_current_filter_extensions()
+
+	# Load current extensions into settings panel
+	%FilterSettings.load_extensions(current_extensions)
+
+	# Show settings panel
+	%FilterSettings.show_panel()
+
+func HideFilterSettingsFullScreen() -> void:
+	# Hide filter settings, show main content
+	%FilterSettings.visible = false
+	%MainContent.visible = true
+
+func _on_filter_settings_closed() -> void:
+	HideFilterSettingsFullScreen()
+
+func _on_filter_settings_applied(filter_extensions: Dictionary) -> void:
+	# Forward to file tree view explorer to apply the changes
+	_fileTreeViewExplorer._on_filter_settings_applied(filter_extensions)
+	# Don't close - Save button no longer closes
 
 # Image zoom button signal handlers - delegate to FilePreviewer
 func _on_fit_to_screen_button_pressed() -> void:

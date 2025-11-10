@@ -1,6 +1,7 @@
 extends Panel
 
 signal settings_applied(filter_extensions: Dictionary)
+signal settings_canceled()
 
 # Default filter extensions
 const DEFAULT_EXTENSIONS = {
@@ -15,7 +16,6 @@ const DEFAULT_EXTENSIONS = {
 	"zip": [".zip", ".rar", ".7z", ".tar", ".gz"]
 }
 
-@onready var _allLineEdit: LineEdit = %AllLineEdit
 @onready var _imagesLineEdit: LineEdit = %ImagesLineEdit
 @onready var _soundsLineEdit: LineEdit = %SoundsLineEdit
 @onready var _textLineEdit: LineEdit = %TextLineEdit
@@ -26,22 +26,21 @@ const DEFAULT_EXTENSIONS = {
 @onready var _zipLineEdit: LineEdit = %ZipLineEdit
 
 @onready var _resetButton: Button = %ResetButton
-@onready var _cancelButton: Button = %CancelButton
-@onready var _applyButton: Button = %ApplyButton
+@onready var _closeButton: Button = %CloseButton
+@onready var _saveButton: Button = %SaveButton
 
 var _currentExtensions: Dictionary = {}
 
 func _ready():
 	_resetButton.pressed.connect(_on_reset_button_pressed)
-	_cancelButton.pressed.connect(_on_cancel_button_pressed)
-	_applyButton.pressed.connect(_on_apply_button_pressed)
+	_closeButton.pressed.connect(_on_close_button_pressed)
+	_saveButton.pressed.connect(_on_save_button_pressed)
 
 # Load current extension configuration
 func load_extensions(extensions: Dictionary):
 	_currentExtensions = extensions.duplicate()
 
 	# Populate line edits with current values
-	_allLineEdit.text = _extensions_to_string(_currentExtensions.get("all", []))
 	_imagesLineEdit.text = _extensions_to_string(_currentExtensions.get("images", DEFAULT_EXTENSIONS.images))
 	_soundsLineEdit.text = _extensions_to_string(_currentExtensions.get("sounds", DEFAULT_EXTENSIONS.sounds))
 	_textLineEdit.text = _extensions_to_string(_currentExtensions.get("text", DEFAULT_EXTENSIONS.text))
@@ -75,7 +74,6 @@ func _string_to_extensions(text: String) -> Array:
 
 func _on_reset_button_pressed():
 	# Reset to default values
-	_allLineEdit.text = _extensions_to_string(DEFAULT_EXTENSIONS.all)
 	_imagesLineEdit.text = _extensions_to_string(DEFAULT_EXTENSIONS.images)
 	_soundsLineEdit.text = _extensions_to_string(DEFAULT_EXTENSIONS.sounds)
 	_textLineEdit.text = _extensions_to_string(DEFAULT_EXTENSIONS.text)
@@ -85,14 +83,14 @@ func _on_reset_button_pressed():
 	_executablesLineEdit.text = _extensions_to_string(DEFAULT_EXTENSIONS.executables)
 	_zipLineEdit.text = _extensions_to_string(DEFAULT_EXTENSIONS.zip)
 
-func _on_cancel_button_pressed():
-	# Close panel without saving
-	visible = false
+func _on_close_button_pressed():
+	# Emit signal to close panel without saving
+	# Parent will handle visibility and reparenting
+	settings_canceled.emit()
 
-func _on_apply_button_pressed():
+func _on_save_button_pressed():
 	# Gather all values from line edits
 	var new_extensions = {
-		"all": _string_to_extensions(_allLineEdit.text),
 		"images": _string_to_extensions(_imagesLineEdit.text),
 		"sounds": _string_to_extensions(_soundsLineEdit.text),
 		"text": _string_to_extensions(_textLineEdit.text),
@@ -106,8 +104,7 @@ func _on_apply_button_pressed():
 	# Emit signal with new configuration
 	settings_applied.emit(new_extensions)
 
-	# Close panel
-	visible = false
+	# Don't close panel - just save
 
 func show_panel():
 	visible = true

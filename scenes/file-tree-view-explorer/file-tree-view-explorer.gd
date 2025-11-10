@@ -8,6 +8,7 @@ signal FileSelected(filePath : String)
 signal DirectorySelected(dirPath : String)
 signal NavigateToProjectRequested
 signal ProjectViewRestoreRequested
+signal FilterSettingsClosed
 
 var _rootItem: TreeItem
 var _isProcessingSelection := false
@@ -115,6 +116,10 @@ func _flash_button(button: TextureButton):
 
 func InitSignals():
 	%FileTree.item_collapsed.connect(_on_item_collapsed)
+
+	# Connect FilterSettings signals programmatically to survive reparenting
+	%FilterSettings.settings_applied.connect(_on_filter_settings_applied)
+	%FilterSettings.settings_canceled.connect(_on_filter_settings_canceled)
 
 func SetupContextMenu():
 	# Add menu items (labels will be updated dynamically based on file type)
@@ -2330,10 +2335,9 @@ func _on_filter_option_selected(index: int) -> void:
 func _on_add_favorite_button_pressed() -> void:
 	AddToFavorites()
 
-func _on_filter_settings_button_pressed() -> void:
-	# Build current extensions dictionary
-	var current_extensions = {
-		"all": [],
+# Get current filter extensions for settings panel
+func get_current_filter_extensions() -> Dictionary:
+	return {
 		"images": _imageExtensions,
 		"sounds": _audioExtensions,
 		"text": _textExtensions,
@@ -2343,6 +2347,10 @@ func _on_filter_settings_button_pressed() -> void:
 		"executables": _executableExtensions,
 		"zip": _zipExtensions
 	}
+
+func _on_filter_settings_button_pressed() -> void:
+	# Build current extensions dictionary
+	var current_extensions = get_current_filter_extensions()
 
 	# Load current extensions into settings panel
 	%FilterSettings.load_extensions(current_extensions)
@@ -2366,6 +2374,12 @@ func _on_filter_settings_applied(filter_extensions: Dictionary) -> void:
 
 	# Refresh the tree view with new filter settings
 	ApplyActiveFilters()
+
+	# Don't close panel - Save button no longer closes
+
+func _on_filter_settings_canceled() -> void:
+	# Notify parent to restore main view
+	FilterSettingsClosed.emit()
 
 # Check if audio filter is currently active
 func IsAudioFilterActive() -> bool:
