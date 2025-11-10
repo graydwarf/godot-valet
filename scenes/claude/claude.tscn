@@ -1,13 +1,13 @@
-[gd_scene load_steps=9 format=3 uid="uid://w4jujpatu6b4"]
+[gd_scene load_steps=9 format=3 uid="uid://bl5ta74ow6qib"]
 
-[ext_resource type="Script" uid="uid://bltgmotcc1wq8" path="res://scenes/claude/claude.gd" id="1_cc7t5"]
-[ext_resource type="Texture2D" uid="uid://ccj6g25wnde8g" path="res://scenes/claude/assets/settings.png" id="2_djybm"]
-[ext_resource type="Texture2D" uid="uid://b10q8h4uap3lt" path="res://scenes/claude/assets/claude.png" id="2_lf8bk"]
-[ext_resource type="Texture2D" uid="uid://c5mxvs24jyss2" path="res://scenes/claude/assets/settings-pressed.png" id="4_aob0g"]
-[ext_resource type="Texture2D" uid="uid://dn2iojm77u55k" path="res://scenes/claude/assets/settings-hovered.png" id="5_4l25e"]
-[ext_resource type="Texture2D" uid="uid://bl1bmbcj5ay05" path="res://scenes/claude/assets/close-button.png" id="6_4l25e"]
-[ext_resource type="Texture2D" uid="uid://dcse0yvecuvbu" path="res://scenes/claude/assets/close-button-pressed.png" id="7_24tlg"]
-[ext_resource type="Texture2D" uid="uid://cxets6emvay1k" path="res://scenes/claude/assets/close-button-hovered.png" id="8_lit52"]
+[ext_resource type="Script" path="res://scenes/claude/claude.gd" id="1_cc7t5"]
+[ext_resource type="Texture2D" path="res://scenes/claude/assets/settings.png" id="2_djybm"]
+[ext_resource type="Texture2D" path="res://scenes/claude/assets/claude.png" id="2_lf8bk"]
+[ext_resource type="Texture2D" path="res://scenes/claude/assets/settings-pressed.png" id="4_aob0g"]
+[ext_resource type="Texture2D" path="res://scenes/claude/assets/settings-hovered.png" id="5_4l25e"]
+[ext_resource type="Texture2D" path="res://scenes/claude/assets/close-button.png" id="6_4l25e"]
+[ext_resource type="Texture2D" path="res://scenes/claude/assets/close-button-pressed.png" id="7_24tlg"]
+[ext_resource type="Texture2D" path="res://scenes/claude/assets/close-button-hovered.png" id="8_lit52"]
 
 [node name="Claude" type="Control"]
 layout_mode = 3
@@ -35,7 +35,7 @@ layout_mode = 2
 color = Color(0, 0, 0, 0.843137)
 
 [node name="MarginContainer2" type="MarginContainer" parent="MarginContainer/ColorRect"]
-layout_mode = 2
+layout_mode = 0
 offset_right = 1180.0
 offset_bottom = 912.0
 theme_override_constants/margin_top = 8

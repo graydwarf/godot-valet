@@ -18,7 +18,6 @@ var _runProjectThread
 var _editProjectThread
 var _openGodotProjectManagerThread
 var _fileExplorer : FileExplorer
-var _claude : Claude
 
 func _ready():
 	InitSignals()
@@ -314,8 +313,8 @@ func DisableEditButtons():
 	_changeProjectButton.disabled = true
 	_removeProjectButton.disabled = true
 	#%FileExplorerButton.disabled = false
-	%ClaudeButton.disabled = false
-	
+	%ClaudeButton.disabled = true
+
 func EnableEditButtons():
 	_runProjectButton.disabled = false
 	_editProjectButton.disabled = false
@@ -324,7 +323,7 @@ func EnableEditButtons():
 	_changeProjectButton.disabled = false
 	_removeProjectButton.disabled = false
 	#%FileExplorerButton.disabled = true
-	%ClaudeButton.disabled = true
+	%ClaudeButton.disabled = false
 
 func RunProject():
 	if !is_instance_valid(_selectedProjectItem):
@@ -445,10 +444,22 @@ func OpenProjectFolder():
 	var projectPath = _selectedProjectItem.GetProjectPathBaseDir()
 	OS.shell_open(projectPath)
 
-func OpenClaude():
-	_claude = load("res://scenes/claude/claude.tscn").instantiate()
-	add_child(_claude)
-		
+func LaunchClaudeCode():
+	if !is_instance_valid(_selectedProjectItem):
+		OS.alert("No project selected")
+		return
+
+	var projectPath = _selectedProjectItem.GetProjectPathBaseDir()
+
+	# Launch Claude Code by changing directory first, then using start to launch
+	# start creates a new process that persists after cmd exits
+	var command = 'cd /d "%s" && start claude .' % projectPath
+	var args = ["/c", command]
+	var pid = OS.create_process("cmd.exe", args)
+
+	if pid == -1:
+		OS.alert("Failed to launch Claude Code. Make sure it's installed and in your PATH.")
+
 func OpenFileExplorer():
 	if _fileExplorer == null:
 		_fileExplorer = load("res://scenes/file-explorer/file-explorer.tscn").instantiate()
@@ -564,7 +575,7 @@ func InitializeCustomOrderIfNeeded():
 			all_items[i].SaveProjectItem()
 
 func _on_claude_button_pressed() -> void:
-	OpenClaude()
+	LaunchClaudeCode()
 
 func _on_file_explorer_button_pressed() -> void:
 	OpenFileExplorer()

@@ -176,8 +176,9 @@ text = "File Explorer"
 [node name="ClaudeButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-tooltip_text = "Opens the selected projects release configuration which supports exporting and publish to multiple platforms."
-text = "Claude"
+tooltip_text = "Launch Claude Code at the selected project's root directory"
+disabled = true
+text = "Claude Code"
 
 [node name="OpenProjectFolderButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
