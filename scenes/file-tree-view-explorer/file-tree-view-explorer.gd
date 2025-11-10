@@ -2590,19 +2590,19 @@ func _handle_delete_selected() -> void:
 			folder_count += 1
 
 	# Build confirmation message
-	var message = "Are you sure you want to delete "
+	var message = "Move to Recycle Bin?\n\n"
 	if file_count > 0 and folder_count > 0:
-		message += "%d file(s) and %d folder(s)?" % [file_count, folder_count]
+		message += "%d file(s) and %d folder(s)" % [file_count, folder_count]
 	elif file_count > 0:
 		if file_count == 1:
-			message += "1 file?"
+			message += "1 file"
 		else:
-			message += "%d files?" % file_count
+			message += "%d files" % file_count
 	else:
 		if folder_count == 1:
-			message += "1 folder?"
+			message += "1 folder"
 		else:
-			message += "%d folders?" % folder_count
+			message += "%d folders" % folder_count
 
 	# Show confirmation dialog
 	var dialog = ConfirmationDialog.new()
@@ -2635,32 +2635,23 @@ func _handle_delete_selected() -> void:
 
 	# If confirmed, delete the files/folders
 	if confirmed[0]:
-		# Find the parent folder of the first selected item to refresh after deletion
-		var parent_folder = ""
-		if not selected_paths.is_empty():
-			parent_folder = selected_paths[0].get_base_dir()
+		# Store tree items to remove
+		var items_to_remove: Array[TreeItem] = []
+		var item = %FileTree.get_next_selected(null)
+		while item:
+			items_to_remove.append(item)
+			item = %FileTree.get_next_selected(item)
 
-		# Delete all selected items
+		# Move all selected items to Recycle Bin
 		for path in selected_paths:
-			if FileAccess.file_exists(path):
-				DirAccess.remove_absolute(path)
-			elif DirAccess.dir_exists_absolute(path):
-				_delete_directory_recursive(path)
+			_move_to_recycle_bin(path)
 
-		# Find and refresh the parent folder in the tree
-		if not parent_folder.is_empty():
-			var parent_item = _find_tree_item_by_path(parent_folder)
-			if parent_item:
-				# Select the parent folder
-				parent_item.select(0)
-				# Refresh it if it's been populated
-				if HasBeenPopulated(parent_item):
-					var child = parent_item.get_first_child()
-					while child:
-						var nextChild = child.get_next()
-						child.free()
-						child = nextChild
-					PopulateDirectory(parent_item)
+		# Remove items from tree (this won't scroll or change view)
+		for tree_item in items_to_remove:
+			tree_item.free()
+
+		# Clear the preview pane
+		FileSelected.emit("")
 
 # Find a tree item by its path
 func _find_tree_item_by_path(path: String) -> TreeItem:
@@ -2682,7 +2673,22 @@ func _find_item_recursive(item: TreeItem, path: String) -> TreeItem:
 
 	return null
 
-# Recursively delete a directory and all its contents
+# Move a file or folder to the Windows Recycle Bin
+func _move_to_recycle_bin(path: String) -> void:
+	# Escape path for PowerShell
+	var escaped_path = path.replace("'", "''")
+
+	# Use PowerShell to move to Recycle Bin with hidden window and no success dialogs
+	var ps_command = "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile('%s', 'OnlyErrorDialogs', 'SendToRecycleBin')" % escaped_path
+
+	# Use DeleteDirectory for folders
+	if DirAccess.dir_exists_absolute(path):
+		ps_command = "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory('%s', 'OnlyErrorDialogs', 'SendToRecycleBin')" % escaped_path
+
+	var output = []
+	OS.execute("powershell.exe", ["-WindowStyle", "Hidden", "-Command", ps_command], output, true, false)
+
+# Recursively delete a directory and all its contents (permanent - not used, kept for reference)
 func _delete_directory_recursive(path: String) -> void:
 	var dir = DirAccess.open(path)
 	if dir:

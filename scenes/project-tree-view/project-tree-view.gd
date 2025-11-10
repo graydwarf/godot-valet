@@ -383,19 +383,19 @@ func _handle_delete_selected() -> void:
 			folder_count += 1
 
 	# Build confirmation message
-	var message = "Are you sure you want to delete "
+	var message = "Move to Recycle Bin?\n\n"
 	if file_count > 0 and folder_count > 0:
-		message += "%d file(s) and %d folder(s)?" % [file_count, folder_count]
+		message += "%d file(s) and %d folder(s)" % [file_count, folder_count]
 	elif file_count > 0:
 		if file_count == 1:
-			message += "1 file?"
+			message += "1 file"
 		else:
-			message += "%d files?" % file_count
+			message += "%d files" % file_count
 	else:
 		if folder_count == 1:
-			message += "1 folder?"
+			message += "1 folder"
 		else:
-			message += "%d folders?" % folder_count
+			message += "%d folders" % folder_count
 
 	# Show confirmation dialog
 	var dialog = ConfirmationDialog.new()
@@ -428,27 +428,24 @@ func _handle_delete_selected() -> void:
 
 	# If confirmed, delete the files/folders
 	if confirmed[0]:
+		# Move all selected items to Recycle Bin
 		for path in selected_paths:
-			if FileAccess.file_exists(path):
-				DirAccess.remove_absolute(path)
-			elif DirAccess.dir_exists_absolute(path):
-				_delete_directory_recursive(path)
+			_move_to_recycle_bin(path)
 
 		# Refresh the tree
 		await RefreshProjectTree()
 
-# Recursively delete a directory and all its contents
-func _delete_directory_recursive(path: String) -> void:
-	var dir = DirAccess.open(path)
-	if dir:
-		dir.list_dir_begin()
-		var file_name = dir.get_next()
-		while file_name != "":
-			var full_path = path.path_join(file_name)
-			if dir.current_is_dir():
-				_delete_directory_recursive(full_path)
-			else:
-				DirAccess.remove_absolute(full_path)
-			file_name = dir.get_next()
-		dir.list_dir_end()
-		DirAccess.remove_absolute(path)
+# Move a file or folder to the Windows Recycle Bin
+func _move_to_recycle_bin(path: String) -> void:
+	# Escape path for PowerShell
+	var escaped_path = path.replace("'", "''")
+
+	# Use PowerShell to move to Recycle Bin with hidden window and no success dialogs
+	var ps_command = "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile('%s', 'OnlyErrorDialogs', 'SendToRecycleBin')" % escaped_path
+
+	# Use DeleteDirectory for folders
+	if DirAccess.dir_exists_absolute(path):
+		ps_command = "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory('%s', 'OnlyErrorDialogs', 'SendToRecycleBin')" % escaped_path
+
+	var output = []
+	OS.execute("powershell.exe", ["-WindowStyle", "Hidden", "-Command", ps_command], output, true, false)
