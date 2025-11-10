@@ -7,6 +7,7 @@ var _projectRootPath: String = ""
 
 func _ready():
 	SetupTree()
+	SetupContextMenu()
 
 func SetupTree():
 	%Tree.hide_root = true
@@ -14,6 +15,11 @@ func SetupTree():
 	%Tree.select_mode = Tree.SELECT_MULTI
 	_rootItem = %Tree.create_item()
 	%Tree.item_collapsed.connect(_on_item_collapsed)
+	%Tree.item_mouse_selected.connect(_on_tree_item_mouse_selected)
+
+func SetupContextMenu():
+	%ContextMenu.add_item("Delete", 0)
+	%ContextMenu.id_pressed.connect(_on_context_menu_item_selected)
 
 func InitializeProjectTree(projectPath: String):
 	_projectRootPath = projectPath.get_base_dir()
@@ -333,3 +339,116 @@ func _on_item_collapsed(item: TreeItem):
 			child.free()
 			var path = item.get_metadata(0) as String
 			await PopulateDirectory(item, path)
+
+# Handle right-click on tree items
+func _on_tree_item_mouse_selected(_mouse_position: Vector2, mouse_button_index: int) -> void:
+	if mouse_button_index == MOUSE_BUTTON_RIGHT:
+		var selected = %Tree.get_selected()
+		if selected:
+			var path = selected.get_metadata(0)
+			if path != null:
+				# Show context menu at mouse position
+				var global_pos = get_viewport().get_mouse_position()
+				%ContextMenu.position = Vector2i(global_pos)
+				%ContextMenu.popup()
+
+# Handle context menu item selection
+func _on_context_menu_item_selected(id: int) -> void:
+	match id:
+		0:  # Delete
+			await _handle_delete_selected()
+
+# Handle delete with confirmation dialog
+func _handle_delete_selected() -> void:
+	# Get all selected items
+	var selected_paths: Array[String] = []
+	var selected_item = %Tree.get_next_selected(null)
+
+	while selected_item:
+		var path = selected_item.get_metadata(0)
+		if path:
+			selected_paths.append(path)
+		selected_item = %Tree.get_next_selected(selected_item)
+
+	if selected_paths.is_empty():
+		return
+
+	# Count files and folders
+	var file_count = 0
+	var folder_count = 0
+	for path in selected_paths:
+		if FileAccess.file_exists(path):
+			file_count += 1
+		elif DirAccess.dir_exists_absolute(path):
+			folder_count += 1
+
+	# Build confirmation message
+	var message = "Are you sure you want to delete "
+	if file_count > 0 and folder_count > 0:
+		message += "%d file(s) and %d folder(s)?" % [file_count, folder_count]
+	elif file_count > 0:
+		if file_count == 1:
+			message += "1 file?"
+		else:
+			message += "%d files?" % file_count
+	else:
+		if folder_count == 1:
+			message += "1 folder?"
+		else:
+			message += "%d folders?" % folder_count
+
+	# Show confirmation dialog
+	var dialog = ConfirmationDialog.new()
+	dialog.dialog_text = message
+	dialog.title = "Confirm Delete"
+	dialog.ok_button_text = "Yes"
+	dialog.cancel_button_text = "Cancel"
+
+	add_child(dialog)
+
+	var confirmed = [false]
+	var closed = [false]
+
+	dialog.confirmed.connect(func():
+		confirmed[0] = true
+		closed[0] = true
+	)
+	dialog.canceled.connect(func():
+		confirmed[0] = false
+		closed[0] = true
+	)
+
+	dialog.popup_centered()
+
+	# Wait for dialog to close
+	while not closed[0]:
+		await get_tree().process_frame
+
+	dialog.queue_free()
+
+	# If confirmed, delete the files/folders
+	if confirmed[0]:
+		for path in selected_paths:
+			if FileAccess.file_exists(path):
+				DirAccess.remove_absolute(path)
+			elif DirAccess.dir_exists_absolute(path):
+				_delete_directory_recursive(path)
+
+		# Refresh the tree
+		await RefreshProjectTree()
+
+# Recursively delete a directory and all its contents
+func _delete_directory_recursive(path: String) -> void:
+	var dir = DirAccess.open(path)
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != "":
+			var full_path = path.path_join(file_name)
+			if dir.current_is_dir():
+				_delete_directory_recursive(full_path)
+			else:
+				DirAccess.remove_absolute(full_path)
+			file_name = dir.get_next()
+		dir.list_dir_end()
+		DirAccess.remove_absolute(path)

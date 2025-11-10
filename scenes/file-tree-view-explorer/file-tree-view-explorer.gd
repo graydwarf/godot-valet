@@ -126,6 +126,8 @@ func SetupContextMenu():
 	%ContextMenu.add_item("Edit", 0)
 	%ContextMenu.add_item("Open in File Explorer", 1)
 	%ContextMenu.add_item("Copy Path", 2)
+	%ContextMenu.add_separator()
+	%ContextMenu.add_item("Delete", 3)
 
 # Check if a file is likely binary by reading first chunk
 func IsBinaryFile(filePath: String) -> bool:
@@ -2539,6 +2541,8 @@ func _on_context_menu_item_selected(id: int) -> void:
 			OpenPathInFileExplorer(path)
 		2:  # Copy Path
 			CopyPathToClipboard(path)
+		3:  # Delete
+			await _handle_delete_selected()
 
 # Open path in system file explorer
 func OpenPathInFileExplorer(path: String) -> void:
@@ -2560,6 +2564,101 @@ func OpenPathInFileExplorer(path: String) -> void:
 # Copy path to clipboard
 func CopyPathToClipboard(path: String) -> void:
 	DisplayServer.clipboard_set(path)
+
+# Handle delete with confirmation dialog
+func _handle_delete_selected() -> void:
+	# Get all selected items
+	var selected_paths: Array[String] = []
+	var selected_item = %FileTree.get_next_selected(null)
+
+	while selected_item:
+		var path = selected_item.get_metadata(0)
+		if path and not ("::" in path):  # Don't allow deleting files inside zips
+			selected_paths.append(path)
+		selected_item = %FileTree.get_next_selected(selected_item)
+
+	if selected_paths.is_empty():
+		return
+
+	# Count files and folders
+	var file_count = 0
+	var folder_count = 0
+	for path in selected_paths:
+		if FileAccess.file_exists(path):
+			file_count += 1
+		elif DirAccess.dir_exists_absolute(path):
+			folder_count += 1
+
+	# Build confirmation message
+	var message = "Are you sure you want to delete "
+	if file_count > 0 and folder_count > 0:
+		message += "%d file(s) and %d folder(s)?" % [file_count, folder_count]
+	elif file_count > 0:
+		if file_count == 1:
+			message += "1 file?"
+		else:
+			message += "%d files?" % file_count
+	else:
+		if folder_count == 1:
+			message += "1 folder?"
+		else:
+			message += "%d folders?" % folder_count
+
+	# Show confirmation dialog
+	var dialog = ConfirmationDialog.new()
+	dialog.dialog_text = message
+	dialog.title = "Confirm Delete"
+	dialog.ok_button_text = "Yes"
+	dialog.cancel_button_text = "Cancel"
+
+	add_child(dialog)
+
+	var confirmed = [false]
+	var closed = [false]
+
+	dialog.confirmed.connect(func():
+		confirmed[0] = true
+		closed[0] = true
+	)
+	dialog.canceled.connect(func():
+		confirmed[0] = false
+		closed[0] = true
+	)
+
+	dialog.popup_centered()
+
+	# Wait for dialog to close
+	while not closed[0]:
+		await get_tree().process_frame
+
+	dialog.queue_free()
+
+	# If confirmed, delete the files/folders
+	if confirmed[0]:
+		for path in selected_paths:
+			if FileAccess.file_exists(path):
+				DirAccess.remove_absolute(path)
+			elif DirAccess.dir_exists_absolute(path):
+				_delete_directory_recursive(path)
+
+		# Refresh the tree
+		RefreshTree()
+
+# Recursively delete a directory and all its contents
+func _delete_directory_recursive(path: String) -> void:
+	var dir = DirAccess.open(path)
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != "":
+			var full_path = path.path_join(file_name)
+			if dir.current_is_dir():
+				_delete_directory_recursive(full_path)
+			else:
+				DirAccess.remove_absolute(full_path)
+			file_name = dir.get_next()
+		dir.list_dir_end()
+		DirAccess.remove_absolute(path)
 
 # Edit file in default editor
 func EditInDefaultEditor(path: String) -> void:
