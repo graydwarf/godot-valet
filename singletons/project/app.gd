@@ -16,6 +16,7 @@ var _isDebuggingWithoutThreads = false
 var _backgroundColor = Color(0.2, 0.2, 0.2)
 var _showHidden = false
 var _sortType = Enums.SortByType.EditedDate
+var _claudeCodeLaunchCommand = 'cd /d "{project_path}" && start claude .'
 
 func _ready():
 	LoadSavedSolutionSettings()
@@ -52,7 +53,17 @@ func GetShowHidden():
 
 func GetSortType():
 	return _sortType
-	
+
+func GetClaudeCodeLaunchCommand():
+	return _claudeCodeLaunchCommand
+
+func SetClaudeCodeLaunchCommand(value):
+	_claudeCodeLaunchCommand = value
+	SaveSolutionSettings()
+
+func GetDefaultClaudeCodeLaunchCommand():
+	return 'cd /d "{project_path}" && start claude .'
+
 func SetLastUpdateTime(value):
 	_lastUpdateTime = value
 
@@ -97,19 +108,20 @@ func HasKey(serviceName: String) -> bool:
 func LoadSavedSolutionSettings():
 	if !FileAccess.file_exists(_solutionConfigFile):
 		return
-		
+
 	var config = ConfigFile.new()
 	var err = config.load(_solutionConfigFile)
 	if err == OK:
 		_backgroundColor = config.get_value("SolutionSettings", "bg_color", "")
 		_showHidden = config.get_value("SolutionSettings", "show_hidden", false)
 		_sortType = config.get_value("SolutionSettings", "sort_type", Enums.SortByType.EditedDate)
+		_claudeCodeLaunchCommand = config.get_value("SolutionSettings", "claude_code_launch_command", GetDefaultClaudeCodeLaunchCommand())
 	else:
 		OS.alert("An error occured loading the solution configuration file")
 	
 func SaveSolutionSettings():
 	var config = ConfigFile.new()
-	
+
 	# Load existing config to preserve API keys
 	if FileAccess.file_exists(_solutionConfigFile):
 		config.load(_solutionConfigFile)
@@ -117,7 +129,8 @@ func SaveSolutionSettings():
 	config.set_value("SolutionSettings", "bg_color", _backgroundColor)
 	config.set_value("SolutionSettings", "show_hidden", _showHidden)
 	config.set_value("SolutionSettings", "sort_type", _sortType)
-	
+	config.set_value("SolutionSettings", "claude_code_launch_command", _claudeCodeLaunchCommand)
+
 	# Save the config file.
 	var err = config.save(_solutionConfigFile)
 

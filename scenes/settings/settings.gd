@@ -4,6 +4,7 @@ func _ready():
 	InitSignals()
 	LoadTheme()
 	LoadBackgroundColor(App.GetBackgroundColor())
+	LoadClaudeCodeCommand()
 
 func InitSignals():
 	Signals.connect("BackgroundColorTemporarilyChanged", BackgroundColorTemporarilyChanged)
@@ -30,7 +31,20 @@ func OpenGodotVersionManager():
 func _on_open_godot_version_manager_button_pressed():
 	OpenGodotVersionManager()
 
+func LoadClaudeCodeCommand():
+	%ClaudeCodeLineEdit.text = App.GetClaudeCodeLaunchCommand()
+
+func SaveClaudeCodeCommand():
+	var command = %ClaudeCodeLineEdit.text.strip_edges()
+	if command.is_empty():
+		command = App.GetDefaultClaudeCodeLaunchCommand()
+	App.SetClaudeCodeLaunchCommand(command)
+
+func _on_reset_button_pressed():
+	%ClaudeCodeLineEdit.text = App.GetDefaultClaudeCodeLaunchCommand()
+
 func _on_close_button_pressed():
+	SaveClaudeCodeCommand()
 	App.SaveSolutionSettings()
 	Signals.emit_signal("BackgroundColorChanged", App.GetBackgroundColor())
 	queue_free()

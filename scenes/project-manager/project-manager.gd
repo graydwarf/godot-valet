@@ -450,15 +450,15 @@ func LaunchClaudeCode():
 		return
 
 	var projectPath = _selectedProjectItem.GetProjectPathBaseDir()
+	var commandTemplate = App.GetClaudeCodeLaunchCommand()
 
-	# Launch Claude Code by changing directory first, then using start to launch
-	# start creates a new process that persists after cmd exits
-	var command = 'cd /d "%s" && start claude .' % projectPath
+	# Replace {project_path} placeholder with actual project path
+	var command = commandTemplate.replace("{project_path}", projectPath)
 	var args = ["/c", command]
 	var pid = OS.create_process("cmd.exe", args)
 
 	if pid == -1:
-		OS.alert("Failed to launch Claude Code. Make sure it's installed and in your PATH.")
+		OS.alert("Failed to launch Claude Code.\n\nMake sure it's installed and check your launch command in Settings.\nCurrent command: %s" % command)
 
 func OpenFileExplorer():
 	if _fileExplorer == null:
