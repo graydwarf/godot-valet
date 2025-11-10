@@ -2635,14 +2635,52 @@ func _handle_delete_selected() -> void:
 
 	# If confirmed, delete the files/folders
 	if confirmed[0]:
+		# Find the parent folder of the first selected item to refresh after deletion
+		var parent_folder = ""
+		if not selected_paths.is_empty():
+			parent_folder = selected_paths[0].get_base_dir()
+
+		# Delete all selected items
 		for path in selected_paths:
 			if FileAccess.file_exists(path):
 				DirAccess.remove_absolute(path)
 			elif DirAccess.dir_exists_absolute(path):
 				_delete_directory_recursive(path)
 
-		# Refresh the tree
-		RefreshTree()
+		# Find and refresh the parent folder in the tree
+		if not parent_folder.is_empty():
+			var parent_item = _find_tree_item_by_path(parent_folder)
+			if parent_item:
+				# Select the parent folder
+				parent_item.select(0)
+				# Refresh it if it's been populated
+				if HasBeenPopulated(parent_item):
+					var child = parent_item.get_first_child()
+					while child:
+						var nextChild = child.get_next()
+						child.free()
+						child = nextChild
+					PopulateDirectory(parent_item, parent_folder)
+
+# Find a tree item by its path
+func _find_tree_item_by_path(path: String) -> TreeItem:
+	var root = %FileTree.get_root()
+	if not root:
+		return null
+	return _find_item_recursive(root, path)
+
+func _find_item_recursive(item: TreeItem, path: String) -> TreeItem:
+	if item.get_metadata(0) == path:
+		return item
+
+	var child = item.get_first_child()
+	while child:
+		var found = _find_item_recursive(child, path)
+		if found:
+			return found
+		child = child.get_next()
+
+	return null
 
 # Recursively delete a directory and all its contents
 func _delete_directory_recursive(path: String) -> void:
