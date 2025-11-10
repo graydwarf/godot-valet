@@ -43,6 +43,11 @@ func ExtractFileFromZip(zipFilePath: String, internalPath: String) -> PackedByte
 
 # Preview a file based on its extension
 func PreviewFile(filePath: String):
+	# If path is empty, clear the preview
+	if filePath.is_empty():
+		ClearPreview()
+		return
+
 	# Check if this is a directory path inside a zip - skip preview
 	if IsZipPath(filePath):
 		var parts = filePath.split("::")
