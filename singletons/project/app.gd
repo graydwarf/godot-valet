@@ -16,7 +16,7 @@ var _isDebuggingWithoutThreads = false
 var _backgroundColor = Color(0.2, 0.2, 0.2)
 var _showHidden = false
 var _sortType = Enums.SortByType.EditedDate
-var _claudeCodeLaunchCommand = 'cd /d "{project_path}" && start claude .'
+var _claudeCodeLaunchCommand = 'start cmd /k "cd /d {project_path} && claude"'
 
 func _ready():
 	LoadSavedSolutionSettings()
@@ -62,7 +62,7 @@ func SetClaudeCodeLaunchCommand(value):
 	SaveSolutionSettings()
 
 func GetDefaultClaudeCodeLaunchCommand():
-	return 'cd /d "{project_path}" && start claude .'
+	return 'start cmd /k "cd /d {project_path} && claude"'
 
 func SetLastUpdateTime(value):
 	_lastUpdateTime = value
