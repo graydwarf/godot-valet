@@ -11,6 +11,7 @@ signal ProjectViewRestoreRequested
 signal FilterSettingsClosed
 
 var _rootItem: TreeItem
+var _populationToken: int = 0  # Used to cancel in-progress async operations
 var _isProcessingSelection := false
 var _isProcessingExpansion := false
 var _currentFilePath := ""
@@ -515,12 +516,20 @@ func SetupTree():
 	_rootItem = %FileTree.create_item()
 
 func PopulateDrives():
+	# Increment token to cancel any in-progress async operations
+	_populationToken += 1
+	var myToken = _populationToken
+
 	await ProcessWithBusyIndicator(func():
-		PopulateDrivesInternal()
+		PopulateDrivesInternal(myToken)
 	)
 
 # Internal function that does the actual drive population
-func PopulateDrivesInternal():
+func PopulateDrivesInternal(token: int):
+	# Check if operation was cancelled
+	if token != _populationToken:
+		return
+
 	# Check if _rootItem is still valid
 	if not is_instance_valid(_rootItem):
 		return
@@ -528,6 +537,10 @@ func PopulateDrivesInternal():
 	var drives = GetAvailableDrives()
 
 	for drive in drives:
+		# Check if cancelled or _rootItem is no longer valid
+		if token != _populationToken or not is_instance_valid(_rootItem):
+			return
+
 		var driveItem = %FileTree.create_item(_rootItem)
 		driveItem.set_text(0, drive)
 		driveItem.set_metadata(0, drive)
@@ -1237,11 +1250,14 @@ func ToggleFlatList():
 
 # Internal function for flat list creation
 func _show_flat_list_internal():
+	# Increment token to cancel any in-progress async operations
+	_populationToken += 1
+
 	var basePath = GetCurrentBasePath()
 	if basePath.is_empty():
 		ShowFlatList()
 		return
-	
+
 	# Clear the tree
 	%FileTree.clear()
 	_rootItem = %FileTree.create_item()
@@ -1352,6 +1368,10 @@ func PopulateFlatList():
 		if IsZipFile(filePath):
 			continue
 
+		# Re-check validity before each create_item call
+		if not is_instance_valid(_rootItem):
+			return
+
 		var fileItem = %FileTree.create_item(_rootItem)
 		if fileItem == null:
 			continue
@@ -1428,6 +1448,9 @@ func ShowTreeView():
 	
 # Show all supported files in a flat list
 func ShowFlatList():
+	# Increment token to cancel any in-progress async operations
+	_populationToken += 1
+
 	# Clear the tree
 	%FileTree.clear()
 	_rootItem = %FileTree.create_item()
@@ -1557,16 +1580,19 @@ func FilterFlatListByExtension(extensions : Array) -> Array:
 func ShowFilteredFlatListByType(extensions : Array):
 	if not %FlatListToggleButton.button_pressed:
 		return
-	
+
+	# Increment token to cancel any in-progress async operations
+	_populationToken += 1
+
 	# Use cached list if available to avoid re-scanning
 	var filesToShow : Array = []
 	var sourceList = _allSupportedFiles if not _allSupportedFiles.is_empty() else _cachedFileList
-	
+
 	for filePath in sourceList:
 		var extension = "." + filePath.get_extension().to_lower()
 		if extension in extensions:
 			filesToShow.append(filePath)
-	
+
 	# Clear and repopulate tree
 	%FileTree.clear()
 	_rootItem = %FileTree.create_item()
@@ -1576,6 +1602,10 @@ func ShowFilteredFlatListByType(extensions : Array):
 		return
 
 	for filePath in filesToShow:
+		# Re-check validity before each create_item call
+		if not is_instance_valid(_rootItem):
+			return
+
 		var fileItem = %FileTree.create_item(_rootItem)
 		if fileItem == null:
 			continue
@@ -2748,9 +2778,13 @@ func NavigateToPath(targetPath: String, resetTree: bool = false) -> bool:
 
 	# Reset tree view if requested (only when clicking "Open Project" button)
 	if resetTree:
+		# Increment token to cancel any in-progress async operations
+		_populationToken += 1
+		var myToken = _populationToken
+
 		%FileTree.clear()
 		_rootItem = %FileTree.create_item()
-		await PopulateDrivesInternal()
+		await PopulateDrivesInternal(myToken)
 		await get_tree().process_frame
 
 	# Split the path into segments

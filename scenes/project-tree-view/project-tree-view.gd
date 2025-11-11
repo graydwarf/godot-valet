@@ -4,6 +4,7 @@ extends Control
 
 var _rootItem: TreeItem
 var _projectRootPath: String = ""
+var _populationToken: int = 0  # Used to cancel in-progress async operations
 
 func _ready():
 	SetupTree()
@@ -191,11 +192,19 @@ func _RestoreExpandedPaths(item: TreeItem, paths: Array[String]):
 		child = child.get_next()
 
 func PopulateProjectTree():
+	# Increment token to cancel any in-progress async operations
+	_populationToken += 1
+	var myToken = _populationToken
+
 	%Tree.clear()
 	_rootItem = %Tree.create_item()
 
 	# Check if _rootItem is valid after clear
 	if not is_instance_valid(_rootItem):
+		return
+
+	# Check if we were cancelled
+	if myToken != _populationToken:
 		return
 
 	# Add project root
@@ -205,13 +214,19 @@ func PopulateProjectTree():
 	rootItem.set_icon(0, GetFolderIcon())
 
 	# Populate with project directories (recursively to show all files)
-	await PopulateDirectory(rootItem, _projectRootPath, true)
+	await PopulateDirectory(rootItem, _projectRootPath, true, myToken)
 
-	# Check if rootItem is still valid after awaits
-	if is_instance_valid(rootItem):
-		rootItem.set_collapsed(false)
+	# Check if we were cancelled or if rootItem is no longer valid
+	if myToken != _populationToken or not is_instance_valid(rootItem):
+		return
 
-func PopulateDirectory(parentItem: TreeItem, dirPath: String, recursive: bool = false):
+	rootItem.set_collapsed(false)
+
+func PopulateDirectory(parentItem: TreeItem, dirPath: String, recursive: bool = false, token: int = -1):
+	# Check if operation was cancelled
+	if token != -1 and token != _populationToken:
+		return
+
 	var dir = DirAccess.open(dirPath)
 	if dir == null:
 		return
@@ -242,9 +257,13 @@ func PopulateDirectory(parentItem: TreeItem, dirPath: String, recursive: bool = 
 		# Process a frame every few items to avoid blocking
 		if i % 5 == 0:
 			await get_tree().process_frame
-			# Check if parent item and root item are still valid after await
-			if not is_instance_valid(parentItem) or not is_instance_valid(_rootItem):
+			# Check if operation was cancelled or items are no longer valid
+			if (token != -1 and token != _populationToken) or not is_instance_valid(parentItem) or not is_instance_valid(_rootItem):
 				return
+
+		# Double-check validity right before using parentItem
+		if not is_instance_valid(parentItem):
+			return
 
 		var dirItem = %Tree.create_item(parentItem)
 		if dirItem == null:
@@ -260,7 +279,7 @@ func PopulateDirectory(parentItem: TreeItem, dirPath: String, recursive: bool = 
 		if recursive:
 			# Recursively populate this subdirectory immediately (collapsed but populated)
 			dirItem.set_collapsed(true)
-			await PopulateDirectory(dirItem, fullPath, true)
+			await PopulateDirectory(dirItem, fullPath, true, token)
 		elif HasSubdirectories(fullPath):
 			# Use lazy loading with dummy child
 			dirItem.set_collapsed(true)
@@ -275,9 +294,13 @@ func PopulateDirectory(parentItem: TreeItem, dirPath: String, recursive: bool = 
 
 		if j % 5 == 0:
 			await get_tree().process_frame
-			# Check if parent item and root item are still valid after await
-			if not is_instance_valid(parentItem) or not is_instance_valid(_rootItem):
+			# Check if operation was cancelled or items are no longer valid
+			if (token != -1 and token != _populationToken) or not is_instance_valid(parentItem) or not is_instance_valid(_rootItem):
 				return
+
+		# Double-check validity right before using parentItem
+		if not is_instance_valid(parentItem):
+			return
 
 		var fileItem = %Tree.create_item(parentItem)
 		if fileItem == null:
