@@ -59,11 +59,19 @@ func ConfigureProject(selectedProjectItem):
 		_fileTreeViewExplorer.NavigateToPath(projectPath)
 
 func LoadThumbnailImage(thumbnailPath):
-	var image = Image.new()
-	var error = image.load(thumbnailPath)
-	if error == OK:
-		var texture = ImageTexture.create_from_image(image)
-		%ProjectThumbnailTextureRect.texture = texture
+	# Check if this is a Godot resource path (res://)
+	if thumbnailPath.begins_with("res://"):
+		# Load as a resource (respects Godot's import system)
+		var texture = load(thumbnailPath)
+		if texture:
+			%ProjectThumbnailTextureRect.texture = texture
+	else:
+		# Load from filesystem (for user-provided external images)
+		var image = Image.new()
+		var error = image.load(thumbnailPath)
+		if error == OK:
+			var texture = ImageTexture.create_from_image(image)
+			%ProjectThumbnailTextureRect.texture = texture
 
 func CheckForOverwrites(files: Array[String], destinationPath: String) -> int:
 	var overwriteCount = 0

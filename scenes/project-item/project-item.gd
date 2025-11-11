@@ -58,11 +58,19 @@ func UpdateProjectItemUi():
 		LoadThumbnailImage()
 
 func LoadThumbnailImage():
-	var image = Image.new()
-	var error = image.load(_thumbnailPath)
-	if error == OK:
-		var texture = ImageTexture.create_from_image(image)
-		%ThumbTextureRect.texture = texture
+	# Check if this is a Godot resource path (res://)
+	if _thumbnailPath.begins_with("res://"):
+		# Load as a resource (respects Godot's import system)
+		var texture = load(_thumbnailPath)
+		if texture:
+			%ThumbTextureRect.texture = texture
+	else:
+		# Load from filesystem (for user-provided external images)
+		var image = Image.new()
+		var error = image.load(_thumbnailPath)
+		if error == OK:
+			var texture = ImageTexture.create_from_image(image)
+			%ThumbTextureRect.texture = texture
 	
 func BackgroundColorChanged(_color = null):
 	RefreshBackground()
@@ -368,7 +376,7 @@ func SaveProjectItem():
 	if err != OK:
 		OS.alert("An error occurred while saving the config file.")
 
-	Signals.emit_signal("ProjectSaved")
+	Signals.emit_signal("ProjectSaved", _projectId)
 
 func HideProjectItem():
 	visible = false
