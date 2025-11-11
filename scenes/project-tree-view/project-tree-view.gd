@@ -194,6 +194,10 @@ func PopulateProjectTree():
 	%Tree.clear()
 	_rootItem = %Tree.create_item()
 
+	# Check if _rootItem is valid after clear
+	if not is_instance_valid(_rootItem):
+		return
+
 	# Add project root
 	var rootItem = %Tree.create_item(_rootItem)
 	rootItem.set_text(0, "res://")
@@ -238,8 +242,8 @@ func PopulateDirectory(parentItem: TreeItem, dirPath: String, recursive: bool = 
 		# Process a frame every few items to avoid blocking
 		if i % 5 == 0:
 			await get_tree().process_frame
-			# Check if parent item is still valid after await
-			if not is_instance_valid(parentItem):
+			# Check if parent item and root item are still valid after await
+			if not is_instance_valid(parentItem) or not is_instance_valid(_rootItem):
 				return
 
 		var dirItem = %Tree.create_item(parentItem)
@@ -271,8 +275,8 @@ func PopulateDirectory(parentItem: TreeItem, dirPath: String, recursive: bool = 
 
 		if j % 5 == 0:
 			await get_tree().process_frame
-			# Check if parent item is still valid after await
-			if not is_instance_valid(parentItem):
+			# Check if parent item and root item are still valid after await
+			if not is_instance_valid(parentItem) or not is_instance_valid(_rootItem):
 				return
 
 		var fileItem = %Tree.create_item(parentItem)

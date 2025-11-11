@@ -548,10 +548,10 @@ func _on_edit_project_button_pressed():
 
 func _on_settings_button_pressed():
 	OpenSetting()
+
 func _on_about_button_pressed():
 	var aboutDialog = load("res://scenes/about-dialog/about-dialog.tscn").instantiate()
 	add_child(aboutDialog)
-
 
 func _on_run_project_button_pressed():
 	RunProject()

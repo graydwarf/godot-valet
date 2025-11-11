@@ -521,8 +521,12 @@ func PopulateDrives():
 
 # Internal function that does the actual drive population
 func PopulateDrivesInternal():
+	# Check if _rootItem is still valid
+	if not is_instance_valid(_rootItem):
+		return
+
 	var drives = GetAvailableDrives()
-	
+
 	for drive in drives:
 		var driveItem = %FileTree.create_item(_rootItem)
 		driveItem.set_text(0, drive)
@@ -1339,11 +1343,15 @@ func ScanZipDirectoryRecursively(zipPath: String, basePath: String = ""):
 
 # Populate the tree with the flat list of files
 func PopulateFlatList():
+	# Check if _rootItem is still valid
+	if not is_instance_valid(_rootItem):
+		return
+
 	for filePath in _allSupportedFiles:
 		# Skip zip files in flat list view
 		if IsZipFile(filePath):
 			continue
-			
+
 		var fileItem = %FileTree.create_item(_rootItem)
 		if fileItem == null:
 			continue
@@ -1389,7 +1397,11 @@ func GetDisplayNameForFlatList(filePath: String) -> String:
 func ShowTreeView():
 	%FileTree.clear()
 	_rootItem = %FileTree.create_item()
-	
+
+	# Check if _rootItem is still valid
+	if not is_instance_valid(_rootItem):
+		return
+
 	# Check if we need to reapply filters
 	if not _activeFilters.is_empty():
 		# Preserve filter state and reapply
@@ -1419,7 +1431,11 @@ func ShowFlatList():
 	# Clear the tree
 	%FileTree.clear()
 	_rootItem = %FileTree.create_item()
-	
+
+	# Check if _rootItem is still valid
+	if not is_instance_valid(_rootItem):
+		return
+
 	# Build list of all supported files
 	_allSupportedFiles.clear()
 	var drives = GetAvailableDrives()
@@ -1554,7 +1570,11 @@ func ShowFilteredFlatListByType(extensions : Array):
 	# Clear and repopulate tree
 	%FileTree.clear()
 	_rootItem = %FileTree.create_item()
-	
+
+	# Check if _rootItem is still valid
+	if not is_instance_valid(_rootItem):
+		return
+
 	for filePath in filesToShow:
 		var fileItem = %FileTree.create_item(_rootItem)
 		if fileItem == null:
