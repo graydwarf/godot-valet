@@ -5,6 +5,7 @@ func _ready():
 	LoadTheme()
 	LoadBackgroundColor(App.GetBackgroundColor())
 	LoadClaudeCodeCommand()
+	LoadClaudeCodeButtonEnabled()
 
 func InitSignals():
 	Signals.connect("BackgroundColorTemporarilyChanged", BackgroundColorTemporarilyChanged)
@@ -34,6 +35,9 @@ func _on_open_godot_version_manager_button_pressed():
 func LoadClaudeCodeCommand():
 	%ClaudeCodeLineEdit.text = App.GetClaudeCodeLaunchCommand()
 
+func LoadClaudeCodeButtonEnabled():
+	%ClaudeCodeEnabledCheckBox.button_pressed = App.GetClaudeCodeButtonEnabled()
+
 func SaveClaudeCodeCommand():
 	var command = %ClaudeCodeLineEdit.text.strip_edges()
 	if command.is_empty():
@@ -42,6 +46,10 @@ func SaveClaudeCodeCommand():
 
 func _on_reset_button_pressed():
 	%ClaudeCodeLineEdit.text = App.GetDefaultClaudeCodeLaunchCommand()
+
+func _on_claude_code_enabled_check_box_toggled(toggled_on: bool):
+	App.SetClaudeCodeButtonEnabled(toggled_on)
+	Signals.emit_signal("ClaudeCodeButtonEnabledChanged", toggled_on)
 
 func _on_close_button_pressed():
 	SaveClaudeCodeCommand()

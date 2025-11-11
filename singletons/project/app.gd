@@ -17,6 +17,7 @@ var _backgroundColor = Color(0.2, 0.2, 0.2)
 var _showHidden = false
 var _sortType = Enums.SortByType.EditedDate
 var _claudeCodeLaunchCommand = 'start cmd /k "cd /d {project_path} && claude"'
+var _claudeCodeButtonEnabled = true
 
 func _ready():
 	LoadSavedSolutionSettings()
@@ -63,6 +64,13 @@ func SetClaudeCodeLaunchCommand(value):
 
 func GetDefaultClaudeCodeLaunchCommand():
 	return 'start cmd /k "cd /d {project_path} && claude"'
+
+func GetClaudeCodeButtonEnabled():
+	return _claudeCodeButtonEnabled
+
+func SetClaudeCodeButtonEnabled(value):
+	_claudeCodeButtonEnabled = value
+	SaveSolutionSettings()
 
 func SetLastUpdateTime(value):
 	_lastUpdateTime = value
@@ -116,6 +124,7 @@ func LoadSavedSolutionSettings():
 		_showHidden = config.get_value("SolutionSettings", "show_hidden", false)
 		_sortType = config.get_value("SolutionSettings", "sort_type", Enums.SortByType.EditedDate)
 		_claudeCodeLaunchCommand = config.get_value("SolutionSettings", "claude_code_launch_command", GetDefaultClaudeCodeLaunchCommand())
+		_claudeCodeButtonEnabled = config.get_value("SolutionSettings", "claude_code_button_enabled", true)
 	else:
 		OS.alert("An error occured loading the solution configuration file")
 	
@@ -130,6 +139,7 @@ func SaveSolutionSettings():
 	config.set_value("SolutionSettings", "show_hidden", _showHidden)
 	config.set_value("SolutionSettings", "sort_type", _sortType)
 	config.set_value("SolutionSettings", "claude_code_launch_command", _claudeCodeLaunchCommand)
+	config.set_value("SolutionSettings", "claude_code_button_enabled", _claudeCodeButtonEnabled)
 
 	# Save the config file.
 	var err = config.save(_solutionConfigFile)

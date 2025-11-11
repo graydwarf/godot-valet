@@ -21,3 +21,4 @@ signal MoveVersionItemUp
 # Settings
 signal BackgroundColorChanged
 signal BackgroundColorTemporarilyChanged
+signal ClaudeCodeButtonEnabledChanged

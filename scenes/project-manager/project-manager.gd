@@ -25,6 +25,7 @@ func _ready():
 	LoadTheme()
 	LoadBackgroundColor()
 	LoadCustomScrollContainerTheme()
+	UpdateClaudeButtonVisibility()
 	
 func LoadCustomScrollContainerTheme():
 	var customWidth = 20
@@ -228,6 +229,7 @@ func InitSignals():
 	Signals.connect("BackgroundColorChanged", BackgroundColorChanged)
 	Signals.connect("HidingProjectItem", HidingProjectItem)
 	Signals.connect("ReorderProjectItems", ReorderProjectItems)
+	Signals.connect("ClaudeCodeButtonEnabledChanged", ClaudeCodeButtonEnabledChanged)
 
 func HidingProjectItem():
 	ToggleHiddenProjectVisibility()
@@ -249,6 +251,20 @@ func ReorderProjectItems(dragged_item, target_item):
 
 func BackgroundColorChanged(color = null):
 	LoadBackgroundColor(color)
+	# Defer to next frame to ensure theme changes are applied first
+	await get_tree().process_frame
+	RestoreProjectSelection()
+
+func ClaudeCodeButtonEnabledChanged(enabled: bool):
+	UpdateClaudeButtonVisibility()
+
+func UpdateClaudeButtonVisibility():
+	%ClaudeButton.visible = App.GetClaudeCodeButtonEnabled()
+
+func RestoreProjectSelection():
+	if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
+		_selectedProjectItem.SelectProjectItem()
+		EnableEditButtons()
 
 func GodotVersionsChanged():
 	ReloadProjectManager()
