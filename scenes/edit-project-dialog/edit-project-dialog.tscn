@@ -149,6 +149,14 @@ file_mode = 2
 access = 2
 show_hidden_files = true
 
+[node name="OverwriteConfirmationDialog" type="ConfirmationDialog" parent="."]
+title = "Overwrite Files?"
+position = Vector2i(250, 150)
+size = Vector2i(400, 150)
+dialog_text = "Files will be overwritten."
+ok_button_text = "Continue"
+cancel_button_text = "Cancel"
+
 [connection signal="pressed" from="VBoxContainer/ProjectPathHBoxContainer/SelectExistingProjectFolderButton" to="." method="_on_select_project_folder_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/ProjectPathHBoxContainer/CreateNewProjectFolderButton" to="." method="_on_create_new_project_folder_button_pressed"]
 [connection signal="item_selected" from="VBoxContainer/GodotVersionHBoxContainer/GodotVersionOptionButton" to="." method="_on_godot_version_option_button_item_selected"]
@@ -156,3 +164,4 @@ show_hidden_files = true
 [connection signal="pressed" from="VBoxContainer/MarginContainer/ButtonHBoxContainer/SaveButton" to="." method="_on_save_button_pressed"]
 [connection signal="file_selected" from="FileDialog" to="." method="_on_file_dialog_file_selected"]
 [connection signal="dir_selected" from="SelectFolderForNewProjectDialog" to="." method="_on_select_folder_for_new_project_dialog_dir_selected"]
+[connection signal="confirmed" from="OverwriteConfirmationDialog" to="." method="_on_overwrite_confirmation_dialog_confirmed"]

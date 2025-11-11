@@ -69,7 +69,7 @@ func SaveExistingProjectItem():
 	if projectName == "":
 		OS.alert("Invalid project name. Cancel to close.")
 		return
-	
+
 	_selectedProjectItem.SetProjectName(projectName)
 	_selectedProjectItem.SetProjectPath(_projectPathLineEdit.text)
 
@@ -80,7 +80,7 @@ func SaveExistingProjectItem():
 
 	_selectedProjectItem.SetGodotVersionId(godotVersionId)
 	_selectedProjectItem.SaveProjectItem()
-	Signals.emit_signal("ProjectSaved")
+	Signals.emit_signal("ProjectSaved", _selectedProjectItem.GetProjectId())
 	queue_free()
 	
 func SaveNewProjectItem():
@@ -88,23 +88,23 @@ func SaveNewProjectItem():
 	if projectName == "":
 		OS.alert("Invalid project name.")
 		return
-		
+
 	if !_projectPathLineEdit.text.ends_with(".godot"):
 		OS.alert("Please select a valid godot project file and try again.")
 		return false
-		
+
 	if _isCreatingNewProject:
 		CreateNewProject(_projectPathLineEdit.text)
 
 	if !FileAccess.file_exists(_projectPathLineEdit.text):
 		OS.alert("Project file was not found at the specified path.")
 		return false
-				
+
 	var	godotVersionId = _listOfGodotVersionIds[_godotVersionOptionButton.selected]
 	var projectId = Common.GetId()
-	
+
 	SaveSettingsFile(projectId, godotVersionId)
-	Signals.emit_signal("ProjectSaved")
+	Signals.emit_signal("ProjectSaved", projectId)
 	queue_free()
 
 func AutoExtractProjectName():
@@ -130,10 +130,22 @@ func SaveSettingsFile(projectId, godotVersionId):
 	if err != OK:
 		OS.alert("An error occurred while saving the config file.")
 
+# Returns array of filenames that will be overwritten when creating a new project
+func GetProjectFileConflicts(dir_path: String) -> Array[String]:
+	var conflicts: Array[String] = []
+	var files_to_check = ["project.godot", "icon.png", "default_env.tres"]
+
+	for file_name in files_to_check:
+		var full_path = dir_path + "/" + file_name
+		if FileAccess.file_exists(full_path):
+			conflicts.append(file_name)
+
+	return conflicts
+
 func CreateNewProject(filePath : String):
 	FileAccess.open(filePath, FileAccess.WRITE)
 	var versionMajor = int(_godotVersionOptionButton.get_item_text(_godotVersionOptionButton.selected)[0])
-	
+
 	var folderPath = filePath.get_base_dir()
 	if versionMajor >= 4:
 		DirAccess.copy_absolute("res://icon.svg", folderPath + "/" + "icon.svg")
@@ -170,9 +182,23 @@ func _on_select_folder_for_new_project_dialog_dir_selected(dir):
 	if !DirAccess.dir_exists_absolute(dir):
 		OS.alert("Could not locate the selected directory")
 		return
-	
-	if !FileHelper.IsDirectoryEmpty(dir):
-		OS.alert("Unable to create project in directory. Make sure the directory is empty and you have sufficient access to create new files.")
-		return
 
-	_projectPathLineEdit.text = dir + "/" + "project.godot"
+	# Store the selected directory for use after confirmation
+	_selectedDirectoryPath = dir
+
+	# Check for file conflicts instead of requiring empty directory
+	var conflicts = GetProjectFileConflicts(dir)
+
+	if conflicts.size() > 0:
+		# Show confirmation dialog with list of files that will be overwritten
+		var file_list = ", ".join(conflicts)
+		var message = "The following files will be overwritten:\n\n%s\n\nContinue?" % file_list
+		$OverwriteConfirmationDialog.dialog_text = message
+		$OverwriteConfirmationDialog.popup_centered()
+	else:
+		# No conflicts, proceed directly
+		_projectPathLineEdit.text = dir + "/" + "project.godot"
+
+func _on_overwrite_confirmation_dialog_confirmed():
+	# User confirmed overwriting files, proceed with project creation
+	_projectPathLineEdit.text = _selectedDirectoryPath + "/" + "project.godot"

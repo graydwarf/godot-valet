@@ -6,7 +6,7 @@ signal SelectedProjecItemUpdated
 
 # Project Management
 signal ToggleProjectItemSelection
-signal ProjectSaved
+signal ProjectSaved(project_id: String)
 signal LoadOpenGodotButtons
 signal HidingProjectItem
 signal ReorderProjectItems

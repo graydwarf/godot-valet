@@ -255,7 +255,7 @@ func BackgroundColorChanged(color = null):
 	await get_tree().process_frame
 	RestoreProjectSelection()
 
-func ClaudeCodeButtonEnabledChanged(enabled: bool):
+func ClaudeCodeButtonEnabledChanged(_enabled: bool):
 	UpdateClaudeButtonVisibility()
 
 func UpdateClaudeButtonVisibility():
@@ -275,26 +275,33 @@ func GodotVersionManagerClosing():
 # When we save in ReleaseManager, we want to
 # update the Edited Date so we need to redraw the
 # list which means we need to save and restore our current selection.
-func ReloadProjectManager():
+# If project_id_to_select is provided, that project will be selected instead.
+func ReloadProjectManager(project_id_to_select: String = ""):
 	var indexOfSelectedProject = GetIndexOfSelectedProject()
-	
+
 	# This deletes and then recreates all our projects.
 	ClearProjectContainer()
 	LoadProjectsIntoProjectContainer()
-	
+
 	# Let the project list redraw so we can find projects because
 	# we reference ProjectItem nodes when passing data back
 	# and forth with the ReleaseManager page. Needs to be overhauled
 	# so the data management is abstracted from the UI.
 	await get_tree().create_timer(0.1).timeout
-	
-	_selectedProjectItem = GetProjectItemFromIndex(indexOfSelectedProject)
+
+	# If a specific project ID was provided, select it (used for newly created/imported projects)
+	if project_id_to_select != "":
+		_selectedProjectItem = GetProjectItemByProjectId(project_id_to_select)
+	else:
+		# Otherwise, restore the previously selected project
+		_selectedProjectItem = GetProjectItemFromIndex(indexOfSelectedProject)
+
 	if _selectedProjectItem != null:
 		var isSelected = true
 		ToggleProjectItemSelection(_selectedProjectItem, isSelected)
-	
-func ProjectSaved():
-	ReloadProjectManager()
+
+func ProjectSaved(project_id: String):
+	ReloadProjectManager(project_id)
 
 func ClearProjectContainer():
 	for child in _projectItemContainer.get_children():
@@ -490,7 +497,14 @@ func GetProjectItemFromIndex(indexOfSelectedProjectItem):
 		if index == indexOfSelectedProjectItem:
 			return projectItem
 		index += 1
-		
+
+# Returns the project item node with the matching project ID
+func GetProjectItemByProjectId(project_id: String):
+	for projectItem in _projectItemContainer.get_children():
+		if projectItem.GetProjectId() == project_id:
+			return projectItem
+	return null
+
 func GetIndexOfSelectedProject():
 	var indexOfSelectedProjectItem = 0
 	for projectItem in _projectItemContainer.get_children():
