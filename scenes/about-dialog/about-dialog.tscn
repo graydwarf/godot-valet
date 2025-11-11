@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://c3p8q6xbvn8lx"]
 
-[ext_resource type="Script" uid="uid://c4kf7yh2vxm0q" path="res://scenes/about-dialog/about-dialog.gd" id="1_about"]
+[ext_resource type="Script" path="res://scenes/about-dialog/about-dialog.gd" id="1_about"]
 
 [node name="AboutDialog" type="Panel"]
 anchors_preset = 15
