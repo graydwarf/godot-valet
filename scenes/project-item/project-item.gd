@@ -14,6 +14,8 @@ var _sourceChecked := false
 var _obfuscateFunctionsChecked := false
 var _obfuscateVariablesChecked := false
 var _obfuscateCommentsChecked := false
+var _functionExcludeList : String = ""
+var _variableExcludeList : String = ""
 var _isHidden := false
 var _showTipsForErrors := false
 
@@ -146,7 +148,13 @@ func SetObfuscateVariablesChecked(value : bool):
 
 func SetObfuscateCommentsChecked(value : bool):
 	_obfuscateCommentsChecked = value
-	
+
+func SetFunctionExcludeList(value : String):
+	_functionExcludeList = value
+
+func SetVariableExcludeList(value : String):
+	_variableExcludeList = value
+
 func SetCreatedDate(value):
 	_createdDate = value
 	
@@ -197,7 +205,14 @@ func GetObfuscateVariablesChecked():
 
 func GetObfuscateCommentsChecked():
 	return _obfuscateCommentsChecked
-		
+
+func GetFunctionExcludeList() -> String:
+	return _functionExcludeList
+
+func GetVariableExcludeList() -> String:
+	return _variableExcludeList
+
+
 func GetExportType():
 	return _exportType
 
@@ -357,6 +372,8 @@ func SaveProjectItem():
 	config.set_value("ProjectSettings", "obfuscate_functions_checked", _obfuscateFunctionsChecked)
 	config.set_value("ProjectSettings", "obfuscate_variables_checked", _obfuscateVariablesChecked)
 	config.set_value("ProjectSettings", "obfuscate_comments_checked", _obfuscateCommentsChecked)
+	config.set_value("ProjectSettings", "function_exclude_list", _functionExcludeList)
+	config.set_value("ProjectSettings", "variable_exclude_list", _variableExcludeList)
 	config.set_value("ProjectSettings", "export_type", _exportType)
 	config.set_value("ProjectSettings", "package_type", _packageType)
 	config.set_value("ProjectSettings", "itch_profile_name", _itchProfileName)

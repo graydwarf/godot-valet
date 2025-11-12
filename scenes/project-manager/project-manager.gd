@@ -139,6 +139,8 @@ func LoadProjectsIntoProjectContainer():
 			projectItem.SetObfuscateFunctionsChecked(config.get_value("ProjectSettings", "obfuscate_functions_checked", false))
 			projectItem.SetObfuscateVariablesChecked(config.get_value("ProjectSettings", "obfuscate_variables_checked", false))
 			projectItem.SetObfuscateCommentsChecked(config.get_value("ProjectSettings", "obfuscate_comments_checked", false))
+			projectItem.SetFunctionExcludeList(config.get_value("ProjectSettings", "function_exclude_list", ""))
+			projectItem.SetVariableExcludeList(config.get_value("ProjectSettings", "variable_exclude_list", ""))
 			projectItem.SetExportType(config.get_value("ProjectSettings", "export_type", "Release"))
 			projectItem.SetExportFileName(config.get_value("ProjectSettings", "export_file_name", ""))
 			projectItem.SetPackageType(config.get_value("ProjectSettings", "package_type", "Zip"))

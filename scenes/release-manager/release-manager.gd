@@ -25,6 +25,7 @@ extends Panel
 @onready var _obfuscateCommentsCheckbox = %ObfuscateCommentsCheckBox
 @onready var _exportFileNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportFileNameHBoxContainer/ExportFileNameLineEdit
 @onready var _saveChangesConfirmationDialog = $SaveChangesConfirmationDialog
+@onready var _excludeListDialog = %ExcludeListDialog
 @onready var _projectPathLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectPathHBoxContainer2/ProjectPathLineEdit
 @onready var _outputTabContainer = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/OutputHBoxContainer/OutputTabContainer
 @onready var _useSha256CheckBox = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/Generate256HashNameHBoxContainer/UseSha256CheckBox
@@ -559,10 +560,32 @@ func ExportProjectThread():
 	# We don't actually use this return value
 	return OK
 
+# Parses exclude-list text (newline-separated, ignores comments and empty lines)
+func _parse_exclude_list(text: String) -> Array[String]:
+	var result: Array[String] = []
+	if text == "":
+		return result
+
+	var items = text.split("\n")
+	for item in items:
+		var cleaned = item.strip_edges()
+		# Skip empty lines and comments
+		if cleaned != "" and not cleaned.begins_with("#"):
+			result.append(cleaned)
+	return result
+
 # We obfuscate in the source in-place in the
 # temp directory.
 func ObfuscateSource():
 	PostStatusUpdate("Start obfuscating scripts...")
+
+	# Parse and pass exclude-lists to obfuscator
+	if _selectedProjectItem:
+		var funcExclude = _parse_exclude_list(_selectedProjectItem.GetFunctionExcludeList())
+		var varExclude = _parse_exclude_list(_selectedProjectItem.GetVariableExcludeList())
+		ObfuscateHelper.SetFunctionExcludeList(funcExclude)
+		ObfuscateHelper.SetVariableExcludeList(varExclude)
+
 	var err = ObfuscateHelper.ObfuscateScripts(_pathToUserTempSourceFolder, _pathToUserTempSourceFolder, _obfuscateFunctionsCheckbox.button_pressed, _obfuscateVariablesCheckbox.button_pressed, _obfuscateCommentsCheckbox.button_pressed)
 	if err != OK:
 		OS.alert("Failed during obfuscation! Halting export.")
@@ -1281,3 +1304,20 @@ func _on_open_export_folder_pressed() -> void:
 
 func _on_test_button_pressed() -> void:
 	TestObfuscation()
+
+func _on_excludes_button_pressed() -> void:
+	if _selectedProjectItem == null:
+		return
+
+	_excludeListDialog.load_lists(
+		_selectedProjectItem.GetFunctionExcludeList(),
+		_selectedProjectItem.GetVariableExcludeList()
+	)
+	_excludeListDialog.popup_centered()
+
+func _on_exclude_lists_saved(function_list: String, variable_list: String) -> void:
+	if _selectedProjectItem == null:
+		return
+
+	_selectedProjectItem.SetFunctionExcludeList(function_list)
+	_selectedProjectItem.SetVariableExcludeList(variable_list)
