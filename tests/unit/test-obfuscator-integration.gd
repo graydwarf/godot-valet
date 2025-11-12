@@ -29,14 +29,14 @@ func _private_helper():
 	# Act
 	ObfuscateHelper.BuildSymbolMap(code, symbol_map)
 
-	# Assert - Should find: health, speed, initialize, TakeDamage
-	# Should NOT find: _ready, _private_helper (both start with _)
+	# Assert - Should find: health, speed, initialize, TakeDamage, _private_helper
+	# Should NOT find: _ready (Godot built-in)
 	framework.assert_true(symbol_map.has("health"), "Should find health variable")
 	framework.assert_true(symbol_map.has("speed"), "Should find speed variable")
 	framework.assert_true(symbol_map.has("initialize"), "Should find initialize function")
 	framework.assert_true(symbol_map.has("TakeDamage"), "Should find TakeDamage function")
-	framework.assert_false(symbol_map.has("_ready"), "Should skip _ready")
-	framework.assert_false(symbol_map.has("_private_helper"), "Should skip _private_helper")
+	framework.assert_true(symbol_map.has("_private_helper"), "Should find user private function (Phase 2)")
+	framework.assert_false(symbol_map.has("_ready"), "Should skip _ready (Godot built-in)")
 
 func test_obfuscation_preserves_has_method_strings():
 	# Arrange

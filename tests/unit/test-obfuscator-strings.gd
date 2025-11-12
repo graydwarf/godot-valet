@@ -148,3 +148,100 @@ func test_preserve_string_with_special_chars():
 	# Assert
 	var content = payload.GetContent()
 	framework.assert_true('"Line1\\nLine2\\tTabbed"' in content, "Should preserve escape sequences")
+
+# Phase 1 Tests: call() pattern support
+
+func test_preserve_call_pattern():
+	# Arrange
+	var payload = ContentPayload.new()
+	payload.SetContent('player.call("jump")')
+
+	# Act
+	ObfuscateHelper.PreserveSpecialStrings(payload)
+
+	# Assert
+	var content = payload.GetContent()
+	framework.assert_false('call("jump")' in content, "call() pattern should be replaced with token")
+	framework.assert_true("__SPECIAL_STRING_TOKEN_" in content, "Should contain special token")
+
+func test_preserve_call_deferred_pattern():
+	# Arrange
+	var payload = ContentPayload.new()
+	payload.SetContent('enemy.call_deferred("take_damage", 10)')
+
+	# Act
+	ObfuscateHelper.PreserveSpecialStrings(payload)
+
+	# Assert
+	var content = payload.GetContent()
+	framework.assert_false('call_deferred("take_damage"' in content, "call_deferred() pattern should be replaced")
+	framework.assert_true("__SPECIAL_STRING_TOKEN_" in content, "Should contain special token")
+
+func test_preserve_call_thread_safe_pattern():
+	# Arrange
+	var payload = ContentPayload.new()
+	payload.SetContent('worker.call_thread_safe("process_data")')
+
+	# Act
+	ObfuscateHelper.PreserveSpecialStrings(payload)
+
+	# Assert
+	var content = payload.GetContent()
+	framework.assert_false('call_thread_safe("process_data")' in content, "call_thread_safe() pattern should be replaced")
+	framework.assert_true("__SPECIAL_STRING_TOKEN_" in content, "Should contain special token")
+
+func test_preserve_callv_pattern():
+	# Arrange
+	var payload = ContentPayload.new()
+	payload.SetContent('obj.callv("method_name", args)')
+
+	# Act
+	ObfuscateHelper.PreserveSpecialStrings(payload)
+
+	# Assert
+	var content = payload.GetContent()
+	framework.assert_false('callv("method_name"' in content, "callv() pattern should be replaced")
+	framework.assert_true("__SPECIAL_STRING_TOKEN_" in content, "Should contain special token")
+
+func test_preserve_multiple_call_variants():
+	# Arrange
+	var payload = ContentPayload.new()
+	var code = '''player.call("jump")
+enemy.call_deferred("die")
+worker.call_thread_safe("process")'''
+	payload.SetContent(code)
+
+	# Act
+	ObfuscateHelper.PreserveSpecialStrings(payload)
+
+	# Assert
+	var preserved = payload.GetPreservedSpecialStrings()
+	framework.assert_equal(preserved.size(), 3, "Should preserve all 3 call variants")
+
+func test_restore_call_patterns():
+	# Arrange
+	var payload = ContentPayload.new()
+	payload.SetContent('player.call("jump")')
+	ObfuscateHelper.PreserveSpecialStrings(payload)
+
+	# Act
+	ObfuscateHelper.RestoreSpecialStrings(payload)
+
+	# Assert
+	var content = payload.GetContent()
+	framework.assert_true('call("jump")' in content, "call() pattern should be restored")
+	framework.assert_false("__SPECIAL_STRING_TOKEN_" in content, "Tokens should be removed")
+
+func test_call_and_has_method_together():
+	# Arrange
+	var payload = ContentPayload.new()
+	var code = '''if obj.has_method("test"):
+	obj.call("test")'''
+	payload.SetContent(code)
+
+	# Act
+	ObfuscateHelper.PreserveSpecialStrings(payload)
+
+	# Assert
+	var preserved = payload.GetPreservedSpecialStrings()
+	framework.assert_equal(preserved.size(), 2, "Should preserve both has_method and call patterns")

@@ -60,7 +60,7 @@ func test_add_functions_preserves_godot_process():
 	# Assert
 	framework.assert_false(symbol_map.has("_process"), "_process should be preserved")
 
-func test_add_functions_skips_private_functions():
+func test_add_functions_obfuscates_user_private_functions():
 	# Arrange
 	var code = "func _my_private_helper():\n\tpass"
 	var symbol_map = {}
@@ -69,7 +69,7 @@ func test_add_functions_skips_private_functions():
 	ObfuscateHelper.AddFunctionsToSymbolMap(code, symbol_map)
 
 	# Assert
-	framework.assert_false(symbol_map.has("_my_private_helper"), "Private functions (starting with _) should be skipped")
+	framework.assert_true(symbol_map.has("_my_private_helper"), "User private functions should be obfuscated (Phase 2)")
 
 func test_add_functions_handles_multiple_functions():
 	# Arrange
@@ -129,9 +129,9 @@ func test_add_functions_handles_camel_case():
 	# Assert
 	framework.assert_true(symbol_map.has("saveGameData"), "Should handle camelCase")
 
-# Note: snake_case functions starting with _ are currently skipped
-# This is a known limitation documented in obfuscation.md Phase 2
-func test_add_functions_skips_snake_case_with_underscore():
+# Phase 2 Tests: User private functions now obfuscated
+
+func test_add_functions_obfuscates_snake_case_private():
 	# Arrange
 	var code = "func _calculate_damage():\n\tpass"
 	var symbol_map = {}
@@ -140,4 +140,57 @@ func test_add_functions_skips_snake_case_with_underscore():
 	ObfuscateHelper.AddFunctionsToSymbolMap(code, symbol_map)
 
 	# Assert
-	framework.assert_false(symbol_map.has("_calculate_damage"), "Currently skips all functions starting with _")
+	framework.assert_true(symbol_map.has("_calculate_damage"), "User private functions should be obfuscated (Phase 2)")
+
+func test_godot_lifecycle_methods_still_protected():
+	# Arrange
+	var code = """func _ready():
+	pass
+
+func _process(delta):
+	pass
+
+func _physics_process(delta):
+	pass"""
+	var symbol_map = {}
+
+	# Act
+	ObfuscateHelper.AddFunctionsToSymbolMap(code, symbol_map)
+
+	# Assert
+	framework.assert_false(symbol_map.has("_ready"), "_ready should still be protected")
+	framework.assert_false(symbol_map.has("_process"), "_process should still be protected")
+	framework.assert_false(symbol_map.has("_physics_process"), "_physics_process should still be protected")
+	framework.assert_equal(symbol_map.size(), 0, "No Godot built-ins should be in map")
+
+func test_mixed_user_and_godot_private_functions():
+	# Arrange
+	var code = """func _ready():
+	_initialize()
+
+func _initialize():
+	pass
+
+func _calculate_score():
+	pass
+
+func _process(delta):
+	_update_state()
+
+func _update_state():
+	pass"""
+	var symbol_map = {}
+
+	# Act
+	ObfuscateHelper.AddFunctionsToSymbolMap(code, symbol_map)
+
+	# Assert - User private functions should be in map
+	framework.assert_true(symbol_map.has("_initialize"), "User function _initialize should be obfuscated")
+	framework.assert_true(symbol_map.has("_calculate_score"), "User function _calculate_score should be obfuscated")
+	framework.assert_true(symbol_map.has("_update_state"), "User function _update_state should be obfuscated")
+
+	# Godot built-ins should NOT be in map
+	framework.assert_false(symbol_map.has("_ready"), "Godot _ready should be protected")
+	framework.assert_false(symbol_map.has("_process"), "Godot _process should be protected")
+
+	framework.assert_equal(symbol_map.size(), 3, "Should have exactly 3 user private functions")

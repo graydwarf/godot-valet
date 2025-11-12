@@ -201,8 +201,9 @@ static func FindFunctionSymbol(before, prevChar, nextChar):
 
 	if prevChar != "." and nextChar == ")":
 		return true
-	
-	regex.compile('.*\\.has_method\\(\\"')
+
+	# Detect has_method() and all call() variants
+	regex.compile('.*\\.(?:has_method|call(?:_deferred|_thread_safe|v)?)\\s*\\(\\s*\\"')
 	return !!regex.search(before)
 	
 static func ObfuscateDirectory(path: String, autoloads : Array) -> void:
@@ -257,10 +258,10 @@ static func RestoreSpecialStrings(contentPayload : ContentPayload) -> void:
 	for key in contentPayload.GetPreservedSpecialStrings().keys():
 		contentPayload.SetContent(contentPayload.GetContent().replace(key, contentPayload.GetPreservedSpecialStrings()[key]))
 
-# Note: This only supports has_method calls.
+# Note: Supports has_method and all call() variants.
 static func PreserveSpecialStrings(contentPayload : ContentPayload) -> void:
 	var stringRegex := RegEx.new()
-	stringRegex.compile(r'has_method\("([^"\\]*)"\)')
+	stringRegex.compile(r'(?:has_method|call(?:_deferred|_thread_safe|v)?)\s*\(\s*"([^"\\]*)"\s*')
 	var stringMatches := stringRegex.search_all(contentPayload.GetContent())
 
 	var preservedStrings := {}
@@ -461,12 +462,9 @@ static func AddFunctionsToSymbolMap(content: String, symbolMap) -> void:
 		# Ignore godot built-in functions
 		if symbolName in _godotReservedKeywords:
 			continue
-			
-		# TODO:
-		# Assumes PasalCase function names (for now)
-		# - Assuming this will need modification for snake_case
-		if not symbolName.begins_with("_"):
-			symbolMap[symbolName] = { "kind": "function" }
+
+		# Add to symbol map - will be obfuscated (including user-defined private functions)
+		symbolMap[symbolName] = { "kind": "function" }
 
 	# Saving for future consideration
 	# Type references
