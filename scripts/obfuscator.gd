@@ -71,6 +71,7 @@ static var _isObfuscatingVariables := false
 static var _isObfuscatingComments := false
 static var _functionExcludeList : Array[String] = []
 static var _variableExcludeList : Array[String] = []
+static var _enumValueExcludeList : Array[String] = []
 
 # It's possible that you've used a reserved keyword 
 # without realizing it. Godot generally warns about 
@@ -120,6 +121,26 @@ static func SetFunctionExcludeList(excludeList: Array[String]) -> void:
 
 static func SetVariableExcludeList(excludeList: Array[String]) -> void:
 	_variableExcludeList = excludeList
+
+# Extracts enum values from code and adds them to exclusion list
+# Enum values should never be obfuscated as they're runtime constants
+static func AddEnumValuesToExcludeList(content: String) -> void:
+	var regex := RegEx.new()
+	# Match: enum EnumName { ... } or enum { ... }
+	regex.compile(r"enum\s+\w*\s*\{([^}]+)\}")
+
+	for match in regex.search_all(content):
+		var enum_body = match.get_string(1)
+
+		# Extract individual enum values (handle VALUE = 5, VALUE, etc.)
+		var value_regex := RegEx.new()
+		# Match enum value names, optionally followed by = and a number
+		value_regex.compile(r"\b(\w+)(?:\s*=\s*[^,}]+)?")
+
+		for value_match in value_regex.search_all(enum_body):
+			var enum_value_name = value_match.get_string(1)
+			if enum_value_name not in _enumValueExcludeList:
+				_enumValueExcludeList.append(enum_value_name)
 
 # Generates a random name ensuring we haven't
 # used the name before.
@@ -209,7 +230,9 @@ static func FindFunctionSymbol(before, prevChar, nextChar, content: String, end:
 	if nextChar == "(" or (prevChar == "." and nextChar == "("):
 		return true
 
-	if prevChar != "." and nextChar == ")":
+	# Match callable reference passed as argument: "function)" or "obj.function)" or "Class.StaticMethod)"
+	# Examples: sort_custom(my_sort), signal.connect(my_function), sort_custom(CommonHelper.SortAscending)
+	if nextChar == ")" or nextChar == ",":
 		return true
 
 	# Match Callable methods: "MyFunction.bind(", "MyFunction.unbind(", etc.
@@ -463,6 +486,8 @@ static func RegExMatchReplace(text: String, pattern: String, replacement: String
 	return regex.sub(text, replacement, true)
 	
 static func BuildSymbolMap(content : String, symbolMap : Dictionary) -> void:
+	# First, extract all enum values to exclude them from obfuscation
+	AddEnumValuesToExcludeList(content)
 	AddFunctionsToSymbolMap(content, symbolMap)
 	AddVariablesToSymbolMap(content, symbolMap)
 	
@@ -483,6 +508,10 @@ static func AddFunctionsToSymbolMap(content: String, symbolMap) -> void:
 
 		# Skip user-excluded functions
 		if symbolName in _functionExcludeList:
+			continue
+
+		# Skip enum values (in case an enum value name matches a function name)
+		if symbolName in _enumValueExcludeList:
 			continue
 
 		# Add to symbol map - will be obfuscated (including user-defined private functions)
@@ -514,6 +543,10 @@ static func AddVariablesToSymbolMap(content : String, symbolMap : Dictionary):
 
 			# Skip user-excluded variables
 			if symbolName in _variableExcludeList:
+				continue
+
+			# Skip enum values
+			if symbolName in _enumValueExcludeList:
 				continue
 
 			symbolMap[symbolName] = { "kind": "variable" }
