@@ -13,10 +13,30 @@ func run_tests_async(silent: bool = false):
 	return await _run_all_tests()
 
 func _register_test_suites():
-	# Obfuscator Tests (8 tests)
+	# Obfuscator Core Tests (8 tests)
 	var obfuscator_tests = preload("res://tests/unit/test-obfuscator.gd").new()
 	obfuscator_tests.framework = test_framework
 	test_suites.append(obfuscator_tests)
+
+	# Obfuscator Function Tests (12 tests)
+	var obfuscator_function_tests = preload("res://tests/unit/test-obfuscator-functions.gd").new()
+	obfuscator_function_tests.framework = test_framework
+	test_suites.append(obfuscator_function_tests)
+
+	# Obfuscator Variable Tests (12 tests)
+	var obfuscator_variable_tests = preload("res://tests/unit/test-obfuscator-variables.gd").new()
+	obfuscator_variable_tests.framework = test_framework
+	test_suites.append(obfuscator_variable_tests)
+
+	# Obfuscator String Tests (12 tests)
+	var obfuscator_string_tests = preload("res://tests/unit/test-obfuscator-strings.gd").new()
+	obfuscator_string_tests.framework = test_framework
+	test_suites.append(obfuscator_string_tests)
+
+	# Obfuscator Integration Tests (10 tests)
+	var obfuscator_integration_tests = preload("res://tests/unit/test-obfuscator-integration.gd").new()
+	obfuscator_integration_tests.framework = test_framework
+	test_suites.append(obfuscator_integration_tests)
 
 func _run_all_tests():
 	var total_results = {}
