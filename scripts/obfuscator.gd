@@ -183,7 +183,7 @@ static func GetObfuscationReplacement(content: String, symbol: String, globalObf
 			#return symbol  # Unknown context, skip for safety
 			
 	if _isObfuscatingFunctions && globalObfuscationMap.kind == "function":
-		if FindFunctionSymbol(before, prevChar, nextChar):
+		if FindFunctionSymbol(before, prevChar, nextChar, content, end):
 			return globalObfuscationMap.replacement
 		else:
 			return symbol
@@ -197,20 +197,30 @@ static func GetObfuscationReplacement(content: String, symbol: String, globalObf
 
 	return symbol
 
-static func FindFunctionSymbol(before, prevChar, nextChar):
+static func FindFunctionSymbol(before, prevChar, nextChar, content: String, end: int):
 	var regex := RegEx.new()
-	
+
+	# Match function declaration: "func MyFunction("
 	regex.compile('^(static\\s+)?func\\s*$')
 	if regex.search(before):
 		return true
 
+	# Match function call: "MyFunction(" or ".MyFunction("
 	if nextChar == "(" or (prevChar == "." and nextChar == "("):
 		return true
 
 	if prevChar != "." and nextChar == ")":
 		return true
 
-	# Detect has_method() and all call() variants
+	# Match Callable methods: "MyFunction.bind(", "MyFunction.unbind(", etc.
+	if nextChar == ".":
+		# Look ahead to see what comes after the dot
+		var after_dot = content.substr(end + 1, 10)
+		if after_dot.begins_with("bind(") or after_dot.begins_with("unbind(") or \
+		   after_dot.begins_with("call(") or after_dot.begins_with("callv("):
+			return true
+
+	# Detect has_method() and all call() variants (string-based reflection - should NOT obfuscate)
 	regex.compile('.*\\.(?:has_method|call(?:_deferred|_thread_safe|v)?)\\s*\\(\\s*\\"')
 	return !!regex.search(before)
 	

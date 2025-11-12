@@ -43,6 +43,11 @@ func _register_test_suites():
 	obfuscator_exclude_tests.framework = test_framework
 	test_suites.append(obfuscator_exclude_tests)
 
+	# Obfuscator Callable Tests (10 tests)
+	var obfuscator_callable_tests = preload("res://tests/unit/test-obfuscator-callables.gd").new()
+	obfuscator_callable_tests.framework = test_framework
+	test_suites.append(obfuscator_callable_tests)
+
 func _run_all_tests():
 	var total_results = {}
 
