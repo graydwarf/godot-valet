@@ -256,6 +256,17 @@ static func ObfuscateDirectory(path: String, autoloads : Array) -> void:
 # Pass 1: Build global obfuscation map
 static func BuildGlobalObfuscationMap(allFiles) -> Dictionary:
 	var obfuscationMap : Dictionary = {}
+
+	# Clear enum exclude list to avoid stale values from previous runs
+	_enumValueExcludeList.clear()
+
+	# First pass: Extract ALL enum values from ALL files before building symbol map
+	# This ensures enum values are in the exclude list before any variables/functions are processed
+	for fullPath in allFiles:
+		var content := FileAccess.get_file_as_string(fullPath)
+		AddEnumValuesToExcludeList(content)
+
+	# Second pass: Build symbol map (functions and variables)
 	for fullPath in allFiles:
 		var content := FileAccess.get_file_as_string(fullPath)
 		BuildSymbolMap(content, obfuscationMap)
@@ -486,8 +497,8 @@ static func RegExMatchReplace(text: String, pattern: String, replacement: String
 	return regex.sub(text, replacement, true)
 	
 static func BuildSymbolMap(content : String, symbolMap : Dictionary) -> void:
-	# First, extract all enum values to exclude them from obfuscation
-	AddEnumValuesToExcludeList(content)
+	# Note: AddEnumValuesToExcludeList() is now called in BuildGlobalObfuscationMap()
+	# before this function, ensuring all enum values are excluded before building the symbol map
 	AddFunctionsToSymbolMap(content, symbolMap)
 	AddVariablesToSymbolMap(content, symbolMap)
 	
