@@ -69,6 +69,8 @@ static var _obfuscateComments := false
 static var _isObfuscatingFunctions := false
 static var _isObfuscatingVariables := false
 static var _isObfuscatingComments := false
+static var _functionExcludeList : Array[String] = []
+static var _variableExcludeList : Array[String] = []
 
 # It's possible that you've used a reserved keyword 
 # without realizing it. Godot generally warns about 
@@ -112,7 +114,13 @@ static func ObfuscateScripts(inputDir: String, outputDir: String, isObfuscatingF
 	var autoloads = GetAutoloadGlobalNames()
 	ObfuscateDirectory(_inputDir, autoloads)
 	return OK
-	
+
+static func SetFunctionExcludeList(excludeList: Array[String]) -> void:
+	_functionExcludeList = excludeList
+
+static func SetVariableExcludeList(excludeList: Array[String]) -> void:
+	_variableExcludeList = excludeList
+
 # Generates a random name ensuring we haven't
 # used the name before.
 static func GenerateObfuscatedName()  -> String:
@@ -463,6 +471,10 @@ static func AddFunctionsToSymbolMap(content: String, symbolMap) -> void:
 		if symbolName in _godotReservedKeywords:
 			continue
 
+		# Skip user-excluded functions
+		if symbolName in _functionExcludeList:
+			continue
+
 		# Add to symbol map - will be obfuscated (including user-defined private functions)
 		symbolMap[symbolName] = { "kind": "function" }
 
@@ -489,7 +501,11 @@ static func AddVariablesToSymbolMap(content : String, symbolMap : Dictionary):
 			var symbolName = match.get_string(1)
 			if symbolMap.has(symbolName):
 				continue
-				
+
+			# Skip user-excluded variables
+			if symbolName in _variableExcludeList:
+				continue
+
 			symbolMap[symbolName] = { "kind": "variable" }
 
 # Example of how you might test locally if needed.
