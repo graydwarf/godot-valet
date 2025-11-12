@@ -1,0 +1,185 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/release-manager/obfuscation-help-dialog.gd" id="1"]
+
+[node name="ObfuscationHelpDialog" type="Window"]
+title = "Obfuscation Guide"
+initial_position = 2
+size = Vector2i(700, 600)
+script = ExtResource("1")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HelpContent" type="RichTextLabel" parent="MarginContainer/VBoxContainer/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "[b]Obfuscation Guide[/b]
+
+This guide explains how obfuscation works in godot-valet and best practices for using it.
+
+---
+
+[b][size=14]1. Function Obfuscation[/size][/b]
+
+[b]What it does:[/b]
+• Renames all user functions to random 8-character names
+• Example: [code]SaveGame()[/code] → [code]XyZaBcDe()[/code]
+
+[b]What's preserved:[/b]
+• Godot lifecycle methods: [code]_ready[/code], [code]_process[/code], [code]_input[/code], [code]_physics_process[/code], etc.
+• String-based reflection: [code]call(\"FunctionName\")[/code], [code]has_method(\"FunctionName\")[/code]
+
+[b]Callable patterns handled automatically:[/b]
+• Direct references: [code]ApplyDamage.bind()[/code] → [code]XyZaBcDe.bind()[/code]
+• Signal connections: [code].connect(my_function.bind(arg))[/code]
+• Thread callbacks: [code]Thread.start(my_function.bind(arg))[/code]
+
+[b]Exclude-lists:[/b]
+• Use the \"Excludes...\" button to preserve specific function names
+• Useful for functions accessed via string reflection that we can't auto-detect
+
+[b]⚠️ Warning:[/b]
+Functions accessed via reflection patterns we don't detect should be added to exclude-list:
+• [code]Callable(self, \"FunctionName\")[/code] - string constructor
+• Custom reflection systems
+
+---
+
+[b][size=14]2. Variable Obfuscation[/size][/b]
+
+[b]What it does:[/b]
+• Renames all variables to random names
+• Example: [code]player_health[/code] → [code]AbCdEfGh[/code]
+
+[b]What's preserved:[/b]
+• String literals in your code (URLs, text, messages remain readable)
+
+[b]Exclude-lists:[/b]
+• Use the \"Excludes...\" button to preserve specific variable names
+• Critical for variables accessed via [code]set()[/code]/[code]get()[/code] with strings
+
+[b]⚠️ Warning:[/b]
+Variables accessed via string-based setters/getters MUST be excluded:
+• [code]set(\"variable_name\", value)[/code] - will break if variable_name obfuscated
+• [code]get(\"variable_name\")[/code] - will break if variable_name obfuscated
+
+---
+
+[b][size=14]3. Comment Removal[/size][/b]
+
+[b]What it does:[/b]
+• Strips all comments from code (lines starting with [code]#[/code])
+
+[b]What's preserved:[/b]
+• String literals containing [code]#[/code] are not affected
+• Example: [code]var url = \"https://example.com#anchor\"[/code] stays intact
+
+[b]Purpose:[/b]
+• Makes reverse engineering harder by removing developer notes and explanations
+
+[b]No exclude-list needed:[/b]
+• Comment removal is all-or-nothing (enable checkbox or don't)
+
+---
+
+[b][size=14]4. Testing & Best Practices[/size][/b]
+
+[b]⚠️ Test Thoroughly:[/b]
+• Always test obfuscated builds before release
+
+[b]⚠️ End-to-End Testing Required:[/b]
+• Obfuscation can easily break functionality anywhere in your game
+• Issues are difficult to detect without comprehensive e2e testing
+• Full end-to-end test coverage is critical after enabling obfuscation
+
+[b]⚠️ Unit Testing:[/b]
+• Run thorough unit tests after making obfuscation changes
+• Test with obfuscation OFF, then ON to isolate issues
+
+[b]⚠️ Not Encryption:[/b]
+• Obfuscation makes code harder to read, but NOT impossible
+• Determined reverse engineers can still understand obfuscated code
+• Think of it as a deterrent, not a lock
+
+[b]⚠️ Keep Source Safe:[/b]
+• Always keep unobfuscated source code backed up separately
+• Your original source files are NEVER modified (obfuscation works on temp copies)
+• Store original source in version control (git, etc.)
+
+[b]⚠️ Debugging Difficulty:[/b]
+• Obfuscated code is much harder to debug
+• Use obfuscation only for release builds, not during development
+• Error stack traces will show obfuscated names
+
+---
+
+[b][size=14]5. How Obfuscation Works[/size][/b]
+
+[b]When it happens:[/b]
+• BEFORE Godot's export process (pre-processing step)
+• Source is copied to temp directory → obfuscated → then exported
+
+[b]Where it happens:[/b]
+• Works on temporary copies in [code]user://temp/source/[/code]
+• Original project files are NEVER touched (zero risk of data loss)
+• Temp files are deleted after export completes
+
+[b]How it works:[/b]
+1. [b]Pass 1:[/b] Scan all .gd files to build symbol map
+2. [b]Pass 2:[/b] Replace symbols with random names while preserving strings
+3. [b]Export:[/b] Godot exports the obfuscated source for each platform
+
+[b]Platform support:[/b]
+• ✅ Windows builds - fully supported
+• ✅ Linux builds - fully supported
+• ✅ macOS builds - fully supported
+• ✅ Web builds - fully supported
+• ✅ Source exports - fully supported (for sharing obfuscated code)
+
+[b]Obfuscation happens ONCE:[/b]
+• Single obfuscation pass for all selected platforms
+• Example: Exporting Windows + Web uses same obfuscated source
+
+---
+
+[b][size=14]6. Tips & Recommendations[/size][/b]
+
+[b]💡 Tip: Incremental Adoption[/b]
+Start with comment removal only, then gradually add function/variable obfuscation after thorough testing.
+
+[b]💡 Tip: Use Version Control[/b]
+Commit working code before enabling obfuscation, so you can easily revert if issues arise.
+
+[b]💡 Tip: Test Exclude-Lists Early[/b]
+If your game uses [code]set()[/code]/[code]get()[/code] or string-based reflection, identify those symbols and add them to exclude-lists BEFORE first obfuscated export.
+
+[b]💡 Tip: Monitor Export Logs[/b]
+Check godot-valet logs during export for any obfuscation errors or warnings."
+fit_content = true
+scroll_following = true
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="CloseButton" type="Button" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Close"

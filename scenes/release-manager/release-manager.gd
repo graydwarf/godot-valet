@@ -26,6 +26,7 @@ extends Panel
 @onready var _exportFileNameLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportFileNameHBoxContainer/ExportFileNameLineEdit
 @onready var _saveChangesConfirmationDialog = $SaveChangesConfirmationDialog
 @onready var _excludeListDialog = %ExcludeListDialog
+@onready var _obfuscationHelpDialog = %ObfuscationHelpDialog
 @onready var _projectPathLineEdit = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectPathHBoxContainer2/ProjectPathLineEdit
 @onready var _outputTabContainer = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/OutputHBoxContainer/OutputTabContainer
 @onready var _useSha256CheckBox = $VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/Generate256HashNameHBoxContainer/UseSha256CheckBox
@@ -1314,6 +1315,9 @@ func _on_excludes_button_pressed() -> void:
 		_selectedProjectItem.GetVariableExcludeList()
 	)
 	_excludeListDialog.popup_centered()
+
+func _on_help_button_pressed() -> void:
+	_obfuscationHelpDialog.popup_centered()
 
 func _on_exclude_lists_saved(function_list: String, variable_list: String) -> void:
 	if _selectedProjectItem == null:

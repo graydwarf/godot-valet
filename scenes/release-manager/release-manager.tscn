@@ -1,7 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://dnh0www6opq0g"]
+[gd_scene load_steps=6 format=3 uid="uid://dnh0www6opq0g"]
 
 [ext_resource type="Script" uid="uid://bgbdmlgcgyg4g" path="res://scenes/release-manager/release-manager.gd" id="1_sdoj2"]
 [ext_resource type="PackedScene" path="res://scenes/release-manager/exclude-list-dialog.tscn" id="1_exclude"]
+[ext_resource type="PackedScene" path="res://scenes/release-manager/obfuscation-help-dialog.tscn" id="1_help"]
 [ext_resource type="Texture2D" uid="uid://co7ukhfnntav" path="res://assets/icons/source-filter.png" id="2_ka8w6"]
 [ext_resource type="Script" uid="uid://dkeqydap72aj1" path="res://scenes/release-manager/custom-label.gd" id="2_nuwtj"]
 
@@ -403,6 +404,13 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Excludes..."
 
+[node name="HelpButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer/CommentsAndExcludesContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Open Obfuscation Guide"
+text = "?"
+custom_minimum_size = Vector2(32, 32)
+
 [node name="HBoxContainer2" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -654,6 +662,9 @@ dialog_autowrap = true
 [node name="ExcludeListDialog" parent="." instance=ExtResource("1_exclude")]
 unique_name_in_owner = true
 
+[node name="ObfuscationHelpDialog" parent="." instance=ExtResource("1_help")]
+unique_name_in_owner = true
+
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ProjectPathHBoxContainer2/OpenProjectPathFolder" to="." method="_on_open_project_folder_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer/WindowsCheckBox" to="." method="_on_windows_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPresetHBoxContainer/ExportPresetCheckboxContainer/WebCheckBox" to="." method="_on_web_check_box_pressed"]
@@ -684,4 +695,5 @@ unique_name_in_owner = true
 [connection signal="dir_selected" from="SelectFolderFileDialog" to="." method="_on_select_folder_file_dialog_dir_selected"]
 [connection signal="confirmed" from="SameVersionConfirmationDialog" to="." method="_on_same_version_confirmation_dialog_confirmed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer/CommentsAndExcludesContainer/ExcludesButton" to="." method="_on_excludes_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer/CommentsAndExcludesContainer/HelpButton" to="." method="_on_help_button_pressed"]
 [connection signal="lists_saved" from="ExcludeListDialog" to="." method="_on_exclude_lists_saved"]
