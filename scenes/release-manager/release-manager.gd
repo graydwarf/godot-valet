@@ -86,9 +86,10 @@ func HideExportPresets():
 func LoadExportPresets():
 	HideExportPresets()
 	var exportPresetFilePath = _projectPathLineEdit.text + "/export_presets.cfg"
-	
+
+	# Note: Alert removed - users can configure exports later when they actually need them
+	# The Export button will handle validation when they try to export
 	if !FileAccess.file_exists(exportPresetFilePath):
-		OS.alert("Did not find a export_presets.cfg file in the root of your project. Exporting blocked until you add at least one export option (Windows, Web, or Linux).")
 		return
 
 	# Always visible (well, it will be if we can get the source zipping up like we want)
@@ -113,9 +114,9 @@ func LoadExportPresets():
 				# %MacOsCheckBox.visible = true
 				# oneOptionAdded = true
 				pass
-	
-	if !oneOptionAdded:
-		OS.alert("Found an export_presets.cfg but no supported options were found.");
+
+	# Note: Alert removed - no need to nag on Release Manager open
+	# Users will see validation when they click Export button
 
 func LoadBackgroundColor():
 	var style_box = theme.get_stylebox("panel", "Panel") as StyleBoxFlat
@@ -365,12 +366,14 @@ func PrepUserTempDirectory():
 		return -1
 	
 	# Clean it up just in case something prevented cleanup
-	var isSendingToRecycle = true
+	# Note: Use permanent delete (not recycle bin) for temp folders to avoid Windows confirmation dialogs
+	var isSendingToRecycle = false
 	var isIncludingDotFiles = true
 	var filesToIgnore = []
 	err = FileHelper.DeleteAllFilesAndFolders(_pathToUserTempFolder, filesToIgnore, isSendingToRecycle, isIncludingDotFiles)
 	if err != OK:
-		OS.alert("Failed to delete files and folders in " + _pathToUserTempFolder + ". " + _defaultSupportMessage)
+		# Error 1223 = user cancelled the Windows recycle dialog (shouldn't happen with permanent delete)
+		OS.alert("Failed to delete temp folder. This usually means a previous Godot instance is still running with the folder open.\n\nPlease close any Godot windows opened by the test buttons and try again.")
 		return -1
 	
 	# Sanity check because we expect it to be empty.
@@ -403,7 +406,9 @@ func StartBusyBackground(busyDoingWhat):
 	_busyBackground.call_deferred("SetBusyBackgroundLabel", busyDoingWhat)
 	
 func ClearBusyBackground():
-	_busyBackground.queue_free()
+	if _busyBackground != null and is_instance_valid(_busyBackground):
+		_busyBackground.queue_free()
+		_busyBackground = null
 	
 func GetSelectedExportTypes():
 	var listOfSelectedExportTypes = []
@@ -578,6 +583,10 @@ func _parse_exclude_list(text: String) -> Array[String]:
 # We obfuscate in the source in-place in the
 # temp directory.
 func ObfuscateSource():
+	# Skip obfuscation entirely if no options are enabled (huge performance improvement)
+	if !_obfuscateFunctionsCheckbox.button_pressed && !_obfuscateVariablesCheckbox.button_pressed && !_obfuscateCommentsCheckbox.button_pressed:
+		return OK
+
 	PostStatusUpdate("Start obfuscating scripts...")
 
 	# Parse and pass exclude-lists to obfuscator
@@ -967,10 +976,10 @@ func GetButlerArguments(publishType):
 # butler push godot-valet.zip poplava/godot-valet:windows
 func PublishToItchUsingButler():
 	ClearOutputText()
-	
-	if FormValidationCheckIsSuccess() == -1:
-		return -1
-	
+
+	# Note: Export preset validation removed - Export button handles this
+	# Users can publish with any combination of presets they've already exported
+
 	await StartBusyBackground("")
 	
 	if App.GetIsDebuggingWithoutThreads():
@@ -1118,58 +1127,96 @@ func ShowSourceFilterDialog():
 	var dialogPosition = (viewportSize - dialogSize) / 2
 	sourceFilterDialog.position = dialogPosition
 
-func TestObfuscation():
-	var isObfuscatingFunctions = %ObfuscateFunctionsCheckBox.button_pressed
-	var isObfuscatingVariables = %ObfuscateVariablesCheckBox.button_pressed
-	var isObfuscatingComments = %ObfuscateCommentsCheckBox.button_pressed
-	if !isObfuscatingFunctions && !isObfuscatingVariables && !isObfuscatingComments:
-		OS.alert("At least one obfuscation option must be selected.")
-		return
-
-	await StartBusyBackground("Exporting...")
-
-	# Get the spinner going
-	await get_tree().create_timer(0.4).timeout
-		
-	if App.GetIsDebuggingWithoutThreads():
-		StartTestThread()
-	else:
-		_exportTestThread = Thread.new()
-		_exportTestThread.start(StartTestThread)
-	
-func StartTestThread():
+# Shared preparation for all test export operations
+func _prepareTestExport():
 	var err = PrepUserTempDirectory()
 	if err != OK:
-		# Error notification handled within
-		return
-	
-	# For effect but also to prevent our overwrite 
-	# warning dialog from blocking the status
+		return err
+
 	await get_tree().create_timer(0.2).timeout
-	
-	err = CleanupTempFolder(_pathToUserTempExportFolder)
-	if err != OK:
-		# Error notification handled within
-		return
+
+	# Note: PrepUserTempDirectory() already cleans up everything, so no additional cleanup needed
+	# Calling CleanupTempFolder here causes "Folder In Use" errors if Godot is still running
 
 	err = ExportSourceToTempWorkingDirectory()
 	if err != OK:
 		OS.alert("Error exporting source to temp directory. err: " + str(err))
-		return
-	
+		return err
+
 	err = ObfuscateSource()
 	if err != OK:
-		# Error notification handled within
+		return err
+
+	call_deferred("CompleteExport")
+	return OK
+
+# Open Temp Folder button - exports and opens folder in explorer
+func _on_open_temp_folder_button_pressed():
+	await StartBusyBackground("Exporting to temp folder...")
+	await get_tree().create_timer(0.4).timeout
+
+	if App.GetIsDebuggingWithoutThreads():
+		_openTempFolderThread()
+	else:
+		_exportTestThread = Thread.new()
+		_exportTestThread.start(_openTempFolderThread)
+
+func _openTempFolderThread():
+	var err = await _prepareTestExport()
+	if err != OK:
+		ClearBusyBackground()
 		return
 
-	
-	# Deferred to make sure the data is available for display in the output tabs
-	call_deferred("CompleteExport")
-	
-	err = OS.shell_open(_pathToUserTempSourceFolder)
+	ClearBusyBackground()
+	OS.shell_open(_pathToUserTempSourceFolder)
+
+# Edit With button - exports and launches in Godot editor
+func _on_edit_with_button_pressed():
+	await StartBusyBackground("Exporting and launching editor...")
+	await get_tree().create_timer(0.4).timeout
+
+	if App.GetIsDebuggingWithoutThreads():
+		_editWithThread()
+	else:
+		_exportTestThread = Thread.new()
+		_exportTestThread.start(_editWithThread)
+
+func _editWithThread():
+	var err = await _prepareTestExport()
 	if err != OK:
-		OS.alert("Error opening temp directory. err: " + str(err))
+		ClearBusyBackground()
 		return
+
+	ClearBusyBackground()
+	# Use -e flag to open in editor mode (not run the project)
+	# Launch and forget (non-blocking)
+	var pid = OS.create_process(_godotPathLineEdit.text, ['-e', '--path', _pathToUserTempSourceFolder])
+	if pid == -1:
+		OS.alert("Error launching Godot editor")
+
+# Run With button - exports and runs the project
+func _on_run_with_button_pressed():
+	await StartBusyBackground("Exporting and running project...")
+	await get_tree().create_timer(0.4).timeout
+
+	if App.GetIsDebuggingWithoutThreads():
+		_runWithThread()
+	else:
+		_exportTestThread = Thread.new()
+		_exportTestThread.start(_runWithThread)
+
+func _runWithThread():
+	var err = await _prepareTestExport()
+	if err != OK:
+		ClearBusyBackground()
+		return
+
+	ClearBusyBackground()
+	# Just --path runs the project (no -e flag)
+	# Launch and forget (non-blocking)
+	var pid = OS.create_process(_godotPathLineEdit.text, ['--path', _pathToUserTempSourceFolder])
+	if pid == -1:
+		OS.alert("Error running project")
 	
 func _on_export_button_pressed():
 	ExportProject()
@@ -1302,9 +1349,6 @@ func _on_source_filter_texture_button_pressed() -> void:
 
 func _on_open_export_folder_pressed() -> void:
 	OpenRootExportPath()
-
-func _on_test_button_pressed() -> void:
-	TestObfuscation()
 
 func _on_excludes_button_pressed() -> void:
 	if _selectedProjectItem == null:
