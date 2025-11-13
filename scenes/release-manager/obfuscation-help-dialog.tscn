@@ -35,6 +35,10 @@ text = "[b]Obfuscation Guide[/b]
 
 This guide explains how obfuscation works in godot-valet and best practices for using it.
 
+[b][color=#ff6b6b]⚠️ IMPORTANT DISCLAIMER[/color][/b]
+
+Obfuscation is inherently complex and will likely require project-specific fine-tuning. While godot-valet attempts to handle common patterns automatically, it cannot account for every possible project configuration, coding style, third-party plugin, or external dependency. Thorough testing with your specific codebase is essential before deploying obfuscated builds to production.
+
 ---
 
 [b][size=14]1. Function Obfuscation[/size][/b]
