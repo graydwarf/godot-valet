@@ -411,16 +411,28 @@ tooltip_text = "Open Obfuscation Guide"
 text = "?"
 custom_minimum_size = Vector2(32, 32)
 
+[node name="OpenTempFolderButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer/CommentsAndExcludesContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Obfuscate to temp folder and open in file explorer"
+text = "Obfuscate - Open"
+
+[node name="EditWithButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer/CommentsAndExcludesContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Obfuscate to temp folder and launch in Godot editor"
+text = "Obfuscate - Edit"
+
+[node name="RunWithButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer/CommentsAndExcludesContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Obfuscate to temp folder and run the project"
+text = "Obfuscate - Run"
+
 [node name="HBoxContainer2" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 alignment = 2
-
-[node name="TestButton" type="Button" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer/HBoxContainer2"]
-custom_minimum_size = Vector2(125, 0)
-layout_mode = 2
-tooltip_text = "Copies to export path, obfuscates and launches."
-text = "Test"
 
 [node name="Generate256HashNameHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer"]
 layout_mode = 2
@@ -682,7 +694,6 @@ unique_name_in_owner = true
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportFileNameHBoxContainer/ExportFileNameLineEdit" to="." method="_on_export_file_name_line_edit_text_changed"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProjectNameHBoxContainer/ItchProjectNameLineEdit" to="." method="_on_itch_project_name_line_edit_text_changed"]
 [connection signal="text_changed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ItchProfileNameHBoxContainer/ItchProfileNameLineEdit" to="." method="_on_itch_name_line_edit_text_changed"]
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer/HBoxContainer2/TestButton" to="." method="_on_test_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/Generate256HashNameHBoxContainer/ExportProject" to="." method="_on_export_project_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportPathHBoxContainer/OpenExportFolder" to="." method="_on_open_export_folder_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ExportDetailsHBoxContainer/VBoxContainer/AutomateExportFileNameHBoxContainer/HBoxContainer/HBoxContainer/AutoGenerateExportFileNamesCheckBox" to="." method="_on_auto_generate_export_file_names_check_box_pressed"]
@@ -696,4 +707,7 @@ unique_name_in_owner = true
 [connection signal="confirmed" from="SameVersionConfirmationDialog" to="." method="_on_same_version_confirmation_dialog_confirmed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer/CommentsAndExcludesContainer/ExcludesButton" to="." method="_on_excludes_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer/CommentsAndExcludesContainer/HelpButton" to="." method="_on_help_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer/CommentsAndExcludesContainer/OpenTempFolderButton" to="." method="_on_open_temp_folder_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer/CommentsAndExcludesContainer/EditWithButton" to="." method="_on_edit_with_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer2/HBoxContainer/VBoxContainer/ObfuscationContainer/CommentsAndExcludesContainer/RunWithButton" to="." method="_on_run_with_button_pressed"]
 [connection signal="lists_saved" from="ExcludeListDialog" to="." method="_on_exclude_lists_saved"]

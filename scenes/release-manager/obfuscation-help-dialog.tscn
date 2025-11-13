@@ -102,6 +102,14 @@ Variables accessed via string-based setters/getters MUST be excluded:
 
 [b][size=14]4. Testing & Best Practices[/size][/b]
 
+[b]⚠️ IMPORTANT: Check Godot Version When Testing![/b]
+• When using \"Obfuscate - Open\" button, it opens the temp folder in Windows Explorer
+• If you double-click [code]project.godot[/code], it uses Windows file associations
+• Windows may launch the WRONG Godot version (e.g., 4.4.1 instead of 4.5.0)
+• This causes version mismatch errors (\"GDExtension only compatible with...\")
+• [b]Solution:[/b] Use \"Obfuscate - Edit\" or \"Obfuscate - Run\" buttons instead
+• [b]Alternative:[/b] Change Windows file association to point to latest Godot version
+
 [b]⚠️ Test Thoroughly:[/b]
 • Always test obfuscated builds before release
 
