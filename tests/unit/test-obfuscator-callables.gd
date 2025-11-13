@@ -142,3 +142,43 @@ func test_chained_callable_methods():
 
 	# Assert
 	framework.assert_true(symbol_map.has("Process"), "Process should be in symbol map (first .bind() triggers detection)")
+
+func test_sort_custom_with_class_method():
+	# Arrange
+	var code = """class_name CommonHelper
+
+static func SortAscending(a, b):
+	return a < b
+
+func test():
+	var items = [3, 1, 2]
+	items.sort_custom(CommonHelper.SortAscending)
+"""
+	var symbol_map = {}
+
+	# Act
+	ObfuscateHelper.BuildSymbolMap(code, symbol_map)
+
+	# Assert
+	framework.assert_true(symbol_map.has("SortAscending"), "SortAscending should be in symbol map (callable reference in sort_custom)")
+	framework.assert_true(symbol_map.has("test"), "test should be in symbol map")
+	framework.assert_true(symbol_map.has("items"), "items should be in symbol map")
+
+func test_callable_reference_as_parameter():
+	# Arrange
+	var code = """func my_callback():
+	pass
+
+func register_callback(cb):
+	pass
+
+func _ready():
+	register_callback(my_callback)
+"""
+	var symbol_map = {}
+
+	# Act
+	ObfuscateHelper.BuildSymbolMap(code, symbol_map)
+
+	# Assert
+	framework.assert_true(symbol_map.has("my_callback"), "my_callback should be in symbol map (callable reference)")

@@ -72,6 +72,8 @@ static var _isObfuscatingComments := false
 static var _functionExcludeList : Array[String] = []
 static var _variableExcludeList : Array[String] = []
 static var _enumValueExcludeList : Array[String] = []
+static var _signalExcludeList : Array[String] = []  # Auto-detected signal names
+static var _classNameExcludeList : Array[String] = []  # Auto-detected class_name declarations
 static var _externalPluginClasses : Array[String] = []  # User-configured external plugin class names
 
 # Godot lifecycle methods (virtual methods that must not be obfuscated)
@@ -335,6 +337,30 @@ static func AddEnumValuesToExcludeList(content: String) -> void:
 			if enum_value_name not in _enumValueExcludeList:
 				_enumValueExcludeList.append(enum_value_name)
 
+# Extracts signal names from code and adds them to exclusion list
+# Signal names should never be obfuscated as they're referenced by name at runtime
+static func AddSignalNamesToExcludeList(content: String) -> void:
+	var regex := RegEx.new()
+	# Match: signal signal_name or signal signal_name(arg1, arg2)
+	regex.compile(r"\bsignal\s+(\w+)")
+
+	for match in regex.search_all(content):
+		var sig_name = match.get_string(1)
+		if sig_name not in _signalExcludeList:
+			_signalExcludeList.append(sig_name)
+
+# Extracts class_name declarations from code and adds them to exclusion list
+# User-defined class names should be excluded as they're used in type hints and extends
+static func AddClassNamesToExcludeList(content: String) -> void:
+	var regex := RegEx.new()
+	# Match: class_name ClassName or class_name ClassName extends Parent
+	regex.compile(r"\bclass_name\s+(\w+)")
+
+	for match in regex.search_all(content):
+		var cls_name = match.get_string(1)
+		if cls_name not in _classNameExcludeList:
+			_classNameExcludeList.append(cls_name)
+
 # Generates a random name ensuring we haven't
 # used the name before.
 static func GenerateObfuscatedName()  -> String:
@@ -455,14 +481,18 @@ static func ObfuscateDirectory(path: String, autoloads : Array) -> void:
 static func BuildGlobalObfuscationMap(allFiles) -> Dictionary:
 	var obfuscationMap : Dictionary = {}
 
-	# Clear enum exclude list to avoid stale values from previous runs
+	# Clear exclusion lists to avoid stale values from previous runs
 	_enumValueExcludeList.clear()
+	_signalExcludeList.clear()
+	_classNameExcludeList.clear()
 
-	# First pass: Extract ALL enum values from ALL files before building symbol map
-	# This ensures enum values are in the exclude list before any variables/functions are processed
+	# First pass: Extract ALL special symbols from ALL files before building symbol map
+	# This ensures enum values, signals, and class names are in exclude lists before processing
 	for fullPath in allFiles:
 		var content := FileAccess.get_file_as_string(fullPath)
 		AddEnumValuesToExcludeList(content)
+		AddSignalNamesToExcludeList(content)
+		AddClassNamesToExcludeList(content)
 
 	# Second pass: Build symbol map (functions and variables)
 	for fullPath in allFiles:
@@ -756,8 +786,14 @@ static func RegExMatchReplace(text: String, pattern: String, replacement: String
 	return regex.sub(text, replacement, true)
 	
 static func BuildSymbolMap(content : String, symbolMap : Dictionary) -> void:
-	# Note: AddEnumValuesToExcludeList() is now called in BuildGlobalObfuscationMap()
-	# before this function, ensuring all enum values are excluded before building the symbol map
+	# Extract special symbols from this content to ensure they're excluded
+	# NOTE: BuildGlobalObfuscationMap() does a first pass to extract from ALL files,
+	# but this ensures BuildSymbolMap() is self-contained for testing and direct usage
+	AddEnumValuesToExcludeList(content)
+	AddSignalNamesToExcludeList(content)
+	AddClassNamesToExcludeList(content)
+
+	# Build symbol map (functions and variables) - excludes symbols in exclusion lists
 	AddFunctionsToSymbolMap(content, symbolMap)
 	AddVariablesToSymbolMap(content, symbolMap)
 	
@@ -786,6 +822,14 @@ static func AddFunctionsToSymbolMap(content: String, symbolMap) -> void:
 
 		# Skip enum values (in case an enum value name matches a function name)
 		if symbolName in _enumValueExcludeList:
+			continue
+
+		# Skip signal names (in case a signal name matches a function name)
+		if symbolName in _signalExcludeList:
+			continue
+
+		# Skip class names (in case a class name matches a function name)
+		if symbolName in _classNameExcludeList:
 			continue
 
 		# Add to symbol map - will be obfuscated (including user-defined private functions)
@@ -833,6 +877,14 @@ static func AddVariablesToSymbolMap(content : String, symbolMap : Dictionary):
 
 			# Skip enum values
 			if symbolName in _enumValueExcludeList:
+				continue
+
+			# Skip signal names (in case a signal name is used as a variable name)
+			if symbolName in _signalExcludeList:
+				continue
+
+			# Skip class names (in case a class name is used as a variable name)
+			if symbolName in _classNameExcludeList:
 				continue
 
 			symbolMap[symbolName] = { "kind": "variable" }
