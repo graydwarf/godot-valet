@@ -253,6 +253,11 @@ static func ObfuscateDirectory(path: String, autoloads : Array) -> void:
 	var globalObfuscationMap := BuildGlobalObfuscationMap(filteredFiles)
 	ObfuscateAllFiles(filteredFiles, globalObfuscationMap, autoloads)
 
+	# Also process .tscn files to update signal connection method references
+	var sceneFilters := ["tscn"]
+	var sceneFiles := FileHelper.GetFilesRecursive(path, sceneFilters)
+	ObfuscateSceneFiles(sceneFiles, globalObfuscationMap)
+
 # Pass 1: Build global obfuscation map
 static func BuildGlobalObfuscationMap(allFiles) -> Dictionary:
 	var obfuscationMap : Dictionary = {}
@@ -370,7 +375,68 @@ static func ObfuscateAllFiles(allFiles : Array, globalObfuscationMap : Dictionar
 			file.close()
 		else:
 			printerr("Failed to open file for writing: ", outputPath)
-	
+
+# Process .tscn scene files to update method references in signal connections
+static func ObfuscateSceneFiles(sceneFiles: Array, globalObfuscationMap: Dictionary) -> void:
+	for fullPath in sceneFiles:
+		var fileContents := FileAccess.get_file_as_string(fullPath)
+		if fileContents == null or fileContents == "":
+			continue
+
+		var modified := false
+		var lines := fileContents.split("\n")
+		var result := ""
+
+		for line in lines:
+			var newLine := line
+
+			# Find signal connection lines: [connection signal="..." from="..." to="..." method="method_name"]
+			if line.begins_with("[connection "):
+				var methodRegex := RegEx.new()
+				# Match method="method_name" - capture the method name
+				methodRegex.compile('method="([^"]+)"')
+				var match := methodRegex.search(line)
+
+				if match:
+					var methodName := match.get_string(1)
+
+					# Check if this method is in our obfuscation map
+					if globalObfuscationMap.has(methodName):
+						var obfuscatedMethod: String = globalObfuscationMap[methodName].get("replacement", "")
+						if obfuscatedMethod != "":
+							# Replace the method name in the connection line
+							newLine = line.replace('method="' + methodName + '"', 'method="' + obfuscatedMethod + '"')
+							modified = true
+
+			result += newLine + "\n"
+
+		# Write modified scene file to output directory
+		if modified:
+			var relativePath: String = fullPath.replace(_inputDir, "")
+			var outputPath: String = _outputDir + relativePath
+			var outputDir: String = outputPath.get_base_dir()
+			DirAccess.make_dir_recursive_absolute(outputDir)
+
+			var file := FileAccess.open(outputPath, FileAccess.WRITE)
+			if file:
+				file.store_string(result.trim_suffix("\n"))  # Remove trailing newline
+				file.close()
+			else:
+				printerr("Failed to write scene file: ", outputPath)
+		else:
+			# No modifications needed - copy file as-is
+			var relativePath: String = fullPath.replace(_inputDir, "")
+			var outputPath: String = _outputDir + relativePath
+			var outputDir: String = outputPath.get_base_dir()
+			DirAccess.make_dir_recursive_absolute(outputDir)
+
+			var file := FileAccess.open(outputPath, FileAccess.WRITE)
+			if file:
+				file.store_string(fileContents)
+				file.close()
+			else:
+				printerr("Failed to copy scene file: ", outputPath)
+
 static func RemoveCommentsFromCode(contentPayload: ContentPayload) -> void:
 	var result := ""
 	var in_string := false
