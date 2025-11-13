@@ -56,8 +56,8 @@ var stamina = 75"""
 
 func test_add_variables_no_duplicates():
 	# Arrange
-	var code = """var count = 0
-var count = 1"""
+	var code = """var player_count = 0
+var player_count = 1"""
 	var symbol_map = {}
 
 	# Act

@@ -102,10 +102,10 @@ var x = 1
 
 func test_godot_reserved_keywords_preserved():
 	# Arrange
-	var reserved_keywords = ObfuscateHelper._godotReservedKeywords
+	var lifecycle_methods = ObfuscateHelper._godotLifecycleMethods
 
 	# Assert - Check key lifecycle methods are protected
-	framework.assert_true("_ready" in reserved_keywords, "_ready should be reserved")
-	framework.assert_true("_process" in reserved_keywords, "_process should be reserved")
-	framework.assert_true("_physics_process" in reserved_keywords, "_physics_process should be reserved")
-	framework.assert_true("_input" in reserved_keywords, "_input should be reserved")
+	framework.assert_true("_ready" in lifecycle_methods, "_ready should be reserved")
+	framework.assert_true("_process" in lifecycle_methods, "_process should be reserved")
+	framework.assert_true("_physics_process" in lifecycle_methods, "_physics_process should be reserved")
+	framework.assert_true("_input" in lifecycle_methods, "_input should be reserved")

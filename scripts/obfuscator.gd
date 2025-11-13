@@ -72,19 +72,209 @@ static var _isObfuscatingComments := false
 static var _functionExcludeList : Array[String] = []
 static var _variableExcludeList : Array[String] = []
 static var _enumValueExcludeList : Array[String] = []
+static var _externalPluginClasses : Array[String] = []  # User-configured external plugin class names
 
-# It's possible that you've used a reserved keyword 
-# without realizing it. Godot generally warns about 
-# reserved keywords but not always. Recommend updating
-# your code to not use reserved keywords vs fixing here.
-# An example I fixed in code which godot doesn't warn me about: 
-# var values = enumType.values() # Using values as a 
-# variable name which is a godot keyword. I chose to rename the
-# variable to something else instead of adding it here.
-const _godotReservedKeywords := [
+# Godot lifecycle methods (virtual methods that must not be obfuscated)
+const _godotLifecycleMethods := [
 	"_ready", "_process", "_physics_process", "_input", "_unhandled_input", "_init",
 	"_enter_tree", "_exit_tree", "_notification", "_draw", "_gui_input", "_get_property_list",
-	"_get", "_set", "_to_string", "_save", "_load"
+	"_get", "_set", "_to_string", "_save", "_load", "_input_event", "_unhandled_key_input",
+	"_physics_process", "_integrate_forces", "_get_configuration_warnings"
+]
+
+# Comprehensive list of built-in Godot method names
+# These should NEVER be obfuscated as they're called by the engine or are built-in to core types
+const _godotBuiltInMethods := [
+	# Array/Dictionary/Collection methods
+	"size", "append", "clear", "has", "erase", "find", "insert", "pop_back", "pop_front",
+	"push_back", "push_front", "remove", "resize", "reverse", "shuffle", "sort", "sort_custom",
+	"keys", "values", "duplicate", "is_empty", "pop_at", "slice", "assign", "fill",
+	"max", "min", "any", "all", "map", "filter", "reduce", "pick_random", "front", "back",
+	"bsearch", "bsearch_custom", "count", "rfind", "find_last", "hash", "make_read_only",
+	"is_read_only", "merge", "get_typed_builtin", "get_typed_class_name", "get_typed_script",
+	"is_typed", "is_same_typed", "set_typed",
+
+	# String methods
+	"begins_with", "ends_with", "capitalize", "casecmp_to", "contains", "format",
+	"get_base_dir", "get_basename", "get_extension", "get_file", "hex_to_int", "is_absolute_path",
+	"is_relative_path", "is_valid_float", "is_valid_hex_number", "is_valid_html_color",
+	"is_valid_identifier", "is_valid_int", "is_valid_ip_address", "is_valid_filename", "join",
+	"json_escape", "left", "length", "lpad", "lstrip", "match", "matchn", "md5_buffer", "md5_text",
+	"naturalnocasecmp_to", "nocasecmp_to", "num", "pad_decimals", "pad_zeros", "path_join",
+	"repeat", "replace", "replacen", "rfind", "rfindn", "right", "rpad", "rsplit", "rstrip",
+	"sha1_buffer", "sha1_text", "sha256_buffer", "sha256_text", "similarity", "simplify_path",
+	"split", "split_floats", "strip_edges", "strip_escapes", "substr", "to_ascii_buffer",
+	"to_camel_case", "to_float", "to_int", "to_lower", "to_pascal_case", "to_snake_case",
+	"to_upper", "to_utf8_buffer", "to_utf16_buffer", "to_utf32_buffer", "to_wchar_buffer",
+	"trim_prefix", "trim_suffix", "unicode_at", "uri_decode", "uri_encode", "validate_node_name",
+	"xml_escape", "xml_unescape", "indent", "dedent", "bin_to_int", "c_escape", "c_unescape",
+	"get_slice", "get_slice_count", "get_slicec", "hex_encode", "humanize_size", "is_subsequence_of",
+	"is_subsequence_ofn", "num_int64", "num_scientific", "num_uint64", "reverse",
+
+	# Node methods
+	"add_child", "add_sibling", "add_to_group", "can_process", "create_tween",
+	"find_child", "find_children", "find_parent", "get_child", "get_child_count",
+	"get_children", "get_groups", "get_index", "get_node", "get_node_and_resource", "get_node_or_null",
+	"get_parent", "get_path", "get_path_to", "get_physics_process_delta_time", "get_process_delta_time",
+	"get_tree", "get_viewport", "get_window", "has_node", "has_node_and_resource", "is_ancestor_of",
+	"is_displayed_folded", "is_editable_instance", "is_greater_than", "is_in_group", "is_inside_tree",
+	"is_node_ready", "is_processing", "is_processing_input", "is_processing_internal", "is_processing_unhandled_input",
+	"is_processing_unhandled_key_input", "move_child", "print_orphan_nodes", "print_tree", "print_tree_pretty",
+	"propagate_call", "propagate_notification", "queue_free", "remove_child", "remove_from_group",
+	"reparent", "replace_by", "request_ready", "set_display_folded", "set_editable_instance",
+	"set_owner", "set_physics_process", "set_physics_process_internal", "set_process", "set_process_input",
+	"set_process_internal", "set_process_unhandled_input", "set_process_unhandled_key_input",
+	"set_process_mode", "set_scene_instance_load_placeholder", "update_configuration_warnings",
+	"get_multiplayer_authority", "set_multiplayer_authority", "rpc", "rpc_id", "is_multiplayer_authority",
+
+	# Object methods (base class - VERY common)
+	"get", "set", "get_class", "get_instance_id", "get_meta", "get_meta_list", "get_method_list",
+	"get_property_list", "get_script", "get_signal_connection_list", "get_signal_list", "has_meta",
+	"has_method", "has_signal", "has_user_signal", "is_class", "is_connected", "is_queued_for_deletion",
+	"notification", "notify_property_list_changed", "remove_meta", "set_block_signals", "set_indexed",
+	"set_message_translation", "set_meta", "set_script", "to_string", "tr", "tr_n", "free",
+	"call", "call_deferred", "callv", "connect", "disconnect", "emit_signal", "is_blocking_signals",
+	"set_deferred", "add_user_signal", "can_translate_messages", "get_incoming_connections",
+
+	# Resource methods
+	"get_local_scene", "get_rid", "setup_local_to_scene", "take_over_path", "emit_changed",
+	"get_path", "set_path", "set_local_to_scene",
+
+	# PackedArray methods (common across all packed array types)
+	"to_byte_array", "compress", "decompress", "decode_double", "decode_float", "decode_half",
+	"decode_s16", "decode_s32", "decode_s64", "decode_s8", "decode_u16", "decode_u32", "decode_u64",
+	"decode_u8", "decode_var", "decode_var_size", "encode_double", "encode_float", "encode_half",
+	"encode_s16", "encode_s32", "encode_s64", "encode_s8", "encode_u16", "encode_u32", "encode_u64",
+	"encode_u8", "encode_var", "get_string_from_ascii", "get_string_from_utf16", "get_string_from_utf32",
+	"get_string_from_utf8", "get_string_from_wchar", "hex_encode", "has_encoded_var",
+
+	# Math/Vector methods
+	"abs", "absf", "absi", "acos", "acosh", "angle_difference", "asin", "asinh", "atan", "atan2",
+	"atanh", "bezier_derivative", "bezier_interpolate", "ceil", "ceilf", "ceili", "clamp", "clampf",
+	"clampi", "cos", "cosh", "cubic_interpolate", "cubic_interpolate_angle", "cubic_interpolate_angle_in_time",
+	"cubic_interpolate_in_time", "db_to_linear", "deg_to_rad", "ease", "error_string", "exp", "floor",
+	"floorf", "floori", "fmod", "fposmod", "hash", "instance_from_id", "inverse_lerp", "is_equal_approx",
+	"is_finite", "is_inf", "is_instance_id_valid", "is_instance_valid", "is_nan", "is_same", "is_zero_approx",
+	"lerp", "lerp_angle", "lerpf", "linear_to_db", "log", "max", "maxf", "maxi", "min", "minf", "mini",
+	"move_toward", "nearest_po2", "pingpong", "posmod", "pow", "print", "print_rich", "print_verbose",
+	"printerr", "printraw", "prints", "printt", "push_error", "push_warning", "rad_to_deg", "rand_from_seed",
+	"randf", "randf_range", "randfn", "randi", "randi_range", "randomize", "remap", "rid_allocate_id",
+	"rid_from_int64", "rotate", "rotated", "round", "roundf", "roundi", "seed", "sign", "signf", "signi",
+	"sin", "sinh", "smoothstep", "snapped", "snappedf", "snappedi", "sqrt", "step_decimals", "str",
+	"str_to_var", "tan", "tanh", "type_convert", "type_string", "typeof", "var_to_bytes", "var_to_bytes_with_objects",
+	"var_to_str", "weakref", "wrap", "wrapf", "wrapi",
+
+	# Control/CanvasItem methods
+	"accept_event", "grab_click_focus", "grab_focus", "has_focus", "release_focus", "set_anchors_and_offsets_preset",
+	"set_anchors_preset", "set_begin", "set_default_cursor_shape", "set_drag_forwarding", "set_drag_preview",
+	"set_end", "set_focus_mode", "set_focus_neighbor", "set_focus_next", "set_focus_previous",
+	"set_global_position", "set_offsets_preset", "set_position", "set_size", "warp_mouse",
+	"draw_arc", "draw_char", "draw_circle", "draw_colored_polygon", "draw_line", "draw_mesh",
+	"draw_multiline", "draw_multiline_colors", "draw_multimesh", "draw_polygon", "draw_polyline",
+	"draw_polyline_colors", "draw_primitive", "draw_rect", "draw_set_transform", "draw_set_transform_matrix",
+	"draw_string", "draw_string_outline", "draw_style_box", "draw_texture", "draw_texture_rect",
+	"force_update_transform", "get_canvas", "get_canvas_item", "get_canvas_transform", "get_global_mouse_position",
+	"get_global_transform", "get_global_transform_with_canvas", "get_local_mouse_position", "get_screen_transform",
+	"get_transform", "get_viewport_rect", "get_viewport_transform", "get_visibility_layer_bit",
+	"hide", "is_local_transform_notification_enabled", "is_transform_notification_enabled", "is_visible",
+	"is_visible_in_tree", "make_canvas_position_local", "make_input_local", "queue_redraw", "set_clip_children_mode",
+	"set_modulate", "set_notify_local_transform", "set_notify_transform", "set_self_modulate",
+	"set_visibility_layer", "set_visibility_layer_bit", "set_visible", "show",
+
+	# Common utility methods
+	"bind", "unbind", "get_bound_arguments", "get_bound_arguments_count", "get_method", "get_object",
+	"get_object_id", "is_custom", "is_null", "is_standard", "is_valid", "call_deferred",
+
+	# File/Directory methods
+	"file_exists", "open", "open_encrypted", "open_encrypted_with_pass", "open_compressed", "close",
+	"get_path_absolute", "get_as_text", "get_buffer", "get_csv_line", "get_double", "get_error",
+	"get_float", "get_hidden_attribute", "get_length", "get_line", "get_md5", "get_modified_time",
+	"get_pascal_string", "get_position", "get_real", "get_sha256", "get_var", "eof_reached",
+	"seek", "seek_end", "store_buffer", "store_csv_line", "store_double", "store_float", "store_line",
+	"store_pascal_string", "store_real", "store_string", "store_var", "flush",
+	"copy", "current_is_dir", "dir_exists", "get_current_dir", "get_current_drive", "get_directories",
+	"get_directories_at", "get_drive_count", "get_drive_name", "get_files", "get_files_at", "get_space_left",
+	"list_dir_begin", "list_dir_end", "make_dir", "make_dir_absolute", "make_dir_recursive",
+	"open", "remove", "remove_absolute", "rename", "rename_absolute"
+]
+
+# Comprehensive list of built-in Godot class names
+# These should NEVER be obfuscated as they're part of the engine
+const _godotBuiltInClasses := [
+	# Core variant types
+	"Variant", "bool", "int", "float", "String", "Vector2", "Vector2i", "Vector3", "Vector3i",
+	"Transform2D", "Vector4", "Vector4i", "Plane", "Quaternion", "AABB", "Basis", "Transform3D",
+	"Projection", "Color", "StringName", "NodePath", "RID", "Object", "Callable", "Signal",
+	"Dictionary", "Array", "PackedByteArray", "PackedInt32Array", "PackedInt64Array",
+	"PackedFloat32Array", "PackedFloat64Array", "PackedStringArray", "PackedVector2Array",
+	"PackedVector3Array", "PackedColorArray", "PackedVector4Array", "Rect2", "Rect2i",
+
+	# Core scene tree nodes
+	"Node", "Node2D", "Node3D", "CanvasItem", "Control", "Window", "Viewport", "SubViewport",
+	"CanvasLayer", "CanvasModulate", "HTTPRequest", "Timer", "ResourcePreloader",
+
+	# UI Control nodes
+	"Button", "Label", "LineEdit", "TextEdit", "CodeEdit", "RichTextLabel", "CheckBox", "CheckButton",
+	"ColorPicker", "ColorPickerButton", "MenuButton", "MenuBar", "OptionButton", "PopupMenu", "ProgressBar",
+	"ScrollBar", "HScrollBar", "VScrollBar", "Slider", "HSlider", "VSlider", "SpinBox", "Range",
+	"TextureRect", "VideoStreamPlayer", "LinkButton", "TabBar", "ItemList", "Tree", "FileDialog",
+	"AcceptDialog", "ConfirmationDialog", "EditorFileDialog", "Popup", "PopupPanel", "WindowDialog",
+
+	# Container nodes
+	"Container", "BoxContainer", "HBoxContainer", "VBoxContainer", "GridContainer", "MarginContainer",
+	"PanelContainer", "ScrollContainer", "SplitContainer", "HSplitContainer", "VSplitContainer",
+	"TabContainer", "Panel", "ColorRect", "NinePatchRect", "ReferenceRect", "AspectRatioContainer",
+	"CenterContainer", "FlowContainer", "HFlowContainer", "VFlowContainer", "GraphNode", "GraphEdit",
+	"SubViewportContainer",
+
+	# 2D nodes
+	"Sprite2D", "AnimatedSprite2D", "Polygon2D", "Line2D", "MeshInstance2D", "MultiMeshInstance2D",
+	"Skeleton2D", "Bone2D", "SkeletonModification2D", "TileMap", "TileMapLayer", "ParallaxBackground", "ParallaxLayer",
+	"TouchScreenButton", "Camera2D", "AudioListener2D", "Marker2D", "RemoteTransform2D",
+	"VisibleOnScreenNotifier2D", "VisibleOnScreenEnabler2D", "CollisionObject2D", "Area2D",
+	"PhysicsBody2D", "StaticBody2D", "AnimatableBody2D", "RigidBody2D", "CharacterBody2D",
+	"CollisionShape2D", "CollisionPolygon2D", "RayCast2D", "ShapeCast2D",
+
+	# 3D nodes
+	"MeshInstance3D", "CSGMesh3D", "ImmediateMesh", "Sprite3D", "AnimatedSprite3D", "Label3D",
+	"Camera3D", "AudioListener3D", "Marker3D", "RemoteTransform3D", "VisibleOnScreenNotifier3D",
+	"VisibleOnScreenEnabler3D", "CollisionObject3D", "Area3D", "PhysicsBody3D", "StaticBody3D",
+	"AnimatableBody3D", "RigidBody3D", "CharacterBody3D", "CollisionShape3D", "CollisionPolygon3D",
+	"RayCast3D", "ShapeCast3D", "DirectionalLight3D", "OmniLight3D", "SpotLight3D",
+
+	# Resource types
+	"Resource", "Texture", "Texture2D", "Texture3D", "CompressedTexture2D", "CompressedTexture3D",
+	"AtlasTexture", "MeshTexture", "CurveTexture", "CurveXYZTexture", "GradientTexture1D",
+	"GradientTexture2D", "AnimatedTexture", "ImageTexture", "PortableCompressedTexture2D",
+	"Image", "Font", "FontFile", "FontVariation", "SystemFont", "StyleBox", "StyleBoxEmpty",
+	"StyleBoxFlat", "StyleBoxLine", "StyleBoxTexture", "Theme", "Shader", "ShaderInclude",
+	"Material", "ShaderMaterial", "CanvasItemMaterial", "ParticleProcessMaterial", "StandardMaterial3D",
+	"ORMMaterial3D", "Mesh", "ArrayMesh", "PrimitiveMesh", "BoxMesh", "CapsuleMesh", "CylinderMesh",
+	"PlaneMesh", "PrismMesh", "QuadMesh", "SphereMesh", "TorusMesh", "TubeTrailMesh", "RibbonTrailMesh",
+	"PackedScene", "Animation", "AnimationLibrary", "AudioStream", "AudioStreamWAV", "AudioStreamOggVorbis",
+	"AudioStreamMP3", "BitMap", "Gradient", "Curve", "Curve2D", "Curve3D",
+
+	# Animation/Tween
+	"AnimationPlayer", "AnimationTree", "AnimationNodeStateMachine", "Tween", "PropertyTweener",
+	"IntervalTweener", "CallbackTweener", "MethodTweener",
+
+	# Audio
+	"AudioStreamPlayer", "AudioStreamPlayer2D", "AudioStreamPlayer3D",
+
+	# Other common nodes/classes
+	"MultiplayerSpawner", "MultiplayerSynchronizer", "NavigationAgent2D", "NavigationAgent3D",
+	"Path2D", "PathFollow2D", "Path3D", "PathFollow3D", "CPUParticles2D", "CPUParticles3D",
+	"GPUParticles2D", "GPUParticles3D", "Joint2D", "PinJoint2D", "GrooveJoint2D", "DampedSpringJoint2D",
+	"Joint3D", "PinJoint3D", "HingeJoint3D", "SliderJoint3D", "ConeTwistJoint3D", "Generic6DOFJoint3D",
+
+	# System/Utility classes
+	"FileAccess", "DirAccess", "JSON", "XMLParser", "ConfigFile", "RegEx", "RegExMatch",
+	"Thread", "Mutex", "Semaphore", "IP", "StreamPeer", "StreamPeerBuffer", "StreamPeerTCP",
+	"PacketPeer", "PacketPeerUDP", "UDPServer", "TCPServer", "WebSocketPeer",
+	"JavaScriptBridge", "JavaScriptObject", "Engine", "OS", "Time", "Performance", "ProjectSettings",
+	"EditorSettings", "SceneTree", "MultiplayerAPI", "MultiplayerPeer", "Input", "InputEvent",
+	"InputEventAction", "InputEventKey", "InputEventMouse", "InputEventMouseButton", "InputEventMouseMotion",
+	"RandomNumberGenerator", "Marshalls", "ClassDB", "ResourceLoader", "ResourceSaver"
 ]
 
 static func ObfuscateScripts(inputDir: String, outputDir: String, isObfuscatingFunctions : bool, isObfuscatingVariables : bool, isObfuscatingComments : bool):
@@ -121,6 +311,9 @@ static func SetFunctionExcludeList(excludeList: Array[String]) -> void:
 
 static func SetVariableExcludeList(excludeList: Array[String]) -> void:
 	_variableExcludeList = excludeList
+
+static func SetExternalPluginClasses(classList: Array[String]) -> void:
+	_externalPluginClasses = classList
 
 # Extracts enum values from code and adds them to exclusion list
 # Enum values should never be obfuscated as they're runtime constants
@@ -579,8 +772,12 @@ static func AddFunctionsToSymbolMap(content: String, symbolMap) -> void:
 		if symbolMap.has(symbolName):
 			continue
 
-		# Ignore godot built-in functions
-		if symbolName in _godotReservedKeywords:
+		# CRITICAL: Skip Godot lifecycle methods (virtual methods)
+		if symbolName in _godotLifecycleMethods:
+			continue
+
+		# CRITICAL: Skip built-in Godot methods (Array.size(), String.split(), etc.)
+		if symbolName in _godotBuiltInMethods:
 			continue
 
 		# Skip user-excluded functions
@@ -616,6 +813,18 @@ static func AddVariablesToSymbolMap(content : String, symbolMap : Dictionary):
 		if match:
 			var symbolName = match.get_string(1)
 			if symbolMap.has(symbolName):
+				continue
+
+			# CRITICAL: Skip built-in Godot class names (Array, Node, Control, etc.)
+			if symbolName in _godotBuiltInClasses:
+				continue
+
+			# CRITICAL: Skip built-in Godot methods (size, append, has, etc.)
+			if symbolName in _godotBuiltInMethods:
+				continue
+
+			# CRITICAL: Skip external plugin classes (SQLite, SupabaseAPI, etc.)
+			if symbolName in _externalPluginClasses:
 				continue
 
 			# Skip user-excluded variables

@@ -53,10 +53,15 @@ func _register_test_suites():
 	obfuscator_enum_tests.framework = test_framework
 	test_suites.append(obfuscator_enum_tests)
 
-	# Obfuscator Scene Tests (10 tests)
+	# Obfuscator Scene Tests (9 tests)
 	var obfuscator_scene_tests = preload("res://tests/unit/test-obfuscator-scenes.gd").new()
 	obfuscator_scene_tests.framework = test_framework
 	test_suites.append(obfuscator_scene_tests)
+
+	# Obfuscator Built-In Exclusion Tests (13 tests)
+	var obfuscator_builtin_tests = preload("res://tests/unit/test-obfuscator-builtins.gd").new()
+	obfuscator_builtin_tests.framework = test_framework
+	test_suites.append(obfuscator_builtin_tests)
 
 func _run_all_tests():
 	var total_results = {}
