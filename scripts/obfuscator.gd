@@ -432,7 +432,12 @@ static func GetObfuscationReplacement(content: String, symbol: String, globalObf
 		if before.contains("@export var"):
 			_exportVariableNames.append(symbol)
 			return symbol
-			
+
+		# Don't obfuscate property access (dot notation)
+		# Example: json.data - 'data' here is a property, not our local variable
+		if prevChar == ".":
+			return symbol
+
 		return globalObfuscationMap.replacement
 
 	return symbol
