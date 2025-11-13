@@ -1,5 +1,12 @@
 extends Node
 class_name FileHelper
+
+# Check if filename is a Windows reserved device name
+static func IsWindowsReservedName(fileName: String) -> bool:
+	var baseName = fileName.get_basename().to_upper()
+	var reserved = ["CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"]
+	return baseName in reserved
+
 static func IsDirectoryEmpty(directoryPath: String) -> bool:
 	var dir = DirAccess.open(directoryPath)
 	dir.include_hidden = true
@@ -65,11 +72,16 @@ static func CopyFoldersAndFilesRecursive(sourcePath: String, absoluteOutputPath:
 			if sourceName == "." || sourceName == "..":
 				sourceName = fileOrDir.get_next()
 				continue
-			
+
+			# Skip Windows reserved device names (CON, NUL, PRN, etc.)
+			if IsWindowsReservedName(sourceName):
+				sourceName = fileOrDir.get_next()
+				continue
+
 			var fileOrFolderPath = sourcePath
 			if sourcePath != "res://":
 				fileOrFolderPath += "/"
-				
+
 			fileOrFolderPath += sourceName
 			if fileOrDir.current_is_dir():
 				var filterPath = fileOrFolderPath.trim_prefix("res://")
@@ -78,7 +90,7 @@ static func CopyFoldersAndFilesRecursive(sourcePath: String, absoluteOutputPath:
 					if filterPath.find(sourceFilter) >= 0:
 						foundFilteredItem = true
 						break
-				
+
 				if foundFilteredItem:
 					sourceName = fileOrDir.get_next()
 					continue
@@ -90,7 +102,12 @@ static func CopyFoldersAndFilesRecursive(sourcePath: String, absoluteOutputPath:
 				if filterIndex >= 0:
 					sourceName = fileOrDir.get_next()
 					continue
-							
+
+				# Skip Windows reserved device names (CON, NUL, PRN, etc.)
+				if IsWindowsReservedName(sourceName):
+					sourceName = fileOrDir.get_next()
+					continue
+
 				fileOrDir.copy(fileOrFolderPath, absoluteOutputPath + "/" + sourceName)
 
 			sourceName = fileOrDir.get_next()
@@ -152,24 +169,37 @@ static func GetFileAsText(filePath):
 # Deletes everything in the directory and all sub-directories.
 # Carefully review and Use with caution
 static func DeleteAllFilesAndFolders(folderPath, filesToIgnore = [], isSendingToRecycle = true, isIncludingDotFiles = false):
+	if !DirAccess.dir_exists_absolute(folderPath):
+		return OK  # Nothing to delete, consider it success
+
 	var filePaths = GetFilesFromPath(folderPath, isIncludingDotFiles)
 	for filePath in filePaths:
 		if filesToIgnore.find(filePath) >= 0:
 			continue
-			
+
 		var err = OK
 		var fullFilePath = folderPath.path_join(filePath)
-		
+
+		# Check if it's a directory - need to recursively delete contents first
+		if DirAccess.dir_exists_absolute(fullFilePath):
+			# Recursively delete subdirectory contents
+			err = DeleteAllFilesAndFolders(fullFilePath, [], isSendingToRecycle, isIncludingDotFiles)
+			if err != OK:
+				return -1
+
 		if isSendingToRecycle:
 			# Send to recycle so we can recover if needed
-			err = OS.move_to_trash(fullFilePath) 
+			err = OS.move_to_trash(fullFilePath)
 		else:
-			# Delete without backup
-			err = DirAccess.remove_absolute(fullFilePath) # <- use fullFilePath here
-		
+			# Delete file or empty directory
+			if FileAccess.file_exists(fullFilePath):
+				err = DirAccess.remove_absolute(fullFilePath)
+			elif DirAccess.dir_exists_absolute(fullFilePath):
+				err = DirAccess.remove_absolute(fullFilePath)
+
 		if err != OK:
 			return -1
-	
+
 	return OK
 	
 static func GetLinesFromFile(path):
