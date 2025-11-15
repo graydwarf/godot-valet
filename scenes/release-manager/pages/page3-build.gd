@@ -2,6 +2,7 @@ extends WizardPageBase
 
 signal build_started(platform: String)
 signal build_completed(platform: String, success: bool)
+signal page_modified()  # Emitted when any input is changed
 
 @onready var _platformsContainer = %PlatformsContainer
 @onready var _exportSelectedButton = %ExportSelectedButton
@@ -20,11 +21,36 @@ func _loadPageData():
 
 	_clearPlatformRows()
 	_createPlatformRows()
+	_loadPlatformSettings()
 
 func _clearPlatformRows():
 	for child in _platformsContainer.get_children():
 		child.queue_free()
 	_platformRows.clear()
+
+func _loadPlatformSettings():
+	if _selectedProjectItem == null:
+		return
+
+	var allSettings = _selectedProjectItem.GetAllPlatformExportSettings()
+
+	for platform in _platformRows.keys():
+		if platform in allSettings:
+			var settings = allSettings[platform]
+			var data = _platformRows[platform]
+
+			# Restore settings
+			data["exportPath"].text = settings.get("exportPath", "")
+			data["exportFilename"].text = settings.get("exportFilename", "")
+			data["obfuscation"].button_pressed = settings.get("obfuscation", false)
+
+			# Restore enabled state
+			var isEnabled = settings.get("enabled", false)
+			data["checkbox"].button_pressed = isEnabled
+
+			# Show/hide details section based on enabled state
+			data["detailsSection"].visible = isEnabled
+			data["button"].disabled = !isEnabled
 
 func _createPlatformRows():
 	# Get selected platforms from wizard data (we'll need to pass this through)
@@ -55,6 +81,7 @@ func _createPlatformRow(platform: String) -> VBoxContainer:
 	checkbox.name = "Checkbox"
 	checkbox.focus_mode = Control.FOCUS_NONE
 	checkbox.toggled.connect(_onPlatformToggled.bind(platform))
+	checkbox.toggled.connect(_onInputChanged.unbind(1))
 	mainRow.add_child(checkbox)
 
 	# Platform name label
@@ -106,7 +133,7 @@ func _createPlatformRow(platform: String) -> VBoxContainer:
 	exportPathEdit.placeholder_text = "Where to export..."
 	exportPathEdit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	exportPathEdit.name = "ExportPathEdit"
-	exportPathEdit.focus_mode = Control.FOCUS_NONE
+	exportPathEdit.text_changed.connect(_onInputChanged)
 	exportPathRow.add_child(exportPathEdit)
 
 	var folderButton = Button.new()
@@ -135,7 +162,7 @@ func _createPlatformRow(platform: String) -> VBoxContainer:
 	filenameEdit.placeholder_text = "Base name for export..."
 	filenameEdit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	filenameEdit.name = "ExportFilenameEdit"
-	filenameEdit.focus_mode = Control.FOCUS_NONE
+	filenameEdit.text_changed.connect(_onInputChanged)
 	filenameRow.add_child(filenameEdit)
 
 	detailsVBox.add_child(filenameRow)
@@ -149,6 +176,7 @@ func _createPlatformRow(platform: String) -> VBoxContainer:
 	obfuscationCheck.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	obfuscationCheck.focus_mode = Control.FOCUS_NONE
 	obfuscationCheck.name = "ObfuscationCheck"
+	obfuscationCheck.toggled.connect(_onInputChanged.unbind(1))
 	obfuscationRow.add_child(obfuscationCheck)
 
 	detailsVBox.add_child(obfuscationRow)
@@ -169,6 +197,10 @@ func _createPlatformRow(platform: String) -> VBoxContainer:
 	}
 
 	return container
+
+func _onInputChanged(_value = null):
+	# Emit signal when any input is modified
+	page_modified.emit()
 
 func _onPlatformToggled(checked: bool, platform: String):
 	var data = _platformRows[platform]
@@ -302,14 +334,18 @@ func save():
 	if _selectedProjectItem == null:
 		return
 
-	# Save platform settings
-	# TODO: Implement per-platform storage in ProjectItem
-	# For now, save the first enabled platform's settings as defaults
+	# Save all platform settings
 	for platform in _platformRows.keys():
 		var data = _platformRows[platform]
-		if data["checkbox"].button_pressed:
-			_selectedProjectItem.SetExportPath(data["exportPath"].text)
-			_selectedProjectItem.SetExportFileName(data["exportFilename"].text)
-			break  # Only save first enabled platform for now
+
+		# Only save settings for platforms that have been configured (checkbox checked at some point)
+		if data["checkbox"].button_pressed or data["exportPath"].text != "" or data["exportFilename"].text != "":
+			var platformSettings = {
+				"enabled": data["checkbox"].button_pressed,
+				"exportPath": data["exportPath"].text,
+				"exportFilename": data["exportFilename"].text,
+				"obfuscation": data["obfuscation"].button_pressed
+			}
+			_selectedProjectItem.SetPlatformExportSettings(platform, platformSettings)
 
 	_selectedProjectItem.SaveProjectItem()

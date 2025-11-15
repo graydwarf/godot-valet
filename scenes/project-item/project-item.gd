@@ -38,6 +38,7 @@ var _createdDate : Dictionary = {}
 var _editedDate : Dictionary = {}
 var _sourceFilters := []
 var _customOrder := 999999  # Default high value for unordered items
+var _platformExportSettings := {}  # Per-platform export settings: {platform_name: {exportPath, exportFilename, obfuscation}}
 
 func _ready():
 	InitSignals()
@@ -175,6 +176,20 @@ func SetCustomOrder(value: int):
 
 func GetCustomOrder() -> int:
 	return _customOrder
+
+func SetPlatformExportSettings(platform: String, settings: Dictionary):
+	_platformExportSettings[platform] = settings
+
+func GetPlatformExportSettings(platform: String) -> Dictionary:
+	if platform in _platformExportSettings:
+		return _platformExportSettings[platform]
+	return {}  # Return empty dict if platform not configured
+
+func GetAllPlatformExportSettings() -> Dictionary:
+	return _platformExportSettings
+
+func SetAllPlatformExportSettings(settings: Dictionary):
+	_platformExportSettings = settings
 
 func GetProjectVersion():
 	return _projectVersionLabel.text
@@ -386,6 +401,7 @@ func SaveProjectItem():
 	config.set_value("ProjectSettings", "source_filters", _sourceFilters)
 	config.set_value("ProjectSettings", "thumbnail_path", _thumbnailPath)
 	config.set_value("ProjectSettings", "custom_order", _customOrder)
+	config.set_value("ProjectSettings", "platform_export_settings", _platformExportSettings)
 
 	# Save the config file.
 	var err = config.save("user://" + App.GetProjectItemFolder() + "/" + _projectId + ".cfg")

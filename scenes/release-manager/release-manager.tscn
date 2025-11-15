@@ -1,10 +1,11 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scenes/release-manager/release-manager.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/release-manager/components/project-card.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/release-manager/components/wizard-breadcrumb.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/release-manager/pages/page3-build.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://scenes/release-manager/pages/page4-publish.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/common/confirmation-dialog.tscn" id="6"]
 
 [node name="ReleaseManager" type="Panel"]
 clip_contents = true
@@ -99,7 +100,13 @@ layout_mode = 2
 mouse_default_cursor_shape = 2
 text = "Next →"
 
+[node name="ConfirmationDialog" parent="." instance=ExtResource("6")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+
 [connection signal="step_clicked" from="VBoxContainer/MarginContainer/WizardBreadcrumb" to="." method="_onBreadcrumbStepClicked"]
 [connection signal="pressed" from="VBoxContainer/NavigationButtons/HBoxContainer/ExitButton" to="." method="_onExitPressed"]
 [connection signal="pressed" from="VBoxContainer/NavigationButtons/HBoxContainer/BackButton" to="." method="_onBackPressed"]
 [connection signal="pressed" from="VBoxContainer/NavigationButtons/HBoxContainer/NextButton" to="." method="_onNextPressed"]
+[connection signal="confirmed" from="ConfirmationDialog" to="." method="_onConfirmationDialogChoice"]

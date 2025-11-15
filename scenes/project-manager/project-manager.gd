@@ -155,6 +155,7 @@ func LoadProjectsIntoProjectContainer():
 			projectItem.SetSourceFilters(config.get_value("ProjectSettings", "source_filters", []))
 			projectItem.SetThumbnailPath(config.get_value("ProjectSettings", "thumbnail_path", "res://icon.svg"))
 			projectItem.SetCustomOrder(config.get_value("ProjectSettings", "custom_order", 999999))
+			projectItem.SetAllPlatformExportSettings(config.get_value("ProjectSettings", "platform_export_settings", {}))
 
 			if isHidden:
 				hiddenProjectCount += 1
@@ -570,8 +571,17 @@ func _on_delete_confirmation_dialog_confirmed():
 func _on_release_project_button_pressed():
 	if _selectedProjectItem == null:
 		return
-		
-	var releaseManager = load("res://scenes/release-manager/release-manager.tscn").instantiate()
+
+	var scene = load("res://scenes/release-manager/release-manager.tscn")
+	if scene == null:
+		print("ERROR: Failed to load release-manager.tscn")
+		return
+
+	var releaseManager = scene.instantiate()
+	if releaseManager == null:
+		print("ERROR: Failed to instantiate release manager")
+		return
+
 	add_child(releaseManager)
 	releaseManager.ConfigureReleaseManagementForm(_selectedProjectItem)
 	
