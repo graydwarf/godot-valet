@@ -43,9 +43,13 @@ func _loadPlatformSettings():
 	var allSettings = _selectedProjectItem.GetAllPlatformExportSettings()
 
 	for platform in _platformRows.keys():
+		var data = _platformRows[platform]
+
+		# Clear status label on page load
+		data["status"].text = ""
+
 		if platform in allSettings:
 			var settings = allSettings[platform]
-			var data = _platformRows[platform]
 
 			# Restore settings
 			data["exportPath"].text = settings.get("exportPath", "")
@@ -173,6 +177,14 @@ func _createPlatformRow(platform: String) -> VBoxContainer:
 	folderButton.pressed.connect(_onFolderButtonPressed.bind(platform))
 	exportPathRow.add_child(folderButton)
 
+	var openFolderButton = Button.new()
+	openFolderButton.text = "🗀"
+	openFolderButton.custom_minimum_size = Vector2(32, 31)
+	openFolderButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	openFolderButton.tooltip_text = "Open export folder"
+	openFolderButton.pressed.connect(_onOpenFolderButtonPressed.bind(platform))
+	exportPathRow.add_child(openFolderButton)
+
 	detailsVBox.add_child(exportPathRow)
 
 	# Export Filename Row
@@ -298,6 +310,30 @@ func _onFolderButtonPressed(platform: String):
 
 	_openFolderDialog(currentPath)
 
+func _onOpenFolderButtonPressed(platform: String):
+	var data = _platformRows[platform]
+	var exportPath = data["exportPath"].text
+
+	if exportPath.is_empty():
+		print("Export path not set for platform: ", platform)
+		return
+
+	# Get version from version field
+	var version = _projectVersionLineEdit.text
+	if version.is_empty():
+		version = "v1.0.0"
+
+	# Build version folder path
+	var versionPath = exportPath.path_join(version)
+
+	# Open the version folder if it exists, otherwise open the base export path
+	var pathToOpen = versionPath if DirAccess.dir_exists_absolute(versionPath) else exportPath
+
+	if DirAccess.dir_exists_absolute(pathToOpen):
+		OS.shell_open(pathToOpen)
+	else:
+		print("Export folder does not exist: ", pathToOpen)
+
 func _openFolderDialog(currentPath: String):
 	if _folderDialog == null:
 		_folderDialog = FileDialog.new()
@@ -333,7 +369,9 @@ func _exportPlatform(platform: String):
 	var data = _platformRows[platform]
 	_exportingPlatforms.append(platform)
 
-	# Update UI
+	# Reset UI - clear status first, then show exporting
+	data["status"].text = ""
+	await get_tree().process_frame  # Wait one frame so user sees it clear
 	data["status"].text = "Exporting..."
 	data["button"].disabled = true
 
@@ -492,30 +530,48 @@ func _runGodotExport(godotPath: String, projectPath: String, presetName: String,
 	# Build Godot export command
 	var command = "\"%s\" --headless --path \"%s\" --export-release \"%s\" \"%s\"" % [godotPath, projectPath, presetName, outputPath]
 
-	# Execute export command
-	var output = []
-	var exitCode = OS.execute("cmd.exe", ["/c", command], output, true)
+	# Create output file to capture stdout/stderr
+	var outputFilePath = "user://export_output.txt"
+	var fullCommand = "%s > \"%s\" 2>&1" % [command, ProjectSettings.globalize_path(outputFilePath)]
 
-	# Check if export succeeded
-	if exitCode != 0:
-		var outputText = "\n".join(output)
-		print("Export failed with exit code: ", exitCode)
-		print("Output: ", outputText)
+	# Execute export command in background
+	var pid = OS.create_process("cmd.exe", ["/c", fullCommand])
 
-		# Check for common error conditions and provide helpful messages
-		if "export_presets.cfg" in outputText:
-			data["status"].text = "Error: No export presets configured"
-			print("Project needs export presets: Open project in Godot and configure presets via Project > Export")
-		elif "Please provide a valid project path" in outputText:
-			data["status"].text = "Error: Invalid project path"
-		else:
-			data["status"].text = "Error: Export failed (see console)"
+	if pid == -1:
+		data["status"].text = "Error: Failed to start export"
+		return false
 
+	# Poll until process completes
+	while OS.is_process_running(pid):
+		await get_tree().create_timer(0.1).timeout  # Check every 100ms
+
+	# Read output file
+	var output = ""
+	if FileAccess.file_exists(outputFilePath):
+		var file = FileAccess.open(outputFilePath, FileAccess.READ)
+		if file:
+			output = file.get_as_text()
+			file.close()
+			# Clean up output file
+			DirAccess.remove_absolute(outputFilePath)
+
+	print("Export output: ", output)
+
+	# Check for common error conditions in output
+	if "export_presets.cfg" in output:
+		data["status"].text = "Error: No export presets configured"
+		print("Project needs export presets: Open project in Godot and configure presets via Project > Export")
+		return false
+	elif "Please provide a valid project path" in output or "Invalid project path" in output:
+		data["status"].text = "Error: Invalid project path"
+		return false
+	elif "ERROR" in output or "Error" in output:
+		data["status"].text = "Error: Export failed (see console)"
 		return false
 
 	# Verify output file was created
 	if not FileAccess.file_exists(outputPath):
-		print("Export command succeeded but output file not found: ", outputPath)
+		print("Export command completed but output file not found: ", outputPath)
 		data["status"].text = "Error: Output file not created"
 		return false
 
