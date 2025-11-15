@@ -275,7 +275,33 @@ func GetThumbnailPath():
 	return _thumbnailPath
 	
 func GetProjectPath():
-	return _projectPathLabel.text
+	return _projectPath
+
+# Returns list of configured export preset names from export_presets.cfg
+func GetAvailableExportPresets() -> Array[String]:
+	var presets: Array[String] = []
+	# Get directory containing project.godot, then append export_presets.cfg
+	var projectDir = _projectPath.get_base_dir()
+	var presetsPath = projectDir.path_join("export_presets.cfg")
+
+	if not FileAccess.file_exists(presetsPath):
+		return presets
+
+	var config = ConfigFile.new()
+	var err = config.load(presetsPath)
+	if err != OK:
+		print("Error loading export_presets.cfg: ", err)
+		return presets
+
+	# Parse all [preset.X] sections
+	var sections = config.get_sections()
+	for section in sections:
+		if section.begins_with("preset."):
+			var presetName = config.get_value(section, "name", "")
+			if presetName != "":
+				presets.append(presetName)
+
+	return presets
 	
 func GetProjectPathWithProjectFile():
 	return _projectPathLabel.text

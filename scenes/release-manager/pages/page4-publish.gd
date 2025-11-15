@@ -2,10 +2,8 @@ extends WizardPageBase
 
 signal publish_started(destination: String)
 signal publish_completed(destination: String, success: bool)
-signal version_changed(old_version: String, new_version: String)
 signal page_modified()  # Emitted when any input is changed
 
-@onready var _projectVersionLineEdit = %ProjectVersionLineEdit
 @onready var _itchCheckBox = %ItchCheckBox
 @onready var _itchDetailsMargin = %ItchDetailsMargin
 @onready var _itchProfileLineEdit = %ItchProfileLineEdit
@@ -17,13 +15,11 @@ signal page_modified()  # Emitted when any input is changed
 @onready var _exportTypeValueLabel = %ValueLabel
 
 var _publishing: bool = false
-var _currentVersion: String = ""  # Store current version for comparison
 
 func _ready():
 	_publishButton.pressed.connect(_onPublishPressed)
 	_itchCheckBox.toggled.connect(_onItchToggled)
 	_githubCheckBox.toggled.connect(_onDestinationToggled)
-	_projectVersionLineEdit.text_changed.connect(_onVersionChanged)
 	_helpButton.pressed.connect(_onHelpButtonPressed)
 
 	# Connect input change signals for dirty tracking
@@ -33,10 +29,6 @@ func _ready():
 func _loadPageData():
 	if _selectedProjectItem == null:
 		return
-
-	# Load project version
-	_currentVersion = _selectedProjectItem.GetProjectVersion()
-	_projectVersionLineEdit.text = _currentVersion
 
 	# Load publish destination checkboxes
 	_itchCheckBox.button_pressed = _selectedProjectItem.GetItchEnabled()
@@ -73,11 +65,6 @@ func _updateExportTypeSummary():
 		_exportTypeValueLabel.text = "None selected"
 	else:
 		_exportTypeValueLabel.text = ", ".join(selectedPlatforms)
-
-func _onVersionChanged(newText: String):
-	# Notify card of version change
-	version_changed.emit(_currentVersion, newText)
-	page_modified.emit()
 
 func _onInputChanged(_value = null):
 	# Emit signal when any input is modified
@@ -153,9 +140,6 @@ Find your slug in your project's URL on itch.io."""
 func save():
 	if _selectedProjectItem == null:
 		return
-
-	# Save project version
-	_selectedProjectItem.SetProjectVersion(_projectVersionLineEdit.text)
 
 	# Save publish destination checkboxes
 	_selectedProjectItem.SetItchEnabled(_itchCheckBox.button_pressed)

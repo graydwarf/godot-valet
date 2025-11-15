@@ -2,22 +2,30 @@ extends WizardPageBase
 
 signal build_started(platform: String)
 signal build_completed(platform: String, success: bool)
+signal version_changed(old_version: String, new_version: String)
 signal page_modified()  # Emitted when any input is changed
 
 @onready var _platformsContainer = %PlatformsContainer
 @onready var _exportSelectedButton = %ExportSelectedButton
+@onready var _projectVersionLineEdit = %ProjectVersionLineEdit
 
 var _platformRows: Dictionary = {}  # platform_name -> {mainRow, checkbox, detailsSection, exportPath, exportFilename, obfuscation, button}
 var _exportingPlatforms: Array[String] = []
 var _folderDialog: FileDialog = null
 var _currentPlatformForDialog: String = ""  # Track which platform is selecting a folder
+var _currentVersion: String = ""  # Store current version for comparison
 
 func _ready():
 	_exportSelectedButton.pressed.connect(_onExportSelectedPressed)
+	_projectVersionLineEdit.text_changed.connect(_onVersionChanged)
 
 func _loadPageData():
 	if _selectedProjectItem == null:
 		return
+
+	# Load project version
+	_currentVersion = _selectedProjectItem.GetProjectVersion()
+	_projectVersionLineEdit.text = _currentVersion
 
 	_clearPlatformRows()
 	_createPlatformRows()
@@ -53,10 +61,21 @@ func _loadPlatformSettings():
 			data["button"].disabled = !isEnabled
 
 func _createPlatformRows():
-	# Get selected platforms from wizard data (we'll need to pass this through)
-	# For now, create rows for all possible platforms
-	var platforms = ["Windows Desktop", "Linux", "Web", "Source Code"]
+	# Get configured export presets from the project
+	var platforms = _selectedProjectItem.GetAvailableExportPresets()
 
+	# If no presets configured, show helpful message
+	if platforms.is_empty():
+		var messageLabel = Label.new()
+		messageLabel.text = "No export presets configured.\n\nTo export this project, you need to:\n1. Open the project in Godot\n2. Go to Project > Export\n3. Add export presets for desired platforms\n4. Save and close the project"
+		messageLabel.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		messageLabel.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		messageLabel.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		messageLabel.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+		_platformsContainer.add_child(messageLabel)
+		return
+
+	# Create rows for each configured preset
 	for i in range(platforms.size()):
 		var platform = platforms[i]
 		var row = _createPlatformRow(platform)
@@ -89,6 +108,8 @@ func _createPlatformRow(platform: String) -> VBoxContainer:
 	nameLabel.text = platform
 	nameLabel.custom_minimum_size = Vector2(150, 0)
 	nameLabel.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	nameLabel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	nameLabel.gui_input.connect(_onPlatformLabelClicked.bind(platform, checkbox))
 	mainRow.add_child(nameLabel)
 
 	# Status label
@@ -207,6 +228,11 @@ func _createPlatformRow(platform: String) -> VBoxContainer:
 
 	return container
 
+func _onVersionChanged(newText: String):
+	# Notify card of version change
+	version_changed.emit(_currentVersion, newText)
+	page_modified.emit()
+
 func _onInputChanged(_value = null):
 	# Emit signal when any input is modified
 	page_modified.emit()
@@ -253,6 +279,10 @@ func _copyFromPreviousPlatform(targetPlatform: String):
 				targetData["obfuscation"].button_pressed = prevData["obfuscation"].button_pressed
 
 				return  # Found and copied, we're done
+
+func _onPlatformLabelClicked(event: InputEvent, platform: String, checkbox: CheckBox):
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		checkbox.button_pressed = !checkbox.button_pressed
 
 func _onExportPressed(platform: String):
 	_exportPlatform(platform)
@@ -328,6 +358,9 @@ func _exportPlatform(platform: String):
 	var godotPath = _selectedProjectItem.GetGodotPath(godotVersionId)
 	var projectPath = _selectedProjectItem.GetProjectPath()
 
+	# Get project directory (GetProjectPath returns path to project.godot file)
+	var projectDir = projectPath.get_base_dir()
+
 	if godotPath == null or godotPath == "???":
 		data["status"].text = "Error: Godot path not found"
 		data["button"].disabled = false
@@ -344,11 +377,39 @@ func _exportPlatform(platform: String):
 		build_completed.emit(platform, false)
 		return
 
-	# Build output file path
-	var outputPath = exportPath.path_join(exportFilename)
+	# Get version from version field
+	var version = _projectVersionLineEdit.text
+	if version.is_empty():
+		version = "v1.0.0"  # Default version if not specified
+
+	# Create version subfolder path
+	var versionPath = exportPath.path_join(version)
+
+	# Create version directory if it doesn't exist
+	if not DirAccess.dir_exists_absolute(versionPath):
+		var dir = DirAccess.open(exportPath)
+		if dir == null:
+			data["status"].text = "Error: Cannot access export path"
+			data["button"].disabled = false
+			_exportingPlatforms.erase(platform)
+			build_completed.emit(platform, false)
+			return
+		var err = dir.make_dir(version)
+		if err != OK:
+			data["status"].text = "Error: Cannot create version folder"
+			data["button"].disabled = false
+			_exportingPlatforms.erase(platform)
+			build_completed.emit(platform, false)
+			return
+
+	# Add platform-specific file extension
+	var filenameWithExtension = _addPlatformExtension(exportFilename, platform)
+
+	# Build output file path: exportPath/version/filename.ext
+	var outputPath = versionPath.path_join(filenameWithExtension)
 
 	# Execute export command
-	var success = await _runGodotExport(godotPath, projectPath, presetName, outputPath, data)
+	var success = await _runGodotExport(godotPath, projectDir, presetName, outputPath, data)
 
 	# Handle obfuscation if enabled and export succeeded
 	if success and obfuscationEnabled:
@@ -388,6 +449,9 @@ func save():
 	if _selectedProjectItem == null:
 		return
 
+	# Save project version
+	_selectedProjectItem.SetProjectVersion(_projectVersionLineEdit.text)
+
 	# Save all platform settings
 	for platform in _platformRows.keys():
 		var data = _platformRows[platform]
@@ -405,22 +469,28 @@ func save():
 	_selectedProjectItem.SaveProjectItem()
 
 func _getExportPresetName(platform: String) -> String:
-	# Map platform names to Godot export preset names
+	# Platform name IS the preset name (read from export_presets.cfg)
+	return platform
+
+func _addPlatformExtension(filename: String, platform: String) -> String:
+	# Don't add extension if filename already has one
+	if filename.get_extension() != "":
+		return filename
+
+	# Add platform-specific extension
 	match platform:
 		"Windows Desktop":
-			return "Windows Desktop"
-		"Linux":
-			return "Linux/X11"
+			return filename + ".exe"
+		"Linux/X11", "Linux":
+			return filename + ".x86_64"
 		"Web":
-			return "Web"
-		"Source Code":
-			return ""  # Source code export doesn't use Godot export
+			return filename + ".html"
 		_:
-			return ""
+			return filename
 
 func _runGodotExport(godotPath: String, projectPath: String, presetName: String, outputPath: String, data: Dictionary) -> bool:
 	# Build Godot export command
-	var command = "\"%s\" --headless --path \"%s\" --export-release \"%s\" \"%s\"" % [godotPath, projectPath.get_base_dir(), presetName, outputPath]
+	var command = "\"%s\" --headless --path \"%s\" --export-release \"%s\" \"%s\"" % [godotPath, projectPath, presetName, outputPath]
 
 	# Execute export command
 	var output = []
@@ -428,13 +498,25 @@ func _runGodotExport(godotPath: String, projectPath: String, presetName: String,
 
 	# Check if export succeeded
 	if exitCode != 0:
+		var outputText = "\n".join(output)
 		print("Export failed with exit code: ", exitCode)
-		print("Output: ", "\n".join(output))
+		print("Output: ", outputText)
+
+		# Check for common error conditions and provide helpful messages
+		if "export_presets.cfg" in outputText:
+			data["status"].text = "Error: No export presets configured"
+			print("Project needs export presets: Open project in Godot and configure presets via Project > Export")
+		elif "Please provide a valid project path" in outputText:
+			data["status"].text = "Error: Invalid project path"
+		else:
+			data["status"].text = "Error: Export failed (see console)"
+
 		return false
 
 	# Verify output file was created
 	if not FileAccess.file_exists(outputPath):
 		print("Export command succeeded but output file not found: ", outputPath)
+		data["status"].text = "Error: Output file not created"
 		return false
 
 	return true
