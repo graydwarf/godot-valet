@@ -27,6 +27,8 @@ var _exportFileName := ""
 var _packageType := ""
 var _itchProjectName := ""
 var _itchProfileName := ""
+var _itchEnabled := false
+var _githubEnabled := false
 var _installerConfigurationFileName := ""
 var _projectName = ""
 var _godotVersion = ""
@@ -131,6 +133,12 @@ func SetPackageType(value):
 
 func SetItchProfileName(value):
 	_itchProfileName = value
+
+func SetItchEnabled(value):
+	_itchEnabled = value
+
+func SetGithubEnabled(value):
+	_githubEnabled = value
 
 func SetShowTipsForErrors(value):
 	_showTipsForErrors = value
@@ -239,6 +247,12 @@ func GetPackageType():
 
 func GetItchProfileName():
 	return _itchProfileName
+
+func GetItchEnabled():
+	return _itchEnabled
+
+func GetGithubEnabled():
+	return _githubEnabled
 
 func GetShowTipsForErrors():
 	return _showTipsForErrors
@@ -392,8 +406,10 @@ func SaveProjectItem():
 	config.set_value("ProjectSettings", "export_type", _exportType)
 	config.set_value("ProjectSettings", "package_type", _packageType)
 	config.set_value("ProjectSettings", "itch_profile_name", _itchProfileName)
-	config.set_value("ProjectSettings", "show_tips_for_errors", _showTipsForErrors)
 	config.set_value("ProjectSettings", "itch_project_name", _itchProjectName)
+	config.set_value("ProjectSettings", "itch_enabled", _itchEnabled)
+	config.set_value("ProjectSettings", "github_enabled", _githubEnabled)
+	config.set_value("ProjectSettings", "show_tips_for_errors", _showTipsForErrors)
 	config.set_value("ProjectSettings", "is_hidden", _hideProjectCheckbox.button_pressed)
 	config.set_value("ProjectSettings", "published_date", _publishedDate)
 	config.set_value("ProjectSettings", "created_date", _createdDate)

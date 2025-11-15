@@ -49,6 +49,13 @@ func InitSignals():
 func SelectedProjecItemUpdated(selectedProjectItem):
 	_selectedProjectItem = selectedProjectItem
 
+	# Update all pages with the new project item reference
+	for page in _pages:
+		page._selectedProjectItem = selectedProjectItem
+
+	# Update project card with new reference
+	_projectCard._selectedProjectItem = selectedProjectItem
+
 func LoadBackgroundColor():
 	var style_box = theme.get_stylebox("panel", "Panel") as StyleBoxFlat
 	if style_box:
@@ -106,6 +113,9 @@ func _showPage(pageIndex: int):
 		_pages[i].visible = (i == pageIndex)
 
 	_currentPage = pageIndex
+
+	# Reload page data to reflect any saved changes
+	_pages[pageIndex]._loadPageData()
 
 	# Update breadcrumb
 	_breadcrumb.update_progress(_currentPage)

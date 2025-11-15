@@ -3,10 +3,13 @@ extends WizardPageBase
 signal publish_started(destination: String)
 signal publish_completed(destination: String, success: bool)
 signal version_changed(old_version: String, new_version: String)
+signal page_modified()  # Emitted when any input is changed
 
 @onready var _projectVersionLineEdit = %ProjectVersionLineEdit
 @onready var _itchCheckBox = %ItchCheckBox
 @onready var _itchDetailsMargin = %ItchDetailsMargin
+@onready var _itchProfileLineEdit = %ItchProfileLineEdit
+@onready var _itchProjectLineEdit = %ItchProjectLineEdit
 @onready var _githubCheckBox = %GithubCheckBox
 @onready var _publishButton = %PublishButton
 @onready var _statusLabel = %StatusLabel
@@ -23,6 +26,10 @@ func _ready():
 	_projectVersionLineEdit.text_changed.connect(_onVersionChanged)
 	_helpButton.pressed.connect(_onHelpButtonPressed)
 
+	# Connect input change signals for dirty tracking
+	_itchProfileLineEdit.text_changed.connect(_onInputChanged)
+	_itchProjectLineEdit.text_changed.connect(_onInputChanged)
+
 func _loadPageData():
 	if _selectedProjectItem == null:
 		return
@@ -30,6 +37,17 @@ func _loadPageData():
 	# Load project version
 	_currentVersion = _selectedProjectItem.GetProjectVersion()
 	_projectVersionLineEdit.text = _currentVersion
+
+	# Load publish destination checkboxes
+	_itchCheckBox.button_pressed = _selectedProjectItem.GetItchEnabled()
+	_githubCheckBox.button_pressed = _selectedProjectItem.GetGithubEnabled()
+
+	# Update visibility based on checkbox state
+	_itchDetailsMargin.visible = _itchCheckBox.button_pressed
+
+	# Load itch.io settings
+	_itchProfileLineEdit.text = _selectedProjectItem.GetItchProfileName()
+	_itchProjectLineEdit.text = _selectedProjectItem.GetItchProjectName()
 
 	# Load selected export platforms from Build page
 	_updateExportTypeSummary()
@@ -59,14 +77,21 @@ func _updateExportTypeSummary():
 func _onVersionChanged(newText: String):
 	# Notify card of version change
 	version_changed.emit(_currentVersion, newText)
+	page_modified.emit()
+
+func _onInputChanged(_value = null):
+	# Emit signal when any input is modified
+	page_modified.emit()
 
 func _onItchToggled(checked: bool):
 	# Show/hide itch.io details
 	_itchDetailsMargin.visible = checked
 	_updatePublishButton()
+	page_modified.emit()
 
 func _onDestinationToggled(_value: bool):
 	_updatePublishButton()
+	page_modified.emit()
 
 func _updatePublishButton():
 	var anySelected = _itchCheckBox.button_pressed || _githubCheckBox.button_pressed
@@ -131,6 +156,14 @@ func save():
 
 	# Save project version
 	_selectedProjectItem.SetProjectVersion(_projectVersionLineEdit.text)
+
+	# Save publish destination checkboxes
+	_selectedProjectItem.SetItchEnabled(_itchCheckBox.button_pressed)
+	_selectedProjectItem.SetGithubEnabled(_githubCheckBox.button_pressed)
+
+	# Save itch.io settings
+	_selectedProjectItem.SetItchProfileName(_itchProfileLineEdit.text)
+	_selectedProjectItem.SetItchProjectName(_itchProjectLineEdit.text)
 
 	# Mark project as published with current date if published
 	if _publishing:

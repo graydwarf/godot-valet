@@ -97,7 +97,7 @@ horizontal_alignment = 2
 vertical_alignment = 1
 clip_text = true
 
-[node name="LineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/ItchProfileRow"]
+[node name="ItchProfileLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/ItchProfileRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -117,7 +117,7 @@ horizontal_alignment = 2
 vertical_alignment = 1
 clip_text = true
 
-[node name="LineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/ItchProjectRow"]
+[node name="ItchProjectLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/ItchProjectRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
