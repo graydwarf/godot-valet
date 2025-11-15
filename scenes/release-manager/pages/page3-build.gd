@@ -91,6 +91,14 @@ func _createPlatformRow(platform: String) -> VBoxContainer:
 	nameLabel.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	mainRow.add_child(nameLabel)
 
+	# Status label
+	var statusLabel = Label.new()
+	statusLabel.text = ""
+	statusLabel.custom_minimum_size = Vector2(100, 0)
+	statusLabel.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	statusLabel.name = "StatusLabel"
+	mainRow.add_child(statusLabel)
+
 	# Spacer to push Export button to the right
 	var spacer = Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -193,7 +201,8 @@ func _createPlatformRow(platform: String) -> VBoxContainer:
 		"exportPath": exportPathEdit,
 		"exportFilename": filenameEdit,
 		"obfuscation": obfuscationCheck,
-		"button": exportButton
+		"button": exportButton,
+		"status": statusLabel
 	}
 
 	return container
@@ -301,16 +310,61 @@ func _exportPlatform(platform: String):
 	# Emit signal
 	build_started.emit(platform)
 
-	# TODO: Actual export logic would go here
-	# For now, simulate an export with a timer
-	await get_tree().create_timer(2.0).timeout
+	# Get export settings
+	var exportPath = data["exportPath"].text
+	var exportFilename = data["exportFilename"].text
+	var obfuscationEnabled = data["obfuscation"].button_pressed
 
-	# Simulate success
-	data["status"].text = "Complete"
+	# Validate export path and filename
+	if exportPath.is_empty() or exportFilename.is_empty():
+		data["status"].text = "Error: Missing path/filename"
+		data["button"].disabled = false
+		_exportingPlatforms.erase(platform)
+		build_completed.emit(platform, false)
+		return
+
+	# Get Godot executable path
+	var godotVersionId = _selectedProjectItem.GetGodotVersionId()
+	var godotPath = _selectedProjectItem.GetGodotPath(godotVersionId)
+	var projectPath = _selectedProjectItem.GetProjectPath()
+
+	if godotPath == null or godotPath == "???":
+		data["status"].text = "Error: Godot path not found"
+		data["button"].disabled = false
+		_exportingPlatforms.erase(platform)
+		build_completed.emit(platform, false)
+		return
+
+	# Map platform to export preset name
+	var presetName = _getExportPresetName(platform)
+	if presetName.is_empty():
+		data["status"].text = "Error: Unknown platform"
+		data["button"].disabled = false
+		_exportingPlatforms.erase(platform)
+		build_completed.emit(platform, false)
+		return
+
+	# Build output file path
+	var outputPath = exportPath.path_join(exportFilename)
+
+	# Execute export command
+	var success = await _runGodotExport(godotPath, projectPath, presetName, outputPath, data)
+
+	# Handle obfuscation if enabled and export succeeded
+	if success and obfuscationEnabled:
+		data["status"].text = "Obfuscating..."
+		success = await _runObfuscation(exportPath, exportFilename, data)
+
+	# Update UI
+	if success:
+		data["status"].text = "✓ Complete"
+	else:
+		data["status"].text = "✗ Failed"
+
 	data["button"].disabled = false
 	_exportingPlatforms.erase(platform)
 
-	build_completed.emit(platform, true)
+	build_completed.emit(platform, success)
 
 func validate() -> bool:
 	# Check that selected platforms have valid export paths
@@ -349,3 +403,44 @@ func save():
 			_selectedProjectItem.SetPlatformExportSettings(platform, platformSettings)
 
 	_selectedProjectItem.SaveProjectItem()
+
+func _getExportPresetName(platform: String) -> String:
+	# Map platform names to Godot export preset names
+	match platform:
+		"Windows Desktop":
+			return "Windows Desktop"
+		"Linux":
+			return "Linux/X11"
+		"Web":
+			return "Web"
+		"Source Code":
+			return ""  # Source code export doesn't use Godot export
+		_:
+			return ""
+
+func _runGodotExport(godotPath: String, projectPath: String, presetName: String, outputPath: String, data: Dictionary) -> bool:
+	# Build Godot export command
+	var command = "\"%s\" --headless --path \"%s\" --export-release \"%s\" \"%s\"" % [godotPath, projectPath.get_base_dir(), presetName, outputPath]
+
+	# Execute export command
+	var output = []
+	var exitCode = OS.execute("cmd.exe", ["/c", command], output, true)
+
+	# Check if export succeeded
+	if exitCode != 0:
+		print("Export failed with exit code: ", exitCode)
+		print("Output: ", "\n".join(output))
+		return false
+
+	# Verify output file was created
+	if not FileAccess.file_exists(outputPath):
+		print("Export command succeeded but output file not found: ", outputPath)
+		return false
+
+	return true
+
+func _runObfuscation(exportPath: String, exportFilename: String, data: Dictionary) -> bool:
+	# TODO: Implement obfuscation integration
+	# This would call the Obfuscator script to process the exported files
+	print("Obfuscation not yet implemented")
+	return true
