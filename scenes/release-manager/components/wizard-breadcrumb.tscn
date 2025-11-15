@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://d2ri2mnpmos3i"]
+
+[ext_resource type="Script" uid="uid://bpufb2evmlbot" path="res://scenes/release-manager/components/wizard-breadcrumb.gd" id="1"]
+
+[node name="WizardBreadcrumb" type="HBoxContainer"]
+script = ExtResource("1")

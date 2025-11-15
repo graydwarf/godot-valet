@@ -1,0 +1,74 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/release-manager/pages/page2-exports.gd" id="1"]
+
+[node name="Page2Exports" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="DescriptionLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Choose which platforms to build:"
+
+[node name="PlatformsVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="WindowsCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/PlatformsVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "Windows Desktop"
+tooltip_text = "Export for Windows platform"
+
+[node name="LinuxCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/PlatformsVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "Linux"
+tooltip_text = "Export for Linux platform"
+
+[node name="WebCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/PlatformsVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "Web"
+tooltip_text = "Export for Web (HTML5)"
+
+[node name="SourceCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/PlatformsVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "Source Code"
+tooltip_text = "Export project source code"
+
+[node name="HSeparator2" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="InfoLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Note: Export presets must be configured in Godot.
+Missing presets will show errors on export."
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2

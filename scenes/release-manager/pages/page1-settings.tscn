@@ -1,0 +1,119 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/release-manager/pages/page1-settings.gd" id="1"]
+
+[node name="Page1Settings" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ProjectVersionHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ProjectVersionHBox"]
+custom_minimum_size = Vector2(165, 0)
+layout_mode = 2
+text = "Project Version:"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="ProjectVersionLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ProjectVersionHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "v1.0.0"
+
+[node name="GodotVersionHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/GodotVersionHBox"]
+custom_minimum_size = Vector2(165, 0)
+layout_mode = 2
+text = "Godot Version:"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="GodotVersionLabel" type="Label" parent="MarginContainer/VBoxContainer/GodotVersionHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "4.5-stable"
+vertical_alignment = 1
+
+[node name="GodotVersionSpacer" type="Control" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+
+[node name="HSeparator2" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ExportPathSpacer" type="Control" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+
+[node name="ExportPathHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ExportPathHBox"]
+custom_minimum_size = Vector2(165, 0)
+layout_mode = 2
+text = "Export Path:"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="ExportPathLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ExportPathHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Where to save exports"
+
+[node name="SelectExportPathButton" type="Button" parent="MarginContainer/VBoxContainer/ExportPathHBox"]
+custom_minimum_size = Vector2(125, 31)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "📁"
+tooltip_text = "Select export folder"
+
+[node name="ExportFileNameHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ExportFileNameHBox"]
+custom_minimum_size = Vector2(165, 0)
+layout_mode = 2
+text = "Export Filename:"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="ExportFileNameLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ExportFileNameHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Base name for exports"
+
+[connection signal="pressed" from="MarginContainer/VBoxContainer/ExportPathHBox/SelectExportPathButton" to="." method="_on_select_export_path_pressed"]
