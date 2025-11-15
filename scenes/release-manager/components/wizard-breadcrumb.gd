@@ -3,7 +3,7 @@ class_name WizardBreadcrumb
 
 signal step_clicked(step_index: int)
 
-var _steps = ["Settings", "Exports", "Build", "Publish"]
+var _steps = ["Export", "Publish"]
 var _currentStep: int = 0
 var _stepButtons: Array[Button] = []
 
@@ -21,7 +21,8 @@ func _createStepButtons():
 		if i > 0:
 			var arrow = Label.new()
 			arrow.text = "→"
-			arrow.add_theme_font_size_override("font_size", 16)
+			arrow.add_theme_font_size_override("font_size", 22)
+			arrow.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 			add_child(arrow)
 
 		# Add step button
@@ -30,6 +31,7 @@ func _createStepButtons():
 		button.flat = true
 		button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		button.focus_mode = Control.FOCUS_NONE  # Remove focus border
+		button.add_theme_font_size_override("font_size", 22)  # 20% reduction from 28
 		button.pressed.connect(_onStepPressed.bind(i))
 		add_child(button)
 		_stepButtons.append(button)

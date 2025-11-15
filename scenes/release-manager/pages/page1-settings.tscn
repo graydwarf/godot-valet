@@ -66,38 +66,6 @@ vertical_alignment = 1
 custom_minimum_size = Vector2(0, 2)
 layout_mode = 2
 
-[node name="HSeparator2" type="HSeparator" parent="MarginContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="ExportPathSpacer" type="Control" parent="MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 2)
-layout_mode = 2
-
-[node name="ExportPathHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ExportPathHBox"]
-custom_minimum_size = Vector2(165, 0)
-layout_mode = 2
-text = "Export Path:"
-horizontal_alignment = 2
-vertical_alignment = 1
-
-[node name="ExportPathLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ExportPathHBox"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(500, 0)
-layout_mode = 2
-size_flags_horizontal = 3
-placeholder_text = "Where to save exports"
-
-[node name="SelectExportPathButton" type="Button" parent="MarginContainer/VBoxContainer/ExportPathHBox"]
-custom_minimum_size = Vector2(125, 31)
-layout_mode = 2
-mouse_default_cursor_shape = 2
-text = "📁"
-tooltip_text = "Select export folder"
-
 [node name="ExportFileNameHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 10
@@ -115,5 +83,3 @@ custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Base name for exports"
-
-[connection signal="pressed" from="MarginContainer/VBoxContainer/ExportPathHBox/SelectExportPathButton" to="." method="_on_select_export_path_pressed"]

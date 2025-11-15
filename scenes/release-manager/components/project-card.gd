@@ -7,7 +7,7 @@ class_name ProjectCard
 @onready var _versionLeftLabel = %VersionLeftLabel
 @onready var _versionRightLabel = %VersionRightLabel
 @onready var _projectPathLabel = %ProjectPathLabel
-@onready var _folderIcon = %FolderIcon
+@onready var _folderButton = %FolderButton
 @onready var _publishedDateLabel = %PublishedDateLabel
 
 var _selectedProjectItem = null
@@ -17,19 +17,25 @@ func _ready():
 	_setupProjectPathLink()
 
 func _setupProjectPathLink():
-	# Make project path clickable
+	# Make project path label clickable
 	_projectPathLabel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_projectPathLabel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	_projectPathLabel.gui_input.connect(_onProjectPathClicked)
 
-	# Make folder icon clickable too
-	_folderIcon.gui_input.connect(_onProjectPathClicked)
+	# Make folder button clickable
+	_folderButton.pressed.connect(_onFolderButtonPressed)
 
 func _onProjectPathClicked(event: InputEvent):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		if _selectedProjectItem != null:
 			var projectPath = _selectedProjectItem.GetProjectPath()
 			OS.shell_open(projectPath)
+			get_viewport().set_input_as_handled()
+
+func _onFolderButtonPressed():
+	if _selectedProjectItem != null:
+		var projectPath = _selectedProjectItem.GetProjectPath()
+		OS.shell_open(projectPath)
 
 # Called by wizard to update card with project info
 func configure(projectItem):

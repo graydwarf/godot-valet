@@ -1,10 +1,10 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scenes/release-manager/release-manager.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/release-manager/components/project-card.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/release-manager/components/wizard-breadcrumb.tscn" id="3"]
-[ext_resource type="PackedScene" path="res://scenes/release-manager/pages/page1-settings.tscn" id="4"]
-[ext_resource type="PackedScene" path="res://scenes/release-manager/pages/page2-exports.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/release-manager/pages/page3-build.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/release-manager/pages/page4-publish.tscn" id="5"]
 
 [node name="ReleaseManager" type="Panel"]
 clip_contents = true
@@ -55,27 +55,11 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="Page1Settings" parent="VBoxContainer/PagesContainer" instance=ExtResource("4")]
+[node name="Page3Build" parent="VBoxContainer/PagesContainer" instance=ExtResource("4")]
 layout_mode = 1
 
-[node name="Page2Exports" parent="VBoxContainer/PagesContainer" instance=ExtResource("5")]
+[node name="Page4Publish" parent="VBoxContainer/PagesContainer" instance=ExtResource("5")]
 layout_mode = 1
-
-[node name="Page3Placeholder" type="Control" parent="VBoxContainer/PagesContainer"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="Page4Placeholder" type="Control" parent="VBoxContainer/PagesContainer"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 
 [node name="HSeparator2" type="HSeparator" parent="VBoxContainer"]
 layout_mode = 2

@@ -1,0 +1,181 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/release-manager/pages/page4-publish.gd" id="1"]
+
+[node name="Page4Publish" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ProjectVersionHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ProjectVersionHBox"]
+custom_minimum_size = Vector2(165, 0)
+layout_mode = 2
+text = "Project Version:"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="ProjectVersionLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ProjectVersionHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "v1.0.0"
+
+[node name="VersionSpacer" type="Control" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="PublishSpacer" type="Control" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+
+[node name="DescriptionLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Select publish destinations:"
+
+[node name="DestinationsVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ItchCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/DestinationsVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "itch.io"
+tooltip_text = "Publish to itch.io"
+
+[node name="ItchDetailsMargin" type="MarginContainer" parent="MarginContainer/VBoxContainer/DestinationsVBox"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/margin_left = 40
+
+[node name="ItchDetailsVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ItchProfileRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/ItchProfileRow"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "Profile Name:"
+vertical_alignment = 1
+
+[node name="LineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/ItchProfileRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Your itch.io username"
+
+[node name="ItchProjectRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/ItchProjectRow"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "Project Name:"
+vertical_alignment = 1
+
+[node name="LineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/ItchProjectRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Your project slug on itch.io"
+
+[node name="ExportTypeRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/ExportTypeRow"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "Export Type:"
+vertical_alignment = 1
+
+[node name="OptionButton" type="OptionButton" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/ExportTypeRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+item_count = 3
+selected = 0
+popup/item_0/text = "Windows"
+popup/item_0/id = 0
+popup/item_1/text = "Linux"
+popup/item_1/id = 1
+popup/item_2/text = "Web"
+popup/item_2/id = 2
+
+[node name="PackageTypeRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/PackageTypeRow"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "Package Type:"
+vertical_alignment = 1
+
+[node name="OptionButton" type="OptionButton" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/PackageTypeRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+item_count = 2
+selected = 0
+popup/item_0/text = "ZIP"
+popup/item_0/id = 0
+popup/item_1/text = "Installer"
+popup/item_1/id = 1
+
+[node name="GithubCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/DestinationsVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "GitHub Releases"
+tooltip_text = "Publish to GitHub as a release"
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="PublishButton" type="Button" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 31)
+layout_mode = 2
+size_flags_horizontal = 0
+mouse_default_cursor_shape = 2
+disabled = true
+text = "Publish"
+
+[node name="StatusLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
