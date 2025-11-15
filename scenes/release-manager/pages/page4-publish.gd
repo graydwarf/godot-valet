@@ -11,6 +11,7 @@ signal version_changed(old_version: String, new_version: String)
 @onready var _publishButton = %PublishButton
 @onready var _statusLabel = %StatusLabel
 @onready var _helpButton = %HelpButton
+@onready var _exportTypeValueLabel = %ValueLabel
 
 var _publishing: bool = false
 var _currentVersion: String = ""  # Store current version for comparison
@@ -30,10 +31,30 @@ func _loadPageData():
 	_currentVersion = _selectedProjectItem.GetProjectVersion()
 	_projectVersionLineEdit.text = _currentVersion
 
+	# Load selected export platforms from Build page
+	_updateExportTypeSummary()
+
 	# Reset state
 	_statusLabel.text = ""
 	_publishing = false
 	_updatePublishButton()
+
+func _updateExportTypeSummary():
+	# Get all platform export settings from Build page
+	var allSettings = _selectedProjectItem.GetAllPlatformExportSettings()
+	var selectedPlatforms: Array[String] = []
+
+	# Check which platforms are enabled
+	for platform in allSettings.keys():
+		var settings = allSettings[platform]
+		if settings.get("enabled", false):
+			selectedPlatforms.append(platform)
+
+	# Update the label
+	if selectedPlatforms.is_empty():
+		_exportTypeValueLabel.text = "None selected"
+	else:
+		_exportTypeValueLabel.text = ", ".join(selectedPlatforms)
 
 func _onVersionChanged(newText: String):
 	# Notify card of version change

@@ -32,8 +32,9 @@ layout_mode = 2
 theme_override_constants/separation = 10
 
 [node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ProjectVersionHBox"]
-custom_minimum_size = Vector2(165, 0)
+custom_minimum_size = Vector2(130, 0)
 layout_mode = 2
+size_flags_horizontal = 0
 text = "Project Version:"
 horizontal_alignment = 2
 vertical_alignment = 1
@@ -67,6 +68,7 @@ theme_override_constants/separation = 8
 [node name="ItchCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/DestinationsVBox"]
 unique_name_in_owner = true
 layout_mode = 2
+focus_mode = 0
 mouse_default_cursor_shape = 2
 text = "itch.io"
 tooltip_text = "Publish to itch.io"
@@ -83,13 +85,17 @@ theme_override_constants/separation = 8
 
 [node name="ItchProfileRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 5
 
 [node name="Label" type="Label" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/ItchProfileRow"]
-custom_minimum_size = Vector2(120, 0)
+custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
+size_flags_horizontal = 0
+size_flags_stretch_ratio = 0.0
 text = "Profile Name:"
+horizontal_alignment = 2
 vertical_alignment = 1
+clip_text = true
 
 [node name="LineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/ItchProfileRow"]
 unique_name_in_owner = true
@@ -99,13 +105,17 @@ placeholder_text = "Your itch.io username"
 
 [node name="ItchProjectRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 5
 
 [node name="Label" type="Label" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/ItchProjectRow"]
-custom_minimum_size = Vector2(120, 0)
+custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
+size_flags_horizontal = 0
+size_flags_stretch_ratio = 0.0
 text = "Project Name:"
+horizontal_alignment = 2
 vertical_alignment = 1
+clip_text = true
 
 [node name="LineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/ItchProjectRow"]
 unique_name_in_owner = true
@@ -117,57 +127,36 @@ placeholder_text = "Your project slug on itch.io"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 31)
 layout_mode = 2
+focus_mode = 0
 mouse_default_cursor_shape = 2
 tooltip_text = "What is a project slug?"
 text = "?"
 
 [node name="ExportTypeRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 5
 
 [node name="Label" type="Label" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/ExportTypeRow"]
-custom_minimum_size = Vector2(120, 0)
+custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
-text = "Export Type:"
+size_flags_horizontal = 0
+size_flags_stretch_ratio = 0.0
+text = "Selected Platforms:"
+horizontal_alignment = 2
 vertical_alignment = 1
+clip_text = true
 
-[node name="OptionButton" type="OptionButton" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/ExportTypeRow"]
+[node name="ValueLabel" type="Label" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/ExportTypeRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-item_count = 3
-selected = 0
-popup/item_0/text = "Windows"
-popup/item_0/id = 0
-popup/item_1/text = "Linux"
-popup/item_1/id = 1
-popup/item_2/text = "Web"
-popup/item_2/id = 2
-
-[node name="PackageTypeRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/PackageTypeRow"]
-custom_minimum_size = Vector2(120, 0)
-layout_mode = 2
-text = "Package Type:"
+text = "None selected"
 vertical_alignment = 1
-
-[node name="OptionButton" type="OptionButton" parent="MarginContainer/VBoxContainer/DestinationsVBox/ItchDetailsMargin/ItchDetailsVBox/PackageTypeRow"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-item_count = 2
-selected = 0
-popup/item_0/text = "ZIP"
-popup/item_0/id = 0
-popup/item_1/text = "Installer"
-popup/item_1/id = 1
 
 [node name="GithubCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/DestinationsVBox"]
 unique_name_in_owner = true
 layout_mode = 2
+focus_mode = 0
 mouse_default_cursor_shape = 2
 text = "GitHub Releases"
 tooltip_text = "Publish to GitHub as a release"
@@ -179,6 +168,7 @@ layout_mode = 2
 unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 31)
 layout_mode = 2
+focus_mode = 0
 size_flags_horizontal = 0
 mouse_default_cursor_shape = 2
 disabled = true
