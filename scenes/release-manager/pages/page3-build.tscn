@@ -52,8 +52,8 @@ layout_mode = 2
 
 [node name="ButtonMargin" type="MarginContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_bottom = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_bottom = 4
 
 [node name="CenterContainer" type="CenterContainer" parent="MarginContainer/VBoxContainer/ButtonMargin"]
 layout_mode = 2
