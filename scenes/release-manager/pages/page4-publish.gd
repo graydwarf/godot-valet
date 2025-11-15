@@ -10,6 +10,7 @@ signal version_changed(old_version: String, new_version: String)
 @onready var _githubCheckBox = %GithubCheckBox
 @onready var _publishButton = %PublishButton
 @onready var _statusLabel = %StatusLabel
+@onready var _helpButton = %HelpButton
 
 var _publishing: bool = false
 var _currentVersion: String = ""  # Store current version for comparison
@@ -19,6 +20,7 @@ func _ready():
 	_itchCheckBox.toggled.connect(_onItchToggled)
 	_githubCheckBox.toggled.connect(_onDestinationToggled)
 	_projectVersionLineEdit.text_changed.connect(_onVersionChanged)
+	_helpButton.pressed.connect(_onHelpButtonPressed)
 
 func _loadPageData():
 	if _selectedProjectItem == null:
@@ -78,6 +80,29 @@ func _onPublishPressed():
 func validate() -> bool:
 	# Page 4 is always valid (publish is optional)
 	return true
+
+func _onHelpButtonPressed():
+	# Create a simple info popup
+	var popup = AcceptDialog.new()
+	popup.title = "What is a Project Slug?"
+	popup.dialog_text = """A slug is the URL-friendly identifier for your project on itch.io.
+
+Examples:
+• Project name: "My Awesome Game"
+• Slug: "my-awesome-game"
+• URL: https://username.itch.io/my-awesome-game
+
+The slug is:
+• Set when you create your project on itch.io
+• Lowercase and URL-friendly
+• Used in all API calls and butler uploads
+
+Find your slug in your project's URL on itch.io."""
+	popup.ok_button_text = "Got it!"
+	add_child(popup)
+	popup.popup_centered(Vector2i(500, 350))
+	popup.confirmed.connect(popup.queue_free)
+	popup.close_requested.connect(popup.queue_free)
 
 func save():
 	if _selectedProjectItem == null:
