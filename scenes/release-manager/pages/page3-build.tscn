@@ -57,6 +57,82 @@ layout_mode = 2
 custom_minimum_size = Vector2(0, 2)
 layout_mode = 2
 
+[node name="ObfuscationLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Obfuscation Settings (Global):"
+
+[node name="ObfuscationVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ObfuscateFunctionsCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/ObfuscationVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "Obfuscate Functions"
+
+[node name="ObfuscateVariablesCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/ObfuscationVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "Obfuscate Variables"
+
+[node name="ObfuscateCommentsCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/ObfuscationVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "Obfuscate Comments"
+
+[node name="FunctionExcludeHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ObfuscationVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ObfuscationVBox/FunctionExcludeHBox"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Function Excludes:"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="FunctionExcludeLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ObfuscationVBox/FunctionExcludeHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Comma-separated function names to exclude..."
+
+[node name="VariableExcludeHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ObfuscationVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ObfuscationVBox/VariableExcludeHBox"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Variable Excludes:"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="VariableExcludeLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ObfuscationVBox/VariableExcludeHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Comma-separated variable names to exclude..."
+
+[node name="ObfuscationSpacer" type="Control" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+
+[node name="HSeparator2" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="PlatformsSpacer" type="Control" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+
 [node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3

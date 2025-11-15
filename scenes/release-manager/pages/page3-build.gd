@@ -8,6 +8,11 @@ signal page_modified()  # Emitted when any input is changed
 @onready var _platformsContainer = %PlatformsContainer
 @onready var _exportSelectedButton = %ExportSelectedButton
 @onready var _projectVersionLineEdit = %ProjectVersionLineEdit
+@onready var _obfuscateFunctionsCheckBox = %ObfuscateFunctionsCheckBox
+@onready var _obfuscateVariablesCheckBox = %ObfuscateVariablesCheckBox
+@onready var _obfuscateCommentsCheckBox = %ObfuscateCommentsCheckBox
+@onready var _functionExcludeLineEdit = %FunctionExcludeLineEdit
+@onready var _variableExcludeLineEdit = %VariableExcludeLineEdit
 
 var _platformRows: Dictionary = {}  # platform_name -> {mainRow, checkbox, detailsSection, exportPath, exportFilename, obfuscation, button}
 var _exportingPlatforms: Array[String] = []
@@ -19,6 +24,13 @@ func _ready():
 	_exportSelectedButton.pressed.connect(_onExportSelectedPressed)
 	_projectVersionLineEdit.text_changed.connect(_onVersionChanged)
 
+	# Connect obfuscation control signals
+	_obfuscateFunctionsCheckBox.toggled.connect(_onInputChanged.unbind(1))
+	_obfuscateVariablesCheckBox.toggled.connect(_onInputChanged.unbind(1))
+	_obfuscateCommentsCheckBox.toggled.connect(_onInputChanged.unbind(1))
+	_functionExcludeLineEdit.text_changed.connect(_onInputChanged)
+	_variableExcludeLineEdit.text_changed.connect(_onInputChanged)
+
 func _loadPageData():
 	if _selectedProjectItem == null:
 		return
@@ -26,6 +38,13 @@ func _loadPageData():
 	# Load project version
 	_currentVersion = _selectedProjectItem.GetProjectVersion()
 	_projectVersionLineEdit.text = _currentVersion
+
+	# Load obfuscation settings
+	_obfuscateFunctionsCheckBox.button_pressed = _selectedProjectItem.GetObfuscateFunctionsChecked()
+	_obfuscateVariablesCheckBox.button_pressed = _selectedProjectItem.GetObfuscateVariablesChecked()
+	_obfuscateCommentsCheckBox.button_pressed = _selectedProjectItem.GetObfuscateCommentsChecked()
+	_functionExcludeLineEdit.text = _selectedProjectItem.GetFunctionExcludeList()
+	_variableExcludeLineEdit.text = _selectedProjectItem.GetVariableExcludeList()
 
 	_clearPlatformRows()
 	_createPlatformRows()
@@ -446,13 +465,27 @@ func _exportPlatform(platform: String):
 	# Build output file path: exportPath/version/filename.ext
 	var outputPath = versionPath.path_join(filenameWithExtension)
 
-	# Execute export command
-	var success = await _runGodotExport(godotPath, projectDir, presetName, outputPath, data)
+	# Handle obfuscation if enabled - obfuscate BEFORE export
+	var projectDirToExport = projectDir
+	var tempObfuscatedDir = ""
 
-	# Handle obfuscation if enabled and export succeeded
-	if success and obfuscationEnabled:
-		data["status"].text = "Obfuscating..."
-		success = await _runObfuscation(exportPath, exportFilename, data)
+	if obfuscationEnabled:
+		data["status"].text = "Obfuscating project..."
+		var obfResult = await _runObfuscation(projectDir, data)
+		if not obfResult["success"]:
+			success = false
+		else:
+			projectDirToExport = obfResult["obfuscated_dir"]
+			tempObfuscatedDir = obfResult["obfuscated_dir"]
+
+	# Execute export command (from obfuscated dir if obfuscation enabled)
+	if success:
+		data["status"].text = "Exporting..."
+		success = await _runGodotExport(godotPath, projectDirToExport, presetName, outputPath, data)
+
+	# Clean up temp obfuscated directory if created
+	if tempObfuscatedDir != "":
+		_cleanupTempDir(tempObfuscatedDir)
 
 	# Update UI
 	if success:
@@ -489,6 +522,13 @@ func save():
 
 	# Save project version
 	_selectedProjectItem.SetProjectVersion(_projectVersionLineEdit.text)
+
+	# Save obfuscation settings
+	_selectedProjectItem.SetObfuscateFunctionsChecked(_obfuscateFunctionsCheckBox.button_pressed)
+	_selectedProjectItem.SetObfuscateVariablesChecked(_obfuscateVariablesCheckBox.button_pressed)
+	_selectedProjectItem.SetObfuscateCommentsChecked(_obfuscateCommentsCheckBox.button_pressed)
+	_selectedProjectItem.SetFunctionExcludeList(_functionExcludeLineEdit.text)
+	_selectedProjectItem.SetVariableExcludeList(_variableExcludeLineEdit.text)
 
 	# Save all platform settings
 	for platform in _platformRows.keys():
@@ -577,8 +617,115 @@ func _runGodotExport(godotPath: String, projectPath: String, presetName: String,
 
 	return true
 
-func _runObfuscation(exportPath: String, exportFilename: String, data: Dictionary) -> bool:
-	# TODO: Implement obfuscation integration
-	# This would call the Obfuscator script to process the exported files
-	print("Obfuscation not yet implemented")
+func _runObfuscation(projectDir: String, data: Dictionary) -> Dictionary:
+	# Create temp directory for obfuscated project
+	var tempDir = "user://temp_obfuscated_" + str(Time.get_ticks_msec())
+	var tempDirGlobal = ProjectSettings.globalize_path(tempDir)
+
+	# Create temp directory
+	var dir = DirAccess.open("user://")
+	if dir == null:
+		data["status"].text = "Error: Cannot access user directory"
+		return {"success": false, "obfuscated_dir": ""}
+
+	var err = dir.make_dir_recursive(tempDir)
+	if err != OK:
+		data["status"].text = "Error: Cannot create temp directory"
+		return {"success": false, "obfuscated_dir": ""}
+
+	# Copy project to temp directory
+	if not _copyDirectory(projectDir, tempDirGlobal):
+		data["status"].text = "Error: Failed to copy project"
+		return {"success": false, "obfuscated_dir": ""}
+
+	# Get obfuscation settings
+	var obfuscateFunctions = _selectedProjectItem.GetObfuscateFunctionsChecked()
+	var obfuscateVariables = _selectedProjectItem.GetObfuscateVariablesChecked()
+	var obfuscateComments = _selectedProjectItem.GetObfuscateCommentsChecked()
+
+	# Parse exclude lists (comma-separated to array)
+	var functionExcludes = _parseExcludeList(_selectedProjectItem.GetFunctionExcludeList())
+	var variableExcludes = _parseExcludeList(_selectedProjectItem.GetVariableExcludeList())
+
+	# Set exclude lists in obfuscator
+	ObfuscateHelper.SetFunctionExcludeList(functionExcludes)
+	ObfuscateHelper.SetVariableExcludeList(variableExcludes)
+
+	# Run obfuscation on temp directory
+	ObfuscateHelper.ObfuscateScripts(tempDirGlobal, tempDirGlobal, obfuscateFunctions, obfuscateVariables, obfuscateComments)
+
+	# Allow UI to update
+	await get_tree().process_frame
+
+	return {"success": true, "obfuscated_dir": tempDirGlobal}
+
+func _parseExcludeList(excludeListString: String) -> Array[String]:
+	var result: Array[String] = []
+	if excludeListString.is_empty():
+		return result
+
+	var items = excludeListString.split(",")
+	for item in items:
+		var trimmed = item.strip_edges()
+		if not trimmed.is_empty():
+			result.append(trimmed)
+
+	return result
+
+func _copyDirectory(source: String, dest: String) -> bool:
+	# Create destination directory
+	var destDir = DirAccess.open(dest.get_base_dir())
+	if destDir == null:
+		return false
+
+	destDir.make_dir_recursive(dest)
+
+	# Copy all files recursively
+	var sourceDir = DirAccess.open(source)
+	if sourceDir == null:
+		return false
+
+	sourceDir.list_dir_begin()
+	var fileName = sourceDir.get_next()
+
+	while fileName != "":
+		var sourcePath = source.path_join(fileName)
+		var destPath = dest.path_join(fileName)
+
+		if sourceDir.current_is_dir():
+			# Skip . and .. and hidden directories
+			if fileName != "." and fileName != ".." and not fileName.begins_with("."):
+				_copyDirectory(sourcePath, destPath)
+		else:
+			# Copy file
+			DirAccess.copy_absolute(sourcePath, destPath)
+
+		fileName = sourceDir.get_next()
+
+	sourceDir.list_dir_end()
 	return true
+
+func _cleanupTempDir(tempDir: String):
+	# Recursively delete temp directory
+	var dir = DirAccess.open(tempDir)
+	if dir == null:
+		return
+
+	dir.list_dir_begin()
+	var fileName = dir.get_next()
+
+	while fileName != "":
+		var filePath = tempDir.path_join(fileName)
+
+		if dir.current_is_dir():
+			if fileName != "." and fileName != "..":
+				_cleanupTempDir(filePath)
+		else:
+			dir.remove(fileName)
+
+		fileName = dir.get_next()
+
+	dir.list_dir_end()
+
+	# Remove the directory itself
+	DirAccess.remove_absolute(tempDir)
