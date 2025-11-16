@@ -17,6 +17,8 @@ var _currentVersion: String = ""  # Store current version for comparison
 var _platformBuildConfigs: Dictionary = {}  # platform_name -> build config dict
 var _buildConfigDialog: Window = null
 var _yesNoDialog: Control = null
+var _inputBlocker: Control = null  # Full-screen overlay to block all input during export
+var _exportCancelled: bool = false  # Flag to track if user cancelled export
 
 func _ready():
 	_exportSelectedButton.pressed.connect(_onExportSelectedPressed)
@@ -27,9 +29,12 @@ func _ready():
 	_buildConfigDialog.config_saved.connect(_onBuildConfigSaved)
 	add_child(_buildConfigDialog)
 
-	# Create yes/no dialog for overwrite confirmation
+	# Create yes/no dialog for overwrite confirmation (add to root for full screen coverage)
 	_yesNoDialog = load("res://scenes/common/yes-no-dialog.tscn").instantiate()
-	add_child(_yesNoDialog)
+	# Will be added to root when first shown
+
+	# Create full-screen input blocker overlay (will be added to root when needed)
+	_createInputBlocker()
 
 func _loadPageData():
 	if _selectedProjectItem == null:
@@ -420,9 +425,7 @@ func _onBuildConfigSaved(platform: String, config: Dictionary):
 	# page_modified.emit()
 
 func _onExportPressed(platform: String):
-	# Disable UI during export
-	_setUIEnabled(false)
-
+	# Note: UI blocker will be shown by _exportPlatform after confirmation dialog
 	await _exportPlatform(platform)
 
 	# Re-enable UI after export completes
@@ -486,14 +489,17 @@ func _onFolderSelected(path: String):
 		data["exportPath"].text = path
 
 func _onExportSelectedPressed():
-	# Disable UI during export
-	_setUIEnabled(false)
-
 	# Export platforms sequentially with status updates
+	# Note: UI blocker will be shown by _exportPlatform after confirmation dialogs
 	for platform in _platformRows.keys():
 		var data = _platformRows[platform]
 		if data["checkbox"].button_pressed:
 			await _exportPlatform(platform)
+
+			# Check if user cancelled
+			if _exportCancelled:
+				break
+
 			# Small delay between platform exports to show progress
 			await get_tree().create_timer(0.3).timeout
 
@@ -504,14 +510,19 @@ func _exportPlatform(platform: String):
 	if platform in _exportingPlatforms:
 		return  # Already exporting
 
+	# Abort if we're no longer in the scene tree (user navigated away)
+	if not is_inside_tree():
+		return
+
 	var data = _platformRows[platform]
 	_exportingPlatforms.append(platform)
 
 	# Reset UI - clear status first, then show exporting
-	data["status"].text = ""
+	_updateStatus(data, "")
 	await get_tree().process_frame  # Wait one frame so user sees it clear
-	data["status"].text = "Exporting..."
-	data["button"].disabled = true
+	_updateStatus(data, "Exporting...")
+	if is_instance_valid(data["button"]):
+		data["button"].disabled = true
 
 	# Emit signal
 	build_started.emit(platform)
@@ -528,8 +539,9 @@ func _exportPlatform(platform: String):
 
 	# Validate export path and filename
 	if exportPath.is_empty() or exportFilename.is_empty():
-		data["status"].text = "Error: Missing path/filename"
-		data["button"].disabled = false
+		_updateStatus(data, "Error: Missing path/filename")
+		if is_instance_valid(data["button"]):
+			data["button"].disabled = false
 		_exportingPlatforms.erase(platform)
 		build_completed.emit(platform, false)
 		return
@@ -543,8 +555,9 @@ func _exportPlatform(platform: String):
 	var projectDir = projectPath.get_base_dir()
 
 	if godotPath == null or godotPath == "???":
-		data["status"].text = "Error: Godot path not found"
-		data["button"].disabled = false
+		_updateStatus(data, "Error: Godot path not found")
+		if is_instance_valid(data["button"]):
+			data["button"].disabled = false
 		_exportingPlatforms.erase(platform)
 		build_completed.emit(platform, false)
 		return
@@ -552,8 +565,9 @@ func _exportPlatform(platform: String):
 	# Map platform to export preset name
 	var presetName = _getExportPresetName(platform)
 	if presetName.is_empty():
-		data["status"].text = "Error: Unknown platform"
-		data["button"].disabled = false
+		_updateStatus(data, "Error: Unknown platform")
+		if is_instance_valid(data["button"]):
+			data["button"].disabled = false
 		_exportingPlatforms.erase(platform)
 		build_completed.emit(platform, false)
 		return
@@ -570,39 +584,48 @@ func _exportPlatform(platform: String):
 	if DirAccess.dir_exists_absolute(versionPath):
 		# Prompt user to overwrite
 		var overwriteDialog = _getYesNoDialog()
-		data["status"].text = "Awaiting confirmation..."
+		_updateStatus(data, "Awaiting confirmation...")
 		await get_tree().process_frame  # Let UI update
 		overwriteDialog.show_dialog("Version " + version + " already exists. Overwrite?")
 		var choice = await overwriteDialog.confirmed
 
 		if choice != "yes":
 			# User cancelled, abort export
-			data["status"].text = "Export cancelled"
+			_updateStatus(data, "Export cancelled")
 			await get_tree().create_timer(0.5).timeout  # Show cancelled status
-			data["button"].disabled = false
+			if is_instance_valid(data["button"]):
+				data["button"].disabled = false
 			_exportingPlatforms.erase(platform)
 			build_completed.emit(platform, false)
 			return
 
+		# User confirmed, NOW show the blocker overlay (after dialog dismissed)
+		_setUIEnabled(false)
+
 		# User confirmed, continue with export (existing files will be overwritten)
-		data["status"].text = "Preparing export..."
+		_updateStatus(data, "Preparing export...")
 		await get_tree().create_timer(0.5).timeout  # Show status for half second
 	else:
+		# No overwrite needed, show blocker now
+		_setUIEnabled(false)
+
 		# Create version directory
-		data["status"].text = "Creating version folder..."
+		_updateStatus(data, "Creating version folder...")
 		await get_tree().create_timer(0.5).timeout  # Show status
 
 		var dir = DirAccess.open(exportPath)
 		if dir == null:
-			data["status"].text = "Error: Cannot access export path"
-			data["button"].disabled = false
+			_updateStatus(data, "Error: Cannot access export path")
+			if is_instance_valid(data["button"]):
+				data["button"].disabled = false
 			_exportingPlatforms.erase(platform)
 			build_completed.emit(platform, false)
 			return
 		var err = dir.make_dir(version)
 		if err != OK:
-			data["status"].text = "Error: Cannot create version folder"
-			data["button"].disabled = false
+			_updateStatus(data, "Error: Cannot create version folder")
+			if is_instance_valid(data["button"]):
+				data["button"].disabled = false
 			_exportingPlatforms.erase(platform)
 			build_completed.emit(platform, false)
 			return
@@ -618,40 +641,44 @@ func _exportPlatform(platform: String):
 	var tempObfuscatedDir = ""
 	var success = true  # Track overall success
 
-	if obfuscationEnabled:
-		data["status"].text = "Obfuscating project..."
+	if obfuscationEnabled and not _exportCancelled:
+		_updateStatus(data, "Obfuscating project...")
 		await get_tree().process_frame  # Let UI update
 		var obfResult = await _runObfuscation(projectDir, platform, data)
-		if not obfResult["success"]:
+		if not obfResult["success"] or _exportCancelled:
 			success = false
 		else:
 			projectDirToExport = obfResult["obfuscated_dir"]
 			tempObfuscatedDir = obfResult["obfuscated_dir"]
 			# Show obfuscation complete status briefly
-			data["status"].text = "Obfuscation complete"
+			_updateStatus(data, "Obfuscation complete")
 			await get_tree().create_timer(0.5).timeout
 
 	# Execute export command (from obfuscated dir if obfuscation enabled)
-	if success:
-		data["status"].text = "Exporting to " + platform + "..."
+	if success and not _exportCancelled:
+		_updateStatus(data, "Exporting to " + platform + "...")
 		await get_tree().process_frame  # Let UI update
 		success = await _runGodotExport(godotPath, projectDirToExport, presetName, outputPath, data)
 
 	# Clean up temp obfuscated directory if created
 	if tempObfuscatedDir != "":
-		data["status"].text = "Cleaning up..."
+		_updateStatus(data, "Cleaning up...")
 		await get_tree().create_timer(0.3).timeout
 		_cleanupTempDir(tempObfuscatedDir)
 
-	# Update UI with final status
-	if success:
-		data["status"].text = "✓ Complete"
+	# Update UI with final status (check if still valid)
+	if _exportCancelled:
+		_updateStatus(data, "✗ Cancelled")
+		await get_tree().create_timer(1.0).timeout
+	elif success:
+		_updateStatus(data, "✓ Complete")
 		await get_tree().create_timer(1.0).timeout  # Show success for 1 second
 	else:
-		data["status"].text = "✗ Failed"
+		_updateStatus(data, "✗ Failed")
 		await get_tree().create_timer(1.0).timeout  # Show failure for 1 second
 
-	data["button"].disabled = false
+	if is_instance_valid(data["button"]):
+		data["button"].disabled = false
 	_exportingPlatforms.erase(platform)
 
 	build_completed.emit(platform, success)
@@ -733,17 +760,27 @@ func _runGodotExport(godotPath: String, projectPath: String, presetName: String,
 	var pid = OS.create_process("cmd.exe", ["/c", fullCommand])
 
 	if pid == -1:
-		data["status"].text = "Error: Failed to start export"
+		_updateStatus(data, "Error: Failed to start export")
 		return false
 
-	# Poll until process completes
+	# Poll until process completes, checking for cancellation
 	while OS.is_process_running(pid):
+		if _exportCancelled:
+			# User cancelled - kill the export process
+			OS.kill(pid)
+			_updateStatus(data, "Export process terminated")
+			return false
+
 		await get_tree().create_timer(0.1).timeout  # Check every 100ms
+
+	# Check if cancelled after process completed naturally
+	if _exportCancelled:
+		return false
 
 	# Verify output file was created
 	if not FileAccess.file_exists(outputPath):
 		print("Export command completed but output file not found: ", outputPath)
-		data["status"].text = "Error: Output file not created"
+		_updateStatus(data, "Error: Output file not created")
 		return false
 
 	return true
@@ -756,19 +793,19 @@ func _runObfuscation(projectDir: String, platform: String, data: Dictionary) -> 
 	# Create temp directory
 	var dir = DirAccess.open("user://")
 	if dir == null:
-		data["status"].text = "Error: Cannot access user directory"
+		_updateStatus(data, "Error: Cannot access user directory")
 		return {"success": false, "obfuscated_dir": ""}
 
 	var err = dir.make_dir_recursive(tempDir)
 	if err != OK:
-		data["status"].text = "Error: Cannot create temp directory"
+		_updateStatus(data, "Error: Cannot create temp directory")
 		return {"success": false, "obfuscated_dir": ""}
 
 	# Copy project to temp directory
-	data["status"].text = "Copying project files..."
+	_updateStatus(data, "Copying project files...")
 	await get_tree().process_frame
 	if not _copyDirectory(projectDir, tempDirGlobal):
-		data["status"].text = "Error: Failed to copy project"
+		_updateStatus(data, "Error: Failed to copy project")
 		return {"success": false, "obfuscated_dir": ""}
 
 	# Get obfuscation settings from platform build config
@@ -786,7 +823,7 @@ func _runObfuscation(projectDir: String, platform: String, data: Dictionary) -> 
 	ObfuscateHelper.SetVariableExcludeList(variableExcludes)
 
 	# Run obfuscation on temp directory
-	data["status"].text = "Processing scripts..."
+	_updateStatus(data, "Processing scripts...")
 	await get_tree().process_frame
 	ObfuscateHelper.ObfuscateScripts(tempDirGlobal, tempDirGlobal, obfuscateFunctions, obfuscateVariables, obfuscateComments)
 
@@ -867,7 +904,17 @@ func _cleanupTempDir(tempDir: String):
 	DirAccess.remove_absolute(tempDir)
 
 func _getYesNoDialog() -> Control:
+	# Add to root if not already added (for full screen coverage)
+	if _yesNoDialog.get_parent() == null:
+		var root = owner  # Get release-manager panel
+		if root:
+			root.add_child(_yesNoDialog)
 	return _yesNoDialog
+
+func _updateStatus(data: Dictionary, status: String):
+	# Safely update status label only if it's still valid
+	if is_instance_valid(data.get("status")):
+		data["status"].text = status
 
 func _updateObfuscationDisplay(platform: String, config: Dictionary):
 	if platform not in _platformRows:
@@ -890,19 +937,126 @@ func _updateObfuscationDisplay(platform: String, config: Dictionary):
 		display.text = ", ".join(options)
 		display.placeholder_text = ""
 
+func _createInputBlocker():
+	# Create overlay container
+	_inputBlocker = Control.new()
+	_inputBlocker.name = "ExportBlockerOverlay"
+	_inputBlocker.mouse_filter = Control.MOUSE_FILTER_STOP  # Block all mouse input
+	_inputBlocker.focus_mode = Control.FOCUS_ALL  # Block keyboard input
+	_inputBlocker.visible = false
+	_inputBlocker.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_inputBlocker.z_index = 1000  # Very high z-index to be above everything
+
+	# Semi-transparent black background
+	var background = ColorRect.new()
+	background.color = Color(0, 0, 0, 0.7)
+	background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_inputBlocker.add_child(background)
+
+	# Center container for spinner and cancel button
+	var centerContainer = CenterContainer.new()
+	centerContainer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_inputBlocker.add_child(centerContainer)
+
+	# VBox for vertical layout
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 20)
+	centerContainer.add_child(vbox)
+
+	# Spinner label (animated)
+	var spinnerLabel = Label.new()
+	spinnerLabel.name = "SpinnerLabel"
+	spinnerLabel.text = "◜"  # First frame of spinner
+	spinnerLabel.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	spinnerLabel.add_theme_font_size_override("font_size", 48)
+	vbox.add_child(spinnerLabel)
+
+	# Status message label
+	var statusLabel = Label.new()
+	statusLabel.name = "StatusLabel"
+	statusLabel.text = "Exporting..."
+	statusLabel.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	statusLabel.add_theme_font_size_override("font_size", 18)
+	vbox.add_child(statusLabel)
+
+	# Cancel button
+	var cancelButton = Button.new()
+	cancelButton.name = "CancelButton"
+	cancelButton.text = "Cancel Export"
+	cancelButton.custom_minimum_size = Vector2(150, 40)
+	cancelButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	cancelButton.pressed.connect(_onCancelExportPressed)
+	vbox.add_child(cancelButton)
+
+	# Start spinner animation timer
+	var timer = Timer.new()
+	timer.name = "SpinnerTimer"
+	timer.wait_time = 0.15  # Rotate every 150ms
+	timer.autostart = false
+	timer.timeout.connect(_updateSpinner.bind(spinnerLabel))
+	_inputBlocker.add_child(timer)
+
+func _updateSpinner(spinnerLabel: Label):
+	# Rotate through spinner characters
+	const SPINNER_FRAMES = ["◜", "◝", "◞", "◟"]
+	var currentIndex = SPINNER_FRAMES.find(spinnerLabel.text)
+	if currentIndex == -1:
+		currentIndex = 0
+	else:
+		currentIndex = (currentIndex + 1) % SPINNER_FRAMES.size()
+	spinnerLabel.text = SPINNER_FRAMES[currentIndex]
+
+func _onCancelExportPressed():
+	# Set cancellation flag
+	_exportCancelled = true
+
+	# Update blocker status
+	if is_instance_valid(_inputBlocker):
+		var statusLabel = _inputBlocker.get_node_or_null("CenterContainer/VBoxContainer/StatusLabel")
+		if is_instance_valid(statusLabel):
+			statusLabel.text = "Cancelling..."
+
+		# Disable cancel button
+		var cancelButton = _inputBlocker.get_node_or_null("CenterContainer/VBoxContainer/CancelButton")
+		if is_instance_valid(cancelButton):
+			cancelButton.disabled = true
+
 func _setUIEnabled(enabled: bool):
-	# Disable/enable wizard navigation buttons
-	var wizard = get_parent().get_parent()  # Navigate up to wizard
-	if wizard and wizard.has_method("set_navigation_enabled"):
-		wizard.set_navigation_enabled(enabled)
+	# Show/hide full-screen input blocker overlay
+	if not is_instance_valid(_inputBlocker):
+		return
 
-	# Disable/enable Export Selected button
-	_exportSelectedButton.disabled = not enabled
+	if not enabled:
+		# Reset cancellation flag when starting export
+		_exportCancelled = false
 
-	# Disable/enable all individual export buttons and checkboxes
-	for platform in _platformRows.keys():
-		var data = _platformRows[platform]
-		# Only disable export button if not currently exporting
-		if enabled or platform not in _exportingPlatforms:
-			data["button"].disabled = not enabled
-		data["checkbox"].disabled = not enabled
+		# Add to root if not already added
+		if _inputBlocker.get_parent() == null:
+			var root = owner  # Get release-manager panel
+			if root:
+				root.add_child(_inputBlocker)
+
+		# Show blocker and start spinner
+		_inputBlocker.visible = true
+		_inputBlocker.move_to_front()
+
+		var timer = _inputBlocker.get_node_or_null("SpinnerTimer")
+		if is_instance_valid(timer):
+			timer.start()
+
+		# Reset status text
+		var statusLabel = _inputBlocker.get_node_or_null("CenterContainer/VBoxContainer/StatusLabel")
+		if is_instance_valid(statusLabel):
+			statusLabel.text = "Exporting..."
+
+		# Re-enable cancel button
+		var cancelButton = _inputBlocker.get_node_or_null("CenterContainer/VBoxContainer/CancelButton")
+		if is_instance_valid(cancelButton):
+			cancelButton.disabled = false
+	else:
+		# Hide blocker and stop spinner
+		_inputBlocker.visible = false
+
+		var timer = _inputBlocker.get_node_or_null("SpinnerTimer")
+		if is_instance_valid(timer):
+			timer.stop()

@@ -12,6 +12,7 @@ signal confirmed(choice: String)  # Emits "save", "dont_save", or "cancel"
 
 func _ready():
 	visible = false
+	z_index = 500  # High z-index to appear above other UI
 	_applyTheme()
 	if _saveButton:
 		_saveButton.pressed.connect(_onSavePressed)

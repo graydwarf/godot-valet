@@ -11,6 +11,7 @@ signal confirmed(choice: String)  # Emits "yes" or "no"
 
 func _ready():
 	visible = false
+	z_index = 500  # High z-index to appear above other UI (but below export blocker at 1000)
 	_applyTheme()
 	if _yesButton:
 		_yesButton.pressed.connect(_onYesPressed)

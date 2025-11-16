@@ -35,7 +35,9 @@ func _onProjectPathClicked(event: InputEvent):
 func _onFolderButtonPressed():
 	if _selectedProjectItem != null:
 		var projectPath = _selectedProjectItem.GetProjectPath()
-		OS.shell_open(projectPath)
+		# Open the folder containing the project, not the project file itself
+		var projectDir = projectPath.get_base_dir()
+		OS.shell_open(projectDir)
 
 # Called by wizard to update card with project info
 func configure(projectItem):
