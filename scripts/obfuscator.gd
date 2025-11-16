@@ -63,9 +63,6 @@ static var _inputDir : String = ""
 static var _outputDir : String = ""
 static var _usedNames : Dictionary = {}
 static var _exportVariableNames := []
-static var _obfuscateFunctions := false
-static var _obfuscateVariables := false
-static var _obfuscateComments := false
 static var _isObfuscatingFunctions := false
 static var _isObfuscatingVariables := false
 static var _isObfuscatingComments := false
@@ -563,7 +560,7 @@ static func PreserveSpecialStrings(contentPayload : ContentPayload) -> void:
 	contentPayload.SetPreservedSpecialStrings(preservedStrings)
 	
 # Pass #2: Obfuscate all files with global map
-static func ObfuscateAllFiles(allFiles : Array, globalObfuscationMap : Dictionary, autoloads : Array):
+static func ObfuscateAllFiles(allFiles : Array, globalObfuscationMap : Dictionary, _autoloads : Array):
 	for fullPath in allFiles:
 		var fileContents := FileAccess.get_file_as_string(fullPath)
 		var contentPayload := ContentPayload.new()
@@ -675,18 +672,18 @@ static func RemoveCommentsFromCode(contentPayload: ContentPayload) -> void:
 		var new_line := ""
 		var i := 0
 		while i < line.length():
-			var char := line[i]
-			
-			if not in_string and (char == '"' or char == "'"):
+			var current_char := line[i]
+
+			if not in_string and (current_char == '"' or current_char == "'"):
 				in_string = true
-				current_string_char = char
-			elif in_string and char == current_string_char:
+				current_string_char = current_char
+			elif in_string and current_char == current_string_char:
 				in_string = false
-			
-			if not in_string and char == "#":
+
+			if not in_string and current_char == "#":
 				break  # Stop at comment start if not in string
-			
-			new_line += char
+
+			new_line += current_char
 			i += 1
 		
 		result += new_line.rstrip("") + "\n"
@@ -698,7 +695,7 @@ static func RemoveCommentsFromCode(contentPayload: ContentPayload) -> void:
 # if I can detect globals in project file and then match any
 # <globalName>.connect or <globalName>.emit_signal.
 # May take multiple passes
-static func ObfuscateSignals(contentPayload: ContentPayload, autoloads : Array) -> void:
+static func ObfuscateSignals(_contentPayload: ContentPayload, _autoloads : Array) -> void:
 	pass
 
 static func GetAutoloadGlobalNames() -> Array:
@@ -721,7 +718,7 @@ static func GetAutoloadGlobalNames() -> Array:
 # It may not work correctly for complex syntax like
 # multiline strings, comments inside strings, etc. 
 # Use with caution or refine as needed.
-static func Minify(contentPayload: ContentPayload) -> void:
+static func Minify(_contentPayload: ContentPayload) -> void:
 	return
 	#var lines = contentPayload.GetContent().split("\n")
 	#var result := ""
@@ -853,7 +850,6 @@ static func AddFunctionsToSymbolMap(content: String, symbolMap) -> void:
 
 static func AddVariablesToSymbolMap(content : String, symbolMap : Dictionary):
 	var lines := content.split("\n")
-	var filterdExportVariables = []
 	for line in lines:
 		line = line.strip_edges()
 		var regex := RegEx.new()
