@@ -520,6 +520,22 @@ func _exportPlatform(platform: String):
 	if not is_inside_tree():
 		return
 
+	# CRITICAL: Capture all data from _selectedProjectItem BEFORE any awaits
+	# The project item may be freed during awaits if the page changes
+	if _selectedProjectItem == null or not is_instance_valid(_selectedProjectItem):
+		print("Error: Cannot export - project item is null or invalid")
+		return
+
+	var projectPath = _selectedProjectItem.GetProjectPath()
+	var projectDir = projectPath.get_base_dir()
+	var godotPath = ""
+	var godotVersionId = ""
+
+	if platform != "Source":
+		godotVersionId = _selectedProjectItem.GetGodotVersionId()
+		godotPath = _selectedProjectItem.GetGodotPath(godotVersionId)
+
+	# Now we can safely proceed with awaits - all data is captured locally
 	var data = _platformRows[platform]
 	_exportingPlatforms.append(platform)
 
@@ -552,27 +568,10 @@ func _exportPlatform(platform: String):
 		build_completed.emit(platform, false)
 		return
 
-	# Validate project item is still valid
-	if _selectedProjectItem == null or not is_instance_valid(_selectedProjectItem):
-		_updateStatus(data, "Error: Project no longer available")
-		if is_instance_valid(data["button"]):
-			data["button"].disabled = false
-		_exportingPlatforms.erase(platform)
-		build_completed.emit(platform, false)
-		return
-
-	# Get project path
-	var projectPath = _selectedProjectItem.GetProjectPath()
-	var projectDir = projectPath.get_base_dir()
-
 	# Skip Godot path validation for Source platform (doesn't need Godot export)
-	var godotPath = ""
 	var presetName = ""
 
 	if platform != "Source":
-		# Get Godot executable path (only needed for Godot exports)
-		var godotVersionId = _selectedProjectItem.GetGodotVersionId()
-		godotPath = _selectedProjectItem.GetGodotPath(godotVersionId)
 
 		if godotPath == null or godotPath == "???":
 			_updateStatus(data, "Error: Godot path not found")
