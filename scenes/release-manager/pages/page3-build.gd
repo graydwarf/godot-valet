@@ -878,7 +878,7 @@ func _copySourceFiles(projectDir: String, versionPath: String, data: Dictionary)
 	_updateStatus(data, "Copying project files...")
 	await get_tree().process_frame
 
-	var success = _copyDirectoryUnfiltered(projectDir, versionPath)
+	var success = await _copyDirectoryUnfiltered(projectDir, versionPath, data)
 
 	if _exportCancelled:
 		return false
@@ -891,7 +891,7 @@ func _copySourceFiles(projectDir: String, versionPath: String, data: Dictionary)
 	return true
 
 # Copy directory without filtering (includes hidden folders like .git, .godot)
-func _copyDirectoryUnfiltered(source: String, dest: String) -> bool:
+func _copyDirectoryUnfiltered(source: String, dest: String, data: Dictionary) -> bool:
 	# Check for cancellation
 	if _exportCancelled:
 		return false
@@ -910,6 +910,7 @@ func _copyDirectoryUnfiltered(source: String, dest: String) -> bool:
 
 	sourceDir.list_dir_begin()
 	var fileName = sourceDir.get_next()
+	var fileCount = 0
 
 	while fileName != "":
 		# Check for cancellation during copy
@@ -923,10 +924,19 @@ func _copyDirectoryUnfiltered(source: String, dest: String) -> bool:
 		if sourceDir.current_is_dir():
 			# Skip . and .. but include ALL other directories (including hidden)
 			if fileName != "." and fileName != "..":
-				_copyDirectoryUnfiltered(sourcePath, destPath)
+				var success = await _copyDirectoryUnfiltered(sourcePath, destPath, data)
+				if not success:
+					sourceDir.list_dir_end()
+					return false
 		else:
 			# Copy file
 			DirAccess.copy_absolute(sourcePath, destPath)
+			fileCount += 1
+
+			# Yield every 10 files to keep UI responsive
+			if fileCount % 10 == 0:
+				_updateStatus(data, "Copying: " + fileName)
+				await get_tree().process_frame
 
 		fileName = sourceDir.get_next()
 
