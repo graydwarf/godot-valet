@@ -423,6 +423,11 @@ func _onBuildConfigSaved(platform: String, config: Dictionary):
 	# page_modified.emit()
 
 func _onExportPressed(platform: String):
+	# Validate project item before export
+	if _selectedProjectItem == null or not is_instance_valid(_selectedProjectItem):
+		print("Error: Cannot export - project item is null or invalid")
+		return
+
 	# Save current settings before exporting
 	save()
 
@@ -730,7 +735,7 @@ func validate() -> bool:
 	return true
 
 func save():
-	if _selectedProjectItem == null:
+	if _selectedProjectItem == null or not is_instance_valid(_selectedProjectItem):
 		return
 
 	# Save project version
