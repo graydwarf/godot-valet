@@ -213,3 +213,9 @@ func _onWindowCloseRequested():
 	else:
 		# No unsaved changes, allow app to close
 		get_tree().quit()
+
+func set_navigation_enabled(enabled: bool):
+	# Enable/disable navigation buttons
+	_backButton.disabled = not enabled
+	_nextButton.disabled = not enabled
+	_exitButton.disabled = not enabled

@@ -420,7 +420,13 @@ func _onBuildConfigSaved(platform: String, config: Dictionary):
 	# page_modified.emit()
 
 func _onExportPressed(platform: String):
-	_exportPlatform(platform)
+	# Disable UI during export
+	_setUIEnabled(false)
+
+	await _exportPlatform(platform)
+
+	# Re-enable UI after export completes
+	_setUIEnabled(true)
 
 func _onFolderButtonPressed(platform: String):
 	_currentPlatformForDialog = platform
@@ -480,6 +486,9 @@ func _onFolderSelected(path: String):
 		data["exportPath"].text = path
 
 func _onExportSelectedPressed():
+	# Disable UI during export
+	_setUIEnabled(false)
+
 	# Export platforms sequentially with status updates
 	for platform in _platformRows.keys():
 		var data = _platformRows[platform]
@@ -487,6 +496,9 @@ func _onExportSelectedPressed():
 			await _exportPlatform(platform)
 			# Small delay between platform exports to show progress
 			await get_tree().create_timer(0.3).timeout
+
+	# Re-enable UI after all exports complete
+	_setUIEnabled(true)
 
 func _exportPlatform(platform: String):
 	if platform in _exportingPlatforms:
@@ -877,3 +889,20 @@ func _updateObfuscationDisplay(platform: String, config: Dictionary):
 	else:
 		display.text = ", ".join(options)
 		display.placeholder_text = ""
+
+func _setUIEnabled(enabled: bool):
+	# Disable/enable wizard navigation buttons
+	var wizard = get_parent().get_parent()  # Navigate up to wizard
+	if wizard and wizard.has_method("set_navigation_enabled"):
+		wizard.set_navigation_enabled(enabled)
+
+	# Disable/enable Export Selected button
+	_exportSelectedButton.disabled = not enabled
+
+	# Disable/enable all individual export buttons and checkboxes
+	for platform in _platformRows.keys():
+		var data = _platformRows[platform]
+		# Only disable export button if not currently exporting
+		if enabled or platform not in _exportingPlatforms:
+			data["button"].disabled = not enabled
+		data["checkbox"].disabled = not enabled
