@@ -468,6 +468,7 @@ func _exportPlatform(platform: String):
 	# Handle obfuscation if enabled - obfuscate BEFORE export
 	var projectDirToExport = projectDir
 	var tempObfuscatedDir = ""
+	var success = true  # Track overall success
 
 	if obfuscationEnabled:
 		data["status"].text = "Obfuscating project..."
