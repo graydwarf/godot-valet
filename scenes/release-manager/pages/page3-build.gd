@@ -171,18 +171,19 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	nameLabel.gui_input.connect(_onPlatformLabelClicked.bind(platform, checkbox))
 	mainRow.add_child(nameLabel)
 
-	# Status label
+	# Spacer to push status and export button to the right
+	var spacer = Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	mainRow.add_child(spacer)
+
+	# Status label (to the left of Export button)
 	var statusLabel = Label.new()
 	statusLabel.text = ""
 	statusLabel.custom_minimum_size = Vector2(100, 0)
 	statusLabel.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	statusLabel.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	statusLabel.name = "StatusLabel"
 	mainRow.add_child(statusLabel)
-
-	# Spacer to push Export button to the right
-	var spacer = Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	mainRow.add_child(spacer)
 
 	# Export button
 	var exportButton = Button.new()
@@ -716,7 +717,8 @@ func _runGodotExport(godotPath: String, projectPath: String, presetName: String,
 	elif "Please provide a valid project path" in output or "Invalid project path" in output:
 		data["status"].text = "Error: Invalid project path"
 		return false
-	elif "ERROR" in output or "Error" in output:
+	elif "ERROR:" in output:
+		# Look for actual Godot error lines (uppercase ERROR:)
 		data["status"].text = "Error: Export failed (see console)"
 		return false
 
