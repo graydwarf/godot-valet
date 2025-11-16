@@ -66,11 +66,11 @@ func _loadPlatformSettings():
 			# Restore settings
 			data["exportPath"].text = settings.get("exportPath", "")
 			data["exportFilename"].text = settings.get("exportFilename", "")
-			data["obfuscation"].button_pressed = settings.get("obfuscation", false)
 
 			# Restore build config (obfuscation settings)
 			if settings.has("buildConfig"):
 				_platformBuildConfigs[platform] = settings["buildConfig"]
+				_updateObfuscationDisplay(platform, settings["buildConfig"])
 
 			# Restore enabled state
 			var isEnabled = settings.get("enabled", false)
@@ -269,15 +269,22 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 
 	# Obfuscation Row
 	var obfuscationRow = HBoxContainer.new()
-	obfuscationRow.add_theme_constant_override("separation", 10)
+	obfuscationRow.add_theme_constant_override("separation", 5)
 
-	var obfuscationCheck = CheckBox.new()
-	obfuscationCheck.text = "Enable Obfuscation"
-	obfuscationCheck.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	obfuscationCheck.focus_mode = Control.FOCUS_NONE
-	obfuscationCheck.name = "ObfuscationCheck"
-	obfuscationCheck.toggled.connect(_onInputChanged.unbind(1))
-	obfuscationRow.add_child(obfuscationCheck)
+	var obfuscationLabel = Label.new()
+	obfuscationLabel.text = "Obfuscation:"
+	obfuscationLabel.custom_minimum_size = Vector2(130, 0)
+	obfuscationLabel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	obfuscationLabel.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	obfuscationLabel.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	obfuscationRow.add_child(obfuscationLabel)
+
+	var obfuscationDisplay = LineEdit.new()
+	obfuscationDisplay.placeholder_text = "None"
+	obfuscationDisplay.editable = false
+	obfuscationDisplay.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	obfuscationDisplay.name = "ObfuscationDisplay"
+	obfuscationRow.add_child(obfuscationDisplay)
 
 	# Settings cog button
 	var configButton = Button.new()
@@ -302,7 +309,7 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 		"detailsSection": detailsSection,
 		"exportPath": exportPathEdit,
 		"exportFilename": filenameEdit,
-		"obfuscation": obfuscationCheck,
+		"obfuscationDisplay": obfuscationDisplay,
 		"configButton": configButton,
 		"button": exportButton,
 		"status": statusLabel
@@ -388,6 +395,9 @@ func _onBuildConfigSaved(platform: String, config: Dictionary):
 	# Store the config for this platform
 	_platformBuildConfigs[platform] = config
 
+	# Update obfuscation display text
+	_updateObfuscationDisplay(platform, config)
+
 	# Immediately save to project item (don't wait for page save)
 	if _selectedProjectItem != null:
 		var platformSettings = _selectedProjectItem.GetPlatformExportSettings(platform)
@@ -396,8 +406,7 @@ func _onBuildConfigSaved(platform: String, config: Dictionary):
 			platformSettings = {
 				"enabled": false,
 				"exportPath": "",
-				"exportFilename": "",
-				"obfuscation": false
+				"exportFilename": ""
 			}
 
 		# Update build config in platform settings
@@ -495,7 +504,12 @@ func _exportPlatform(platform: String):
 	# Get export settings
 	var exportPath = data["exportPath"].text
 	var exportFilename = data["exportFilename"].text
-	var obfuscationEnabled = data["obfuscation"].button_pressed
+
+	# Check if obfuscation is enabled (any option selected in build config)
+	var obfuscationEnabled = false
+	if platform in _platformBuildConfigs:
+		var config = _platformBuildConfigs[platform]
+		obfuscationEnabled = config.get("obfuscate_functions", false) or config.get("obfuscate_variables", false) or config.get("obfuscate_comments", false)
 
 	# Validate export path and filename
 	if exportPath.is_empty() or exportFilename.is_empty():
@@ -646,8 +660,7 @@ func save():
 			var platformSettings = {
 				"enabled": data["checkbox"].button_pressed,
 				"exportPath": data["exportPath"].text,
-				"exportFilename": data["exportFilename"].text,
-				"obfuscation": data["obfuscation"].button_pressed
+				"exportFilename": data["exportFilename"].text
 			}
 
 			# Save build config if exists
@@ -846,3 +859,24 @@ func _cleanupTempDir(tempDir: String):
 
 func _getYesNoDialog() -> Control:
 	return _yesNoDialog
+
+func _updateObfuscationDisplay(platform: String, config: Dictionary):
+	if platform not in _platformRows:
+		return
+
+	var display = _platformRows[platform]["obfuscationDisplay"]
+	var options: Array[String] = []
+
+	if config.get("obfuscate_functions", false):
+		options.append("Functions")
+	if config.get("obfuscate_variables", false):
+		options.append("Variables")
+	if config.get("obfuscate_comments", false):
+		options.append("Comments")
+
+	if options.is_empty():
+		display.text = ""
+		display.placeholder_text = "None"
+	else:
+		display.text = ", ".join(options)
+		display.placeholder_text = ""

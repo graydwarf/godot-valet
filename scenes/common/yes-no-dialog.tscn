@@ -64,14 +64,14 @@ layout_mode = 2
 theme_override_constants/separation = 10
 alignment = 1
 
-[node name="NoButton" type="Button" parent="Overlay/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/ButtonContainer"]
-custom_minimum_size = Vector2(100, 35)
-layout_mode = 2
-mouse_default_cursor_shape = 2
-text = "No"
-
 [node name="YesButton" type="Button" parent="Overlay/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/ButtonContainer"]
 custom_minimum_size = Vector2(100, 35)
 layout_mode = 2
 mouse_default_cursor_shape = 2
 text = "Yes"
+
+[node name="NoButton" type="Button" parent="Overlay/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/ButtonContainer"]
+custom_minimum_size = Vector2(100, 35)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "No"
