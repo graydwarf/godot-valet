@@ -547,6 +547,15 @@ func _exportPlatform(platform: String):
 		build_completed.emit(platform, false)
 		return
 
+	# Validate project item is still valid
+	if _selectedProjectItem == null or not is_instance_valid(_selectedProjectItem):
+		_updateStatus(data, "Error: Project no longer available")
+		if is_instance_valid(data["button"]):
+			data["button"].disabled = false
+		_exportingPlatforms.erase(platform)
+		build_completed.emit(platform, false)
+		return
+
 	# Get project path
 	var projectPath = _selectedProjectItem.GetProjectPath()
 	var projectDir = projectPath.get_base_dir()
