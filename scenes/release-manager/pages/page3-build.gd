@@ -48,6 +48,9 @@ func _loadPageData():
 	_createPlatformRows()
 	_loadPlatformSettings()
 
+	# Update Export Selected button state based on loaded settings
+	_updateExportSelectedButtonState()
+
 func _clearPlatformRows():
 	for child in _platformsContainer.get_children():
 		child.queue_free()
@@ -346,6 +349,9 @@ func _onPlatformToggled(checked: bool, platform: String):
 
 	# Show/hide details section
 	data["detailsSection"].visible = checked
+
+	# Update Export Selected button state
+	_updateExportSelectedButtonState()
 
 	# Enable/disable export button
 	data["button"].disabled = !checked
@@ -1060,3 +1066,16 @@ func _setUIEnabled(enabled: bool):
 		var timer = _inputBlocker.get_node_or_null("SpinnerTimer")
 		if is_instance_valid(timer):
 			timer.stop()
+
+func _updateExportSelectedButtonState():
+	# Check if any platform is selected
+	var anyPlatformSelected = false
+	for platform in _platformRows.keys():
+		var data = _platformRows[platform]
+		if is_instance_valid(data["checkbox"]) and data["checkbox"].button_pressed:
+			anyPlatformSelected = true
+			break
+
+	# Enable button only if at least one platform is selected
+	if is_instance_valid(_exportSelectedButton):
+		_exportSelectedButton.disabled = not anyPlatformSelected
