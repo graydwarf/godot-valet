@@ -633,22 +633,34 @@ func _exportPlatform(platform: String):
 			build_completed.emit(platform, false)
 			return
 
+	# Create platform subfolder: exports/version/platform/
+	var platformPath = versionPath.path_join(platform)
+	var platformDir = DirAccess.open(versionPath)
+	if platformDir == null:
+		_updateStatus(data, "Error: Cannot access version path")
+		if is_instance_valid(data["button"]):
+			data["button"].disabled = false
+		_exportingPlatforms.erase(platform)
+		build_completed.emit(platform, false)
+		return
+	platformDir.make_dir(platform)
+
 	# Handle Source platform differently (copy files instead of Godot export)
 	var success = true  # Track overall success
 	var tempObfuscatedDir = ""
 
 	if platform == "Source":
-		# Source platform: Copy project directory as-is
+		# Source platform: Copy project directory as-is into platform folder
 		_updateStatus(data, "Copying source files...")
 		await get_tree().process_frame  # Let UI update
-		success = await _copySourceFiles(projectDir, versionPath, data)
+		success = await _copySourceFiles(projectDir, platformPath, data)
 	else:
 		# Regular Godot export platforms
 		# Add platform-specific file extension
 		var filenameWithExtension = _addPlatformExtension(exportFilename, platform)
 
-		# Build output file path: exportPath/version/filename.ext
-		var outputPath = versionPath.path_join(filenameWithExtension)
+		# Build output file path: exportPath/version/platform/filename.ext
+		var outputPath = platformPath.path_join(filenameWithExtension)
 
 		# Handle obfuscation if enabled - obfuscate BEFORE export
 		var projectDirToExport = projectDir
