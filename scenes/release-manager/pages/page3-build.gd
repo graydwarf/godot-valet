@@ -480,10 +480,13 @@ func _onFolderSelected(path: String):
 		data["exportPath"].text = path
 
 func _onExportSelectedPressed():
+	# Export platforms sequentially with status updates
 	for platform in _platformRows.keys():
 		var data = _platformRows[platform]
 		if data["checkbox"].button_pressed:
-			_exportPlatform(platform)
+			await _exportPlatform(platform)
+			# Small delay between platform exports to show progress
+			await get_tree().create_timer(0.3).timeout
 
 func _exportPlatform(platform: String):
 	if platform in _exportingPlatforms:
@@ -556,21 +559,27 @@ func _exportPlatform(platform: String):
 		# Prompt user to overwrite
 		var overwriteDialog = _getYesNoDialog()
 		data["status"].text = "Awaiting confirmation..."
+		await get_tree().process_frame  # Let UI update
 		overwriteDialog.show_dialog("Version " + version + " already exists. Overwrite?")
 		var choice = await overwriteDialog.confirmed
 
 		if choice != "yes":
 			# User cancelled, abort export
 			data["status"].text = "Export cancelled"
+			await get_tree().create_timer(0.5).timeout  # Show cancelled status
 			data["button"].disabled = false
 			_exportingPlatforms.erase(platform)
 			build_completed.emit(platform, false)
 			return
 
 		# User confirmed, continue with export (existing files will be overwritten)
-		data["status"].text = "Exporting..."
+		data["status"].text = "Preparing export..."
+		await get_tree().create_timer(0.5).timeout  # Show status for half second
 	else:
 		# Create version directory
+		data["status"].text = "Creating version folder..."
+		await get_tree().create_timer(0.5).timeout  # Show status
+
 		var dir = DirAccess.open(exportPath)
 		if dir == null:
 			data["status"].text = "Error: Cannot access export path"
@@ -599,27 +608,36 @@ func _exportPlatform(platform: String):
 
 	if obfuscationEnabled:
 		data["status"].text = "Obfuscating project..."
+		await get_tree().process_frame  # Let UI update
 		var obfResult = await _runObfuscation(projectDir, platform, data)
 		if not obfResult["success"]:
 			success = false
 		else:
 			projectDirToExport = obfResult["obfuscated_dir"]
 			tempObfuscatedDir = obfResult["obfuscated_dir"]
+			# Show obfuscation complete status briefly
+			data["status"].text = "Obfuscation complete"
+			await get_tree().create_timer(0.5).timeout
 
 	# Execute export command (from obfuscated dir if obfuscation enabled)
 	if success:
-		data["status"].text = "Exporting..."
+		data["status"].text = "Exporting to " + platform + "..."
+		await get_tree().process_frame  # Let UI update
 		success = await _runGodotExport(godotPath, projectDirToExport, presetName, outputPath, data)
 
 	# Clean up temp obfuscated directory if created
 	if tempObfuscatedDir != "":
+		data["status"].text = "Cleaning up..."
+		await get_tree().create_timer(0.3).timeout
 		_cleanupTempDir(tempObfuscatedDir)
 
-	# Update UI
+	# Update UI with final status
 	if success:
 		data["status"].text = "✓ Complete"
+		await get_tree().create_timer(1.0).timeout  # Show success for 1 second
 	else:
 		data["status"].text = "✗ Failed"
+		await get_tree().create_timer(1.0).timeout  # Show failure for 1 second
 
 	data["button"].disabled = false
 	_exportingPlatforms.erase(platform)
@@ -760,6 +778,8 @@ func _runObfuscation(projectDir: String, platform: String, data: Dictionary) -> 
 		return {"success": false, "obfuscated_dir": ""}
 
 	# Copy project to temp directory
+	data["status"].text = "Copying project files..."
+	await get_tree().process_frame
 	if not _copyDirectory(projectDir, tempDirGlobal):
 		data["status"].text = "Error: Failed to copy project"
 		return {"success": false, "obfuscated_dir": ""}
@@ -779,6 +799,8 @@ func _runObfuscation(projectDir: String, platform: String, data: Dictionary) -> 
 	ObfuscateHelper.SetVariableExcludeList(variableExcludes)
 
 	# Run obfuscation on temp directory
+	data["status"].text = "Processing scripts..."
+	await get_tree().process_frame
 	ObfuscateHelper.ObfuscateScripts(tempDirGlobal, tempDirGlobal, obfuscateFunctions, obfuscateVariables, obfuscateComments)
 
 	# Allow UI to update
