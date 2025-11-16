@@ -423,6 +423,9 @@ func _onBuildConfigSaved(platform: String, config: Dictionary):
 	# page_modified.emit()
 
 func _onExportPressed(platform: String):
+	# Save current settings before exporting
+	save()
+
 	# Note: UI blocker will be shown by _exportPlatform after confirmation dialog
 	await _exportPlatform(platform)
 
