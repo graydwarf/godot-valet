@@ -713,9 +713,9 @@ func _runGodotExport(godotPath: String, projectPath: String, presetName: String,
 	# Build Godot export command
 	var command = "\"%s\" --headless --path \"%s\" --export-release \"%s\" \"%s\"" % [godotPath, projectPath, presetName, outputPath]
 
-	# Create output file to capture stdout/stderr
-	var outputFilePath = "user://export_output.txt"
-	var fullCommand = "%s > \"%s\" 2>&1" % [command, ProjectSettings.globalize_path(outputFilePath)]
+	# Redirect output to null to suppress verbose Godot export messages
+	# Only capture errors by checking output file existence
+	var fullCommand = "%s > nul 2>&1" % [command]
 
 	# Execute export command in background
 	var pid = OS.create_process("cmd.exe", ["/c", fullCommand])
@@ -727,31 +727,6 @@ func _runGodotExport(godotPath: String, projectPath: String, presetName: String,
 	# Poll until process completes
 	while OS.is_process_running(pid):
 		await get_tree().create_timer(0.1).timeout  # Check every 100ms
-
-	# Read output file
-	var output = ""
-	if FileAccess.file_exists(outputFilePath):
-		var file = FileAccess.open(outputFilePath, FileAccess.READ)
-		if file:
-			output = file.get_as_text()
-			file.close()
-			# Clean up output file
-			DirAccess.remove_absolute(outputFilePath)
-
-	print("Export output: ", output)
-
-	# Check for common error conditions in output
-	if "export_presets.cfg" in output:
-		data["status"].text = "Error: No export presets configured"
-		print("Project needs export presets: Open project in Godot and configure presets via Project > Export")
-		return false
-	elif "Please provide a valid project path" in output or "Invalid project path" in output:
-		data["status"].text = "Error: Invalid project path"
-		return false
-	elif "ERROR:" in output:
-		# Look for actual Godot error lines (uppercase ERROR:)
-		data["status"].text = "Error: Export failed (see console)"
-		return false
 
 	# Verify output file was created
 	if not FileAccess.file_exists(outputPath):
