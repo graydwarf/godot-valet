@@ -92,18 +92,10 @@ func _createPlatformRows():
 	# Get configured export presets from the project
 	var platforms = _selectedProjectItem.GetAvailableExportPresets()
 
-	# If no presets configured, show helpful message
-	if platforms.is_empty():
-		var messageLabel = Label.new()
-		messageLabel.text = "No export presets configured.\n\nTo export this project, you need to:\n1. Open the project in Godot\n2. Go to Project > Export\n3. Add export presets for desired platforms\n4. Save and close the project"
-		messageLabel.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		messageLabel.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		messageLabel.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		messageLabel.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
-		_platformsContainer.add_child(messageLabel)
-		return
+	# Always add "Source" as a built-in option (copies project as-is)
+	platforms.insert(0, "Source")
 
-	# Create rows for each configured preset
+	# Create rows for each platform (including Source)
 	for platform in platforms:
 		var card = _createPlatformCard(platform)
 		_platformsContainer.add_child(card)
@@ -552,31 +544,36 @@ func _exportPlatform(platform: String):
 		build_completed.emit(platform, false)
 		return
 
-	# Get Godot executable path
-	var godotVersionId = _selectedProjectItem.GetGodotVersionId()
-	var godotPath = _selectedProjectItem.GetGodotPath(godotVersionId)
+	# Get project path
 	var projectPath = _selectedProjectItem.GetProjectPath()
-
-	# Get project directory (GetProjectPath returns path to project.godot file)
 	var projectDir = projectPath.get_base_dir()
 
-	if godotPath == null or godotPath == "???":
-		_updateStatus(data, "Error: Godot path not found")
-		if is_instance_valid(data["button"]):
-			data["button"].disabled = false
-		_exportingPlatforms.erase(platform)
-		build_completed.emit(platform, false)
-		return
+	# Skip Godot path validation for Source platform (doesn't need Godot export)
+	var godotPath = ""
+	var presetName = ""
 
-	# Map platform to export preset name
-	var presetName = _getExportPresetName(platform)
-	if presetName.is_empty():
-		_updateStatus(data, "Error: Unknown platform")
-		if is_instance_valid(data["button"]):
-			data["button"].disabled = false
-		_exportingPlatforms.erase(platform)
-		build_completed.emit(platform, false)
-		return
+	if platform != "Source":
+		# Get Godot executable path (only needed for Godot exports)
+		var godotVersionId = _selectedProjectItem.GetGodotVersionId()
+		godotPath = _selectedProjectItem.GetGodotPath(godotVersionId)
+
+		if godotPath == null or godotPath == "???":
+			_updateStatus(data, "Error: Godot path not found")
+			if is_instance_valid(data["button"]):
+				data["button"].disabled = false
+			_exportingPlatforms.erase(platform)
+			build_completed.emit(platform, false)
+			return
+
+		# Map platform to export preset name
+		presetName = _getExportPresetName(platform)
+		if presetName.is_empty():
+			_updateStatus(data, "Error: Unknown platform")
+			if is_instance_valid(data["button"]):
+				data["button"].disabled = false
+			_exportingPlatforms.erase(platform)
+			build_completed.emit(platform, false)
+			return
 
 	# Get version from version field
 	var version = _projectVersionLineEdit.text
@@ -636,35 +633,44 @@ func _exportPlatform(platform: String):
 			build_completed.emit(platform, false)
 			return
 
-	# Add platform-specific file extension
-	var filenameWithExtension = _addPlatformExtension(exportFilename, platform)
-
-	# Build output file path: exportPath/version/filename.ext
-	var outputPath = versionPath.path_join(filenameWithExtension)
-
-	# Handle obfuscation if enabled - obfuscate BEFORE export
-	var projectDirToExport = projectDir
-	var tempObfuscatedDir = ""
+	# Handle Source platform differently (copy files instead of Godot export)
 	var success = true  # Track overall success
+	var tempObfuscatedDir = ""
 
-	if obfuscationEnabled and not _exportCancelled:
-		_updateStatus(data, "Obfuscating project...")
+	if platform == "Source":
+		# Source platform: Copy project directory as-is
+		_updateStatus(data, "Copying source files...")
 		await get_tree().process_frame  # Let UI update
-		var obfResult = await _runObfuscation(projectDir, platform, data)
-		if not obfResult["success"] or _exportCancelled:
-			success = false
-		else:
-			projectDirToExport = obfResult["obfuscated_dir"]
-			tempObfuscatedDir = obfResult["obfuscated_dir"]
-			# Show obfuscation complete status briefly
-			_updateStatus(data, "Obfuscation complete")
-			await get_tree().create_timer(0.5).timeout
+		success = await _copySourceFiles(projectDir, versionPath, data)
+	else:
+		# Regular Godot export platforms
+		# Add platform-specific file extension
+		var filenameWithExtension = _addPlatformExtension(exportFilename, platform)
 
-	# Execute export command (from obfuscated dir if obfuscation enabled)
-	if success and not _exportCancelled:
-		_updateStatus(data, "Exporting to " + platform + "...")
-		await get_tree().process_frame  # Let UI update
-		success = await _runGodotExport(godotPath, projectDirToExport, presetName, outputPath, data)
+		# Build output file path: exportPath/version/filename.ext
+		var outputPath = versionPath.path_join(filenameWithExtension)
+
+		# Handle obfuscation if enabled - obfuscate BEFORE export
+		var projectDirToExport = projectDir
+
+		if obfuscationEnabled and not _exportCancelled:
+			_updateStatus(data, "Obfuscating project...")
+			await get_tree().process_frame  # Let UI update
+			var obfResult = await _runObfuscation(projectDir, platform, data)
+			if not obfResult["success"] or _exportCancelled:
+				success = false
+			else:
+				projectDirToExport = obfResult["obfuscated_dir"]
+				tempObfuscatedDir = obfResult["obfuscated_dir"]
+				# Show obfuscation complete status briefly
+				_updateStatus(data, "Obfuscation complete")
+				await get_tree().create_timer(0.5).timeout
+
+		# Execute export command (from obfuscated dir if obfuscation enabled)
+		if success and not _exportCancelled:
+			_updateStatus(data, "Exporting to " + platform + "...")
+			await get_tree().process_frame  # Let UI update
+			success = await _runGodotExport(godotPath, projectDirToExport, presetName, outputPath, data)
 
 	# Clean up temp obfuscated directory if created
 	if tempObfuscatedDir != "":
@@ -850,6 +856,70 @@ func _parseExcludeList(excludeListString: String) -> Array[String]:
 			result.append(trimmed)
 
 	return result
+
+# Copy source files for "Source" platform (no filtering - copies everything)
+func _copySourceFiles(projectDir: String, versionPath: String, data: Dictionary) -> bool:
+	# Reset cancellation flag for this export
+	_exportCancelled = false
+
+	# Copy entire project directory to version folder
+	_updateStatus(data, "Copying project files...")
+	await get_tree().process_frame
+
+	var success = _copyDirectoryUnfiltered(projectDir, versionPath)
+
+	if _exportCancelled:
+		return false
+
+	if not success:
+		_updateStatus(data, "Error: Failed to copy project files")
+		return false
+
+	_updateStatus(data, "Copy complete")
+	return true
+
+# Copy directory without filtering (includes hidden folders like .git, .godot)
+func _copyDirectoryUnfiltered(source: String, dest: String) -> bool:
+	# Check for cancellation
+	if _exportCancelled:
+		return false
+
+	# Create destination directory
+	var destDir = DirAccess.open(dest.get_base_dir())
+	if destDir == null:
+		return false
+
+	destDir.make_dir_recursive(dest)
+
+	# Copy all files recursively (no filtering)
+	var sourceDir = DirAccess.open(source)
+	if sourceDir == null:
+		return false
+
+	sourceDir.list_dir_begin()
+	var fileName = sourceDir.get_next()
+
+	while fileName != "":
+		# Check for cancellation during copy
+		if _exportCancelled:
+			sourceDir.list_dir_end()
+			return false
+
+		var sourcePath = source.path_join(fileName)
+		var destPath = dest.path_join(fileName)
+
+		if sourceDir.current_is_dir():
+			# Skip . and .. but include ALL other directories (including hidden)
+			if fileName != "." and fileName != "..":
+				_copyDirectoryUnfiltered(sourcePath, destPath)
+		else:
+			# Copy file
+			DirAccess.copy_absolute(sourcePath, destPath)
+
+		fileName = sourceDir.get_next()
+
+	sourceDir.list_dir_end()
+	return true
 
 func _copyDirectory(source: String, dest: String) -> bool:
 	# Create destination directory
