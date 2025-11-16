@@ -8,28 +8,23 @@ signal page_modified()  # Emitted when any input is changed
 @onready var _platformsContainer = %PlatformsContainer
 @onready var _exportSelectedButton = %ExportSelectedButton
 @onready var _projectVersionLineEdit = %ProjectVersionLineEdit
-@onready var _obfuscateFunctionsCheckBox = %ObfuscateFunctionsCheckBox
-@onready var _obfuscateVariablesCheckBox = %ObfuscateVariablesCheckBox
-@onready var _obfuscateCommentsCheckBox = %ObfuscateCommentsCheckBox
-@onready var _functionExcludeLineEdit = %FunctionExcludeLineEdit
-@onready var _variableExcludeLineEdit = %VariableExcludeLineEdit
 
-var _platformRows: Dictionary = {}  # platform_name -> {mainRow, checkbox, detailsSection, exportPath, exportFilename, obfuscation, button}
+var _platformRows: Dictionary = {}  # platform_name -> {mainRow, checkbox, detailsSection, exportPath, exportFilename, obfuscation, button, configButton}
 var _exportingPlatforms: Array[String] = []
 var _folderDialog: FileDialog = null
 var _currentPlatformForDialog: String = ""  # Track which platform is selecting a folder
 var _currentVersion: String = ""  # Store current version for comparison
+var _platformBuildConfigs: Dictionary = {}  # platform_name -> build config dict
+var _buildConfigDialog: Window = null
 
 func _ready():
 	_exportSelectedButton.pressed.connect(_onExportSelectedPressed)
 	_projectVersionLineEdit.text_changed.connect(_onVersionChanged)
 
-	# Connect obfuscation control signals
-	_obfuscateFunctionsCheckBox.toggled.connect(_onInputChanged.unbind(1))
-	_obfuscateVariablesCheckBox.toggled.connect(_onInputChanged.unbind(1))
-	_obfuscateCommentsCheckBox.toggled.connect(_onInputChanged.unbind(1))
-	_functionExcludeLineEdit.text_changed.connect(_onInputChanged)
-	_variableExcludeLineEdit.text_changed.connect(_onInputChanged)
+	# Create build config dialog
+	_buildConfigDialog = load("res://scenes/release-manager/build-config-dialog.tscn").instantiate()
+	_buildConfigDialog.config_saved.connect(_onBuildConfigSaved)
+	add_child(_buildConfigDialog)
 
 func _loadPageData():
 	if _selectedProjectItem == null:
@@ -38,13 +33,6 @@ func _loadPageData():
 	# Load project version
 	_currentVersion = _selectedProjectItem.GetProjectVersion()
 	_projectVersionLineEdit.text = _currentVersion
-
-	# Load obfuscation settings
-	_obfuscateFunctionsCheckBox.button_pressed = _selectedProjectItem.GetObfuscateFunctionsChecked()
-	_obfuscateVariablesCheckBox.button_pressed = _selectedProjectItem.GetObfuscateVariablesChecked()
-	_obfuscateCommentsCheckBox.button_pressed = _selectedProjectItem.GetObfuscateCommentsChecked()
-	_functionExcludeLineEdit.text = _selectedProjectItem.GetFunctionExcludeList()
-	_variableExcludeLineEdit.text = _selectedProjectItem.GetVariableExcludeList()
 
 	_clearPlatformRows()
 	_createPlatformRows()
@@ -75,6 +63,10 @@ func _loadPlatformSettings():
 			data["exportFilename"].text = settings.get("exportFilename", "")
 			data["obfuscation"].button_pressed = settings.get("obfuscation", false)
 
+			# Restore build config (obfuscation settings)
+			if settings.has("buildConfig"):
+				_platformBuildConfigs[platform] = settings["buildConfig"]
+
 			# Restore enabled state
 			var isEnabled = settings.get("enabled", false)
 			data["checkbox"].button_pressed = isEnabled
@@ -99,23 +91,62 @@ func _createPlatformRows():
 		return
 
 	# Create rows for each configured preset
-	for i in range(platforms.size()):
-		var platform = platforms[i]
-		var row = _createPlatformRow(platform)
-		_platformsContainer.add_child(row)
+	for platform in platforms:
+		var card = _createPlatformCard(platform)
+		_platformsContainer.add_child(card)
 
-		# Add separator between platforms (except after the last one)
-		if i < platforms.size() - 1:
-			var separator = HSeparator.new()
-			_platformsContainer.add_child(separator)
+func _createPlatformCard(platform: String) -> PanelContainer:
+	# Outer panel with rounded edges
+	var panelContainer = PanelContainer.new()
 
-func _createPlatformRow(platform: String) -> VBoxContainer:
+	# Apply styled theme
+	var panelTheme = Theme.new()
+	var styleBox = StyleBoxFlat.new()
+	styleBox.bg_color = _getAdjustedBackgroundColor(-0.08)
+	styleBox.border_color = Color(0.6, 0.6, 0.6)
+	styleBox.border_width_left = 1
+	styleBox.border_width_top = 1
+	styleBox.border_width_right = 1
+	styleBox.border_width_bottom = 1
+	styleBox.corner_radius_top_left = 6
+	styleBox.corner_radius_top_right = 6
+	styleBox.corner_radius_bottom_right = 6
+	styleBox.corner_radius_bottom_left = 6
+	panelTheme.set_stylebox("panel", "PanelContainer", styleBox)
+	panelContainer.theme = panelTheme
+
+	# Platform content - no inner margin, header uses parent's borders
 	var container = VBoxContainer.new()
-	container.add_theme_constant_override("separation", 5)
+	container.add_theme_constant_override("separation", 0)
+	panelContainer.add_child(container)
+
+	# === Header Row Container (bottom border only) ===
+	var headerContainer = PanelContainer.new()
+
+	# Header container theme (transparent bg, bottom border only)
+	var headerTheme = Theme.new()
+	var headerStyleBox = StyleBoxFlat.new()
+	headerStyleBox.bg_color = Color(0, 0, 0, 0)  # Transparent background
+	headerStyleBox.border_color = Color(0.6, 0.6, 0.6)
+	headerStyleBox.border_width_left = 0
+	headerStyleBox.border_width_top = 0
+	headerStyleBox.border_width_right = 0
+	headerStyleBox.border_width_bottom = 1
+	headerTheme.set_stylebox("panel", "PanelContainer", headerStyleBox)
+	headerContainer.theme = headerTheme
+
+	# Header inner margin
+	var headerMargin = MarginContainer.new()
+	headerMargin.add_theme_constant_override("margin_left", 10)
+	headerMargin.add_theme_constant_override("margin_top", 10)
+	headerMargin.add_theme_constant_override("margin_right", 10)
+	headerMargin.add_theme_constant_override("margin_bottom", 10)
+	headerContainer.add_child(headerMargin)
 
 	# === Main Row (always visible) ===
 	var mainRow = HBoxContainer.new()
 	mainRow.add_theme_constant_override("separation", 10)
+	headerMargin.add_child(mainRow)
 
 	# Checkbox
 	var checkbox = CheckBox.new()
@@ -158,11 +189,14 @@ func _createPlatformRow(platform: String) -> VBoxContainer:
 	exportButton.disabled = true  # Disabled until platform is selected
 	mainRow.add_child(exportButton)
 
-	container.add_child(mainRow)
+	container.add_child(headerContainer)
 
 	# === Details Section (visible when checkbox checked) ===
 	var detailsSection = MarginContainer.new()
-	detailsSection.add_theme_constant_override("margin_left", 40)  # Indent
+	detailsSection.add_theme_constant_override("margin_left", 50)  # Indent from left edge
+	detailsSection.add_theme_constant_override("margin_top", 10)  # Top padding
+	detailsSection.add_theme_constant_override("margin_right", 10)  # Right padding
+	detailsSection.add_theme_constant_override("margin_bottom", 10)  # Bottom padding
 	detailsSection.visible = false
 	detailsSection.name = "DetailsSection"
 
@@ -239,6 +273,16 @@ func _createPlatformRow(platform: String) -> VBoxContainer:
 	obfuscationCheck.toggled.connect(_onInputChanged.unbind(1))
 	obfuscationRow.add_child(obfuscationCheck)
 
+	# Settings cog button
+	var configButton = Button.new()
+	configButton.text = "⚙"
+	configButton.custom_minimum_size = Vector2(32, 31)
+	configButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	configButton.tooltip_text = "Configure obfuscation settings for this platform"
+	configButton.pressed.connect(_onConfigButtonPressed.bind(platform))
+	configButton.name = "ConfigButton"
+	obfuscationRow.add_child(configButton)
+
 	detailsVBox.add_child(obfuscationRow)
 
 	detailsSection.add_child(detailsVBox)
@@ -253,11 +297,22 @@ func _createPlatformRow(platform: String) -> VBoxContainer:
 		"exportPath": exportPathEdit,
 		"exportFilename": filenameEdit,
 		"obfuscation": obfuscationCheck,
+		"configButton": configButton,
 		"button": exportButton,
 		"status": statusLabel
 	}
 
-	return container
+	return panelContainer
+
+func _getAdjustedBackgroundColor(amount: float) -> Color:
+	var colorToSubtract = Color(amount, amount, amount, 0.0)
+	var baseColor = App.GetBackgroundColor()
+	return Color(
+		max(baseColor.r + colorToSubtract.r, 0),
+		max(baseColor.g + colorToSubtract.g, 0),
+		max(baseColor.b + colorToSubtract.b, 0),
+		baseColor.a
+	)
 
 func _onVersionChanged(newText: String):
 	# Notify card of version change
@@ -314,6 +369,40 @@ func _copyFromPreviousPlatform(targetPlatform: String):
 func _onPlatformLabelClicked(event: InputEvent, platform: String, checkbox: CheckBox):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		checkbox.button_pressed = !checkbox.button_pressed
+
+func _onConfigButtonPressed(platform: String):
+	# Get all platform names for the clone dropdown
+	var allPlatforms: Array[String] = []
+	allPlatforms.assign(_platformRows.keys())
+
+	# Open the dialog
+	_buildConfigDialog.openForPlatform(platform, allPlatforms, _platformBuildConfigs)
+
+func _onBuildConfigSaved(platform: String, config: Dictionary):
+	# Store the config for this platform
+	_platformBuildConfigs[platform] = config
+
+	# Immediately save to project item (don't wait for page save)
+	if _selectedProjectItem != null:
+		var platformSettings = _selectedProjectItem.GetPlatformExportSettings(platform)
+		if platformSettings.is_empty():
+			# Create new settings if platform not configured yet
+			platformSettings = {
+				"enabled": false,
+				"exportPath": "",
+				"exportFilename": "",
+				"obfuscation": false
+			}
+
+		# Update build config in platform settings
+		platformSettings["buildConfig"] = config
+
+		# Save to project item immediately
+		_selectedProjectItem.SetPlatformExportSettings(platform, platformSettings)
+		_selectedProjectItem.SaveProjectItem()
+
+	# Don't mark page as modified since we saved immediately
+	# page_modified.emit()
 
 func _onExportPressed(platform: String):
 	_exportPlatform(platform)
@@ -472,7 +561,7 @@ func _exportPlatform(platform: String):
 
 	if obfuscationEnabled:
 		data["status"].text = "Obfuscating project..."
-		var obfResult = await _runObfuscation(projectDir, data)
+		var obfResult = await _runObfuscation(projectDir, platform, data)
 		if not obfResult["success"]:
 			success = false
 		else:
@@ -524,13 +613,6 @@ func save():
 	# Save project version
 	_selectedProjectItem.SetProjectVersion(_projectVersionLineEdit.text)
 
-	# Save obfuscation settings
-	_selectedProjectItem.SetObfuscateFunctionsChecked(_obfuscateFunctionsCheckBox.button_pressed)
-	_selectedProjectItem.SetObfuscateVariablesChecked(_obfuscateVariablesCheckBox.button_pressed)
-	_selectedProjectItem.SetObfuscateCommentsChecked(_obfuscateCommentsCheckBox.button_pressed)
-	_selectedProjectItem.SetFunctionExcludeList(_functionExcludeLineEdit.text)
-	_selectedProjectItem.SetVariableExcludeList(_variableExcludeLineEdit.text)
-
 	# Save all platform settings
 	for platform in _platformRows.keys():
 		var data = _platformRows[platform]
@@ -543,6 +625,11 @@ func save():
 				"exportFilename": data["exportFilename"].text,
 				"obfuscation": data["obfuscation"].button_pressed
 			}
+
+			# Save build config if exists
+			if platform in _platformBuildConfigs:
+				platformSettings["buildConfig"] = _platformBuildConfigs[platform]
+
 			_selectedProjectItem.SetPlatformExportSettings(platform, platformSettings)
 
 	_selectedProjectItem.SaveProjectItem()
@@ -618,7 +705,7 @@ func _runGodotExport(godotPath: String, projectPath: String, presetName: String,
 
 	return true
 
-func _runObfuscation(projectDir: String, data: Dictionary) -> Dictionary:
+func _runObfuscation(projectDir: String, platform: String, data: Dictionary) -> Dictionary:
 	# Create temp directory for obfuscated project
 	var tempDir = "user://temp_obfuscated_" + str(Time.get_ticks_msec())
 	var tempDirGlobal = ProjectSettings.globalize_path(tempDir)
@@ -639,14 +726,15 @@ func _runObfuscation(projectDir: String, data: Dictionary) -> Dictionary:
 		data["status"].text = "Error: Failed to copy project"
 		return {"success": false, "obfuscated_dir": ""}
 
-	# Get obfuscation settings
-	var obfuscateFunctions = _selectedProjectItem.GetObfuscateFunctionsChecked()
-	var obfuscateVariables = _selectedProjectItem.GetObfuscateVariablesChecked()
-	var obfuscateComments = _selectedProjectItem.GetObfuscateCommentsChecked()
+	# Get obfuscation settings from platform build config
+	var buildConfig = _platformBuildConfigs.get(platform, {})
+	var obfuscateFunctions = buildConfig.get("obfuscate_functions", false)
+	var obfuscateVariables = buildConfig.get("obfuscate_variables", false)
+	var obfuscateComments = buildConfig.get("obfuscate_comments", false)
 
 	# Parse exclude lists (comma-separated to array)
-	var functionExcludes = _parseExcludeList(_selectedProjectItem.GetFunctionExcludeList())
-	var variableExcludes = _parseExcludeList(_selectedProjectItem.GetVariableExcludeList())
+	var functionExcludes = _parseExcludeList(buildConfig.get("function_excludes", ""))
+	var variableExcludes = _parseExcludeList(buildConfig.get("variable_excludes", ""))
 
 	# Set exclude lists in obfuscator
 	ObfuscateHelper.SetFunctionExcludeList(functionExcludes)

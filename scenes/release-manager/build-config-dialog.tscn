@@ -1,0 +1,190 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/release-manager/build-config-dialog.gd" id="1"]
+
+[node name="BuildConfigDialog" type="Window"]
+title = "Build Configuration"
+initial_position = 2
+size = Vector2i(700, 600)
+visible = false
+script = ExtResource("1")
+
+[node name="BackgroundPanel" type="Panel" parent="."]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="BackgroundPanel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BackgroundPanel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="HeaderHBox" type="HBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="PlatformLabel" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer/HeaderHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Platform: Windows Desktop"
+theme_type_variation = &"HeaderMedium"
+
+[node name="CloneLabel" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer/HeaderHBox"]
+layout_mode = 2
+text = "Clone from:"
+vertical_alignment = 1
+
+[node name="CloneOptionButton" type="OptionButton" parent="BackgroundPanel/MarginContainer/VBoxContainer/HeaderHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+tooltip_text = "Copy obfuscation settings from another platform"
+
+[node name="HSeparator" type="HSeparator" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ObfuscationLabel" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Obfuscation Options:"
+
+[node name="ObfuscationVBox" type="VBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ObfuscateFunctionsCheckBox" type="CheckBox" parent="BackgroundPanel/MarginContainer/VBoxContainer/ObfuscationVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "Obfuscate Functions"
+
+[node name="ObfuscateVariablesCheckBox" type="CheckBox" parent="BackgroundPanel/MarginContainer/VBoxContainer/ObfuscationVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "Obfuscate Variables"
+
+[node name="ObfuscateCommentsCheckBox" type="CheckBox" parent="BackgroundPanel/MarginContainer/VBoxContainer/ObfuscationVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "Obfuscate Comments"
+
+[node name="HSeparator2" type="HSeparator" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ExcludeListsLabel" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Exclude Lists:"
+
+[node name="FunctionExcludeHBox" type="HBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer/FunctionExcludeHBox"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Function Excludes:"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="FunctionExcludeLineEdit" type="LineEdit" parent="BackgroundPanel/MarginContainer/VBoxContainer/FunctionExcludeHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Comma-separated function names to exclude..."
+
+[node name="VariableExcludeHBox" type="HBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer/VariableExcludeHBox"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Variable Excludes:"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="VariableExcludeLineEdit" type="LineEdit" parent="BackgroundPanel/MarginContainer/VBoxContainer/VariableExcludeHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Comma-separated variable names to exclude..."
+
+[node name="HSeparator3" type="HSeparator" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="SourceFiltersLabel" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Source Filters:"
+
+[node name="SourceFiltersHBox" type="HBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer/SourceFiltersHBox"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Exclude Patterns:"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="SourceFiltersLineEdit" type="LineEdit" parent="BackgroundPanel/MarginContainer/VBoxContainer/SourceFiltersHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Comma-separated folder patterns to exclude"
+
+[node name="HSeparator4" type="HSeparator" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Spacer" type="Control" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HSeparator4" type="HSeparator" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ButtonContainer" type="HBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="CancelButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 31)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "Cancel"
+
+[node name="Spacer" type="Control" parent="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SaveButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 31)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "Save & Close"
+
+[connection signal="close_requested" from="." to="." method="_onCloseRequested"]
+[connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer/CancelButton" to="." method="_onCancelPressed"]
+[connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer/SaveButton" to="." method="_onSavePressed"]
