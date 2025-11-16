@@ -891,10 +891,19 @@ func _copySourceFiles(projectDir: String, versionPath: String, data: Dictionary)
 	return true
 
 # Copy directory without filtering (includes hidden folders like .git, .godot)
-func _copyDirectoryUnfiltered(source: String, dest: String, data: Dictionary) -> bool:
+# destRoot is the final destination root to avoid copying into itself
+func _copyDirectoryUnfiltered(source: String, dest: String, data: Dictionary, destRoot: String = "") -> bool:
 	# Check for cancellation
 	if _exportCancelled:
 		return false
+
+	# Store the root destination path on first call
+	if destRoot.is_empty():
+		destRoot = dest
+
+	# Normalize paths for comparison
+	var normalizedSource = source.replace("\\", "/").trim_suffix("/")
+	var normalizedDestRoot = destRoot.replace("\\", "/").trim_suffix("/")
 
 	# Create destination directory
 	var destDir = DirAccess.open(dest.get_base_dir())
@@ -921,22 +930,32 @@ func _copyDirectoryUnfiltered(source: String, dest: String, data: Dictionary) ->
 		var sourcePath = source.path_join(fileName)
 		var destPath = dest.path_join(fileName)
 
+		# Normalize source path for comparison
+		var normalizedSourcePath = sourcePath.replace("\\", "/").trim_suffix("/")
+
 		if sourceDir.current_is_dir():
-			# Skip . and .. but include ALL other directories (including hidden)
-			if fileName != "." and fileName != "..":
-				var success = await _copyDirectoryUnfiltered(sourcePath, destPath, data)
-				if not success:
-					sourceDir.list_dir_end()
-					return false
+			# Skip . and ..
+			if fileName == "." or fileName == "..":
+				fileName = sourceDir.get_next()
+				continue
+
+			# Skip if this directory is the destination or inside the destination
+			if normalizedSourcePath == normalizedDestRoot or normalizedSourcePath.begins_with(normalizedDestRoot + "/"):
+				fileName = sourceDir.get_next()
+				continue
+
+			# Recursively copy directory
+			var success = await _copyDirectoryUnfiltered(sourcePath, destPath, data, destRoot)
+			if not success:
+				sourceDir.list_dir_end()
+				return false
+
+			# Yield every directory to keep UI responsive
+			await get_tree().process_frame
 		else:
 			# Copy file
 			DirAccess.copy_absolute(sourcePath, destPath)
 			fileCount += 1
-
-			# Yield every 10 files to keep UI responsive
-			if fileCount % 10 == 0:
-				_updateStatus(data, "Copying: " + fileName)
-				await get_tree().process_frame
 
 		fileName = sourceDir.get_next()
 
