@@ -15,7 +15,9 @@ var _folderDialog: FileDialog = null
 var _currentPlatformForDialog: String = ""  # Track which platform is selecting a folder
 var _currentVersion: String = ""  # Store current version for comparison
 var _platformBuildConfigs: Dictionary = {}  # platform_name -> build config dict
+var _platformPathTemplates: Dictionary = {}  # platform_name -> path template array
 var _buildConfigDialog: Window = null
+var _pathSettingsDialog: Window = null
 var _yesNoDialog: Control = null
 var _inputBlocker: Control = null  # Full-screen overlay to block all input during export
 var _exportCancelled: bool = false  # Flag to track if user cancelled export
@@ -28,6 +30,11 @@ func _ready():
 	_buildConfigDialog = load("res://scenes/release-manager/build-config-dialog.tscn").instantiate()
 	_buildConfigDialog.config_saved.connect(_onBuildConfigSaved)
 	add_child(_buildConfigDialog)
+
+	# Create export path settings dialog
+	_pathSettingsDialog = load("res://scenes/release-manager/export-path-settings-dialog.tscn").instantiate()
+	_pathSettingsDialog.settings_saved.connect(_onPathSettingsSaved)
+	add_child(_pathSettingsDialog)
 
 	# Create yes/no dialog for overwrite confirmation (add to root for full screen coverage)
 	_yesNoDialog = load("res://scenes/common/yes-no-dialog.tscn").instantiate()
@@ -79,6 +86,18 @@ func _loadPlatformSettings():
 			if settings.has("buildConfig"):
 				_platformBuildConfigs[platform] = settings["buildConfig"]
 				_updateObfuscationDisplay(platform, settings["buildConfig"])
+
+			# Restore path template (default: version then platform)
+			if settings.has("pathTemplate"):
+				_platformPathTemplates[platform] = settings["pathTemplate"]
+			else:
+				_platformPathTemplates[platform] = [
+					{"type": "version"},
+					{"type": "platform"}
+				]
+
+			# Update export path display with template
+			_updateExportPathDisplay(platform)
 
 			# Restore enabled state
 			var isEnabled = settings.get("enabled", false)
@@ -243,6 +262,14 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	openFolderButton.tooltip_text = "Open export folder"
 	openFolderButton.pressed.connect(_onOpenFolderButtonPressed.bind(platform))
 	exportPathRow.add_child(openFolderButton)
+
+	var pathSettingsButton = Button.new()
+	pathSettingsButton.text = "⚙"
+	pathSettingsButton.custom_minimum_size = Vector2(32, 31)
+	pathSettingsButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	pathSettingsButton.tooltip_text = "Configure export path structure"
+	pathSettingsButton.pressed.connect(_onPathSettingsPressed.bind(platform))
+	exportPathRow.add_child(pathSettingsButton)
 
 	detailsVBox.add_child(exportPathRow)
 
@@ -422,6 +449,97 @@ func _onBuildConfigSaved(platform: String, config: Dictionary):
 	# Don't mark page as modified since we saved immediately
 	# page_modified.emit()
 
+func _onPathSettingsPressed(platform: String):
+	# Get current path template for this platform (default: version then platform)
+	var currentTemplate = _platformPathTemplates.get(platform, [
+		{"type": "version"},
+		{"type": "platform"}
+	])
+
+	# Get root export path
+	var data = _platformRows[platform]
+	var rootPath = data["exportPath"].text
+	if rootPath.is_empty():
+		rootPath = "C:/exports"  # Default placeholder
+
+	# Open dialog
+	_pathSettingsDialog.openForPlatform(platform, rootPath, currentTemplate)
+
+func _onPathSettingsSaved(platform: String, pathTemplate: Array):
+	# Store the template for this platform
+	_platformPathTemplates[platform] = pathTemplate
+
+	# Update the Export Path display to show full path
+	_updateExportPathDisplay(platform)
+
+	# Save to project item immediately
+	if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
+		var platformSettings = _selectedProjectItem.GetPlatformExportSettings(platform)
+		if platformSettings.is_empty():
+			# Create new settings if platform not configured yet
+			platformSettings = {
+				"enabled": false,
+				"exportPath": "",
+				"exportFilename": ""
+			}
+
+		# Update path template in platform settings
+		platformSettings["pathTemplate"] = pathTemplate
+
+		# Save to project item immediately
+		_selectedProjectItem.SetPlatformExportSettings(platform, platformSettings)
+		_selectedProjectItem.SaveProjectItem()
+
+func _updateExportPathDisplay(platform: String):
+	# Update the export path LineEdit to show the full path with template
+	var data = _platformRows[platform]
+	var rootPath = data["exportPath"].text
+
+	if rootPath.is_empty():
+		return
+
+	# Build preview path based on template
+	var fullPath = rootPath
+	var template = _platformPathTemplates.get(platform, [])
+
+	for segment in template:
+		match segment["type"]:
+			"version":
+				fullPath = fullPath.path_join("{version}")
+			"platform":
+				fullPath = fullPath.path_join("{platform}")
+			"date":
+				fullPath = fullPath.path_join("{date}")
+			"custom":
+				fullPath = fullPath.path_join(segment.get("value", "custom"))
+
+	# Update the display (placeholder for now - we'll make it read-only in next step)
+	data["exportPath"].placeholder_text = fullPath
+
+# Build the actual export path from template for export operations
+func _buildExportPathFromTemplate(platform: String, rootPath: String, version: String) -> String:
+	var fullPath = rootPath
+	var template = _platformPathTemplates.get(platform, [
+		{"type": "version"},
+		{"type": "platform"}
+	])
+
+	# Get current date for {date} token
+	var currentDate = Time.get_date_string_from_system()
+
+	for segment in template:
+		match segment["type"]:
+			"version":
+				fullPath = fullPath.path_join(version)
+			"platform":
+				fullPath = fullPath.path_join(platform)
+			"date":
+				fullPath = fullPath.path_join(currentDate)
+			"custom":
+				fullPath = fullPath.path_join(segment.get("value", "custom"))
+
+	return fullPath
+
 func _onExportPressed(platform: String):
 	# Validate project item before export
 	if _selectedProjectItem == null or not is_instance_valid(_selectedProjectItem):
@@ -596,11 +714,11 @@ func _exportPlatform(platform: String):
 	if version.is_empty():
 		version = "v1.0.0"  # Default version if not specified
 
-	# Create version subfolder path
-	var versionPath = exportPath.path_join(version)
+	# Build export path using template (includes all segments from template)
+	var exportDestPath = _buildExportPathFromTemplate(platform, exportPath, version)
 
-	# Check if version directory already exists and prompt user
-	if DirAccess.dir_exists_absolute(versionPath):
+	# Check if export directory already exists and prompt user
+	if DirAccess.dir_exists_absolute(exportDestPath):
 		# Prompt user to overwrite
 		var overwriteDialog = _getYesNoDialog()
 		_updateStatus(data, "Awaiting confirmation...")
@@ -632,43 +750,32 @@ func _exportPlatform(platform: String):
 		_updateStatus(data, "Creating version folder...")
 		await get_tree().create_timer(0.5).timeout  # Show status
 
-		# Create export path and version directory recursively
-		var err = DirAccess.make_dir_recursive_absolute(versionPath)
+		# Create export destination directory recursively (includes all template segments)
+		var err = DirAccess.make_dir_recursive_absolute(exportDestPath)
 		if err != OK:
-			_updateStatus(data, "Error: Cannot create version folder")
+			_updateStatus(data, "Error: Cannot create export folder")
 			if is_instance_valid(data["button"]):
 				data["button"].disabled = false
 			_exportingPlatforms.erase(platform)
 			build_completed.emit(platform, false)
 			return
 
-	# Create platform subfolder: exports/version/platform/
-	var platformPath = versionPath.path_join(platform)
-	var err = DirAccess.make_dir_recursive_absolute(platformPath)
-	if err != OK:
-		_updateStatus(data, "Error: Cannot create platform folder")
-		if is_instance_valid(data["button"]):
-			data["button"].disabled = false
-		_exportingPlatforms.erase(platform)
-		build_completed.emit(platform, false)
-		return
-
 	# Handle Source platform differently (copy files instead of Godot export)
 	var success = true  # Track overall success
 	var tempObfuscatedDir = ""
 
 	if platform == "Source":
-		# Source platform: Copy project directory as-is into platform folder
+		# Source platform: Copy project directory as-is into export destination
 		_updateStatus(data, "Copying source files...")
 		await get_tree().process_frame  # Let UI update
-		success = await _copySourceFiles(projectDir, platformPath, exportPath, data)
+		success = await _copySourceFiles(projectDir, exportDestPath, exportPath, data)
 	else:
 		# Regular Godot export platforms
 		# Add platform-specific file extension
 		var filenameWithExtension = _addPlatformExtension(exportFilename, platform)
 
-		# Build output file path: exportPath/version/platform/filename.ext
-		var outputPath = platformPath.path_join(filenameWithExtension)
+		# Build output file path: exportDestPath/filename.ext
+		var outputPath = exportDestPath.path_join(filenameWithExtension)
 
 		# Handle obfuscation if enabled - obfuscate BEFORE export
 		var projectDirToExport = projectDir
