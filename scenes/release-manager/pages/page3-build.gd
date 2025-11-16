@@ -653,7 +653,7 @@ func _exportPlatform(platform: String):
 		# Source platform: Copy project directory as-is into platform folder
 		_updateStatus(data, "Copying source files...")
 		await get_tree().process_frame  # Let UI update
-		success = await _copySourceFiles(projectDir, platformPath, data)
+		success = await _copySourceFiles(projectDir, platformPath, exportPath, data)
 	else:
 		# Regular Godot export platforms
 		# Add platform-specific file extension
@@ -869,16 +869,19 @@ func _parseExcludeList(excludeListString: String) -> Array[String]:
 
 	return result
 
-# Copy source files for "Source" platform (no filtering - copies everything)
-func _copySourceFiles(projectDir: String, versionPath: String, data: Dictionary) -> bool:
+# Copy source files for "Source" platform (no filtering - copies everything except exports folder)
+func _copySourceFiles(projectDir: String, versionPath: String, exportPath: String, data: Dictionary) -> bool:
 	# Reset cancellation flag for this export
 	_exportCancelled = false
 
-	# Copy entire project directory to version folder
+	# Copy entire project directory to version folder (excluding exports folder)
 	_updateStatus(data, "Copying project files...")
 	await get_tree().process_frame
 
-	var success = await _copyDirectoryUnfiltered(projectDir, versionPath, data)
+	# Normalize export path to skip during copy
+	var normalizedExportPath = exportPath.replace("\\", "/").trim_suffix("/")
+
+	var success = await _copyDirectoryUnfiltered(projectDir, versionPath, normalizedExportPath, data)
 
 	if _exportCancelled:
 		return false
@@ -891,19 +894,11 @@ func _copySourceFiles(projectDir: String, versionPath: String, data: Dictionary)
 	return true
 
 # Copy directory without filtering (includes hidden folders like .git, .godot)
-# destRoot is the final destination root to avoid copying into itself
-func _copyDirectoryUnfiltered(source: String, dest: String, data: Dictionary, destRoot: String = "") -> bool:
+# excludePath is a path to skip during copy (e.g., the exports folder)
+func _copyDirectoryUnfiltered(source: String, dest: String, excludePath: String, data: Dictionary) -> bool:
 	# Check for cancellation
 	if _exportCancelled:
 		return false
-
-	# Store the root destination path on first call
-	if destRoot.is_empty():
-		destRoot = dest
-
-	# Normalize paths for comparison
-	var normalizedSource = source.replace("\\", "/").trim_suffix("/")
-	var normalizedDestRoot = destRoot.replace("\\", "/").trim_suffix("/")
 
 	# Create destination directory
 	var destDir = DirAccess.open(dest.get_base_dir())
@@ -912,14 +907,13 @@ func _copyDirectoryUnfiltered(source: String, dest: String, data: Dictionary, de
 
 	destDir.make_dir_recursive(dest)
 
-	# Copy all files recursively (no filtering)
+	# Copy all files recursively (no filtering except excludePath)
 	var sourceDir = DirAccess.open(source)
 	if sourceDir == null:
 		return false
 
 	sourceDir.list_dir_begin()
 	var fileName = sourceDir.get_next()
-	var fileCount = 0
 
 	while fileName != "":
 		# Check for cancellation during copy
@@ -939,13 +933,13 @@ func _copyDirectoryUnfiltered(source: String, dest: String, data: Dictionary, de
 				fileName = sourceDir.get_next()
 				continue
 
-			# Skip if this directory is the destination or inside the destination
-			if normalizedSourcePath == normalizedDestRoot or normalizedSourcePath.begins_with(normalizedDestRoot + "/"):
+			# Skip if this directory matches the exclude path or is inside it
+			if normalizedSourcePath == excludePath or normalizedSourcePath.begins_with(excludePath + "/"):
 				fileName = sourceDir.get_next()
 				continue
 
 			# Recursively copy directory
-			var success = await _copyDirectoryUnfiltered(sourcePath, destPath, data, destRoot)
+			var success = await _copyDirectoryUnfiltered(sourcePath, destPath, excludePath, data)
 			if not success:
 				sourceDir.list_dir_end()
 				return false
@@ -955,7 +949,6 @@ func _copyDirectoryUnfiltered(source: String, dest: String, data: Dictionary, de
 		else:
 			# Copy file
 			DirAccess.copy_absolute(sourcePath, destPath)
-			fileCount += 1
 
 		fileName = sourceDir.get_next()
 
