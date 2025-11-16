@@ -29,12 +29,17 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="DialogPanel" type="PanelContainer" parent="Overlay/CenterContainer"]
-custom_minimum_size = Vector2(400, 0)
+[node name="DialogPanel" type="Panel" parent="Overlay/CenterContainer"]
+custom_minimum_size = Vector2(450, 200)
 layout_mode = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="Overlay/CenterContainer/DialogPanel"]
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
@@ -47,7 +52,12 @@ theme_override_constants/separation = 20
 [node name="MessageLabel" type="Label" parent="Overlay/CenterContainer/DialogPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "Are you sure?"
-autowrap_mode = 3
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="Spacer" type="Control" parent="Overlay/CenterContainer/DialogPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
 
 [node name="ButtonContainer" type="HBoxContainer" parent="Overlay/CenterContainer/DialogPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -55,13 +65,13 @@ theme_override_constants/separation = 10
 alignment = 1
 
 [node name="NoButton" type="Button" parent="Overlay/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/ButtonContainer"]
-custom_minimum_size = Vector2(100, 31)
+custom_minimum_size = Vector2(100, 35)
 layout_mode = 2
 mouse_default_cursor_shape = 2
 text = "No"
 
 [node name="YesButton" type="Button" parent="Overlay/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/ButtonContainer"]
-custom_minimum_size = Vector2(100, 31)
+custom_minimum_size = Vector2(100, 35)
 layout_mode = 2
 mouse_default_cursor_shape = 2
 text = "Yes"
