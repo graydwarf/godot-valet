@@ -3,7 +3,6 @@ class_name SaveConfirmationDialog
 
 signal confirmed(choice: String)  # Emits "save", "dont_save", or "cancel"
 
-@onready var _overlay = $Overlay
 @onready var _dialogPanel = $Overlay/CenterContainer/DialogPanel
 @onready var _messageLabel = $Overlay/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/MessageLabel
 @onready var _saveButton = $Overlay/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/ButtonContainer/SaveButton

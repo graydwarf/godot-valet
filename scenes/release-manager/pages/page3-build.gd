@@ -384,7 +384,7 @@ func _copyFromPreviousPlatform(targetPlatform: String):
 
 				return  # Found and copied, we're done
 
-func _onPlatformLabelClicked(event: InputEvent, platform: String, checkbox: CheckBox):
+func _onPlatformLabelClicked(event: InputEvent, _platform: String, checkbox: CheckBox):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		checkbox.button_pressed = !checkbox.button_pressed
 

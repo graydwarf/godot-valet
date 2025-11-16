@@ -3,7 +3,6 @@ class_name YesNoDialog
 
 signal confirmed(choice: String)  # Emits "yes" or "no"
 
-@onready var _overlay = $Overlay
 @onready var _dialogPanel = $Overlay/CenterContainer/DialogPanel
 @onready var _messageLabel = $Overlay/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/MessageLabel
 @onready var _yesButton = $Overlay/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/ButtonContainer/YesButton

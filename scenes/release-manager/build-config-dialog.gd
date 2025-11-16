@@ -10,8 +10,6 @@ signal config_saved(platform: String, config: Dictionary)
 @onready var _functionExcludeLineEdit = %FunctionExcludeLineEdit
 @onready var _variableExcludeLineEdit = %VariableExcludeLineEdit
 @onready var _sourceFiltersLineEdit = %SourceFiltersLineEdit
-@onready var _saveButton = %SaveButton
-@onready var _cancelButton = %CancelButton
 @onready var _backgroundPanel = %BackgroundPanel
 
 var _currentPlatform: String = ""
