@@ -1,0 +1,67 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/common/yes-no-dialog.gd" id="1"]
+
+[node name="YesNoDialog" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+
+[node name="Overlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.5)
+
+[node name="CenterContainer" type="CenterContainer" parent="Overlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DialogPanel" type="PanelContainer" parent="Overlay/CenterContainer"]
+custom_minimum_size = Vector2(400, 0)
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Overlay/CenterContainer/DialogPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Overlay/CenterContainer/DialogPanel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="MessageLabel" type="Label" parent="Overlay/CenterContainer/DialogPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Are you sure?"
+autowrap_mode = 3
+
+[node name="ButtonContainer" type="HBoxContainer" parent="Overlay/CenterContainer/DialogPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="NoButton" type="Button" parent="Overlay/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/ButtonContainer"]
+custom_minimum_size = Vector2(100, 31)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "No"
+
+[node name="YesButton" type="Button" parent="Overlay/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/ButtonContainer"]
+custom_minimum_size = Vector2(100, 31)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "Yes"

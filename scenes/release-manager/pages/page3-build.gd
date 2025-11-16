@@ -16,6 +16,7 @@ var _currentPlatformForDialog: String = ""  # Track which platform is selecting 
 var _currentVersion: String = ""  # Store current version for comparison
 var _platformBuildConfigs: Dictionary = {}  # platform_name -> build config dict
 var _buildConfigDialog: Window = null
+var _yesNoDialog: Control = null
 
 func _ready():
 	_exportSelectedButton.pressed.connect(_onExportSelectedPressed)
@@ -25,6 +26,10 @@ func _ready():
 	_buildConfigDialog = load("res://scenes/release-manager/build-config-dialog.tscn").instantiate()
 	_buildConfigDialog.config_saved.connect(_onBuildConfigSaved)
 	add_child(_buildConfigDialog)
+
+	# Create yes/no dialog for overwrite confirmation
+	_yesNoDialog = load("res://scenes/common/yes-no-dialog.tscn").instantiate()
+	add_child(_yesNoDialog)
 
 func _loadPageData():
 	if _selectedProjectItem == null:
@@ -531,8 +536,26 @@ func _exportPlatform(platform: String):
 	# Create version subfolder path
 	var versionPath = exportPath.path_join(version)
 
-	# Create version directory if it doesn't exist
-	if not DirAccess.dir_exists_absolute(versionPath):
+	# Check if version directory already exists and prompt user
+	if DirAccess.dir_exists_absolute(versionPath):
+		# Prompt user to overwrite
+		var overwriteDialog = _getYesNoDialog()
+		data["status"].text = "Awaiting confirmation..."
+		overwriteDialog.show_dialog("Version " + version + " already exists. Overwrite?")
+		var choice = await overwriteDialog.confirmed
+
+		if choice != "yes":
+			# User cancelled, abort export
+			data["status"].text = "Export cancelled"
+			data["button"].disabled = false
+			_exportingPlatforms.erase(platform)
+			build_completed.emit(platform, false)
+			return
+
+		# User confirmed, continue with export (existing files will be overwritten)
+		data["status"].text = "Exporting..."
+	else:
+		# Create version directory
 		var dir = DirAccess.open(exportPath)
 		if dir == null:
 			data["status"].text = "Error: Cannot access export path"
@@ -818,3 +841,6 @@ func _cleanupTempDir(tempDir: String):
 
 	# Remove the directory itself
 	DirAccess.remove_absolute(tempDir)
+
+func _getYesNoDialog() -> Control:
+	return _yesNoDialog
