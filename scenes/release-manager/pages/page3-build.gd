@@ -628,15 +628,8 @@ func _exportPlatform(platform: String):
 		_updateStatus(data, "Creating version folder...")
 		await get_tree().create_timer(0.5).timeout  # Show status
 
-		var dir = DirAccess.open(exportPath)
-		if dir == null:
-			_updateStatus(data, "Error: Cannot access export path")
-			if is_instance_valid(data["button"]):
-				data["button"].disabled = false
-			_exportingPlatforms.erase(platform)
-			build_completed.emit(platform, false)
-			return
-		var err = dir.make_dir(version)
+		# Create export path and version directory recursively
+		var err = DirAccess.make_dir_recursive_absolute(versionPath)
 		if err != OK:
 			_updateStatus(data, "Error: Cannot create version folder")
 			if is_instance_valid(data["button"]):
@@ -647,15 +640,14 @@ func _exportPlatform(platform: String):
 
 	# Create platform subfolder: exports/version/platform/
 	var platformPath = versionPath.path_join(platform)
-	var platformDir = DirAccess.open(versionPath)
-	if platformDir == null:
-		_updateStatus(data, "Error: Cannot access version path")
+	var err = DirAccess.make_dir_recursive_absolute(platformPath)
+	if err != OK:
+		_updateStatus(data, "Error: Cannot create platform folder")
 		if is_instance_valid(data["button"]):
 			data["button"].disabled = false
 		_exportingPlatforms.erase(platform)
 		build_completed.emit(platform, false)
 		return
-	platformDir.make_dir(platform)
 
 	# Handle Source platform differently (copy files instead of Godot export)
 	var success = true  # Track overall success
