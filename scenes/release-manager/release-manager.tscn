@@ -80,7 +80,7 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 31)
 layout_mode = 2
 mouse_default_cursor_shape = 2
-text = "Exit"
+text = "Back"
 
 [node name="Spacer" type="Control" parent="VBoxContainer/NavigationButtons/HBoxContainer"]
 layout_mode = 2
@@ -91,14 +91,14 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 31)
 layout_mode = 2
 mouse_default_cursor_shape = 2
-text = "← Back"
+text = "Back"
 
 [node name="NextButton" type="Button" parent="VBoxContainer/NavigationButtons/HBoxContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 31)
 layout_mode = 2
 mouse_default_cursor_shape = 2
-text = "Next →"
+text = "Next"
 
 [node name="ConfirmationDialog" parent="." instance=ExtResource("6")]
 unique_name_in_owner = true

@@ -1,12 +1,15 @@
 extends Control
 class_name YesNoDialog
 
-signal confirmed(choice: String)  # Emits "yes" or "no"
+signal confirmed(choice: String)  # Emits "yes", "no", or custom button text
 
 @onready var _dialogPanel = $Overlay/CenterContainer/DialogPanel
 @onready var _messageLabel = $Overlay/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/MessageLabel
+@onready var _buttonContainer = $Overlay/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/ButtonContainer
 @onready var _yesButton = $Overlay/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/ButtonContainer/YesButton
 @onready var _noButton = $Overlay/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/ButtonContainer/NoButton
+
+var _customButtons: Array[Button] = []
 
 func _ready():
 	visible = false
@@ -46,9 +49,43 @@ func _getAdjustedBackgroundColor(amount: float) -> Color:
 	)
 
 func show_dialog(message: String):
+	_clearCustomButtons()
+	_yesButton.visible = true
+	_noButton.visible = true
 	_messageLabel.text = message
 	visible = true
 	move_to_front()
+
+# Show dialog with custom buttons (array of button labels)
+# First button is primary action, last is cancel
+func show_dialog_with_buttons(message: String, buttonLabels: Array[String]):
+	_clearCustomButtons()
+	_yesButton.visible = false
+	_noButton.visible = false
+
+	# Create custom buttons
+	for i in range(buttonLabels.size()):
+		var label = buttonLabels[i]
+		var button = Button.new()
+		button.text = label
+		button.custom_minimum_size = Vector2(100, 31)
+
+		# Make last button (cancel) look different
+		if i == buttonLabels.size() - 1:
+			button.modulate = Color(1.0, 0.8, 0.8, 1.0)  # Slight red tint for cancel
+
+		button.pressed.connect(_onCustomButtonPressed.bind(label))
+		_buttonContainer.add_child(button)
+		_customButtons.append(button)
+
+	_messageLabel.text = message
+	visible = true
+	move_to_front()
+
+func _clearCustomButtons():
+	for button in _customButtons:
+		button.queue_free()
+	_customButtons.clear()
 
 func hide_dialog():
 	visible = false
@@ -59,4 +96,8 @@ func _onYesPressed():
 
 func _onNoPressed():
 	confirmed.emit("no")
+	hide_dialog()
+
+func _onCustomButtonPressed(buttonLabel: String):
+	confirmed.emit(buttonLabel)
 	hide_dialog()

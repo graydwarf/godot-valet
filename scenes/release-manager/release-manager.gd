@@ -137,7 +137,7 @@ func _updateNavigationButtons():
 	if _currentPage == _pages.size() - 1:
 		_nextButton.text = "Finish"
 	else:
-		_nextButton.text = "Next →"
+		_nextButton.text = "Next"
 
 func _onBackPressed():
 	if _currentPage > 0:

@@ -291,14 +291,6 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	exportPathEdit.text_changed.connect(_onInputChanged)
 	exportPathRow.add_child(exportPathEdit)
 
-	var openFolderButton = Button.new()
-	openFolderButton.text = "🗀"
-	openFolderButton.custom_minimum_size = Vector2(32, 31)
-	openFolderButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	openFolderButton.tooltip_text = "Open export folder"
-	openFolderButton.pressed.connect(_onOpenFolderButtonPressed.bind(platform))
-	exportPathRow.add_child(openFolderButton)
-
 	var pathSettingsButton = Button.new()
 	pathSettingsButton.text = "⚙"
 	pathSettingsButton.custom_minimum_size = Vector2(32, 31)
@@ -306,6 +298,14 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	pathSettingsButton.tooltip_text = "Configure export path and structure"
 	pathSettingsButton.pressed.connect(_onPathSettingsPressed.bind(platform))
 	exportPathRow.add_child(pathSettingsButton)
+
+	var openFolderButton = Button.new()
+	openFolderButton.text = "🗀"
+	openFolderButton.custom_minimum_size = Vector2(32, 31)
+	openFolderButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	openFolderButton.tooltip_text = "Open export folder"
+	openFolderButton.pressed.connect(_onOpenFolderButtonPressed.bind(platform))
+	exportPathRow.add_child(openFolderButton)
 
 	detailsVBox.add_child(exportPathRow)
 
@@ -347,6 +347,8 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	obfuscationDisplay.editable = false
 	obfuscationDisplay.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	obfuscationDisplay.name = "ObfuscationDisplay"
+	obfuscationDisplay.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	obfuscationDisplay.gui_input.connect(_onObfuscationDisplayClicked.bind(platform))
 	obfuscationRow.add_child(obfuscationDisplay)
 
 	# Settings cog button
@@ -465,6 +467,11 @@ func _onPlatformHeaderClicked(event: InputEvent, _platform: String, checkbox: Ch
 	# Toggle checkbox when clicking anywhere in header
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		checkbox.button_pressed = !checkbox.button_pressed
+
+func _onObfuscationDisplayClicked(event: InputEvent, platform: String):
+	# Open obfuscation settings when clicking on the display field
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_onConfigButtonPressed(platform)
 
 func _onConfigButtonPressed(platform: String):
 	# Get all platform names for the clone dropdown
@@ -773,6 +780,9 @@ func _exportPlatform(platform: String):
 	if platform in _platformBuildConfigs:
 		var config = _platformBuildConfigs[platform]
 		obfuscationEnabled = config.get("obfuscate_functions", false) or config.get("obfuscate_variables", false) or config.get("obfuscate_comments", false)
+		print("DEBUG: Platform ", platform, " obfuscation check - config: ", config, " enabled: ", obfuscationEnabled)
+	else:
+		print("DEBUG: Platform ", platform, " has no build config in _platformBuildConfigs")
 
 	# Validate export path and filename
 	if exportPath.is_empty() or exportFilename.is_empty():
@@ -813,6 +823,16 @@ func _exportPlatform(platform: String):
 
 	# Build export path using template (includes all segments from template)
 	var exportDestPath = _buildExportPathFromTemplate(platform, exportPath, version)
+
+	# Validate export path won't cause recursive loops
+	var validation = _validateExportPath(projectDir, exportPath, exportDestPath)
+	if not validation["valid"]:
+		_updateStatus(data, "Error: " + validation["error"])
+		if is_instance_valid(data["button"]):
+			data["button"].disabled = false
+		_exportingPlatforms.erase(platform)
+		build_completed.emit(platform, false)
+		return
 
 	# Check if export directory already exists and prompt user
 	var shouldClearFolder = false
@@ -882,10 +902,27 @@ func _exportPlatform(platform: String):
 	var tempObfuscatedDir = ""
 
 	if platform == "Source":
-		# Source platform: Copy project directory as-is into export destination
-		_updateStatus(data, "Copying source files...")
-		await get_tree().process_frame  # Let UI update
-		success = await _copySourceFiles(projectDir, exportDestPath, exportPath, data)
+		# Source platform: Copy project directory into export destination
+		# If obfuscation enabled, obfuscate first then copy
+		var sourceDirToCopy = projectDir
+
+		if obfuscationEnabled and not _exportCancelled:
+			_updateStatus(data, "Obfuscating project...")
+			await get_tree().process_frame  # Let UI update
+			var obfResult = await _runObfuscation(projectDir, platform, data)
+			if not obfResult["success"] or _exportCancelled:
+				success = false
+			else:
+				sourceDirToCopy = obfResult["obfuscated_dir"]
+				tempObfuscatedDir = obfResult["obfuscated_dir"]
+				# Show obfuscation complete status briefly
+				_updateStatus(data, "Obfuscation complete")
+				await get_tree().create_timer(0.5).timeout
+
+		if success and not _exportCancelled:
+			_updateStatus(data, "Copying source files...")
+			await get_tree().process_frame  # Let UI update
+			success = await _copySourceFiles(sourceDirToCopy, exportDestPath, exportPath, data)
 	else:
 		# Regular Godot export platforms
 		# Add platform-specific file extension
@@ -1134,10 +1171,22 @@ func _copySourceFiles(projectDir: String, versionPath: String, exportPath: Strin
 
 # Copy directory without filtering (includes hidden folders like .git, .godot)
 # excludePath is a path to skip during copy (e.g., the exports folder)
-func _copyDirectoryUnfiltered(source: String, dest: String, excludePath: String, data: Dictionary) -> bool:
+# visited tracks directories we've already processed to prevent symlink loops
+func _copyDirectoryUnfiltered(source: String, dest: String, excludePath: String, data: Dictionary, visited: Dictionary = {}) -> bool:
 	# Check for cancellation
 	if _exportCancelled:
 		return false
+
+	# Normalize source for visited tracking (case-insensitive on Windows)
+	var normalizedSource = source.replace("\\", "/").trim_suffix("/").to_lower()
+
+	# Check if we've already visited this directory (prevents symlink loops)
+	if normalizedSource in visited:
+		print("WARNING: Circular reference detected at ", source, " - skipping")
+		return true
+
+	# Mark as visited
+	visited[normalizedSource] = true
 
 	# Create destination directory
 	var destDir = DirAccess.open(dest.get_base_dir())
@@ -1163,8 +1212,9 @@ func _copyDirectoryUnfiltered(source: String, dest: String, excludePath: String,
 		var sourcePath = source.path_join(fileName)
 		var destPath = dest.path_join(fileName)
 
-		# Normalize source path for comparison
-		var normalizedSourcePath = sourcePath.replace("\\", "/").trim_suffix("/")
+		# Normalize source path for comparison (case-insensitive on Windows)
+		var normalizedSourcePath = sourcePath.replace("\\", "/").trim_suffix("/").to_lower()
+		var normalizedExcludePath = excludePath.to_lower()
 
 		if sourceDir.current_is_dir():
 			# Skip . and ..
@@ -1173,12 +1223,12 @@ func _copyDirectoryUnfiltered(source: String, dest: String, excludePath: String,
 				continue
 
 			# Skip if this directory matches the exclude path or is inside it
-			if normalizedSourcePath == excludePath or normalizedSourcePath.begins_with(excludePath + "/"):
+			if normalizedSourcePath == normalizedExcludePath or normalizedSourcePath.begins_with(normalizedExcludePath + "/"):
 				fileName = sourceDir.get_next()
 				continue
 
-			# Recursively copy directory
-			var success = await _copyDirectoryUnfiltered(sourcePath, destPath, excludePath, data)
+			# Recursively copy directory, passing visited dictionary
+			var success = await _copyDirectoryUnfiltered(sourcePath, destPath, excludePath, data, visited)
 			if not success:
 				sourceDir.list_dir_end()
 				return false
@@ -1210,9 +1260,17 @@ func _copyDirectory(source: String, dest: String) -> bool:
 	sourceDir.list_dir_begin()
 	var fileName = sourceDir.get_next()
 
+	# Windows reserved names that cannot be copied
+	var reservedNames = ["con", "prn", "aux", "nul", "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9"]
+
 	while fileName != "":
 		var sourcePath = source.path_join(fileName)
 		var destPath = dest.path_join(fileName)
+
+		# Skip Windows reserved names
+		if fileName.to_lower() in reservedNames:
+			fileName = sourceDir.get_next()
+			continue
 
 		if sourceDir.current_is_dir():
 			# Skip . and .. and hidden directories
@@ -1455,3 +1513,62 @@ func _updateExportSelectedButtonState():
 	# Enable button only if at least one platform is selected
 	if is_instance_valid(_exportSelectedButton):
 		_exportSelectedButton.disabled = not anyPlatformSelected
+
+# Normalizes a path to absolute with forward slashes and resolved .. segments
+func _normalizePath(path: String) -> String:
+	var absolute = path
+
+	# Use ProjectSettings.globalize_path if it's a Godot path
+	if absolute.contains("://"):
+		absolute = ProjectSettings.globalize_path(absolute)
+
+	# Convert backslashes to forward slashes
+	absolute = absolute.replace("\\", "/")
+
+	# Remove trailing slashes
+	absolute = absolute.trim_suffix("/")
+
+	# Normalize .. segments
+	var parts = absolute.split("/")
+	var normalized: Array[String] = []
+	for part in parts:
+		if part == "..":
+			if not normalized.is_empty() and normalized[-1] != "..":
+				normalized.pop_back()
+			else:
+				normalized.append(part)
+		elif part != "." and part != "":
+			normalized.append(part)
+
+	absolute = "/".join(normalized)
+
+	# Convert to lowercase for case-insensitive comparison on Windows
+	return absolute.to_lower()
+
+# Validates that export path won't cause recursive loops
+func _validateExportPath(projectDir: String, exportRootPath: String, finalExportPath: String) -> Dictionary:
+	var projectNorm = _normalizePath(projectDir)
+	var exportRootNorm = _normalizePath(exportRootPath)
+	var finalNorm = _normalizePath(finalExportPath)
+
+	# Check 1: Export root cannot be same as project
+	if exportRootNorm == projectNorm:
+		return {"valid": false, "error": "Export root cannot be the same as project directory"}
+
+	# Check 2: Export root cannot be a parent of project
+	if projectNorm.begins_with(exportRootNorm + "/"):
+		return {"valid": false, "error": "Export root cannot be a parent of the project directory"}
+
+	# Check 3: Final export path cannot be same as project
+	if finalNorm == projectNorm:
+		return {"valid": false, "error": "Final export path cannot be the same as project directory"}
+
+	# Check 4: Final export path cannot be a parent of project
+	if projectNorm.begins_with(finalNorm + "/"):
+		return {"valid": false, "error": "Final export path cannot be a parent of the project directory"}
+
+	# Note: We ALLOW exports inside the project directory (e.g., project/exports/)
+	# The _copyDirectoryUnfiltered function excludes the export root path during copy
+	# which prevents recursive loops. This is a common and valid use case.
+
+	return {"valid": true, "error": ""}

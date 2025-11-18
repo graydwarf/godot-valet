@@ -1,42 +1,116 @@
-extends Window
+extends Control
 
-signal settings_saved(platform: String, path_template: Array)
+signal settings_saved(platform: String, root_path: String, path_template: Array, project_version: String)
+signal cancelled()
 
 @onready var _platformLabel = %PlatformLabel
 @onready var _segmentsList = %SegmentsList
 @onready var _previewLabel = %PreviewLabel
 @onready var _rootPathLabel = %RootPathLabel
+@onready var _rootPathCard = %RootPathCard
+@onready var _previewCard = %PreviewCard
+@onready var _projectVersionLineEdit = %ProjectVersionLineEdit
+@onready var _rootPathHeaderContainer = $BackgroundPanel/MarginContainer/VBoxContainer/RootPathCard/VBoxContainer/HeaderContainer
+@onready var _rootPathContentContainer = $BackgroundPanel/MarginContainer/VBoxContainer/RootPathCard/VBoxContainer/ContentContainer
+@onready var _previewHeaderContainer = $BackgroundPanel/MarginContainer/VBoxContainer/PreviewCard/VBoxContainer/HeaderContainer
+@onready var _previewContentContainer = $BackgroundPanel/MarginContainer/VBoxContainer/PreviewCard/VBoxContainer/ContentContainer
 
 var _currentPlatform: String = ""
 var _rootExportPath: String = ""
-var _pathSegments: Array = []  # Array of {type: "version|platform|custom", value: ""}
+var _pathSegments: Array = []  # Array of {type: "version|platform|date|custom", value: ""}
+var _folderDialog: FileDialog = null
 
 const SEGMENT_HEIGHT = 40
+const DEFAULT_DATE_FORMAT = "{year}-{month}-{day}"
 
 func _ready():
-	pass
+	# Create folder selection dialog
+	_folderDialog = FileDialog.new()
+	_folderDialog.file_mode = FileDialog.FILE_MODE_OPEN_DIR
+	_folderDialog.access = FileDialog.ACCESS_FILESYSTEM
+	_folderDialog.dir_selected.connect(_onFolderSelected)
+	add_child(_folderDialog)
 
-# Opens the dialog for a specific platform
-func openForPlatform(platform: String, rootPath: String, currentTemplate: Array):
+	# Apply card styles (wait until nodes are ready)
+	if _rootPathCard != null and _rootPathHeaderContainer != null and _rootPathContentContainer != null:
+		_applyCardStyle(_rootPathCard, _rootPathHeaderContainer, _rootPathContentContainer)
+	if _previewCard != null and _previewHeaderContainer != null and _previewContentContainer != null:
+		_applyCardStyle(_previewCard, _previewHeaderContainer, _previewContentContainer)
+
+func _applyCardStyle(outerPanel: PanelContainer, headerPanel: PanelContainer, contentPanel: PanelContainer):
+	# Outer panel with rounded corners and border
+	var outerTheme = Theme.new()
+	var outerStyleBox = StyleBoxFlat.new()
+	outerStyleBox.bg_color = _getAdjustedBackgroundColor(-0.08)
+	outerStyleBox.border_color = Color(0.6, 0.6, 0.6)
+	outerStyleBox.border_width_left = 1
+	outerStyleBox.border_width_top = 1
+	outerStyleBox.border_width_right = 1
+	outerStyleBox.border_width_bottom = 1
+	outerStyleBox.corner_radius_top_left = 6
+	outerStyleBox.corner_radius_top_right = 6
+	outerStyleBox.corner_radius_bottom_right = 6
+	outerStyleBox.corner_radius_bottom_left = 6
+	outerTheme.set_stylebox("panel", "PanelContainer", outerStyleBox)
+	outerPanel.theme = outerTheme
+
+	# Header with transparent background and bottom border only
+	var headerTheme = Theme.new()
+	var headerStyleBox = StyleBoxFlat.new()
+	headerStyleBox.bg_color = Color(0, 0, 0, 0)  # Transparent
+	headerStyleBox.border_color = Color(0.6, 0.6, 0.6)
+	headerStyleBox.border_width_left = 0
+	headerStyleBox.border_width_top = 0
+	headerStyleBox.border_width_right = 0
+	headerStyleBox.border_width_bottom = 1
+	headerTheme.set_stylebox("panel", "PanelContainer", headerStyleBox)
+	headerPanel.theme = headerTheme
+
+	# Content with transparent background (no borders)
+	var contentTheme = Theme.new()
+	var contentStyleBox = StyleBoxFlat.new()
+	contentStyleBox.bg_color = Color(0, 0, 0, 0)  # Transparent
+	contentStyleBox.border_width_left = 0
+	contentStyleBox.border_width_top = 0
+	contentStyleBox.border_width_right = 0
+	contentStyleBox.border_width_bottom = 0
+	contentTheme.set_stylebox("panel", "PanelContainer", contentStyleBox)
+	contentPanel.theme = contentTheme
+
+func _getAdjustedBackgroundColor(amount: float) -> Color:
+	var colorToSubtract = Color(amount, amount, amount, 0.0)
+	var baseColor = App.GetBackgroundColor()
+	return Color(
+		max(baseColor.r + colorToSubtract.r, 0),
+		max(baseColor.g + colorToSubtract.g, 0),
+		max(baseColor.b + colorToSubtract.b, 0),
+		baseColor.a
+	)
+
+# Opens the page for a specific platform
+func openForPlatform(platform: String, rootPath: String, currentTemplate: Array, projectVersion: String = "v1.0.0"):
 	_currentPlatform = platform
 	_rootExportPath = rootPath
 	_pathSegments = currentTemplate.duplicate(true)
 
-	# Update title
+	# Update platform display
 	_platformLabel.text = "Platform: " + platform
-	_rootPathLabel.text = "Root Path: " + rootPath
+	_rootPathLabel.text = rootPath
+	_projectVersionLineEdit.text = projectVersion
+
+	# Connect version change to update preview
+	if not _projectVersionLineEdit.text_changed.is_connected(_onVersionChanged):
+		_projectVersionLineEdit.text_changed.connect(_onVersionChanged)
 
 	# Load current template
 	_rebuildSegmentsList()
 	_updatePreview()
 
-	# Show as modal dialog
-	popup_centered()
-	grab_focus()
+	# Show the control
+	visible = true
 
-	# Make it modal
-	transient = true
-	exclusive = true
+func _onVersionChanged(_new_text: String):
+	_updatePreview()
 
 func _rebuildSegmentsList():
 	# Clear existing segments
@@ -59,20 +133,35 @@ func _createSegmentRow(index: int, segment: Dictionary):
 	row.add_child(indexLabel)
 
 	# Segment type/value display
-	var segmentLabel = Label.new()
-	segmentLabel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var contentControl: Control
 
 	match segment["type"]:
 		"version":
-			segmentLabel.text = "{version}"
+			var label = Label.new()
+			label.text = "{version}"
+			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			contentControl = label
 		"platform":
-			segmentLabel.text = "{platform}"
+			var label = Label.new()
+			label.text = "{platform}"
+			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			contentControl = label
 		"date":
-			segmentLabel.text = "{date}"
+			var lineEdit = LineEdit.new()
+			lineEdit.text = segment.get("value", DEFAULT_DATE_FORMAT)
+			lineEdit.placeholder_text = "e.g., {year}-{month}-{day}"
+			lineEdit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			lineEdit.text_changed.connect(_onDateSegmentChanged.bind(index))
+			contentControl = lineEdit
 		"custom":
-			segmentLabel.text = segment.get("value", "custom-folder")
+			var lineEdit = LineEdit.new()
+			lineEdit.text = segment.get("value", "custom-folder")
+			lineEdit.placeholder_text = "Folder name (supports tokens)"
+			lineEdit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			lineEdit.text_changed.connect(_onCustomSegmentChanged.bind(index))
+			contentControl = lineEdit
 
-	row.add_child(segmentLabel)
+	row.add_child(contentControl)
 
 	# Up button
 	var upButton = Button.new()
@@ -131,21 +220,41 @@ func _onAddPlatformPressed():
 	_updatePreview()
 
 func _onAddDatePressed():
-	_pathSegments.append({"type": "date"})
+	_pathSegments.append({"type": "date", "value": DEFAULT_DATE_FORMAT})
 	_rebuildSegmentsList()
 	_updatePreview()
 
 func _onAddCustomPressed():
-	# Show input dialog for custom folder name
-	var input = _getCustomFolderInput()
-	if input != "":
-		_pathSegments.append({"type": "custom", "value": input})
-		_rebuildSegmentsList()
+	_pathSegments.append({"type": "custom", "value": "custom-folder"})
+	_rebuildSegmentsList()
+	_updatePreview()
+
+func _onDateSegmentChanged(newText: String, index: int):
+	if index >= 0 and index < _pathSegments.size():
+		_pathSegments[index]["value"] = newText
 		_updatePreview()
 
-func _getCustomFolderInput() -> String:
-	# For now, just use a default name - we can add a proper dialog later
-	return "custom-folder"
+func _onCustomSegmentChanged(newText: String, index: int):
+	if index >= 0 and index < _pathSegments.size():
+		# Trim leading/trailing slashes from custom paths
+		var trimmedText = newText.strip_edges()
+		trimmedText = trimmedText.trim_prefix("/").trim_prefix("\\")
+		trimmedText = trimmedText.trim_suffix("/").trim_suffix("\\")
+
+		# Block parent directory references to prevent recursive loops
+		if ".." in trimmedText:
+			# Remove all .. segments to prevent path traversal
+			var parts = trimmedText.replace("\\", "/").split("/")
+			var safeParts: Array[String] = []
+			for part in parts:
+				if part != ".." and part != "." and not part.is_empty():
+					safeParts.append(part)
+			trimmedText = "/".join(safeParts)
+			if trimmedText.is_empty():
+				trimmedText = "custom-folder"
+
+		_pathSegments[index]["value"] = trimmedText
+		_updatePreview()
 
 func _updatePreview():
 	var previewPath = _rootExportPath
@@ -153,23 +262,62 @@ func _updatePreview():
 	for segment in _pathSegments:
 		match segment["type"]:
 			"version":
-				previewPath = previewPath.path_join("v0.12.2")  # Example version
+				var version = _projectVersionLineEdit.text if _projectVersionLineEdit.text != "" else "v1.0.0"
+				previewPath = previewPath.path_join(version)
 			"platform":
 				previewPath = previewPath.path_join(_currentPlatform)
 			"date":
-				previewPath = previewPath.path_join("2025-01-16")  # Example date
+				var dateFormat = segment.get("value", DEFAULT_DATE_FORMAT)
+				var processedDate = _processDatetimeTokens(dateFormat)
+				previewPath = previewPath.path_join(processedDate)
 			"custom":
-				previewPath = previewPath.path_join(segment.get("value", "custom"))
+				var customValue = segment.get("value", "custom")
+				var processedCustom = _processDatetimeTokens(customValue)
+				# Custom paths can contain slashes for nested folders
+				# Normalize to forward slashes first, then join
+				processedCustom = processedCustom.replace("\\", "/")
+				# If it contains slashes, append directly; otherwise use path_join
+				if "/" in processedCustom:
+					previewPath = previewPath + "/" + processedCustom
+				else:
+					previewPath = previewPath.path_join(processedCustom)
 
-	_previewLabel.text = "Preview: " + previewPath
+	# Use forward slashes (cross-platform compatible)
+	if _previewLabel != null:
+		_previewLabel.text = previewPath
+
+# Processes datetime tokens like {year}, {month}, {day}, etc.
+func _processDatetimeTokens(text: String) -> String:
+	var now = Time.get_datetime_dict_from_system()
+
+	var result = text
+	result = result.replace("{year}", str(now.year))
+	result = result.replace("{month}", str(now.month).pad_zeros(2))
+	result = result.replace("{day}", str(now.day).pad_zeros(2))
+	result = result.replace("{hour}", str(now.hour).pad_zeros(2))
+	result = result.replace("{minute}", str(now.minute).pad_zeros(2))
+	result = result.replace("{second}", str(now.second).pad_zeros(2))
+
+	return result
+
+func _onSelectFolderPressed():
+	if _folderDialog:
+		# Set initial path to current root path if it exists
+		if _rootExportPath != "" and DirAccess.dir_exists_absolute(_rootExportPath):
+			_folderDialog.current_dir = _rootExportPath
+		_folderDialog.popup_centered_ratio(0.6)
+
+func _onFolderSelected(dir: String):
+	_rootExportPath = dir
+	_rootPathLabel.text = dir
+	_updatePreview()
 
 func _onSavePressed():
-	# Emit signal with path template
-	settings_saved.emit(_currentPlatform, _pathSegments)
-	hide()
+	# Emit signal with root path, path template, and project version
+	var projectVersion = _projectVersionLineEdit.text
+	settings_saved.emit(_currentPlatform, _rootExportPath, _pathSegments, projectVersion)
+	visible = false
 
 func _onCancelPressed():
-	hide()
-
-func _onCloseRequested():
-	hide()
+	cancelled.emit()
+	visible = false
