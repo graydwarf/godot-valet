@@ -8,6 +8,8 @@ signal page_modified()  # Emitted when any input is changed
 @onready var _platformsContainer = %PlatformsContainer
 @onready var _exportSelectedButton = %ExportSelectedButton
 @onready var _projectVersionLineEdit = %ProjectVersionLineEdit
+@onready var _refreshButton = %RefreshButton
+@onready var _saveButton = %SaveButton
 
 var _platformRows: Dictionary = {}  # platform_name -> {mainRow, checkbox, detailsSection, exportPath, exportFilename, obfuscation, button, configButton}
 var _exportingPlatforms: Array[String] = []
@@ -24,6 +26,8 @@ var _exportCancelled: bool = false  # Flag to track if user cancelled export
 func _ready():
 	_exportSelectedButton.pressed.connect(_onExportSelectedPressed)
 	_projectVersionLineEdit.text_changed.connect(_onVersionChanged)
+	_refreshButton.pressed.connect(_onRefreshPressed)
+	_saveButton.pressed.connect(_onSavePressed)
 
 	# Create build config dialog
 	_buildConfigDialog = load("res://scenes/release-manager/build-config-dialog.tscn").instantiate()
@@ -363,11 +367,110 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 
 	detailsVBox.add_child(obfuscationRow)
 
-	# Export Button Row (bottom right)
-	var exportButtonRow = HBoxContainer.new()
-	exportButtonRow.add_theme_constant_override("separation", 5)
-	exportButtonRow.alignment = BoxContainer.ALIGNMENT_END
+	# Include/Exclude Row
+	var includeExcludeRow = HBoxContainer.new()
+	includeExcludeRow.add_theme_constant_override("separation", 5)
 
+	var includeExcludeLabel = Label.new()
+	includeExcludeLabel.text = "Include/Exclude:"
+	includeExcludeLabel.custom_minimum_size = Vector2(130, 0)
+	includeExcludeLabel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	includeExcludeLabel.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	includeExcludeLabel.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	includeExcludeRow.add_child(includeExcludeLabel)
+
+	var includeExcludeDisplay = LineEdit.new()
+	includeExcludeDisplay.placeholder_text = "No filters configured"
+	includeExcludeDisplay.editable = false
+	includeExcludeDisplay.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	includeExcludeDisplay.name = "IncludeExcludeDisplay"
+	includeExcludeDisplay.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	includeExcludeDisplay.gui_input.connect(_onIncludeExcludeDisplayClicked.bind(platform))
+	includeExcludeRow.add_child(includeExcludeDisplay)
+
+	var includeExcludeConfigButton = Button.new()
+	includeExcludeConfigButton.text = "⚙"
+	includeExcludeConfigButton.custom_minimum_size = Vector2(32, 31)
+	includeExcludeConfigButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	includeExcludeConfigButton.tooltip_text = "Configure include/exclude settings"
+	includeExcludeConfigButton.pressed.connect(_onIncludeExcludeConfigPressed.bind(platform))
+	includeExcludeConfigButton.name = "IncludeExcludeConfigButton"
+	includeExcludeRow.add_child(includeExcludeConfigButton)
+
+	detailsVBox.add_child(includeExcludeRow)
+
+	# Export Options Row
+	var exportOptionsRow = HBoxContainer.new()
+	exportOptionsRow.add_theme_constant_override("separation", 15)
+
+	var exportOptionsLabel = Label.new()
+	exportOptionsLabel.text = "Export Options:"
+	exportOptionsLabel.custom_minimum_size = Vector2(130, 0)
+	exportOptionsLabel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	exportOptionsLabel.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	exportOptionsLabel.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	exportOptionsRow.add_child(exportOptionsLabel)
+
+	# Export Type DDL
+	var exportTypeContainer = HBoxContainer.new()
+	exportTypeContainer.add_theme_constant_override("separation", 5)
+
+	var exportTypeLabel = Label.new()
+	exportTypeLabel.text = "Type:"
+	exportTypeLabel.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	exportTypeContainer.add_child(exportTypeLabel)
+
+	var exportTypeOption = OptionButton.new()
+	exportTypeOption.add_item("Release", 0)
+	exportTypeOption.add_item("Debug", 1)
+	exportTypeOption.custom_minimum_size = Vector2(90, 0)
+	exportTypeOption.name = "ExportTypeOption"
+	exportTypeOption.item_selected.connect(_onInputChanged.unbind(1))
+	exportTypeContainer.add_child(exportTypeOption)
+
+	exportOptionsRow.add_child(exportTypeContainer)
+
+	# Package Type DDL
+	var packageTypeContainer = HBoxContainer.new()
+	packageTypeContainer.add_theme_constant_override("separation", 5)
+
+	var packageTypeLabel = Label.new()
+	packageTypeLabel.text = "Package:"
+	packageTypeLabel.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	packageTypeContainer.add_child(packageTypeLabel)
+
+	var packageTypeOption = OptionButton.new()
+	packageTypeOption.add_item("No Zip", 0)
+	packageTypeOption.add_item("Zip", 1)
+	packageTypeOption.custom_minimum_size = Vector2(90, 0)
+	packageTypeOption.name = "PackageTypeOption"
+	packageTypeOption.item_selected.connect(_onInputChanged.unbind(1))
+	packageTypeContainer.add_child(packageTypeOption)
+
+	exportOptionsRow.add_child(packageTypeContainer)
+
+	# Generate Checksum checkbox
+	var checksumContainer = HBoxContainer.new()
+	checksumContainer.add_theme_constant_override("separation", 5)
+
+	var checksumCheckbox = CheckBox.new()
+	checksumCheckbox.text = "Checksum"
+	checksumCheckbox.name = "ChecksumCheckbox"
+	checksumCheckbox.tooltip_text = _getChecksumTooltip(platform, false)  # false = no zip by default
+	checksumCheckbox.toggled.connect(_onInputChanged.unbind(1))
+	checksumContainer.add_child(checksumCheckbox)
+
+	exportOptionsRow.add_child(checksumContainer)
+
+	# Update checksum tooltip when package type changes
+	packageTypeOption.item_selected.connect(_onPackageTypeChanged.bind(platform, checksumCheckbox))
+
+	# Spacer to push Export button to the right
+	var exportOptionsSpacer = Control.new()
+	exportOptionsSpacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	exportOptionsRow.add_child(exportOptionsSpacer)
+
+	# Export button on same row, right-aligned
 	var exportButton = Button.new()
 	exportButton.text = "Export"
 	exportButton.custom_minimum_size = Vector2(100, 31)
@@ -375,9 +478,9 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	exportButton.pressed.connect(_onExportPressed.bind(platform))
 	exportButton.name = "ExportButton"
 	exportButton.disabled = true  # Disabled until platform is selected
-	exportButtonRow.add_child(exportButton)
+	exportOptionsRow.add_child(exportButton)
 
-	detailsVBox.add_child(exportButtonRow)
+	detailsVBox.add_child(exportOptionsRow)
 
 	detailsSection.add_child(detailsVBox)
 	container.add_child(detailsSection)
@@ -392,6 +495,11 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 		"exportFilename": filenameEdit,
 		"obfuscationDisplay": obfuscationDisplay,
 		"configButton": configButton,
+		"includeExcludeDisplay": includeExcludeDisplay,
+		"includeExcludeConfigButton": includeExcludeConfigButton,
+		"exportTypeOption": exportTypeOption,
+		"packageTypeOption": packageTypeOption,
+		"checksumCheckbox": checksumCheckbox,
 		"button": exportButton,
 		"status": statusLabel
 	}
@@ -416,6 +524,33 @@ func _onVersionChanged(newText: String):
 func _onInputChanged(_value = null):
 	# Emit signal when any input is modified
 	page_modified.emit()
+
+func _onPackageTypeChanged(index: int, platform: String, checksumCheckbox: CheckBox):
+	# Update checksum tooltip based on package type selection
+	var isZip = (index == 1)  # 0 = No Zip, 1 = Zip
+	checksumCheckbox.tooltip_text = _getChecksumTooltip(platform, isZip)
+	_onInputChanged()
+
+func _getChecksumTooltip(platform: String, isZip: bool) -> String:
+	if isZip:
+		return "Generate SHA256 checksum file for the .zip archive"
+	else:
+		# Get platform-specific extension
+		var extension = _getPlatformExtension(platform)
+		return "Generate SHA256 checksum file for the %s binary" % extension
+
+func _getPlatformExtension(platform: String) -> String:
+	match platform:
+		"Windows Desktop":
+			return ".exe"
+		"Linux/X11", "Linux":
+			return ".x86_64"
+		"Web":
+			return ".html"
+		"Source":
+			return "source folder"
+		_:
+			return "binary"
 
 func _onPlatformToggled(checked: bool, platform: String):
 	var data = _platformRows[platform]
@@ -473,13 +608,33 @@ func _onObfuscationDisplayClicked(event: InputEvent, platform: String):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_onConfigButtonPressed(platform)
 
+func _onIncludeExcludeDisplayClicked(event: InputEvent, platform: String):
+	# Open include/exclude settings when clicking on the display field
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_onIncludeExcludeConfigPressed(platform)
+
+func _onIncludeExcludeConfigPressed(platform: String):
+	# TODO: Open include/exclude settings dialog
+	# For now, just print a message
+	print("Include/Exclude config pressed for platform: ", platform)
+	# Different dialog for Source vs other platforms
+	if platform == "Source":
+		print("  Source platform: Will show tree view + excludes + includes")
+	else:
+		print("  Binary platform: Will show includes only + instructions")
+
 func _onConfigButtonPressed(platform: String):
 	# Get all platform names for the clone dropdown
 	var allPlatforms: Array[String] = []
 	allPlatforms.assign(_platformRows.keys())
 
+	# Get project path for Edit Project button
+	var projectPath = ""
+	if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
+		projectPath = _selectedProjectItem.GetProjectPath().get_base_dir()
+
 	# Open the dialog
-	_buildConfigDialog.openForPlatform(platform, allPlatforms, _platformBuildConfigs)
+	_buildConfigDialog.openForPlatform(platform, allPlatforms, _platformBuildConfigs, projectPath)
 
 func _onBuildConfigSaved(platform: String, config: Dictionary):
 	# Store the config for this platform
@@ -715,6 +870,17 @@ func _onOpenFolderButtonPressed(platform: String):
 		OS.shell_open(pathToOpen)
 	else:
 		print("Export folder does not exist: ", fullPath)
+
+func _onRefreshPressed():
+	# Refresh the export packages list by reloading platform settings
+	_clearPlatformRows()
+	_createPlatformRows()
+	_loadPlatformSettings()
+	_updateExportSelectedButtonState()
+
+func _onSavePressed():
+	# Save all current settings
+	save()
 
 func _onExportSelectedPressed():
 	# Export platforms sequentially with status updates

@@ -68,6 +68,15 @@ layout_mode = 2
 [node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ButtonMargin/CenterContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="RefreshButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonMargin/CenterContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 31)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+tooltip_text = "Refresh export packages list"
+text = "Refresh"
 
 [node name="Spacer" type="Control" parent="MarginContainer/VBoxContainer/ButtonMargin/CenterContainer/HBoxContainer"]
 layout_mode = 2
@@ -79,3 +88,11 @@ custom_minimum_size = Vector2(150, 31)
 layout_mode = 2
 mouse_default_cursor_shape = 2
 text = "Export Selected"
+
+[node name="SaveButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonMargin/CenterContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 31)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+tooltip_text = "Save all settings"
+text = "Save"

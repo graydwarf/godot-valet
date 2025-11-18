@@ -11,17 +11,20 @@ signal config_saved(platform: String, config: Dictionary)
 @onready var _variableExcludeLineEdit = %VariableExcludeLineEdit
 @onready var _sourceFiltersLineEdit = %SourceFiltersLineEdit
 @onready var _backgroundPanel = %BackgroundPanel
+@onready var _editProjectButton = %EditProjectButton
 
 var _currentPlatform: String = ""
 var _allPlatforms: Array[String] = []
 var _platformConfigs: Dictionary = {}  # platform -> config dict
 var _isDirty: bool = false
 var _originalConfig: Dictionary = {}
+var _projectPath: String = ""  # Path to project directory for Edit Project button
 
 const DEFAULT_SOURCE_FILTERS = ".git, .godot, .import, builds, exports, .vscode, .vs"
 
 func _ready():
 	_cloneOptionButton.item_selected.connect(_onCloneSelected)
+	_editProjectButton.pressed.connect(_onEditProjectPressed)
 	_applyTheme()
 
 	# Connect all input signals to mark dirty
@@ -64,10 +67,11 @@ func _getAdjustedBackgroundColor(amount: float) -> Color:
 	)
 
 # Opens the dialog for a specific platform
-func openForPlatform(platform: String, allPlatforms: Array[String], platformConfigs: Dictionary):
+func openForPlatform(platform: String, allPlatforms: Array[String], platformConfigs: Dictionary, projectPath: String = ""):
 	_currentPlatform = platform
 	_allPlatforms = allPlatforms
 	_platformConfigs = platformConfigs
+	_projectPath = projectPath
 
 	# Update title
 	_platformLabel.text = "Platform: " + platform
@@ -166,6 +170,24 @@ func _onCancelPressed():
 	# Cancel just discards changes and closes - no prompt
 	_isDirty = false
 	hide()
+
+func _onEditProjectPressed():
+	# Open the project in Godot Editor
+	if _projectPath.is_empty():
+		print("Error: Project path not set")
+		return
+
+	# Get Godot path from App singleton or use default
+	var godotPath = "C:/dad/apps/godot/godot-4.5-stable/Godot_v4.5-stable_win64.exe"
+
+	# Launch Godot editor for this project
+	var args = ["--editor", "--path", _projectPath]
+	var pid = OS.create_process(godotPath, args)
+
+	if pid == -1:
+		print("Error: Failed to launch Godot editor")
+	else:
+		print("Opened project in Godot editor: ", _projectPath)
 
 func _onCloseRequested():
 	# X button prompts if dirty
