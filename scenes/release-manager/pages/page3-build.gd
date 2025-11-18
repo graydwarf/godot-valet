@@ -11,13 +11,12 @@ signal page_modified()  # Emitted when any input is changed
 
 var _platformRows: Dictionary = {}  # platform_name -> {mainRow, checkbox, detailsSection, exportPath, exportFilename, obfuscation, button, configButton}
 var _exportingPlatforms: Array[String] = []
-var _folderDialog: FileDialog = null
-var _currentPlatformForDialog: String = ""  # Track which platform is selecting a folder
 var _currentVersion: String = ""  # Store current version for comparison
 var _platformBuildConfigs: Dictionary = {}  # platform_name -> build config dict
 var _platformPathTemplates: Dictionary = {}  # platform_name -> path template array
+var _platformRootPaths: Dictionary = {}  # platform_name -> root export path (without template)
 var _buildConfigDialog: Window = null
-var _pathSettingsDialog: Window = null
+var _pathSettingsDialog: Control = null
 var _yesNoDialog: Control = null
 var _inputBlocker: Control = null  # Full-screen overlay to block all input during export
 var _exportCancelled: bool = false  # Flag to track if user cancelled export
@@ -31,10 +30,12 @@ func _ready():
 	_buildConfigDialog.config_saved.connect(_onBuildConfigSaved)
 	add_child(_buildConfigDialog)
 
-	# Create export path settings dialog
+	# Create export path settings page (Control, not Window)
+	# Note: Will be added to root when shown so it covers entire wizard
 	_pathSettingsDialog = load("res://scenes/release-manager/export-path-settings-dialog.tscn").instantiate()
 	_pathSettingsDialog.settings_saved.connect(_onPathSettingsSaved)
-	add_child(_pathSettingsDialog)
+	_pathSettingsDialog.cancelled.connect(_onPathSettingsCancelled)
+	_pathSettingsDialog.visible = false  # Start hidden
 
 	# Create yes/no dialog for overwrite confirmation (add to root for full screen coverage)
 	_yesNoDialog = load("res://scenes/common/yes-no-dialog.tscn").instantiate()
@@ -79,8 +80,30 @@ func _loadPlatformSettings():
 			var settings = allSettings[platform]
 
 			# Restore settings
-			data["exportPath"].text = settings.get("exportPath", "")
-			data["exportFilename"].text = settings.get("exportFilename", "")
+			var rootPath = settings.get("exportPath", "")
+
+			# If no root path saved, use project directory + exports as default
+			if rootPath.is_empty() and _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
+				var projectPath = _selectedProjectItem.GetProjectPath()
+				var projectDir = projectPath.get_base_dir()
+				rootPath = projectDir.path_join("exports")
+
+			_platformRootPaths[platform] = rootPath  # Store root path separately
+			data["exportPath"].text = ""  # Clear text so placeholder shows
+
+			# Get export filename, default to project name if not set
+			var exportFilename = settings.get("exportFilename", "")
+			if exportFilename.is_empty() and _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
+				var projectPath = _selectedProjectItem.GetProjectPath()
+				var projectName = projectPath.get_file().get_basename()  # Gets "project.godot" -> "project"
+				exportFilename = projectName
+			data["exportFilename"].text = exportFilename
+
+			print("DEBUG: Loading platform settings for ", platform)
+			print("  Root path: ", rootPath)
+			print("  Has pathTemplate: ", settings.has("pathTemplate"))
+			if settings.has("pathTemplate"):
+				print("  Path template: ", settings["pathTemplate"])
 
 			# Restore build config (obfuscation settings)
 			if settings.has("buildConfig"):
@@ -106,6 +129,28 @@ func _loadPlatformSettings():
 			# Show/hide details section based on enabled state
 			data["detailsSection"].visible = isEnabled
 			data["button"].disabled = !isEnabled
+		else:
+			# No saved settings - apply defaults for first-time use
+			if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
+				var projectPath = _selectedProjectItem.GetProjectPath()
+				var projectDir = projectPath.get_base_dir()
+				var projectName = projectPath.get_file().get_basename()
+
+				# Set default root path: project_directory/exports
+				var rootPath = projectDir.path_join("exports")
+				_platformRootPaths[platform] = rootPath
+
+				# Set default export filename: project name
+				data["exportFilename"].text = projectName
+
+				# Set default path template: version, platform
+				_platformPathTemplates[platform] = [
+					{"type": "version"},
+					{"type": "platform"}
+				]
+
+				# Update display to show full path with defaults
+				_updateExportPathDisplay(platform)
 
 func _createPlatformRows():
 	# Get configured export presets from the project
@@ -146,6 +191,7 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 
 	# === Header Row Container (bottom border only) ===
 	var headerContainer = PanelContainer.new()
+	headerContainer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	# Header container theme (transparent bg, bottom border only)
 	var headerTheme = Theme.new()
@@ -165,11 +211,13 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	headerMargin.add_theme_constant_override("margin_top", 10)
 	headerMargin.add_theme_constant_override("margin_right", 10)
 	headerMargin.add_theme_constant_override("margin_bottom", 10)
+	headerMargin.mouse_filter = Control.MOUSE_FILTER_PASS  # Pass clicks through to header
 	headerContainer.add_child(headerMargin)
 
 	# === Main Row (always visible) ===
 	var mainRow = HBoxContainer.new()
 	mainRow.add_theme_constant_override("separation", 10)
+	mainRow.mouse_filter = Control.MOUSE_FILTER_PASS  # Pass clicks through to header
 	headerMargin.add_child(mainRow)
 
 	# Checkbox
@@ -186,33 +234,28 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	nameLabel.text = platform
 	nameLabel.custom_minimum_size = Vector2(150, 0)
 	nameLabel.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	nameLabel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	nameLabel.gui_input.connect(_onPlatformLabelClicked.bind(platform, checkbox))
+	nameLabel.mouse_filter = Control.MOUSE_FILTER_PASS  # Pass clicks through to header
 	mainRow.add_child(nameLabel)
 
 	# Spacer to push status and export button to the right
 	var spacer = Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spacer.mouse_filter = Control.MOUSE_FILTER_PASS  # Pass clicks through to header
 	mainRow.add_child(spacer)
 
-	# Status label (to the left of Export button)
+	# Status label (now takes up the space where export button was)
 	var statusLabel = Label.new()
 	statusLabel.text = ""
 	statusLabel.custom_minimum_size = Vector2(100, 0)
 	statusLabel.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	statusLabel.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	statusLabel.name = "StatusLabel"
+	statusLabel.mouse_filter = Control.MOUSE_FILTER_PASS  # Pass clicks through to header
 	mainRow.add_child(statusLabel)
 
-	# Export button
-	var exportButton = Button.new()
-	exportButton.text = "Export"
-	exportButton.custom_minimum_size = Vector2(100, 31)
-	exportButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	exportButton.pressed.connect(_onExportPressed.bind(platform))
-	exportButton.name = "ExportButton"
-	exportButton.disabled = true  # Disabled until platform is selected
-	mainRow.add_child(exportButton)
+	# Make header clickable to toggle checkbox when minimized
+	headerContainer.gui_input.connect(_onPlatformHeaderClicked.bind(platform, checkbox))
+	headerContainer.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
 	container.add_child(headerContainer)
 
@@ -241,19 +284,12 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	exportPathRow.add_child(exportPathLabel)
 
 	var exportPathEdit = LineEdit.new()
-	exportPathEdit.placeholder_text = "Where to export..."
+	exportPathEdit.placeholder_text = "Click settings button to configure export path..."
 	exportPathEdit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	exportPathEdit.name = "ExportPathEdit"
+	exportPathEdit.editable = false
 	exportPathEdit.text_changed.connect(_onInputChanged)
 	exportPathRow.add_child(exportPathEdit)
-
-	var folderButton = Button.new()
-	folderButton.text = "📁"
-	folderButton.custom_minimum_size = Vector2(32, 31)
-	folderButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	folderButton.tooltip_text = "Select export folder"
-	folderButton.pressed.connect(_onFolderButtonPressed.bind(platform))
-	exportPathRow.add_child(folderButton)
 
 	var openFolderButton = Button.new()
 	openFolderButton.text = "🗀"
@@ -267,7 +303,7 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	pathSettingsButton.text = "⚙"
 	pathSettingsButton.custom_minimum_size = Vector2(32, 31)
 	pathSettingsButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	pathSettingsButton.tooltip_text = "Configure export path structure"
+	pathSettingsButton.tooltip_text = "Configure export path and structure"
 	pathSettingsButton.pressed.connect(_onPathSettingsPressed.bind(platform))
 	exportPathRow.add_child(pathSettingsButton)
 
@@ -324,6 +360,22 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	obfuscationRow.add_child(configButton)
 
 	detailsVBox.add_child(obfuscationRow)
+
+	# Export Button Row (bottom right)
+	var exportButtonRow = HBoxContainer.new()
+	exportButtonRow.add_theme_constant_override("separation", 5)
+	exportButtonRow.alignment = BoxContainer.ALIGNMENT_END
+
+	var exportButton = Button.new()
+	exportButton.text = "Export"
+	exportButton.custom_minimum_size = Vector2(100, 31)
+	exportButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	exportButton.pressed.connect(_onExportPressed.bind(platform))
+	exportButton.name = "ExportButton"
+	exportButton.disabled = true  # Disabled until platform is selected
+	exportButtonRow.add_child(exportButton)
+
+	detailsVBox.add_child(exportButtonRow)
 
 	detailsSection.add_child(detailsVBox)
 	container.add_child(detailsSection)
@@ -409,7 +461,8 @@ func _copyFromPreviousPlatform(targetPlatform: String):
 
 				return  # Found and copied, we're done
 
-func _onPlatformLabelClicked(event: InputEvent, _platform: String, checkbox: CheckBox):
+func _onPlatformHeaderClicked(event: InputEvent, _platform: String, checkbox: CheckBox):
+	# Toggle checkbox when clicking anywhere in header
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		checkbox.button_pressed = !checkbox.button_pressed
 
@@ -456,20 +509,46 @@ func _onPathSettingsPressed(platform: String):
 		{"type": "platform"}
 	])
 
-	# Get root export path
-	var data = _platformRows[platform]
-	var rootPath = data["exportPath"].text
+	# Get root export path from stored dictionary
+	var rootPath = _platformRootPaths.get(platform, "")
 	if rootPath.is_empty():
-		rootPath = "C:/exports"  # Default placeholder
+		# Default to project directory + exports subfolder
+		if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
+			var projectPath = _selectedProjectItem.GetProjectPath()
+			var projectDir = projectPath.get_base_dir()
+			rootPath = projectDir.path_join("exports")
+		else:
+			rootPath = "C:/exports"  # Fallback if no project selected
 
-	# Open dialog
-	_pathSettingsDialog.openForPlatform(platform, rootPath, currentTemplate)
+	# Add to root if not already added
+	if _pathSettingsDialog.get_parent() == null:
+		# Find the ReleaseManager root node
+		var root = get_tree().current_scene
+		if root == null:
+			root = get_tree().root.get_child(get_tree().root.get_child_count() - 1)
 
-func _onPathSettingsSaved(platform: String, pathTemplate: Array):
-	# Store the template for this platform
+		root.add_child(_pathSettingsDialog)
+		_pathSettingsDialog.z_index = 100  # Ensure it's on top
+
+	# Open dialog (will cover entire wizard)
+	var projectVersion = _projectVersionLineEdit.text if _projectVersionLineEdit.text != "" else "v1.0.0"
+	_pathSettingsDialog.openForPlatform(platform, rootPath, currentTemplate, projectVersion)
+	_pathSettingsDialog.move_to_front()  # Ensure it's rendered on top
+
+func _onPathSettingsSaved(platform: String, rootPath: String, pathTemplate: Array, projectVersion: String):
+	# Store the template and root path for this platform
 	_platformPathTemplates[platform] = pathTemplate
+	_platformRootPaths[platform] = rootPath
 
-	# Update the Export Path display to show full path
+	# Update the project version in the hidden field
+	if projectVersion != "":
+		_projectVersionLineEdit.text = projectVersion
+
+	# Clear the text field so placeholder shows
+	var data = _platformRows[platform]
+	data["exportPath"].text = ""
+
+	# Update the Export Path display to show full path with template
 	_updateExportPathDisplay(platform)
 
 	# Save to project item immediately
@@ -483,17 +562,27 @@ func _onPathSettingsSaved(platform: String, pathTemplate: Array):
 				"exportFilename": ""
 			}
 
-		# Update path template in platform settings
+		# Update root path and path template in platform settings
+		platformSettings["exportPath"] = rootPath
 		platformSettings["pathTemplate"] = pathTemplate
+
+		print("DEBUG: Saving platform settings for ", platform)
+		print("  Root path: ", rootPath)
+		print("  Path template: ", pathTemplate)
+		print("  Full settings: ", platformSettings)
 
 		# Save to project item immediately
 		_selectedProjectItem.SetPlatformExportSettings(platform, platformSettings)
 		_selectedProjectItem.SaveProjectItem()
 
+func _onPathSettingsCancelled():
+	# User cancelled the path settings dialog, no action needed
+	pass
+
 func _updateExportPathDisplay(platform: String):
 	# Update the export path LineEdit to show the full path with template
 	var data = _platformRows[platform]
-	var rootPath = data["exportPath"].text
+	var rootPath = _platformRootPaths.get(platform, "")
 
 	if rootPath.is_empty():
 		return
@@ -502,18 +591,34 @@ func _updateExportPathDisplay(platform: String):
 	var fullPath = rootPath
 	var template = _platformPathTemplates.get(platform, [])
 
+	# Get current version for display
+	var version = _projectVersionLineEdit.text
+	if version.is_empty():
+		version = "v1.0.0"
+
 	for segment in template:
 		match segment["type"]:
 			"version":
-				fullPath = fullPath.path_join("{version}")
+				fullPath = fullPath.path_join(version)
 			"platform":
-				fullPath = fullPath.path_join("{platform}")
+				fullPath = fullPath.path_join(platform)
 			"date":
-				fullPath = fullPath.path_join("{date}")
+				var dateFormat = segment.get("value", "{year}-{month}-{day}")
+				var processedDate = _processDatetimeTokens(dateFormat)
+				fullPath = fullPath.path_join(processedDate)
 			"custom":
-				fullPath = fullPath.path_join(segment.get("value", "custom"))
+				var customValue = segment.get("value", "custom")
+				var processedCustom = _processDatetimeTokens(customValue)
+				# Custom paths can contain slashes for nested folders
+				# Normalize to forward slashes first
+				processedCustom = processedCustom.replace("\\", "/")
+				# If it contains slashes, append directly; otherwise use path_join
+				if "/" in processedCustom:
+					fullPath = fullPath + "/" + processedCustom
+				else:
+					fullPath = fullPath.path_join(processedCustom)
 
-	# Update the display (placeholder for now - we'll make it read-only in next step)
+	# Use forward slashes (cross-platform compatible)
 	data["exportPath"].placeholder_text = fullPath
 
 # Build the actual export path from template for export operations
@@ -524,9 +629,6 @@ func _buildExportPathFromTemplate(platform: String, rootPath: String, version: S
 		{"type": "platform"}
 	])
 
-	# Get current date for {date} token
-	var currentDate = Time.get_date_string_from_system()
-
 	for segment in template:
 		match segment["type"]:
 			"version":
@@ -534,11 +636,36 @@ func _buildExportPathFromTemplate(platform: String, rootPath: String, version: S
 			"platform":
 				fullPath = fullPath.path_join(platform)
 			"date":
-				fullPath = fullPath.path_join(currentDate)
+				var dateFormat = segment.get("value", "{year}-{month}-{day}")
+				var processedDate = _processDatetimeTokens(dateFormat)
+				fullPath = fullPath.path_join(processedDate)
 			"custom":
-				fullPath = fullPath.path_join(segment.get("value", "custom"))
+				var customValue = segment.get("value", "custom")
+				var processedCustom = _processDatetimeTokens(customValue)
+				# Custom paths can contain slashes for nested folders
+				# Normalize to forward slashes first, then join
+				processedCustom = processedCustom.replace("\\", "/")
+				# If it contains slashes, append directly; otherwise use path_join
+				if "/" in processedCustom:
+					fullPath = fullPath + "/" + processedCustom
+				else:
+					fullPath = fullPath.path_join(processedCustom)
 
 	return fullPath
+
+# Processes datetime tokens like {year}, {month}, {day}, etc.
+func _processDatetimeTokens(text: String) -> String:
+	var now = Time.get_datetime_dict_from_system()
+
+	var result = text
+	result = result.replace("{year}", str(now.year))
+	result = result.replace("{month}", str(now.month).pad_zeros(2))
+	result = result.replace("{day}", str(now.day).pad_zeros(2))
+	result = result.replace("{hour}", str(now.hour).pad_zeros(2))
+	result = result.replace("{minute}", str(now.minute).pad_zeros(2))
+	result = result.replace("{second}", str(now.second).pad_zeros(2))
+
+	return result
 
 func _onExportPressed(platform: String):
 	# Validate project item before export
@@ -555,22 +682,10 @@ func _onExportPressed(platform: String):
 	# Re-enable UI after export completes
 	_setUIEnabled(true)
 
-func _onFolderButtonPressed(platform: String):
-	_currentPlatformForDialog = platform
-	var data = _platformRows[platform]
-	var currentPath = data["exportPath"].text
-
-	# If export path is empty, default to project path
-	if currentPath.is_empty() and _selectedProjectItem != null:
-		currentPath = _selectedProjectItem.GetProjectPath()
-
-	_openFolderDialog(currentPath)
-
 func _onOpenFolderButtonPressed(platform: String):
-	var data = _platformRows[platform]
-	var exportPath = data["exportPath"].text
+	var rootPath = _platformRootPaths.get(platform, "")
 
-	if exportPath.is_empty():
+	if rootPath.is_empty():
 		print("Export path not set for platform: ", platform)
 		return
 
@@ -579,38 +694,20 @@ func _onOpenFolderButtonPressed(platform: String):
 	if version.is_empty():
 		version = "v1.0.0"
 
-	# Build version folder path
-	var versionPath = exportPath.path_join(version)
+	# Build full path with template
+	var fullPath = _buildExportPathFromTemplate(platform, rootPath, version)
 
-	# Open the version folder if it exists, otherwise open the base export path
-	var pathToOpen = versionPath if DirAccess.dir_exists_absolute(versionPath) else exportPath
+	# Open the full path if it exists, otherwise try parent folders until we find one that exists
+	var pathToOpen = fullPath
+	while not pathToOpen.is_empty() and not DirAccess.dir_exists_absolute(pathToOpen):
+		# Try parent directory
+		pathToOpen = pathToOpen.get_base_dir()
 
-	if DirAccess.dir_exists_absolute(pathToOpen):
+	# If we found an existing directory, open it
+	if not pathToOpen.is_empty() and DirAccess.dir_exists_absolute(pathToOpen):
 		OS.shell_open(pathToOpen)
 	else:
-		print("Export folder does not exist: ", pathToOpen)
-
-func _openFolderDialog(currentPath: String):
-	if _folderDialog == null:
-		_folderDialog = FileDialog.new()
-		_folderDialog.file_mode = FileDialog.FILE_MODE_OPEN_DIR
-		_folderDialog.access = FileDialog.ACCESS_FILESYSTEM
-		_folderDialog.show_hidden_files = true
-		_folderDialog.title = "Select Export Folder"
-		_folderDialog.ok_button_text = "Select"
-		_folderDialog.dir_selected.connect(_onFolderSelected)
-		add_child(_folderDialog)
-
-	# Set initial directory if path exists
-	if currentPath != "" and DirAccess.dir_exists_absolute(currentPath):
-		_folderDialog.current_dir = currentPath
-
-	_folderDialog.popup_centered(Vector2i(800, 600))
-
-func _onFolderSelected(path: String):
-	if _currentPlatformForDialog in _platformRows:
-		var data = _platformRows[_currentPlatformForDialog]
-		data["exportPath"].text = path
+		print("Export folder does not exist: ", fullPath)
 
 func _onExportSelectedPressed():
 	# Export platforms sequentially with status updates
@@ -668,7 +765,7 @@ func _exportPlatform(platform: String):
 	build_started.emit(platform)
 
 	# Get export settings
-	var exportPath = data["exportPath"].text
+	var exportPath = _platformRootPaths.get(platform, "")
 	var exportFilename = data["exportFilename"].text
 
 	# Check if obfuscation is enabled (any option selected in build config)
@@ -718,15 +815,20 @@ func _exportPlatform(platform: String):
 	var exportDestPath = _buildExportPathFromTemplate(platform, exportPath, version)
 
 	# Check if export directory already exists and prompt user
+	var shouldClearFolder = false
 	if DirAccess.dir_exists_absolute(exportDestPath):
-		# Prompt user to overwrite
+		# Prompt user with three options: Clear & Export, Overwrite, Cancel
 		var overwriteDialog = _getYesNoDialog()
 		_updateStatus(data, "Awaiting confirmation...")
 		await get_tree().process_frame  # Let UI update
-		overwriteDialog.show_dialog("Version " + version + " already exists. Overwrite?")
+		var buttons: Array[String] = ["Clear & Export", "Overwrite", "Cancel"]
+		overwriteDialog.show_dialog_with_buttons(
+			"Export folder already exists:\n" + exportDestPath + "\n\nHow would you like to proceed?",
+			buttons
+		)
 		var choice = await overwriteDialog.confirmed
 
-		if choice != "yes":
+		if choice == "Cancel":
 			# User cancelled, abort export
 			_updateStatus(data, "Export cancelled")
 			await get_tree().create_timer(0.5).timeout  # Show cancelled status
@@ -735,11 +837,26 @@ func _exportPlatform(platform: String):
 			_exportingPlatforms.erase(platform)
 			build_completed.emit(platform, false)
 			return
+		elif choice == "Clear & Export":
+			shouldClearFolder = true
 
 		# User confirmed, NOW show the blocker overlay (after dialog dismissed)
 		_setUIEnabled(false)
 
-		# User confirmed, continue with export (existing files will be overwritten)
+		# Clear folder if user selected that option
+		if shouldClearFolder:
+			_updateStatus(data, "Clearing export folder...")
+			await get_tree().process_frame
+			if not _clearDirectory(exportDestPath):
+				_updateStatus(data, "Error: Failed to clear folder")
+				if is_instance_valid(data["button"]):
+					data["button"].disabled = false
+				_exportingPlatforms.erase(platform)
+				build_completed.emit(platform, false)
+				_setUIEnabled(true)
+				return
+
+		# User confirmed, continue with export
 		_updateStatus(data, "Preparing export...")
 		await get_tree().create_timer(0.5).timeout  # Show status for half second
 	else:
@@ -851,17 +968,24 @@ func save():
 	for platform in _platformRows.keys():
 		var data = _platformRows[platform]
 
+		# Get root path from stored dictionary (not from text field which is cleared for placeholder)
+		var rootPath = _platformRootPaths.get(platform, "")
+
 		# Only save settings for platforms that have been configured (checkbox checked at some point)
-		if data["checkbox"].button_pressed or data["exportPath"].text != "" or data["exportFilename"].text != "":
+		if data["checkbox"].button_pressed or rootPath != "" or data["exportFilename"].text != "":
 			var platformSettings = {
 				"enabled": data["checkbox"].button_pressed,
-				"exportPath": data["exportPath"].text,
+				"exportPath": rootPath,
 				"exportFilename": data["exportFilename"].text
 			}
 
 			# Save build config if exists
 			if platform in _platformBuildConfigs:
 				platformSettings["buildConfig"] = _platformBuildConfigs[platform]
+
+			# Save path template if exists
+			if platform in _platformPathTemplates:
+				platformSettings["pathTemplate"] = _platformPathTemplates[platform]
 
 			_selectedProjectItem.SetPlatformExportSettings(platform, platformSettings)
 
@@ -1101,6 +1225,39 @@ func _copyDirectory(source: String, dest: String) -> bool:
 		fileName = sourceDir.get_next()
 
 	sourceDir.list_dir_end()
+	return true
+
+# Clear all contents of a directory but keep the directory itself
+func _clearDirectory(dirPath: String) -> bool:
+	var dir = DirAccess.open(dirPath)
+	if dir == null:
+		print("Error: Cannot open directory to clear: ", dirPath)
+		return false
+
+	dir.list_dir_begin()
+	var fileName = dir.get_next()
+
+	while fileName != "":
+		if fileName == "." or fileName == "..":
+			fileName = dir.get_next()
+			continue
+
+		var filePath = dirPath.path_join(fileName)
+
+		if dir.current_is_dir():
+			# Recursively delete subdirectory
+			_cleanupTempDir(filePath)
+		else:
+			# Delete file
+			var err = dir.remove(fileName)
+			if err != OK:
+				print("Error: Failed to remove file: ", filePath)
+				dir.list_dir_end()
+				return false
+
+		fileName = dir.get_next()
+
+	dir.list_dir_end()
 	return true
 
 func _cleanupTempDir(tempDir: String):
