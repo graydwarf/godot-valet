@@ -99,9 +99,17 @@ func _loadPages():
 			if child.has_signal("page_modified"):
 				child.page_modified.connect(_onPageModified)
 
+			# Connect page_saved signal to reset dirty state
+			if child.has_signal("page_saved"):
+				child.page_saved.connect(_onPageSaved)
+
 func _onPageModified():
 	# Mark as dirty when any page input is modified
 	_hasUnsavedChanges = true
+
+func _onPageSaved():
+	# Reset dirty flag when page saves
+	_hasUnsavedChanges = false
 
 func _showPage(pageIndex: int):
 	# Validate and clamp page index

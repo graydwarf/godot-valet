@@ -4,6 +4,7 @@ signal build_started(platform: String)
 signal build_completed(platform: String, success: bool)
 signal version_changed(old_version: String, new_version: String)
 signal page_modified()  # Emitted when any input is changed
+signal page_saved()  # Emitted after successful save to reset dirty flag
 
 @onready var _platformsContainer = %PlatformsContainer
 @onready var _exportSelectedButton = %ExportSelectedButton
@@ -125,6 +126,23 @@ func _loadPlatformSettings():
 
 			# Update export path display with template
 			_updateExportPathDisplay(platform)
+
+			# Restore export options
+			var exportType = settings.get("exportType", 0)  # Default: Release
+			var packageType = settings.get("packageType", 0)  # Default: No Zip
+			var generateChecksum = settings.get("generateChecksum", false)
+
+			data["exportTypeOption"].selected = exportType
+			data["packageTypeOption"].selected = packageType
+			data["checksumCheckbox"].button_pressed = generateChecksum
+
+			# Update checksum tooltip and visibility based on loaded package type
+			var isZip = (packageType == 1)
+			data["checksumCheckbox"].tooltip_text = _getChecksumTooltip(platform, isZip)
+
+			# For Source platform, show checksum only when Zip is selected
+			if platform == "Source":
+				data["checksumContainer"].visible = isZip
 
 			# Restore enabled state
 			var isEnabled = settings.get("enabled", false)
@@ -411,9 +429,10 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	exportOptionsLabel.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	exportOptionsRow.add_child(exportOptionsLabel)
 
-	# Export Type DDL
+	# Export Type DDL (hidden for Source platform)
 	var exportTypeContainer = HBoxContainer.new()
 	exportTypeContainer.add_theme_constant_override("separation", 5)
+	exportTypeContainer.visible = (platform != "Source")  # Hide for Source
 
 	var exportTypeLabel = Label.new()
 	exportTypeLabel.text = "Type:"
@@ -449,9 +468,10 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 
 	exportOptionsRow.add_child(packageTypeContainer)
 
-	# Generate Checksum checkbox
+	# Generate Checksum checkbox (hidden for Source platform unless Zip selected)
 	var checksumContainer = HBoxContainer.new()
 	checksumContainer.add_theme_constant_override("separation", 5)
+	checksumContainer.visible = (platform != "Source")  # Hide for Source by default (shows when Zip selected)
 
 	var checksumCheckbox = CheckBox.new()
 	checksumCheckbox.text = "Checksum"
@@ -462,8 +482,8 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 
 	exportOptionsRow.add_child(checksumContainer)
 
-	# Update checksum tooltip when package type changes
-	packageTypeOption.item_selected.connect(_onPackageTypeChanged.bind(platform, checksumCheckbox))
+	# Update checksum tooltip and visibility when package type changes
+	packageTypeOption.item_selected.connect(_onPackageTypeChanged.bind(platform, checksumCheckbox, checksumContainer))
 
 	# Spacer to push Export button to the right
 	var exportOptionsSpacer = Control.new()
@@ -500,6 +520,7 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 		"exportTypeOption": exportTypeOption,
 		"packageTypeOption": packageTypeOption,
 		"checksumCheckbox": checksumCheckbox,
+		"checksumContainer": checksumContainer,
 		"button": exportButton,
 		"status": statusLabel
 	}
@@ -525,10 +546,18 @@ func _onInputChanged(_value = null):
 	# Emit signal when any input is modified
 	page_modified.emit()
 
-func _onPackageTypeChanged(index: int, platform: String, checksumCheckbox: CheckBox):
+func _onPackageTypeChanged(index: int, platform: String, checksumCheckbox: CheckBox, checksumContainer: HBoxContainer):
 	# Update checksum tooltip based on package type selection
 	var isZip = (index == 1)  # 0 = No Zip, 1 = Zip
 	checksumCheckbox.tooltip_text = _getChecksumTooltip(platform, isZip)
+
+	# For Source platform, show checksum only when Zip is selected
+	if platform == "Source":
+		checksumContainer.visible = isZip
+		# Uncheck checksum when hiding it
+		if not isZip:
+			checksumCheckbox.button_pressed = false
+
 	_onInputChanged()
 
 func _getChecksumTooltip(platform: String, isZip: bool) -> String:
@@ -881,6 +910,8 @@ func _onRefreshPressed():
 func _onSavePressed():
 	# Save all current settings
 	save()
+	# Notify parent to reset dirty flag
+	page_saved.emit()
 
 func _onExportSelectedPressed():
 	# Export platforms sequentially with status updates
@@ -940,6 +971,11 @@ func _exportPlatform(platform: String):
 	# Get export settings
 	var exportPath = _platformRootPaths.get(platform, "")
 	var exportFilename = data["exportFilename"].text
+
+	# Get export options from UI
+	var isDebug = (data["exportTypeOption"].selected == 1)  # 0=Release, 1=Debug
+	var shouldZip = (data["packageTypeOption"].selected == 1)  # 0=No Zip, 1=Zip
+	var shouldChecksum = data["checksumCheckbox"].button_pressed
 
 	# Check if obfuscation is enabled (any option selected in build config)
 	var obfuscationEnabled = false
@@ -1115,15 +1151,36 @@ func _exportPlatform(platform: String):
 
 		# Execute export command (from obfuscated dir if obfuscation enabled)
 		if success and not _exportCancelled:
-			_updateStatus(data, "Exporting to " + platform + "...")
+			var exportTypeText = "debug" if isDebug else "release"
+			_updateStatus(data, "Exporting %s to %s..." % [exportTypeText, platform])
 			await get_tree().process_frame  # Let UI update
-			success = await _runGodotExport(godotPath, projectDirToExport, presetName, outputPath, data)
+			success = await _runGodotExport(godotPath, projectDirToExport, presetName, outputPath, data, isDebug)
 
 	# Clean up temp obfuscated directory if created
 	if tempObfuscatedDir != "":
 		_updateStatus(data, "Cleaning up...")
 		await get_tree().create_timer(0.3).timeout
 		_cleanupTempDir(tempObfuscatedDir)
+
+	# Post-export steps: zip and checksum
+	var finalOutputPath = exportDestPath  # Default to folder for checksum
+
+	if success and not _exportCancelled and shouldZip:
+		_updateStatus(data, "Creating zip archive...")
+		await get_tree().process_frame
+		var zipPath = await _createZipArchive(exportDestPath, exportFilename, version, platform)
+		if zipPath.is_empty():
+			success = false
+		else:
+			finalOutputPath = zipPath
+
+	if success and not _exportCancelled and shouldChecksum:
+		_updateStatus(data, "Generating checksum...")
+		await get_tree().process_frame
+		var checksumSuccess = _generateChecksum(finalOutputPath, shouldZip, platform, exportFilename)
+		if not checksumSuccess:
+			# Checksum failure is non-fatal, just log it
+			print("Warning: Failed to generate checksum for ", finalOutputPath)
 
 	# Update UI with final status (check if still valid)
 	if _exportCancelled:
@@ -1179,7 +1236,10 @@ func save():
 			var platformSettings = {
 				"enabled": data["checkbox"].button_pressed,
 				"exportPath": rootPath,
-				"exportFilename": data["exportFilename"].text
+				"exportFilename": data["exportFilename"].text,
+				"exportType": data["exportTypeOption"].selected,  # 0=Release, 1=Debug
+				"packageType": data["packageTypeOption"].selected,  # 0=No Zip, 1=Zip
+				"generateChecksum": data["checksumCheckbox"].button_pressed
 			}
 
 			# Save build config if exists
@@ -1203,20 +1263,17 @@ func _addPlatformExtension(filename: String, platform: String) -> String:
 	if filename.get_extension() != "":
 		return filename
 
-	# Add platform-specific extension
-	match platform:
-		"Windows Desktop":
-			return filename + ".exe"
-		"Linux/X11", "Linux":
-			return filename + ".x86_64"
-		"Web":
-			return filename + ".html"
-		_:
-			return filename
+	# Get extension for this platform
+	var extension = _getPlatformExtension(platform)
+	if extension == "source folder" or extension == "binary":
+		return filename  # No extension for Source or unknown platforms
 
-func _runGodotExport(godotPath: String, projectPath: String, presetName: String, outputPath: String, data: Dictionary) -> bool:
+	return filename + extension
+
+func _runGodotExport(godotPath: String, projectPath: String, presetName: String, outputPath: String, data: Dictionary, isDebug: bool = false) -> bool:
 	# Build Godot export command
-	var command = "\"%s\" --headless --path \"%s\" --export-release \"%s\" \"%s\"" % [godotPath, projectPath, presetName, outputPath]
+	var exportFlag = "--export-debug" if isDebug else "--export-release"
+	var command = "\"%s\" --headless --path \"%s\" %s \"%s\" \"%s\"" % [godotPath, projectPath, exportFlag, presetName, outputPath]
 
 	# Redirect output to null to suppress verbose Godot export messages
 	# Only capture errors by checking output file existence
@@ -1738,3 +1795,150 @@ func _validateExportPath(projectDir: String, exportRootPath: String, finalExport
 	# which prevents recursive loops. This is a common and valid use case.
 
 	return {"valid": true, "error": ""}
+
+# Creates a zip archive of the export folder
+# Returns the path to the zip file, or empty string on failure
+func _createZipArchive(exportDir: String, filename: String, version: String, platform: String) -> String:
+	# Build zip filename: filename-platform-version.zip
+	var zipFilename = "%s-%s-%s.zip" % [filename, platform.replace(" ", "-").replace("/", "-"), version]
+
+	# For Source platform, we need to:
+	# 1. Create zip from the source files that were copied into exportDir
+	# 2. Place the zip directly in exportDir (replacing the source files)
+	# For binary platforms, the exportDir contains the exported binary, so zip goes there too
+
+	# Zip is placed in the exportDir itself
+	var zipPath = exportDir.path_join(zipFilename)
+
+	# For Source platform, the source files are directly in exportDir
+	# We need to zip them, then delete them, leaving only the zip
+	# To avoid including the zip in itself, we'll zip to a temp location first
+	var tempZipPath = exportDir.get_base_dir().path_join("_temp_" + zipFilename)
+
+	# Use PowerShell to create zip (Windows)
+	var command = "powershell -Command \"Compress-Archive -Path '%s\\*' -DestinationPath '%s' -Force\"" % [exportDir.replace("/", "\\"), tempZipPath.replace("/", "\\")]
+
+	var pid = OS.create_process("cmd.exe", ["/c", command])
+	if pid == -1:
+		print("Error: Failed to start zip process")
+		return ""
+
+	# Wait for process to complete
+	while OS.is_process_running(pid):
+		if _exportCancelled:
+			OS.kill(pid)
+			return ""
+		await get_tree().create_timer(0.1).timeout
+
+	# Verify temp zip was created
+	if not FileAccess.file_exists(tempZipPath):
+		print("Error: Zip file not created: ", tempZipPath)
+		return ""
+
+	# Clear the exportDir contents and move zip into it
+	_clearDirectoryContents(exportDir)
+
+	# Move zip from temp location to final location
+	var moveErr = DirAccess.rename_absolute(tempZipPath, zipPath)
+	if moveErr != OK:
+		print("Error: Failed to move zip to final location: ", moveErr)
+		# Try to clean up temp file
+		DirAccess.remove_absolute(tempZipPath)
+		return ""
+
+	return zipPath
+
+# Clears all contents of a directory but keeps the directory itself
+func _clearDirectoryContents(path: String) -> bool:
+	var dir = DirAccess.open(path)
+	if dir == null:
+		return false
+
+	dir.list_dir_begin()
+	var fileName = dir.get_next()
+
+	while fileName != "":
+		if fileName == "." or fileName == "..":
+			fileName = dir.get_next()
+			continue
+
+		var fullPath = path.path_join(fileName)
+
+		if dir.current_is_dir():
+			_deleteDirectoryRecursive(fullPath)
+		else:
+			dir.remove(fileName)
+
+		fileName = dir.get_next()
+
+	dir.list_dir_end()
+	return true
+
+# Recursively deletes a directory and all its contents
+func _deleteDirectoryRecursive(path: String) -> bool:
+	var dir = DirAccess.open(path)
+	if dir == null:
+		return false
+
+	dir.list_dir_begin()
+	var fileName = dir.get_next()
+
+	while fileName != "":
+		if fileName == "." or fileName == "..":
+			fileName = dir.get_next()
+			continue
+
+		var fullPath = path.path_join(fileName)
+
+		if dir.current_is_dir():
+			_deleteDirectoryRecursive(fullPath)
+		else:
+			dir.remove(fileName)
+
+		fileName = dir.get_next()
+
+	dir.list_dir_end()
+
+	# Remove the now-empty directory
+	return DirAccess.remove_absolute(path) == OK
+
+# Generates a SHA256 checksum file
+# Returns true on success
+func _generateChecksum(targetPath: String, isZip: bool, platform: String, filename: String) -> bool:
+	# Determine what to checksum
+	var fileToChecksum = targetPath
+	if not isZip:
+		# For non-zip, checksum the primary binary
+		var extension = _getPlatformExtension(platform)
+		if extension == "source folder":
+			# For Source platform without zip, checksum the folder contents would be complex
+			# Skip checksum for non-zipped source exports
+			print("Skipping checksum for non-zipped Source export")
+			return true
+		fileToChecksum = targetPath.path_join(filename + extension)
+
+	# Verify target exists
+	if not FileAccess.file_exists(fileToChecksum):
+		print("Error: Cannot checksum - file not found: ", fileToChecksum)
+		return false
+
+	# Use existing FileHelper to generate checksum
+	var checksumHash = FileHelper.CreateChecksum(fileToChecksum)
+	if checksumHash == null or checksumHash.is_empty():
+		print("Error: Failed to generate checksum for ", fileToChecksum)
+		return false
+
+	# Write checksum file in BSD-style format
+	var checksumPath = fileToChecksum + ".sha256"
+	var checksumFilename = fileToChecksum.get_file()
+	var checksumContent = "SHA256 (%s) = %s\n" % [checksumFilename, checksumHash]
+
+	var file = FileAccess.open(checksumPath, FileAccess.WRITE)
+	if file == null:
+		print("Error: Cannot write checksum file: ", checksumPath)
+		return false
+
+	file.store_string(checksumContent)
+	file.close()
+
+	return true
