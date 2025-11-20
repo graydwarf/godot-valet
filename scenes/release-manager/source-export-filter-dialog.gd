@@ -374,7 +374,7 @@ func _addPatternRow(pattern: String):
 	patternEdit.placeholder_text = "e.g., *.tmp, .git/, exports/"
 	patternEdit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	patternEdit.editable = true
-	patternEdit.text_changed.connect(_onPatternTextChanged.bind(row, pattern))
+	patternEdit.text_changed.connect(_onPatternTextChanged.bind(patternEdit))
 	row.add_child(patternEdit)
 
 	var removeButton = Button.new()
@@ -520,11 +520,16 @@ func _onAddPatternPressed():
 	_excludePatterns.append("")
 	_addPatternRow("")
 
-func _onPatternTextChanged(newText: String, row: HBoxContainer, oldPattern: String):
-	# Update the pattern in the array
-	var index = _excludePatterns.find(oldPattern)
-	if index >= 0:
-		_excludePatterns[index] = newText
+func _onPatternTextChanged(newText: String, patternEdit: LineEdit):
+	# Find which row this LineEdit belongs to by finding it in the patterns list
+	var row = patternEdit.get_parent() as HBoxContainer
+	if not row:
+		return
+
+	# Find the index of this row in the patterns list
+	var rowIndex = row.get_index()
+	if rowIndex >= 0 and rowIndex < _excludePatterns.size():
+		_excludePatterns[rowIndex] = newText
 
 func _onRemovePatternPressed(row: HBoxContainer):
 	# Find which pattern this row represents
