@@ -112,12 +112,6 @@ func _loadPlatformSettings():
 				exportFilename = projectName
 			data["exportFilename"].text = exportFilename
 
-			print("DEBUG: Loading platform settings for ", platform)
-			print("  Root path: ", rootPath)
-			print("  Has pathTemplate: ", settings.has("pathTemplate"))
-			if settings.has("pathTemplate"):
-				print("  Path template: ", settings["pathTemplate"])
-
 			# Restore build config (obfuscation settings)
 			if settings.has("buildConfig"):
 				_platformBuildConfigs[platform] = settings["buildConfig"]
@@ -125,12 +119,8 @@ func _loadPlatformSettings():
 
 			# Restore filter config (include/exclude settings)
 			if settings.has("filterConfig"):
-				print("  Has filterConfig: true")
-				print("  filterConfig: ", settings["filterConfig"])
 				_platformFilterConfigs[platform] = settings["filterConfig"]
 				_updateIncludeExcludeDisplay(platform, settings["filterConfig"])
-			else:
-				print("  Has filterConfig: false")
 
 			# Restore path template (default: version then platform)
 			if settings.has("pathTemplate"):
@@ -665,9 +655,6 @@ func _onIncludeExcludeDisplayClicked(event: InputEvent, platform: String):
 		_onIncludeExcludeConfigPressed(platform)
 
 func _onIncludeExcludeConfigPressed(platform: String):
-	print("\n=== _onIncludeExcludeConfigPressed ===")
-	print("Platform: ", platform)
-
 	# Get project path
 	var projectPath = ""
 	if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
@@ -675,7 +662,6 @@ func _onIncludeExcludeConfigPressed(platform: String):
 
 	# Get current filter config for this platform (or empty dict if none)
 	var currentConfig = _platformFilterConfigs.get(platform, {})
-	print("currentConfig from _platformFilterConfigs: ", currentConfig)
 
 	# Add to root if not already added
 	if _filterDialog.get_parent() == null:
@@ -692,10 +678,6 @@ func _onIncludeExcludeConfigPressed(platform: String):
 	_filterDialog.move_to_front()
 
 func _onFilterSettingsSaved(platform: String, filterConfig: Dictionary):
-	print("\n=== _onFilterSettingsSaved called ===")
-	print("Platform: ", platform)
-	print("filterConfig: ", filterConfig)
-
 	# Store the filter config for this platform
 	_platformFilterConfigs[platform] = filterConfig
 
@@ -705,7 +687,6 @@ func _onFilterSettingsSaved(platform: String, filterConfig: Dictionary):
 	# Immediately save to project item (don't wait for page save)
 	if _selectedProjectItem != null:
 		var platformSettings = _selectedProjectItem.GetPlatformExportSettings(platform)
-		print("Current platformSettings before update: ", platformSettings)
 
 		if platformSettings.is_empty():
 			# Create new settings if platform not configured yet
@@ -717,20 +698,10 @@ func _onFilterSettingsSaved(platform: String, filterConfig: Dictionary):
 
 		# Update filter config in platform settings
 		platformSettings["filterConfig"] = filterConfig
-		print("platformSettings after adding filterConfig: ", platformSettings)
 
 		# Save to project item immediately
 		_selectedProjectItem.SetPlatformExportSettings(platform, platformSettings)
 		_selectedProjectItem.SaveProjectItem()
-		print("Saved to project item")
-
-		# Verify it was saved
-		var verifySettings = _selectedProjectItem.GetPlatformExportSettings(platform)
-		print("Verification - loaded back settings: ", verifySettings)
-		if verifySettings.has("filterConfig"):
-			print("✓ filterConfig confirmed in saved data")
-		else:
-			print("✗ ERROR: filterConfig NOT found in saved data!")
 
 func _onFilterSettingsCancelled():
 	# User cancelled the filter settings dialog, no action needed
@@ -840,11 +811,6 @@ func _onPathSettingsSaved(platform: String, rootPath: String, pathTemplate: Arra
 		# Update root path and path template in platform settings
 		platformSettings["exportPath"] = rootPath
 		platformSettings["pathTemplate"] = pathTemplate
-
-		print("DEBUG: Saving platform settings for ", platform)
-		print("  Root path: ", rootPath)
-		print("  Path template: ", pathTemplate)
-		print("  Full settings: ", platformSettings)
 
 		# Save to project item immediately
 		_selectedProjectItem.SetPlatformExportSettings(platform, platformSettings)
@@ -1066,9 +1032,6 @@ func _exportPlatform(platform: String):
 	if platform in _platformBuildConfigs:
 		var config = _platformBuildConfigs[platform]
 		obfuscationEnabled = config.get("obfuscate_functions", false) or config.get("obfuscate_variables", false) or config.get("obfuscate_comments", false)
-		print("DEBUG: Platform ", platform, " obfuscation check - config: ", config, " enabled: ", obfuscationEnabled)
-	else:
-		print("DEBUG: Platform ", platform, " has no build config in _platformBuildConfigs")
 
 	# Validate export path and filename
 	if exportPath.is_empty() or exportFilename.is_empty():
@@ -1474,11 +1437,6 @@ func _copySourceFiles(projectDir: String, versionPath: String, exportPath: Strin
 	# Normalize export path to skip during copy
 	var normalizedExportPath = exportPath.replace("\\", "/").trim_suffix("/")
 
-	print("\n=== Source Export Filter Config ===")
-	print("excluded_paths: ", filterConfig.get("excluded_paths", []))
-	print("exclude_patterns: ", filterConfig.get("exclude_patterns", []))
-	print("additional_files: ", filterConfig.get("additional_files", []))
-
 	var success = await _copyDirectoryUnfiltered(projectDir, versionPath, normalizedExportPath, data, filterConfig)
 
 	if _exportCancelled:
@@ -1585,7 +1543,6 @@ func _copyDirectoryUnfiltered(source: String, dest: String, excludePath: String,
 			# Check against filter config (convert to relative path first)
 			var relativePath = sourcePath.replace(projectRoot + "/", "").replace(projectRoot + "\\", "")
 			if _shouldExcludePath(relativePath, filterConfig):
-				print("  Skipping directory (filtered): ", relativePath)
 				fileName = sourceDir.get_next()
 				continue
 
@@ -1601,7 +1558,6 @@ func _copyDirectoryUnfiltered(source: String, dest: String, excludePath: String,
 			# Check against filter config (convert to relative path first)
 			var relativePath = sourcePath.replace(projectRoot + "/", "").replace(projectRoot + "\\", "")
 			if _shouldExcludePath(relativePath, filterConfig):
-				print("  Skipping file (filtered): ", relativePath)
 				fileName = sourceDir.get_next()
 				continue
 

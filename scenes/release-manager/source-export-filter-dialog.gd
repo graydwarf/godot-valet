@@ -90,13 +90,6 @@ func _ready():
 
 # Open dialog for a specific platform with current settings
 func openForPlatform(platform: String, projectPath: String, currentConfig: Dictionary):
-	print("\n========================================")
-	print("=== OPENING FILTER DIALOG ===")
-	print("Platform: ", platform)
-	print("Project path: ", projectPath)
-	print("Current config keys: ", currentConfig.keys())
-	print("========================================\n")
-
 	_platform = platform
 	_projectPath = projectPath
 
@@ -145,9 +138,6 @@ func openForPlatform(platform: String, projectPath: String, currentConfig: Dicti
 
 	# Wait a frame for layout to update
 	await get_tree().process_frame
-	print("\n=== After Dialog Shown (Before Building Tree) ===")
-	print("Tree size after layout: ", _tree.size)
-	print("Tree visible: ", _tree.visible)
 
 	# NOW build tree after it's properly sized
 	_buildProjectTree()
@@ -168,14 +158,11 @@ func _applyExcludedPathsToTree(excludedPaths: Array[String]):
 	if excludedPaths.is_empty():
 		return
 
-	print("\n=== Applying ", excludedPaths.size(), " excluded paths to tree ===")
-
 	# Recursively uncheck all items in excluded paths
 	var root = _tree.get_root()
 	if root:
 		for path in excludedPaths:
 			var relativePath = path
-			print("  Looking for path to uncheck: ", relativePath)
 			_uncheckItemByPath(root, relativePath)
 
 func _uncheckItemByPath(item: TreeItem, targetPath: String) -> bool:
@@ -191,7 +178,6 @@ func _uncheckItemByPath(item: TreeItem, targetPath: String) -> bool:
 
 		if relativePath == targetPath:
 			# Found it! Uncheck this item
-			print("    ✓ Found and unchecking: ", relativePath)
 			metadata["checked"] = false
 			item.set_icon(0, _iconUnchecked)
 			return true
@@ -222,27 +208,15 @@ func _applyTreeColors():
 		print("ERROR: Tree is null in _applyTreeColors")
 		return
 
-	print("\n=== Applying Tree Colors ===")
-	print("Skipping custom theme - using default global theme")
-	print("Tree default font_color: ", _tree.get_theme_color("font_color"))
-	print("Tree default font_selected_color: ", _tree.get_theme_color("font_selected_color"))
-
 	# Don't apply any custom theme - let it use the global theme
-	# This is a test to see if the issue is with our custom theme
 
 func _buildProjectTree():
 	if not _tree:
 		print("ERROR: Tree is null in _buildProjectTree")
 		return
 
-	print("\n=== Building Project Tree ===")
-	print("Tree visible: ", _tree.visible)
-	print("Tree size: ", _tree.size)
-	print("Tree position: ", _tree.position)
-
 	_tree.clear()
 	var root = _tree.create_item()
-	print("Root item created: ", root != null)
 
 	if _projectPath.is_empty() or not DirAccess.dir_exists_absolute(_projectPath):
 		print("ERROR: Invalid project path: ", _projectPath)
@@ -250,9 +224,7 @@ func _buildProjectTree():
 
 	# Add project directory as root
 	var projectName = _projectPath.get_file()
-	print("Adding root directory: ", projectName)
 	_addDirectoryToTree(root, _projectPath, projectName)
-	print("Tree building complete")
 
 	# Expand all by default
 	_expandAllTree()
@@ -261,10 +233,8 @@ func _buildProjectTree():
 		_expandAllButton.text = "Collapse All"
 
 	# Force tree to update/redraw
-	print("Forcing tree redraw...")
 	_tree.queue_redraw()
 	_tree.update_minimum_size()
-	print("Tree item count: ", _tree.get_root().get_child_count() if _tree.get_root() else 0)
 
 func _addDirectoryToTree(parentItem: TreeItem, dirPath: String, displayName: String) -> TreeItem:
 	var item = _tree.create_item(parentItem)
@@ -278,7 +248,6 @@ func _addDirectoryToTree(parentItem: TreeItem, dirPath: String, displayName: Str
 	var dirInfo = _getDirectoryInfo(dirPath)
 	var sizeText = _formatSize(dirInfo["size"]) + " (" + str(dirInfo["files"]) + " files)"
 	item.set_text(1, sizeText)
-	print("  Created dir item: '", displayName, "/' - Size: '", sizeText, "'")
 
 	# Add subdirectories and files
 	var dir = DirAccess.open(dirPath)
@@ -335,7 +304,6 @@ func _addFileToTree(parentItem: TreeItem, filePath: String, displayName: String)
 		var sizeText = _formatSize(size)
 		item.set_text(1, sizeText)
 		file.close()
-		print("  Created file item: '", displayName, "' - Size: '", sizeText, "'")
 
 func _getDirectoryInfo(dirPath: String) -> Dictionary:
 	var totalSize: int = 0
@@ -593,13 +561,9 @@ func _updateAdditionalFilesCount():
 	pass
 
 func _onSavePressed():
-	print("\n=== _onSavePressed called ===")
-	print("Platform: ", _platform)
-
 	# Collect all unchecked paths from tree
 	var excludedPaths: Array[String] = []
 	_collectUncheckedPaths(_tree.get_root(), excludedPaths)
-	print("Collected ", excludedPaths.size(), " excluded paths")
 
 	# Build config dictionary
 	var config = {
@@ -608,15 +572,8 @@ func _onSavePressed():
 		"additional_files": _additionalFiles
 	}
 
-	print("Config to save:")
-	print("  excluded_paths: ", config["excluded_paths"])
-	print("  exclude_patterns: ", config["exclude_patterns"])
-	print("  additional_files: ", config["additional_files"])
-
 	# Emit signal
-	print("Emitting settings_saved signal...")
 	settings_saved.emit(_platform, config)
-	print("Signal emitted, hiding dialog")
 
 	# Hide dialog
 	visible = false
