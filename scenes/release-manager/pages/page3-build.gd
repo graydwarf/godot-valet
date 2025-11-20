@@ -1208,7 +1208,9 @@ func _exportPlatform(platform: String):
 		if success and not _exportCancelled:
 			_updateStatus(data, "Copying source files...")
 			await get_tree().process_frame  # Let UI update
-			success = await _copySourceFiles(sourceDirToCopy, exportDestPath, exportPath, data)
+			# Get filter config for Source platform
+			var filterConfig = _platformFilterConfigs.get(platform, {})
+			success = await _copySourceFiles(sourceDirToCopy, exportDestPath, exportPath, data, filterConfig)
 	else:
 		# Regular Godot export platforms
 		# Add platform-specific file extension
@@ -1453,18 +1455,23 @@ func _parseExcludeList(excludeListString: String) -> Array[String]:
 	return result
 
 # Copy source files for "Source" platform (no filtering - copies everything except exports folder)
-func _copySourceFiles(projectDir: String, versionPath: String, exportPath: String, data: Dictionary) -> bool:
+func _copySourceFiles(projectDir: String, versionPath: String, exportPath: String, data: Dictionary, filterConfig: Dictionary = {}) -> bool:
 	# Reset cancellation flag for this export
 	_exportCancelled = false
 
-	# Copy entire project directory to version folder (excluding exports folder)
+	# Copy entire project directory to version folder (excluding exports folder and respecting filters)
 	_updateStatus(data, "Copying project files...")
 	await get_tree().process_frame
 
 	# Normalize export path to skip during copy
 	var normalizedExportPath = exportPath.replace("\\", "/").trim_suffix("/")
 
-	var success = await _copyDirectoryUnfiltered(projectDir, versionPath, normalizedExportPath, data)
+	print("\n=== Source Export Filter Config ===")
+	print("excluded_paths: ", filterConfig.get("excluded_paths", []))
+	print("exclude_patterns: ", filterConfig.get("exclude_patterns", []))
+	print("additional_files: ", filterConfig.get("additional_files", []))
+
+	var success = await _copyDirectoryUnfiltered(projectDir, versionPath, normalizedExportPath, data, filterConfig)
 
 	if _exportCancelled:
 		return false
@@ -1476,10 +1483,43 @@ func _copySourceFiles(projectDir: String, versionPath: String, exportPath: Strin
 	_updateStatus(data, "Copy complete")
 	return true
 
+# Check if a path should be excluded based on filter config
+func _shouldExcludePath(relativePath: String, filterConfig: Dictionary) -> bool:
+	# Check against excluded_paths (exact matches)
+	var excludedPaths = filterConfig.get("excluded_paths", [])
+	for excluded in excludedPaths:
+		if relativePath == excluded or relativePath.begins_with(excluded + "/"):
+			return true
+
+	# Check against exclude_patterns (glob patterns)
+	var excludePatterns = filterConfig.get("exclude_patterns", [])
+	for pattern in excludePatterns:
+		# Handle directory patterns (end with /)
+		if pattern.ends_with("/"):
+			var patternWithoutSlash = pattern.trim_suffix("/")
+			if relativePath == patternWithoutSlash or relativePath.begins_with(patternWithoutSlash + "/"):
+				return true
+		# Handle file glob patterns (*.ext)
+		elif pattern.begins_with("*"):
+			var extension = pattern.trim_prefix("*")
+			if relativePath.ends_with(extension):
+				return true
+		# Handle exact file patterns
+		else:
+			if relativePath == pattern or relativePath.ends_with("/" + pattern):
+				return true
+
+	return false
+
 # Copy directory without filtering (includes hidden folders like .git, .godot)
 # excludePath is a path to skip during copy (e.g., the exports folder)
+# filterConfig contains excluded_paths and exclude_patterns to skip
 # visited tracks directories we've already processed to prevent symlink loops
-func _copyDirectoryUnfiltered(source: String, dest: String, excludePath: String, data: Dictionary, visited: Dictionary = {}) -> bool:
+# projectRoot is the original project directory (for calculating relative paths)
+func _copyDirectoryUnfiltered(source: String, dest: String, excludePath: String, data: Dictionary, filterConfig: Dictionary = {}, visited: Dictionary = {}, projectRoot: String = "") -> bool:
+	# On first call, projectRoot will be empty - set it to source
+	if projectRoot.is_empty():
+		projectRoot = source
 	# Check for cancellation
 	if _exportCancelled:
 		return false
@@ -1534,8 +1574,15 @@ func _copyDirectoryUnfiltered(source: String, dest: String, excludePath: String,
 				fileName = sourceDir.get_next()
 				continue
 
-			# Recursively copy directory, passing visited dictionary
-			var success = await _copyDirectoryUnfiltered(sourcePath, destPath, excludePath, data, visited)
+			# Check against filter config (convert to relative path first)
+			var relativePath = sourcePath.replace(projectRoot + "/", "").replace(projectRoot + "\\", "")
+			if _shouldExcludePath(relativePath, filterConfig):
+				print("  Skipping directory (filtered): ", relativePath)
+				fileName = sourceDir.get_next()
+				continue
+
+			# Recursively copy directory, passing visited dictionary, filterConfig, and projectRoot
+			var success = await _copyDirectoryUnfiltered(sourcePath, destPath, excludePath, data, filterConfig, visited, projectRoot)
 			if not success:
 				sourceDir.list_dir_end()
 				return false
@@ -1543,6 +1590,13 @@ func _copyDirectoryUnfiltered(source: String, dest: String, excludePath: String,
 			# Yield every directory to keep UI responsive
 			await get_tree().process_frame
 		else:
+			# Check against filter config (convert to relative path first)
+			var relativePath = sourcePath.replace(projectRoot + "/", "").replace(projectRoot + "\\", "")
+			if _shouldExcludePath(relativePath, filterConfig):
+				print("  Skipping file (filtered): ", relativePath)
+				fileName = sourceDir.get_next()
+				continue
+
 			# Copy file
 			DirAccess.copy_absolute(sourcePath, destPath)
 
