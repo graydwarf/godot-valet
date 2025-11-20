@@ -120,6 +120,14 @@ func openForPlatform(platform: String, projectPath: String, currentConfig: Dicti
 	for pattern in patterns:
 		_excludePatterns.append(pattern)
 
+	# Load excluded paths (same workaround for GDScript bug)
+	var excludedPathsRaw = currentConfig.get("excluded_paths", [])
+	var excludedPaths: Array[String] = []
+	for i in range(excludedPathsRaw.size()):
+		var item = excludedPathsRaw[i]
+		if item is String:
+			excludedPaths.append(item)
+
 	var files = currentConfig.get("additional_files", [])
 	_additionalFiles.clear()
 	# Manual append to avoid type conversion issues
@@ -147,11 +155,55 @@ func openForPlatform(platform: String, projectPath: String, currentConfig: Dicti
 	# Apply tree colors AFTER card styling to ensure they're not overridden
 	_applyTreeColors()
 
+	# Apply excluded paths to tree (uncheck previously excluded items)
+	_applyExcludedPathsToTree(excludedPaths)
+
 	# Build exclude patterns UI
 	_buildExcludePatternsUI()
 
 	# Build additional files UI
 	_buildAdditionalFilesUI()
+
+func _applyExcludedPathsToTree(excludedPaths: Array[String]):
+	if excludedPaths.is_empty():
+		return
+
+	print("\n=== Applying ", excludedPaths.size(), " excluded paths to tree ===")
+
+	# Recursively uncheck all items in excluded paths
+	var root = _tree.get_root()
+	if root:
+		for path in excludedPaths:
+			var relativePath = path
+			print("  Looking for path to uncheck: ", relativePath)
+			_uncheckItemByPath(root, relativePath)
+
+func _uncheckItemByPath(item: TreeItem, targetPath: String) -> bool:
+	if item == null:
+		return false
+
+	# Check if this item matches the target path
+	var metadata = item.get_metadata(0)
+	if metadata != null and metadata is Dictionary:
+		var itemPath = metadata.get("path", "")
+		# Make path relative to project
+		var relativePath = itemPath.replace(_projectPath + "/", "").replace(_projectPath + "\\", "")
+
+		if relativePath == targetPath:
+			# Found it! Uncheck this item
+			print("    ✓ Found and unchecking: ", relativePath)
+			metadata["checked"] = false
+			item.set_icon(0, _iconUnchecked)
+			return true
+
+	# Recurse to children
+	var child = item.get_first_child()
+	while child:
+		if _uncheckItemByPath(child, targetPath):
+			return true
+		child = child.get_next()
+
+	return false
 
 func _getDefaultExcludePatterns() -> Array[String]:
 	var defaults: Array[String] = []
@@ -541,9 +593,13 @@ func _updateAdditionalFilesCount():
 	pass
 
 func _onSavePressed():
+	print("\n=== _onSavePressed called ===")
+	print("Platform: ", _platform)
+
 	# Collect all unchecked paths from tree
 	var excludedPaths: Array[String] = []
 	_collectUncheckedPaths(_tree.get_root(), excludedPaths)
+	print("Collected ", excludedPaths.size(), " excluded paths")
 
 	# Build config dictionary
 	var config = {
@@ -552,8 +608,15 @@ func _onSavePressed():
 		"additional_files": _additionalFiles
 	}
 
+	print("Config to save:")
+	print("  excluded_paths: ", config["excluded_paths"])
+	print("  exclude_patterns: ", config["exclude_patterns"])
+	print("  additional_files: ", config["additional_files"])
+
 	# Emit signal
+	print("Emitting settings_saved signal...")
 	settings_saved.emit(_platform, config)
+	print("Signal emitted, hiding dialog")
 
 	# Hide dialog
 	visible = false
