@@ -125,8 +125,12 @@ func _loadPlatformSettings():
 
 			# Restore filter config (include/exclude settings)
 			if settings.has("filterConfig"):
+				print("  Has filterConfig: true")
+				print("  filterConfig: ", settings["filterConfig"])
 				_platformFilterConfigs[platform] = settings["filterConfig"]
 				_updateIncludeExcludeDisplay(platform, settings["filterConfig"])
+			else:
+				print("  Has filterConfig: false")
 
 			# Restore path template (default: version then platform)
 			if settings.has("pathTemplate"):
@@ -1331,6 +1335,10 @@ func save():
 			# Save build config if exists
 			if platform in _platformBuildConfigs:
 				platformSettings["buildConfig"] = _platformBuildConfigs[platform]
+
+			# Save filter config if exists
+			if platform in _platformFilterConfigs:
+				platformSettings["filterConfig"] = _platformFilterConfigs[platform]
 
 			# Save path template if exists
 			if platform in _platformPathTemplates:
