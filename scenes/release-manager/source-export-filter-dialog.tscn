@@ -1,0 +1,293 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/release-manager/source-export-filter-dialog.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://dwoo5bj1luipm" path="res://assets/themes/global-themes/godot-dark-default.tres" id="2_theme"]
+
+[node name="SourceExportFilterDialog" type="Control"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+script = ExtResource("1_script")
+
+[node name="BackgroundPanel" type="Panel" parent="."]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+
+[node name="MarginContainer" type="MarginContainer" parent="BackgroundPanel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BackgroundPanel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="TitleContainer" type="HBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer/TitleContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "Include/Exclude Settings"
+
+[node name="PlatformLabel" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer/TitleContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Platform: Source"
+
+[node name="HSeparator" type="HSeparator" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="TabButtons" type="HBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ProjectFilesTab" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/TabButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 36)
+layout_mode = 2
+text = "Project Files"
+
+[node name="ExcludePatternsTab" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/TabButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 36)
+layout_mode = 2
+text = "Exclude Patterns"
+
+[node name="AdditionalFilesTab" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/TabButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 36)
+layout_mode = 2
+text = "Additional Files"
+
+[node name="CardContainer" type="Control" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ProjectTreeCard" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer"]
+unique_name_in_owner = true
+visible = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ProjectTreeContent" type="VBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ProjectTreeCard"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="TreeHeader" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ProjectTreeCard/ProjectTreeContent"]
+layout_mode = 2
+
+[node name="TreeHeaderMargin" type="MarginContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ProjectTreeCard/ProjectTreeContent/TreeHeader"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="TreeHeaderRow" type="HBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ProjectTreeCard/ProjectTreeContent/TreeHeader/TreeHeaderMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TreeHeaderLabel" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ProjectTreeCard/ProjectTreeContent/TreeHeader/TreeHeaderMargin/TreeHeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+text = "Project Files (check to include)"
+
+[node name="ExpandAllButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ProjectTreeCard/ProjectTreeContent/TreeHeader/TreeHeaderMargin/TreeHeaderRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "Expand All"
+
+[node name="HelpButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ProjectTreeCard/ProjectTreeContent/TreeHeader/TreeHeaderMargin/TreeHeaderRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+text = "?"
+
+[node name="TreeContentPanel" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ProjectTreeCard/ProjectTreeContent"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="TreeContentMargin" type="MarginContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ProjectTreeCard/ProjectTreeContent/TreeContentPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="Tree" type="Tree" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ProjectTreeCard/ProjectTreeContent/TreeContentPanel/TreeContentMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+columns = 2
+column_titles_visible = true
+hide_root = true
+
+[node name="ExcludePatternsCard" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer"]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PatternsContent" type="VBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ExcludePatternsCard"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="PatternsHeader" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ExcludePatternsCard/PatternsContent"]
+layout_mode = 2
+
+[node name="PatternsHeaderMargin" type="MarginContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ExcludePatternsCard/PatternsContent/PatternsHeader"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="PatternsHeaderRow" type="HBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ExcludePatternsCard/PatternsContent/PatternsHeader/PatternsHeaderMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ExcludeHeaderLabel" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ExcludePatternsCard/PatternsContent/PatternsHeader/PatternsHeaderMargin/PatternsHeaderRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+text = "Exclude Patterns"
+
+[node name="AddPatternButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ExcludePatternsCard/PatternsContent/PatternsHeader/PatternsHeaderMargin/PatternsHeaderRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "+ Add Pattern"
+
+[node name="PatternsContentPanel" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ExcludePatternsCard/PatternsContent"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PatternsContentMargin" type="MarginContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ExcludePatternsCard/PatternsContent/PatternsContentPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="PatternsVBox" type="VBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ExcludePatternsCard/PatternsContent/PatternsContentPanel/PatternsContentMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PatternsScrollContainer" type="ScrollContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ExcludePatternsCard/PatternsContent/PatternsContentPanel/PatternsContentMargin/PatternsVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PatternsList" type="VBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ExcludePatternsCard/PatternsContent/PatternsContentPanel/PatternsContentMargin/PatternsVBox/PatternsScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="AdditionalFilesCard" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer"]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="FilesContent" type="VBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/AdditionalFilesCard"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="FilesHeader" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/AdditionalFilesCard/FilesContent"]
+layout_mode = 2
+
+[node name="FilesHeaderMargin" type="MarginContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/AdditionalFilesCard/FilesContent/FilesHeader"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="FilesHeaderRow" type="HBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/AdditionalFilesCard/FilesContent/FilesHeader/FilesHeaderMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="AdditionalFilesHeaderLabel" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/AdditionalFilesCard/FilesContent/FilesHeader/FilesHeaderMargin/FilesHeaderRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+text = "Additional Files"
+
+[node name="AddFileButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/AdditionalFilesCard/FilesContent/FilesHeader/FilesHeaderMargin/FilesHeaderRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "+ Add File/Folder"
+
+[node name="FilesContentPanel" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/AdditionalFilesCard/FilesContent"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FilesContentMargin" type="MarginContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/AdditionalFilesCard/FilesContent/FilesContentPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="FilesVBox" type="VBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/AdditionalFilesCard/FilesContent/FilesContentPanel/FilesContentMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="FilesScrollContainer" type="ScrollContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/AdditionalFilesCard/FilesContent/FilesContentPanel/FilesContentMargin/FilesVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FilesList" type="VBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/AdditionalFilesCard/FilesContent/FilesContentPanel/FilesContentMargin/FilesVBox/FilesScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="ButtonContainer" type="HBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 2
+
+[node name="CancelButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 40)
+layout_mode = 2
+text = "Cancel"
+
+[node name="SaveButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 40)
+layout_mode = 2
+text = "Save"

@@ -1,0 +1,673 @@
+extends Control
+
+signal settings_saved(platform: String, filter_config: Dictionary)
+signal cancelled()
+
+# Node references
+@onready var _platformLabel = %PlatformLabel
+@onready var _tree = %Tree
+@onready var _expandAllButton = %ExpandAllButton
+@onready var _helpButton = %HelpButton
+@onready var _excludeHeaderLabel = %ExcludeHeaderLabel
+@onready var _patternsList = %PatternsList
+@onready var _addPatternButton = %AddPatternButton
+@onready var _additionalFilesHeaderLabel = %AdditionalFilesHeaderLabel
+@onready var _filesList = %FilesList
+@onready var _addFileButton = %AddFileButton
+@onready var _cancelButton = %CancelButton
+@onready var _saveButton = %SaveButton
+
+# Tab buttons
+@onready var _projectFilesTab = %ProjectFilesTab
+@onready var _excludePatternsTab = %ExcludePatternsTab
+@onready var _additionalFilesTab = %AdditionalFilesTab
+
+# Cards
+@onready var _projectTreeCard = %ProjectTreeCard
+@onready var _excludePatternsCard = %ExcludePatternsCard
+@onready var _additionalFilesCard = %AdditionalFilesCard
+
+# State
+var _platform: String = ""
+var _projectPath: String = ""
+var _excludePatterns: Array[String] = []
+var _additionalFiles: Array[Dictionary] = []  # [{source: "", target: ""}]
+var _treeExpanded: bool = false
+var _currentTab: int = 0  # 0=Project Files, 1=Exclude Patterns, 2=Additional Files
+
+func _ready():
+	visible = false
+	z_index = 100  # Above other UI
+
+	# Apply card styling
+	_applyCardStyling()
+
+	# Connect tab buttons
+	if _projectFilesTab:
+		_projectFilesTab.pressed.connect(_onTabPressed.bind(0))
+	if _excludePatternsTab:
+		_excludePatternsTab.pressed.connect(_onTabPressed.bind(1))
+	if _additionalFilesTab:
+		_additionalFilesTab.pressed.connect(_onTabPressed.bind(2))
+
+	# Initialize tab button states (default to first tab)
+	_updateTabButtonStates(0)
+
+	# Connect signals (with null checks)
+	if _expandAllButton:
+		_expandAllButton.pressed.connect(_onExpandAllPressed)
+	if _helpButton:
+		_helpButton.pressed.connect(_onHelpPressed)
+	if _addPatternButton:
+		_addPatternButton.pressed.connect(_onAddPatternPressed)
+	if _addFileButton:
+		_addFileButton.pressed.connect(_onAddFilePressed)
+	if _cancelButton:
+		_cancelButton.pressed.connect(_onCancelPressed)
+	if _saveButton:
+		_saveButton.pressed.connect(_onSavePressed)
+
+	# Set up tree (with null check)
+	if _tree:
+		_tree.set_column_title(0, "File/Folder")
+		_tree.set_column_title(1, "Size")
+		_tree.set_column_expand(0, true)
+		_tree.set_column_expand(1, false)
+		_tree.set_column_custom_minimum_width(1, 120)
+		_tree.item_edited.connect(_onTreeItemEdited)
+
+# Open dialog for a specific platform with current settings
+func openForPlatform(platform: String, projectPath: String, currentConfig: Dictionary):
+	_platform = platform
+	_projectPath = projectPath
+
+	# Update UI
+	_platformLabel.text = "Platform: " + platform
+
+	# Load existing config
+	# WORKAROUND: Create NEW array to avoid GDScript iteration bug with Dictionary.get() arrays
+	var patternsRaw = currentConfig.get("exclude_patterns", [])
+
+	# Create fresh array and copy items manually
+	var patterns: Array[String] = []
+	for i in range(patternsRaw.size()):
+		var item = patternsRaw[i]
+		if item is String:
+			patterns.append(item)
+
+	_excludePatterns.clear()
+
+	# Iterate the fresh array
+	for pattern in patterns:
+		_excludePatterns.append(pattern)
+
+	var files = currentConfig.get("additional_files", [])
+	_additionalFiles.clear()
+	# Manual append to avoid type conversion issues
+	for file in files:
+		if file is Dictionary:
+			_additionalFiles.append(file)
+
+	# Apply default exclude patterns if this is first time (no config)
+	if _excludePatterns.is_empty() and currentConfig.is_empty():
+		_excludePatterns = _getDefaultExcludePatterns()
+
+	# Build tree from project directory
+	_buildProjectTree()
+
+	# Apply tree colors AFTER card styling to ensure they're not overridden
+	_applyTreeColors()
+
+	# Build exclude patterns UI
+	_buildExcludePatternsUI()
+
+	# Build additional files UI
+	_buildAdditionalFilesUI()
+
+	# Show dialog
+	visible = true
+	move_to_front()
+
+func _getDefaultExcludePatterns() -> Array[String]:
+	var defaults: Array[String] = []
+	defaults.append(".git/")
+	defaults.append(".godot/")
+	defaults.append(".import/")
+	defaults.append("exports/")
+	defaults.append(".vscode/")
+	defaults.append(".vs/")
+	defaults.append(".idea/")
+	return defaults
+
+func _applyTreeColors():
+	# Apply tree colors - must be called AFTER card styling to avoid being overridden
+	if not _tree:
+		return
+
+	# Use theme overrides to ensure text visibility
+	var lightGray = Color(0.875, 0.875, 0.875)
+	var white = Color(1, 1, 1)
+
+	# Override font colors directly on the tree control
+	_tree.add_theme_color_override("font_color", lightGray)
+	_tree.add_theme_color_override("font_selected_color", white)
+	_tree.add_theme_color_override("title_button_color", lightGray)
+	_tree.add_theme_color_override("guide_color", Color(0.4, 0.4, 0.4))
+	_tree.add_theme_color_override("drop_position_color", Color(0.6, 0.6, 0.6))
+
+func _buildProjectTree():
+	if not _tree:
+		return
+
+	_tree.clear()
+	var root = _tree.create_item()
+
+	if _projectPath.is_empty() or not DirAccess.dir_exists_absolute(_projectPath):
+		return
+
+	# Add project directory as root
+	var projectName = _projectPath.get_file()
+	_addDirectoryToTree(root, _projectPath, projectName)
+
+func _addDirectoryToTree(parentItem: TreeItem, dirPath: String, displayName: String) -> TreeItem:
+	var item = _tree.create_item(parentItem)
+	var itemText = displayName + "/"
+	item.set_text(0, itemText)
+	item.set_cell_mode(0, TreeItem.CELL_MODE_CHECK)
+	item.set_checked(0, true)  # Default to checked (included)
+	item.set_editable(0, true)
+	item.set_metadata(0, dirPath)
+
+	# Calculate directory size and count files
+	var dirInfo = _getDirectoryInfo(dirPath)
+	item.set_text(1, _formatSize(dirInfo["size"]) + " (" + str(dirInfo["files"]) + " files)")
+
+	# Add subdirectories and files
+	var dir = DirAccess.open(dirPath)
+	if dir == null:
+		return item
+
+	dir.list_dir_begin()
+	var fileName = dir.get_next()
+
+	# Collect directories and files
+	var directories: Array[String] = []
+	var files: Array[String] = []
+
+	while fileName != "":
+		if fileName == "." or fileName == "..":
+			fileName = dir.get_next()
+			continue
+
+		if dir.current_is_dir():
+			directories.append(fileName)
+		else:
+			files.append(fileName)
+
+		fileName = dir.get_next()
+
+	dir.list_dir_end()
+
+	# Sort and add directories first
+	directories.sort()
+	for dirName in directories:
+		var subDirPath = dirPath.path_join(dirName)
+		_addDirectoryToTree(item, subDirPath, dirName)
+
+	# Then add files
+	files.sort()
+	for file in files:
+		var filePath = dirPath.path_join(file)
+		_addFileToTree(item, filePath, file)
+
+	return item
+
+func _addFileToTree(parentItem: TreeItem, filePath: String, displayName: String):
+	var item = _tree.create_item(parentItem)
+	item.set_text(0, displayName)
+	item.set_cell_mode(0, TreeItem.CELL_MODE_CHECK)
+	item.set_checked(0, true)  # Default to checked (included)
+	item.set_editable(0, true)
+	item.set_metadata(0, filePath)
+
+	# Get file size
+	var file = FileAccess.open(filePath, FileAccess.READ)
+	if file:
+		var size = file.get_length()
+		item.set_text(1, _formatSize(size))
+		file.close()
+
+func _getDirectoryInfo(dirPath: String) -> Dictionary:
+	var totalSize: int = 0
+	var fileCount: int = 0
+
+	var dir = DirAccess.open(dirPath)
+	if dir == null:
+		return {"size": 0, "files": 0}
+
+	dir.list_dir_begin()
+	var fileName = dir.get_next()
+
+	while fileName != "":
+		if fileName != "." and fileName != "..":
+			var fullPath = dirPath.path_join(fileName)
+
+			if dir.current_is_dir():
+				var subInfo = _getDirectoryInfo(fullPath)
+				totalSize += subInfo["size"]
+				fileCount += subInfo["files"]
+			else:
+				var file = FileAccess.open(fullPath, FileAccess.READ)
+				if file:
+					totalSize += file.get_length()
+					fileCount += 1
+					file.close()
+
+		fileName = dir.get_next()
+
+	dir.list_dir_end()
+
+	return {"size": totalSize, "files": fileCount}
+
+func _formatSize(bytes: int) -> String:
+	if bytes < 1024:
+		return str(bytes) + " B"
+	elif bytes < 1024 * 1024:
+		return "%.1f KB" % (bytes / 1024.0)
+	elif bytes < 1024 * 1024 * 1024:
+		return "%.1f MB" % (bytes / (1024.0 * 1024.0))
+	else:
+		return "%.2f GB" % (bytes / (1024.0 * 1024.0 * 1024.0))
+
+func _buildExcludePatternsUI():
+	if not _patternsList:
+		return
+
+	# Clear existing patterns
+	for child in _patternsList.get_children():
+		child.queue_free()
+
+	# Add each pattern as a row
+	for pattern in _excludePatterns:
+		_addPatternRow(pattern)
+
+	# Update header count
+	_updateExcludeCount()
+
+func _addPatternRow(pattern: String):
+	if not _patternsList:
+		return
+
+	var row = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+
+	var patternEdit = LineEdit.new()
+	patternEdit.text = pattern
+	patternEdit.placeholder_text = "e.g., *.tmp, .git/, exports/"
+	patternEdit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	patternEdit.editable = true
+	patternEdit.text_changed.connect(_onPatternTextChanged.bind(row, pattern))
+	row.add_child(patternEdit)
+
+	var removeButton = Button.new()
+	removeButton.text = "Remove"
+	removeButton.custom_minimum_size = Vector2(80, 0)
+	removeButton.pressed.connect(_onRemovePatternPressed.bind(row))
+	row.add_child(removeButton)
+
+	_patternsList.add_child(row)
+
+func _buildAdditionalFilesUI():
+	if not _filesList:
+		return
+
+	# Clear existing files
+	for child in _filesList.get_children():
+		child.queue_free()
+
+	# Add each file entry as a row
+	for fileEntry in _additionalFiles:
+		_addAdditionalFileRow(fileEntry)
+
+	# Update header count
+	_updateAdditionalFilesCount()
+
+func _addAdditionalFileRow(fileEntry: Dictionary):
+	if not _filesList:
+		return
+
+	var row = VBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+
+	# Source row
+	var sourceRow = HBoxContainer.new()
+	sourceRow.add_theme_constant_override("separation", 8)
+
+	var sourceLabel = Label.new()
+	sourceLabel.text = "Source:"
+	sourceLabel.custom_minimum_size = Vector2(60, 0)
+	sourceRow.add_child(sourceLabel)
+
+	var sourceEdit = LineEdit.new()
+	sourceEdit.text = fileEntry.get("source", "")
+	sourceEdit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sourceEdit.editable = false
+	sourceRow.add_child(sourceEdit)
+
+	var browseButton = Button.new()
+	browseButton.text = "🗀"
+	browseButton.custom_minimum_size = Vector2(32, 0)
+	browseButton.pressed.connect(_onBrowseAdditionalFilePressed.bind(fileEntry))
+	sourceRow.add_child(browseButton)
+
+	row.add_child(sourceRow)
+
+	# Target row
+	var targetRow = HBoxContainer.new()
+	targetRow.add_theme_constant_override("separation", 8)
+
+	var targetLabel = Label.new()
+	targetLabel.text = "Target:"
+	targetLabel.custom_minimum_size = Vector2(60, 0)
+	targetRow.add_child(targetLabel)
+
+	var targetEdit = LineEdit.new()
+	targetEdit.text = fileEntry.get("target", "")
+	targetEdit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	targetEdit.text_changed.connect(_onTargetPathChanged.bind(fileEntry))
+	targetRow.add_child(targetEdit)
+
+	var removeButton = Button.new()
+	removeButton.text = "X"
+	removeButton.custom_minimum_size = Vector2(32, 0)
+	removeButton.pressed.connect(_onRemoveAdditionalFilePressed.bind(fileEntry))
+	targetRow.add_child(removeButton)
+
+	row.add_child(targetRow)
+
+	_filesList.add_child(row)
+
+func _onTreeItemEdited():
+	# When a tree item is checked/unchecked, propagate to children
+	var editedItem = _tree.get_edited()
+	if editedItem:
+		var isChecked = editedItem.is_checked(0)
+		_propagateCheckState(editedItem, isChecked)
+
+func _propagateCheckState(item: TreeItem, checked: bool):
+	# Set all children to same state
+	var child = item.get_first_child()
+	while child:
+		child.set_checked(0, checked)
+		_propagateCheckState(child, checked)
+		child = child.get_next()
+
+func _onExpandAllPressed():
+	_treeExpanded = !_treeExpanded
+
+	if _treeExpanded:
+		_expandAllTree()
+		_expandAllButton.text = "Collapse All"
+	else:
+		_collapseAllTree()
+		_expandAllButton.text = "Expand All"
+
+func _expandAllTree():
+	var root = _tree.get_root()
+	if root:
+		_expandTreeItem(root)
+
+func _collapseAllTree():
+	var root = _tree.get_root()
+	if root:
+		_collapseTreeItem(root)
+
+func _expandTreeItem(item: TreeItem):
+	item.collapsed = false
+	var child = item.get_first_child()
+	while child:
+		_expandTreeItem(child)
+		child = child.get_next()
+
+func _collapseTreeItem(item: TreeItem):
+	item.collapsed = true
+	var child = item.get_first_child()
+	while child:
+		_collapseTreeItem(child)
+		child = child.get_next()
+
+func _onHelpPressed():
+	# TODO: Show help dialog explaining include/exclude functionality
+	print("Help: This dialog allows you to configure which files to include/exclude in Source exports")
+
+func _onAddPatternPressed():
+	# Add empty pattern that user can edit
+	_excludePatterns.append("")
+	_addPatternRow("")
+
+func _onPatternTextChanged(newText: String, row: HBoxContainer, oldPattern: String):
+	# Update the pattern in the array
+	var index = _excludePatterns.find(oldPattern)
+	if index >= 0:
+		_excludePatterns[index] = newText
+
+func _onRemovePatternPressed(row: HBoxContainer):
+	# Find which pattern this row represents
+	var patternEdit = row.get_child(0) as LineEdit
+	if patternEdit:
+		var pattern = patternEdit.text
+		_excludePatterns.erase(pattern)
+		row.queue_free()
+		_updateExcludeCount()
+
+func _onAddFilePressed():
+	# Add a new empty file entry
+	var newEntry = {"source": "", "target": ""}
+	_additionalFiles.append(newEntry)
+	_buildAdditionalFilesUI()
+
+func _onBrowseAdditionalFilePressed(fileEntry: Dictionary):
+	# TODO: Open file/folder browser dialog
+	print("Browse for additional file: ", fileEntry)
+
+func _onTargetPathChanged(newPath: String, fileEntry: Dictionary):
+	fileEntry["target"] = newPath
+
+func _onRemoveAdditionalFilePressed(fileEntry: Dictionary):
+	_additionalFiles.erase(fileEntry)
+	_buildAdditionalFilesUI()
+
+func _updateExcludeCount():
+	# No longer showing count in header
+	pass
+
+func _updateAdditionalFilesCount():
+	# No longer showing count in header
+	pass
+
+func _onSavePressed():
+	# Collect all unchecked paths from tree
+	var excludedPaths: Array[String] = []
+	_collectUncheckedPaths(_tree.get_root(), excludedPaths)
+
+	# Build config dictionary
+	var config = {
+		"excluded_paths": excludedPaths,
+		"exclude_patterns": _excludePatterns,
+		"additional_files": _additionalFiles
+	}
+
+	# Emit signal
+	settings_saved.emit(_platform, config)
+
+	# Hide dialog
+	visible = false
+
+func _collectUncheckedPaths(item: TreeItem, excludedPaths: Array[String]):
+	if item == null:
+		return
+
+	# Check if this item is unchecked
+	if item.get_metadata(0) != null and not item.is_checked(0):
+		var path = item.get_metadata(0)
+		# Make path relative to project
+		var relativePath = path.replace(_projectPath + "/", "")
+		if not excludedPaths.has(relativePath):
+			excludedPaths.append(relativePath)
+
+	# Recurse to children
+	var child = item.get_first_child()
+	while child:
+		_collectUncheckedPaths(child, excludedPaths)
+		child = child.get_next()
+
+func _onCancelPressed():
+	cancelled.emit()
+	visible = false
+
+func _onTabPressed(tabIndex: int):
+	_currentTab = tabIndex
+	_switchToTab(tabIndex)
+
+func _switchToTab(tabIndex: int):
+	# Hide all cards
+	if _projectTreeCard:
+		_projectTreeCard.visible = false
+	if _excludePatternsCard:
+		_excludePatternsCard.visible = false
+	if _additionalFilesCard:
+		_additionalFilesCard.visible = false
+
+	# Show selected card
+	match tabIndex:
+		0:
+			if _projectTreeCard:
+				_projectTreeCard.visible = true
+			_updateTabButtonStates(0)
+		1:
+			if _excludePatternsCard:
+				_excludePatternsCard.visible = true
+			_updateTabButtonStates(1)
+		2:
+			if _additionalFilesCard:
+				_additionalFilesCard.visible = true
+			_updateTabButtonStates(2)
+
+func _updateTabButtonStates(activeIndex: int):
+	# Update button appearances to show which tab is active
+	var buttons = [_projectFilesTab, _excludePatternsTab, _additionalFilesTab]
+
+	for i in range(buttons.size()):
+		if buttons[i]:
+			if i == activeIndex:
+				# Active tab: white border
+				var activeStyle = StyleBoxFlat.new()
+				activeStyle.bg_color = Color(0.2, 0.2, 0.2)
+				activeStyle.border_color = Color(1, 1, 1)  # White border
+				activeStyle.border_width_left = 2
+				activeStyle.border_width_top = 2
+				activeStyle.border_width_right = 2
+				activeStyle.border_width_bottom = 2
+				activeStyle.corner_radius_top_left = 4
+				activeStyle.corner_radius_top_right = 4
+				activeStyle.corner_radius_bottom_right = 4
+				activeStyle.corner_radius_bottom_left = 4
+				buttons[i].add_theme_stylebox_override("normal", activeStyle)
+				buttons[i].add_theme_stylebox_override("hover", activeStyle)
+				buttons[i].add_theme_stylebox_override("pressed", activeStyle)
+				buttons[i].disabled = false
+			else:
+				# Inactive tab: default style
+				buttons[i].remove_theme_stylebox_override("normal")
+				buttons[i].remove_theme_stylebox_override("hover")
+				buttons[i].remove_theme_stylebox_override("pressed")
+				buttons[i].disabled = false
+
+func _applyCardStyling():
+	# Apply platform card styling to each card
+	var projectTreeCard = get_node_or_null("%ProjectTreeCard")
+	var excludePatternsCard = get_node_or_null("%ExcludePatternsCard")
+	var additionalFilesCard = get_node_or_null("%AdditionalFilesCard")
+
+	var cards = [projectTreeCard, excludePatternsCard, additionalFilesCard]
+
+	for card in cards:
+		if card:
+			_styleCard(card)
+
+	# Also style header and content panels with borders
+	if projectTreeCard:
+		var treeHeader = projectTreeCard.get_node_or_null("ProjectTreeContent/TreeHeader")
+		var treeContent = projectTreeCard.get_node_or_null("ProjectTreeContent/TreeContentPanel")
+		if treeHeader:
+			_styleHeaderPanel(treeHeader)
+		if treeContent:
+			_styleContentPanel(treeContent)
+
+	if excludePatternsCard:
+		var patternsHeader = excludePatternsCard.get_node_or_null("PatternsContent/PatternsHeader")
+		var patternsContent = excludePatternsCard.get_node_or_null("PatternsContent/PatternsContentPanel")
+		if patternsHeader:
+			_styleHeaderPanel(patternsHeader)
+		if patternsContent:
+			_styleContentPanel(patternsContent)
+
+	if additionalFilesCard:
+		var filesHeader = additionalFilesCard.get_node_or_null("FilesContent/FilesHeader")
+		var filesContent = additionalFilesCard.get_node_or_null("FilesContent/FilesContentPanel")
+		if filesHeader:
+			_styleHeaderPanel(filesHeader)
+		if filesContent:
+			_styleContentPanel(filesContent)
+
+func _styleCard(card: PanelContainer):
+	# Apply styled theme like platform cards
+	var cardTheme = Theme.new()
+	var styleBox = StyleBoxFlat.new()
+	styleBox.bg_color = _getAdjustedBackgroundColor(-0.08)
+	styleBox.border_color = Color(0.6, 0.6, 0.6)
+	styleBox.border_width_left = 1
+	styleBox.border_width_top = 1
+	styleBox.border_width_right = 1
+	styleBox.border_width_bottom = 1
+	styleBox.corner_radius_top_left = 6
+	styleBox.corner_radius_top_right = 6
+	styleBox.corner_radius_bottom_right = 6
+	styleBox.corner_radius_bottom_left = 6
+	cardTheme.set_stylebox("panel", "PanelContainer", styleBox)
+	card.theme = cardTheme
+
+func _styleHeaderPanel(panel: PanelContainer):
+	# Header panel with bottom border only
+	var headerTheme = Theme.new()
+	var headerStyleBox = StyleBoxFlat.new()
+	headerStyleBox.bg_color = Color(0, 0, 0, 0)  # Transparent background
+	headerStyleBox.border_color = Color(0.6, 0.6, 0.6)
+	headerStyleBox.border_width_left = 0
+	headerStyleBox.border_width_top = 0
+	headerStyleBox.border_width_right = 0
+	headerStyleBox.border_width_bottom = 1
+	headerTheme.set_stylebox("panel", "PanelContainer", headerStyleBox)
+	panel.theme = headerTheme
+
+func _styleContentPanel(panel: PanelContainer):
+	# Content panel with transparent background
+	var contentTheme = Theme.new()
+	var contentStyleBox = StyleBoxFlat.new()
+	contentStyleBox.bg_color = Color(0, 0, 0, 0)  # Transparent background
+	contentStyleBox.border_width_left = 0
+	contentStyleBox.border_width_top = 0
+	contentStyleBox.border_width_right = 0
+	contentStyleBox.border_width_bottom = 0
+	contentTheme.set_stylebox("panel", "PanelContainer", contentStyleBox)
+	panel.theme = contentTheme
+
+func _getAdjustedBackgroundColor(amount: float) -> Color:
+	var colorToSubtract = Color(amount, amount, amount, 0.0)
+	var baseColor = App.GetBackgroundColor()
+	return Color(
+		max(baseColor.r + colorToSubtract.r, 0),
+		max(baseColor.g + colorToSubtract.g, 0),
+		max(baseColor.b + colorToSubtract.b, 0),
+		baseColor.a
+	)

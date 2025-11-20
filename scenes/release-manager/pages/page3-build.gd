@@ -20,9 +20,11 @@ var _platformPathTemplates: Dictionary = {}  # platform_name -> path template ar
 var _platformRootPaths: Dictionary = {}  # platform_name -> root export path (without template)
 var _buildConfigDialog: Window = null
 var _pathSettingsDialog: Control = null
+var _filterDialog: Control = null
 var _yesNoDialog: Control = null
 var _inputBlocker: Control = null  # Full-screen overlay to block all input during export
 var _exportCancelled: bool = false  # Flag to track if user cancelled export
+var _platformFilterConfigs: Dictionary = {}  # platform_name -> filter config dict
 
 func _ready():
 	_exportSelectedButton.pressed.connect(_onExportSelectedPressed)
@@ -41,6 +43,12 @@ func _ready():
 	_pathSettingsDialog.settings_saved.connect(_onPathSettingsSaved)
 	_pathSettingsDialog.cancelled.connect(_onPathSettingsCancelled)
 	_pathSettingsDialog.visible = false  # Start hidden
+
+	# Create include/exclude filter dialog (Control, not Window)
+	_filterDialog = load("res://scenes/release-manager/source-export-filter-dialog.tscn").instantiate()
+	_filterDialog.settings_saved.connect(_onFilterSettingsSaved)
+	_filterDialog.cancelled.connect(_onFilterSettingsCancelled)
+	_filterDialog.visible = false  # Start hidden
 
 	# Create yes/no dialog for overwrite confirmation (add to root for full screen coverage)
 	_yesNoDialog = load("res://scenes/common/yes-no-dialog.tscn").instantiate()
@@ -115,6 +123,11 @@ func _loadPlatformSettings():
 				_platformBuildConfigs[platform] = settings["buildConfig"]
 				_updateObfuscationDisplay(platform, settings["buildConfig"])
 
+			# Restore filter config (include/exclude settings)
+			if settings.has("filterConfig"):
+				_platformFilterConfigs[platform] = settings["filterConfig"]
+				_updateIncludeExcludeDisplay(platform, settings["filterConfig"])
+
 			# Restore path template (default: version then platform)
 			if settings.has("pathTemplate"):
 				_platformPathTemplates[platform] = settings["pathTemplate"]
@@ -126,6 +139,11 @@ func _loadPlatformSettings():
 
 			# Update export path display with template
 			_updateExportPathDisplay(platform)
+
+			# Restore filter config (include/exclude settings)
+			if settings.has("filterConfig"):
+				_platformFilterConfigs[platform] = settings["filterConfig"]
+				_updateIncludeExcludeDisplay(platform, settings["filterConfig"])
 
 			# Restore export options
 			var exportType = settings.get("exportType", 0)  # Default: Release
@@ -643,14 +661,76 @@ func _onIncludeExcludeDisplayClicked(event: InputEvent, platform: String):
 		_onIncludeExcludeConfigPressed(platform)
 
 func _onIncludeExcludeConfigPressed(platform: String):
-	# TODO: Open include/exclude settings dialog
-	# For now, just print a message
-	print("Include/Exclude config pressed for platform: ", platform)
-	# Different dialog for Source vs other platforms
-	if platform == "Source":
-		print("  Source platform: Will show tree view + excludes + includes")
-	else:
-		print("  Binary platform: Will show includes only + instructions")
+	print("\n=== _onIncludeExcludeConfigPressed ===")
+	print("Platform: ", platform)
+
+	# Get project path
+	var projectPath = ""
+	if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
+		projectPath = _selectedProjectItem.GetProjectPath().get_base_dir()
+
+	# Get current filter config for this platform (or empty dict if none)
+	var currentConfig = _platformFilterConfigs.get(platform, {})
+	print("currentConfig from _platformFilterConfigs: ", currentConfig)
+
+	# Add to root if not already added
+	if _filterDialog.get_parent() == null:
+		# Find the ReleaseManager root node
+		var root = get_tree().current_scene
+		if root == null:
+			root = get_tree().root.get_child(get_tree().root.get_child_count() - 1)
+
+		root.add_child(_filterDialog)
+		_filterDialog.z_index = 100  # Ensure it's on top
+
+	# Open dialog
+	_filterDialog.openForPlatform(platform, projectPath, currentConfig)
+	_filterDialog.move_to_front()
+
+func _onFilterSettingsSaved(platform: String, filterConfig: Dictionary):
+	print("\n=== _onFilterSettingsSaved called ===")
+	print("Platform: ", platform)
+	print("filterConfig: ", filterConfig)
+
+	# Store the filter config for this platform
+	_platformFilterConfigs[platform] = filterConfig
+
+	# Update include/exclude display text
+	_updateIncludeExcludeDisplay(platform, filterConfig)
+
+	# Immediately save to project item (don't wait for page save)
+	if _selectedProjectItem != null:
+		var platformSettings = _selectedProjectItem.GetPlatformExportSettings(platform)
+		print("Current platformSettings before update: ", platformSettings)
+
+		if platformSettings.is_empty():
+			# Create new settings if platform not configured yet
+			platformSettings = {
+				"enabled": false,
+				"exportPath": "",
+				"exportFilename": ""
+			}
+
+		# Update filter config in platform settings
+		platformSettings["filterConfig"] = filterConfig
+		print("platformSettings after adding filterConfig: ", platformSettings)
+
+		# Save to project item immediately
+		_selectedProjectItem.SetPlatformExportSettings(platform, platformSettings)
+		_selectedProjectItem.SaveProjectItem()
+		print("Saved to project item")
+
+		# Verify it was saved
+		var verifySettings = _selectedProjectItem.GetPlatformExportSettings(platform)
+		print("Verification - loaded back settings: ", verifySettings)
+		if verifySettings.has("filterConfig"):
+			print("✓ filterConfig confirmed in saved data")
+		else:
+			print("✗ ERROR: filterConfig NOT found in saved data!")
+
+func _onFilterSettingsCancelled():
+	# User cancelled the filter settings dialog, no action needed
+	pass
 
 func _onConfigButtonPressed(platform: String):
 	# Get all platform names for the clone dropdown
@@ -1602,6 +1682,32 @@ func _updateObfuscationDisplay(platform: String, config: Dictionary):
 		display.placeholder_text = "None"
 	else:
 		display.text = ", ".join(options)
+		display.placeholder_text = ""
+
+func _updateIncludeExcludeDisplay(platform: String, config: Dictionary):
+	if platform not in _platformRows:
+		return
+
+	var display = _platformRows[platform]["includeExcludeDisplay"]
+	var summary: Array[String] = []
+
+	# Count excluded paths
+	var excludedPaths = config.get("excluded_paths", [])
+	var excludePatterns = config.get("exclude_patterns", [])
+	var additionalFiles = config.get("additional_files", [])
+
+	if excludedPaths.size() > 0:
+		summary.append("%d paths" % excludedPaths.size())
+	if excludePatterns.size() > 0:
+		summary.append("%d patterns" % excludePatterns.size())
+	if additionalFiles.size() > 0:
+		summary.append("+%d files" % additionalFiles.size())
+
+	if summary.is_empty():
+		display.text = ""
+		display.placeholder_text = "No filters configured"
+	else:
+		display.text = ", ".join(summary)
 		display.placeholder_text = ""
 
 func _createInputBlocker():
