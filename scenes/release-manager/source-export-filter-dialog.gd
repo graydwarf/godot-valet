@@ -35,6 +35,10 @@ var _additionalFiles: Array[Dictionary] = []  # [{source: "", target: ""}]
 var _treeExpanded: bool = false
 var _currentTab: int = 0  # 0=Project Files, 1=Exclude Patterns, 2=Additional Files
 
+# Checkbox icons
+var _iconChecked: Texture2D
+var _iconUnchecked: Texture2D
+
 func _ready():
 	visible = false
 	z_index = 100  # Above other UI
@@ -67,17 +71,32 @@ func _ready():
 	if _saveButton:
 		_saveButton.pressed.connect(_onSavePressed)
 
+	# Load checkbox icons
+	_iconChecked = load("res://scenes/release-manager/assets/checkbox-checked.svg")
+	_iconUnchecked = load("res://scenes/release-manager/assets/checkbox-unchecked.svg")
+
 	# Set up tree (with null check)
 	if _tree:
-		_tree.set_column_title(0, "File/Folder")
-		_tree.set_column_title(1, "Size")
-		_tree.set_column_expand(0, true)
-		_tree.set_column_expand(1, false)
-		_tree.set_column_custom_minimum_width(1, 120)
-		_tree.item_edited.connect(_onTreeItemEdited)
+		# Configure columns
+		_tree.set_column_expand(0, true)   # Name column expands
+		_tree.set_column_expand(1, false)  # Size column fixed width
+		_tree.set_column_custom_minimum_width(1, 150)
+
+		# Make tree more responsive
+		_tree.allow_reselect = true  # Allow clicking selected item to trigger signal again
+
+		# Use item_mouse_selected to toggle on every click (not just selection change)
+		_tree.item_mouse_selected.connect(_onTreeItemClicked)
 
 # Open dialog for a specific platform with current settings
 func openForPlatform(platform: String, projectPath: String, currentConfig: Dictionary):
+	print("\n========================================")
+	print("=== OPENING FILTER DIALOG ===")
+	print("Platform: ", platform)
+	print("Project path: ", projectPath)
+	print("Current config keys: ", currentConfig.keys())
+	print("========================================\n")
+
 	_platform = platform
 	_projectPath = projectPath
 
@@ -112,7 +131,17 @@ func openForPlatform(platform: String, projectPath: String, currentConfig: Dicti
 	if _excludePatterns.is_empty() and currentConfig.is_empty():
 		_excludePatterns = _getDefaultExcludePatterns()
 
-	# Build tree from project directory
+	# Show dialog FIRST so layout happens
+	visible = true
+	move_to_front()
+
+	# Wait a frame for layout to update
+	await get_tree().process_frame
+	print("\n=== After Dialog Shown (Before Building Tree) ===")
+	print("Tree size after layout: ", _tree.size)
+	print("Tree visible: ", _tree.visible)
+
+	# NOW build tree after it's properly sized
 	_buildProjectTree()
 
 	# Apply tree colors AFTER card styling to ensure they're not overridden
@@ -123,10 +152,6 @@ func openForPlatform(platform: String, projectPath: String, currentConfig: Dicti
 
 	# Build additional files UI
 	_buildAdditionalFilesUI()
-
-	# Show dialog
-	visible = true
-	move_to_front()
 
 func _getDefaultExcludePatterns() -> Array[String]:
 	var defaults: Array[String] = []
@@ -142,45 +167,66 @@ func _getDefaultExcludePatterns() -> Array[String]:
 func _applyTreeColors():
 	# Apply tree colors - must be called AFTER card styling to avoid being overridden
 	if not _tree:
+		print("ERROR: Tree is null in _applyTreeColors")
 		return
 
-	# Use theme overrides to ensure text visibility
-	var lightGray = Color(0.875, 0.875, 0.875)
-	var white = Color(1, 1, 1)
+	print("\n=== Applying Tree Colors ===")
+	print("Skipping custom theme - using default global theme")
+	print("Tree default font_color: ", _tree.get_theme_color("font_color"))
+	print("Tree default font_selected_color: ", _tree.get_theme_color("font_selected_color"))
 
-	# Override font colors directly on the tree control
-	_tree.add_theme_color_override("font_color", lightGray)
-	_tree.add_theme_color_override("font_selected_color", white)
-	_tree.add_theme_color_override("title_button_color", lightGray)
-	_tree.add_theme_color_override("guide_color", Color(0.4, 0.4, 0.4))
-	_tree.add_theme_color_override("drop_position_color", Color(0.6, 0.6, 0.6))
+	# Don't apply any custom theme - let it use the global theme
+	# This is a test to see if the issue is with our custom theme
 
 func _buildProjectTree():
 	if not _tree:
+		print("ERROR: Tree is null in _buildProjectTree")
 		return
+
+	print("\n=== Building Project Tree ===")
+	print("Tree visible: ", _tree.visible)
+	print("Tree size: ", _tree.size)
+	print("Tree position: ", _tree.position)
 
 	_tree.clear()
 	var root = _tree.create_item()
+	print("Root item created: ", root != null)
 
 	if _projectPath.is_empty() or not DirAccess.dir_exists_absolute(_projectPath):
+		print("ERROR: Invalid project path: ", _projectPath)
 		return
 
 	# Add project directory as root
 	var projectName = _projectPath.get_file()
+	print("Adding root directory: ", projectName)
 	_addDirectoryToTree(root, _projectPath, projectName)
+	print("Tree building complete")
+
+	# Expand all by default
+	_expandAllTree()
+	_treeExpanded = true
+	if _expandAllButton:
+		_expandAllButton.text = "Collapse All"
+
+	# Force tree to update/redraw
+	print("Forcing tree redraw...")
+	_tree.queue_redraw()
+	_tree.update_minimum_size()
+	print("Tree item count: ", _tree.get_root().get_child_count() if _tree.get_root() else 0)
 
 func _addDirectoryToTree(parentItem: TreeItem, dirPath: String, displayName: String) -> TreeItem:
 	var item = _tree.create_item(parentItem)
-	var itemText = displayName + "/"
-	item.set_text(0, itemText)
-	item.set_cell_mode(0, TreeItem.CELL_MODE_CHECK)
-	item.set_checked(0, true)  # Default to checked (included)
-	item.set_editable(0, true)
-	item.set_metadata(0, dirPath)
 
-	# Calculate directory size and count files
+	# Column 0: Checkbox icon + folder name
+	item.set_icon(0, _iconChecked)
+	item.set_metadata(0, {"path": dirPath, "checked": true})
+	item.set_text(0, displayName + "/")
+
+	# Column 1: Size
 	var dirInfo = _getDirectoryInfo(dirPath)
-	item.set_text(1, _formatSize(dirInfo["size"]) + " (" + str(dirInfo["files"]) + " files)")
+	var sizeText = _formatSize(dirInfo["size"]) + " (" + str(dirInfo["files"]) + " files)"
+	item.set_text(1, sizeText)
+	print("  Created dir item: '", displayName, "/' - Size: '", sizeText, "'")
 
 	# Add subdirectories and files
 	var dir = DirAccess.open(dirPath)
@@ -224,18 +270,20 @@ func _addDirectoryToTree(parentItem: TreeItem, dirPath: String, displayName: Str
 
 func _addFileToTree(parentItem: TreeItem, filePath: String, displayName: String):
 	var item = _tree.create_item(parentItem)
-	item.set_text(0, displayName)
-	item.set_cell_mode(0, TreeItem.CELL_MODE_CHECK)
-	item.set_checked(0, true)  # Default to checked (included)
-	item.set_editable(0, true)
-	item.set_metadata(0, filePath)
 
-	# Get file size
+	# Column 0: Checkbox icon + filename
+	item.set_icon(0, _iconChecked)
+	item.set_metadata(0, {"path": filePath, "checked": true})
+	item.set_text(0, displayName)
+
+	# Column 1: Size
 	var file = FileAccess.open(filePath, FileAccess.READ)
 	if file:
 		var size = file.get_length()
-		item.set_text(1, _formatSize(size))
+		var sizeText = _formatSize(size)
+		item.set_text(1, sizeText)
 		file.close()
+		print("  Created file item: '", displayName, "' - Size: '", sizeText, "'")
 
 func _getDirectoryInfo(dirPath: String) -> Dictionary:
 	var totalSize: int = 0
@@ -387,18 +435,17 @@ func _addAdditionalFileRow(fileEntry: Dictionary):
 
 	_filesList.add_child(row)
 
-func _onTreeItemEdited():
-	# When a tree item is checked/unchecked, propagate to children
-	var editedItem = _tree.get_edited()
-	if editedItem:
-		var isChecked = editedItem.is_checked(0)
-		_propagateCheckState(editedItem, isChecked)
-
 func _propagateCheckState(item: TreeItem, checked: bool):
-	# Set all children to same state
+	# Set all children to same state (icon-based checkboxes)
 	var child = item.get_first_child()
 	while child:
-		child.set_checked(0, checked)
+		var metadata = child.get_metadata(0)
+		if metadata != null and metadata is Dictionary:
+			metadata["checked"] = checked
+			if checked:
+				child.set_icon(0, _iconChecked)
+			else:
+				child.set_icon(0, _iconUnchecked)
 		_propagateCheckState(child, checked)
 		child = child.get_next()
 
@@ -418,9 +465,17 @@ func _expandAllTree():
 		_expandTreeItem(root)
 
 func _collapseAllTree():
+	# Collapse to first visible level (project root folder)
+	# Don't collapse the hidden root or the project folder itself
 	var root = _tree.get_root()
 	if root:
-		_collapseTreeItem(root)
+		var projectFolder = root.get_first_child()  # First child is the project folder
+		if projectFolder:
+			# Collapse all children of the project folder, but keep project folder expanded
+			var child = projectFolder.get_first_child()
+			while child:
+				_collapseTreeItem(child)
+				child = child.get_next()
 
 func _expandTreeItem(item: TreeItem):
 	item.collapsed = false
@@ -507,13 +562,16 @@ func _collectUncheckedPaths(item: TreeItem, excludedPaths: Array[String]):
 	if item == null:
 		return
 
-	# Check if this item is unchecked
-	if item.get_metadata(0) != null and not item.is_checked(0):
-		var path = item.get_metadata(0)
-		# Make path relative to project
-		var relativePath = path.replace(_projectPath + "/", "")
-		if not excludedPaths.has(relativePath):
-			excludedPaths.append(relativePath)
+	# Check if this item is unchecked (using metadata dict)
+	var metadata = item.get_metadata(0)
+	if metadata != null and metadata is Dictionary:
+		var isChecked = metadata.get("checked", true)
+		if not isChecked:
+			var path = metadata.get("path", "")
+			# Make path relative to project
+			var relativePath = path.replace(_projectPath + "/", "")
+			if not excludedPaths.has(relativePath):
+				excludedPaths.append(relativePath)
 
 	# Recurse to children
 	var child = item.get_first_child()
@@ -524,6 +582,28 @@ func _collectUncheckedPaths(item: TreeItem, excludedPaths: Array[String]):
 func _onCancelPressed():
 	cancelled.emit()
 	visible = false
+
+func _onTreeItemClicked(_mouse_position: Vector2, mouse_button_index: int):
+	# Toggle checkbox when item is clicked (works on every click, even if already selected)
+	if mouse_button_index != MOUSE_BUTTON_LEFT:
+		return  # Only toggle on left-click
+
+	var item = _tree.get_selected()
+	if item:
+		var metadata = item.get_metadata(0)
+		if metadata != null and metadata is Dictionary:
+			var isChecked = metadata.get("checked", true)
+			var newState = not isChecked
+			metadata["checked"] = newState
+
+			# Update icon
+			if newState:
+				item.set_icon(0, _iconChecked)
+			else:
+				item.set_icon(0, _iconUnchecked)
+
+			# Propagate to all children
+			_propagateCheckState(item, newState)
 
 func _onTabPressed(tabIndex: int):
 	_currentTab = tabIndex
