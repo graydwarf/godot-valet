@@ -1039,6 +1039,9 @@ func _exportPlatform(platform: String):
 	# Check if export directory already exists and prompt user
 	var shouldClearFolder = false
 	if DirAccess.dir_exists_absolute(exportDestPath):
+		# IMPORTANT: Hide blocker before showing dialog (in case previous platform left it visible)
+		_setUIEnabled(true)
+
 		# Prompt user with three options: Clear & Export, Overwrite, Cancel
 		var overwriteDialog = _getYesNoDialog()
 		_updateStatus(data, "Awaiting confirmation...")
@@ -1058,6 +1061,7 @@ func _exportPlatform(platform: String):
 				data["button"].disabled = false
 			_exportingPlatforms.erase(platform)
 			build_completed.emit(platform, false)
+			# Keep blocker hidden since export is cancelled
 			return
 		elif choice == "Clear & Export":
 			shouldClearFolder = true
