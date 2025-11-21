@@ -9,11 +9,17 @@ signal cancelled()
 @onready var _rootPathLabel = %RootPathLabel
 @onready var _rootPathCard = %RootPathCard
 @onready var _previewCard = %PreviewCard
+@onready var _projectVersionCard = %ProjectVersionCard
+@onready var _pathSegmentsCard = %PathSegmentsCard
 @onready var _projectVersionLineEdit = %ProjectVersionLineEdit
 @onready var _rootPathHeaderContainer = $BackgroundPanel/MarginContainer/VBoxContainer/RootPathCard/VBoxContainer/HeaderContainer
 @onready var _rootPathContentContainer = $BackgroundPanel/MarginContainer/VBoxContainer/RootPathCard/VBoxContainer/ContentContainer
 @onready var _previewHeaderContainer = $BackgroundPanel/MarginContainer/VBoxContainer/PreviewCard/VBoxContainer/HeaderContainer
 @onready var _previewContentContainer = $BackgroundPanel/MarginContainer/VBoxContainer/PreviewCard/VBoxContainer/ContentContainer
+@onready var _projectVersionHeaderContainer = $BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard/VBoxContainer/HeaderContainer
+@onready var _projectVersionContentContainer = $BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard/VBoxContainer/ContentContainer
+@onready var _pathSegmentsHeaderContainer = $BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/HeaderContainer
+@onready var _pathSegmentsContentContainer = $BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer
 
 var _currentPlatform: String = ""
 var _rootExportPath: String = ""
@@ -36,6 +42,10 @@ func _ready():
 		_applyCardStyle(_rootPathCard, _rootPathHeaderContainer, _rootPathContentContainer)
 	if _previewCard != null and _previewHeaderContainer != null and _previewContentContainer != null:
 		_applyCardStyle(_previewCard, _previewHeaderContainer, _previewContentContainer)
+	if _projectVersionCard != null and _projectVersionHeaderContainer != null and _projectVersionContentContainer != null:
+		_applyCardStyle(_projectVersionCard, _projectVersionHeaderContainer, _projectVersionContentContainer)
+	if _pathSegmentsCard != null and _pathSegmentsHeaderContainer != null and _pathSegmentsContentContainer != null:
+		_applyCardStyle(_pathSegmentsCard, _pathSegmentsHeaderContainer, _pathSegmentsContentContainer)
 
 func _applyCardStyle(outerPanel: PanelContainer, headerPanel: PanelContainer, contentPanel: PanelContainer):
 	# Outer panel with rounded corners and border

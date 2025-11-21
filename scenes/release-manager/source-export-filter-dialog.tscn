@@ -293,13 +293,16 @@ theme_override_constants/separation = 4
 [node name="ButtonContainer" type="HBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 12
-alignment = 2
 
 [node name="CancelButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 40)
 layout_mode = 2
 text = "Cancel"
+
+[node name="Spacer" type="Control" parent="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="SaveButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer"]
 unique_name_in_owner = true

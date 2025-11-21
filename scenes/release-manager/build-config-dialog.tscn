@@ -70,9 +70,6 @@ layout_mode = 2
 focus_mode = 0
 tooltip_text = "Copy obfuscation settings from another platform"
 
-[node name="HSeparator" type="HSeparator" parent="BackgroundPanel/MainMargin/MainVBox"]
-layout_mode = 2
-
 [node name="ObfuscationCard" type="PanelContainer" parent="BackgroundPanel/MainMargin/MainVBox"]
 unique_name_in_owner = true
 layout_mode = 2

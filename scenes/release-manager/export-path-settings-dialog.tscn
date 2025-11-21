@@ -112,67 +112,132 @@ layout_mode = 2
 text = "📁"
 modulate = Color(1, 1, 0.6, 1)
 
-[node name="ProjectVersionMargin" type="MarginContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+[node name="ProjectVersionCard" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/margin_top = 8
-theme_override_constants/margin_bottom = 8
 
-[node name="ProjectVersionHBox" type="HBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionMargin"]
+[node name="VBoxContainer" type="VBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="HeaderContainer" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard/VBoxContainer"]
+layout_mode = 2
+
+[node name="HeaderMargin" type="MarginContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard/VBoxContainer/HeaderContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="HeaderRow" type="HBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard/VBoxContainer/HeaderContainer/HeaderMargin"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionMargin/ProjectVersionHBox"]
-text = "Project Version:"
-custom_minimum_size = Vector2(130, 0)
+[node name="Label" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard/VBoxContainer/HeaderContainer/HeaderMargin/HeaderRow"]
 layout_mode = 2
-size_flags_horizontal = 0
-horizontal_alignment = 2
+text = "Project Version"
 vertical_alignment = 1
+theme_override_font_sizes/font_size = 16
 
-[node name="ProjectVersionLineEdit" type="LineEdit" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionMargin/ProjectVersionHBox"]
+[node name="ContentContainer" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard/VBoxContainer"]
+layout_mode = 2
+
+[node name="ContentMargin" type="MarginContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard/VBoxContainer/ContentContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="ProjectVersionLineEdit" type="LineEdit" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard/VBoxContainer/ContentContainer/ContentMargin"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "e.g., v1.0.0"
 
-[node name="HSeparator" type="HSeparator" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "Path Segments:"
-
-[node name="SegmentsScroll" type="ScrollContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+[node name="PathSegmentsCard" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="SegmentsList" type="VBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/SegmentsScroll"]
+[node name="VBoxContainer" type="VBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="HeaderContainer" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer"]
+layout_mode = 2
+
+[node name="HeaderMargin" type="MarginContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/HeaderContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="HeaderRow" type="HBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/HeaderContainer/HeaderMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/HeaderContainer/HeaderMargin/HeaderRow"]
+layout_mode = 2
+text = "Path Segments"
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 16
+
+[node name="ContentContainer" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ContentMargin" type="MarginContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="ContentVBox" type="VBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer/ContentMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="SegmentsScroll" type="ScrollContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ListMargin" type="MarginContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/SegmentsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_right = 4
+
+[node name="SegmentsList" type="VBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/SegmentsScroll/ListMargin"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 4
 
-[node name="AddButtonsContainer" type="HBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
+[node name="AddButtonsContainer" type="HBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="AddVersionButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/AddButtonsContainer"]
+[node name="AddVersionButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/AddButtonsContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "+ {version}"
 
-[node name="AddPlatformButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/AddButtonsContainer"]
+[node name="AddPlatformButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/AddButtonsContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "+ {platform}"
 
-[node name="AddDateButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/AddButtonsContainer"]
+[node name="AddDateButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/AddButtonsContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "+ {date}"
 
-[node name="AddCustomButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/AddButtonsContainer"]
+[node name="AddCustomButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/AddButtonsContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "+ Custom Path"
@@ -224,12 +289,15 @@ scroll_active = false
 
 [node name="ButtonContainer" type="HBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-alignment = 2
 
 [node name="CancelButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer"]
 custom_minimum_size = Vector2(100, 31)
 layout_mode = 2
 text = "Cancel"
+
+[node name="Spacer" type="Control" parent="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="SaveButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer"]
 custom_minimum_size = Vector2(100, 31)
@@ -237,9 +305,9 @@ layout_mode = 2
 text = "Save"
 
 [connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/RootPathCard/VBoxContainer/ContentContainer/ContentMargin/RootPathContainer/SelectFolderButton" to="." method="_onSelectFolderPressed"]
-[connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/AddButtonsContainer/AddVersionButton" to="." method="_onAddVersionPressed"]
-[connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/AddButtonsContainer/AddPlatformButton" to="." method="_onAddPlatformPressed"]
-[connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/AddButtonsContainer/AddDateButton" to="." method="_onAddDatePressed"]
-[connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/AddButtonsContainer/AddCustomButton" to="." method="_onAddCustomPressed"]
+[connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/AddButtonsContainer/AddVersionButton" to="." method="_onAddVersionPressed"]
+[connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/AddButtonsContainer/AddPlatformButton" to="." method="_onAddPlatformPressed"]
+[connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/AddButtonsContainer/AddDateButton" to="." method="_onAddDatePressed"]
+[connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/AddButtonsContainer/AddCustomButton" to="." method="_onAddCustomPressed"]
 [connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer/CancelButton" to="." method="_onCancelPressed"]
 [connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer/SaveButton" to="." method="_onSavePressed"]
