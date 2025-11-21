@@ -177,6 +177,7 @@ func _updateReviewSection(_value = null):
 			var channelName = _getButlerChannelName(platform)
 			var rootPath = settings.get("exportPath", "")
 			var pathTemplate = settings.get("pathTemplate", [])
+			var exportFilename = settings.get("exportFilename", "")
 			var fullPath = _buildFullExportPath(rootPath, pathTemplate, platform, version)
 
 			var channelLabel = Label.new()
@@ -184,13 +185,15 @@ func _updateReviewSection(_value = null):
 			channelLabel.add_theme_font_size_override("font_size", 12)
 			_channelsList.add_child(channelLabel)
 
-			# Show full export path
+			# Show full export path with filename
 			var pathLabel = Label.new()
 			if rootPath.is_empty():
 				pathLabel.text = "    (no export path configured)"
 				pathLabel.modulate = Color(1.0, 0.6, 0.6, 1)
 			else:
-				pathLabel.text = "    %s" % fullPath
+				var fileExtension = _getFileExtension(platform)
+				var fullFilePath = fullPath.path_join(exportFilename + fileExtension)
+				pathLabel.text = "    %s" % fullFilePath
 				pathLabel.modulate = Color(0.6, 0.6, 0.6, 1)
 			pathLabel.add_theme_font_size_override("font_size", 11)
 			_channelsList.add_child(pathLabel)
@@ -220,6 +223,25 @@ func _getButlerChannelName(platform: String) -> String:
 			return "source"
 		_:
 			return platform.to_lower().replace(" ", "-")
+
+func _getFileExtension(platform: String) -> String:
+	match platform:
+		"Windows":
+			return ".exe"
+		"macOS":
+			return ".zip"  # macOS exports are typically zipped .app bundles
+		"Linux":
+			return ".x86_64"
+		"Web":
+			return ".html"
+		"Android":
+			return ".apk"
+		"iOS":
+			return ".ipa"
+		"Source":
+			return ""  # Source is a folder, no extension
+		_:
+			return ""
 
 func _buildFullExportPath(rootPath: String, pathTemplate: Array, platform: String, version: String) -> String:
 	if rootPath.is_empty():
