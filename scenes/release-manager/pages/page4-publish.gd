@@ -200,9 +200,14 @@ func _updateReviewSection(_value = null):
 				pathLabel.text = "    (no export path configured)"
 				pathLabel.modulate = Color(1.0, 0.6, 0.6, 1)
 			else:
-				var fileExtension = _getFileExtension(platform)
-				var fullFilePath = fullPath.path_join(exportFilename + fileExtension)
-				pathLabel.text = "    %s" % fullFilePath
+				var displayPath = ""
+				if platform == "Source":
+					# Source is a folder, show folder path
+					displayPath = fullPath + "/"
+				else:
+					var fileExtension = _getFileExtension(platform)
+					displayPath = fullPath.path_join(exportFilename + fileExtension)
+				pathLabel.text = "    %s" % displayPath
 				pathLabel.modulate = Color(0.6, 0.6, 0.6, 1)
 			pathLabel.add_theme_font_size_override("font_size", 11)
 			_channelsList.add_child(pathLabel)
