@@ -1290,19 +1290,17 @@ func _exportPlatform(platform: String):
 	build_completed.emit(platform, success)
 
 func validate() -> bool:
-	# Check that selected platforms have valid export paths
+	# Only block navigation if export path equals project path (dangerous)
+	# Empty export paths are allowed - user can configure them later
 	for platform in _platformRows.keys():
 		var data = _platformRows[platform]
 		if data["checkbox"].button_pressed:
 			var exportPath = data["exportPath"].text
-			if exportPath.is_empty():
-				# TODO: Show validation error
-				return false
-
-			# Export path cannot equal project path
-			if _selectedProjectItem != null:
+			# Export path cannot equal project path (would overwrite source files)
+			if not exportPath.is_empty() and _selectedProjectItem != null:
 				var projectPath = _selectedProjectItem.GetProjectPath()
 				if exportPath == projectPath:
+					print("Validation FAIL: ", platform, " export path equals project path!")
 					return false
 
 	return true

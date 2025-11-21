@@ -3,7 +3,7 @@ class_name WizardBreadcrumb
 
 signal step_clicked(step_index: int)
 
-var _steps = ["Export", "Publish"]
+var _steps = ["Build", "Publish"]
 var _currentStep: int = 0
 var _stepButtons: Array[Button] = []
 
@@ -59,4 +59,5 @@ func _updateStepVisuals():
 
 func _onStepPressed(step_index: int):
 	# Allow jumping to any page
+	print("WizardBreadcrumb._onStepPressed: step_index=", step_index)
 	step_clicked.emit(step_index)

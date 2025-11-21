@@ -30,6 +30,11 @@ func _ready():
 	if window and not window.close_requested.is_connected(_onWindowCloseRequested):
 		window.close_requested.connect(_onWindowCloseRequested)
 
+	# Manually connect breadcrumb signal (tscn connection may not work with dynamic buttons)
+	if _breadcrumb and not _breadcrumb.step_clicked.is_connected(_onBreadcrumbStepClicked):
+		print("Connecting breadcrumb step_clicked signal manually")
+		_breadcrumb.step_clicked.connect(_onBreadcrumbStepClicked)
+
 func _exit_tree():
 	# Re-enable auto-quit when wizard closes
 	get_tree().set_auto_accept_quit(true)
@@ -87,7 +92,9 @@ func _loadPages():
 		child.visible = false
 
 	# Get page nodes from container
+	print("_loadPages: checking children of PagesContainer...")
 	for child in _pagesContainer.get_children():
+		print("  Child: ", child.name, " is WizardPageBase: ", child is WizardPageBase)
 		if child is WizardPageBase:
 			_pages.append(child)
 
@@ -102,6 +109,8 @@ func _loadPages():
 			# Connect page_saved signal to reset dirty state
 			if child.has_signal("page_saved"):
 				child.page_saved.connect(_onPageSaved)
+
+	print("_loadPages: total pages loaded = ", _pages.size())
 
 func _onPageModified():
 	# Mark as dirty when any page input is modified
@@ -156,11 +165,15 @@ func _onBackPressed():
 		_showPage(_currentPage - 1)
 
 func _onNextPressed():
+	print("_onNextPressed called - current page: ", _currentPage, " total pages: ", _pages.size())
+
 	# Validate current page
 	if !_pages[_currentPage].validate():
 		# Show validation error
-		# TODO: Add validation error display
+		print("Validation FAILED for page ", _currentPage)
 		return
+
+	print("Validation passed, saving page...")
 
 	# Save current page
 	_pages[_currentPage].save()
@@ -169,8 +182,10 @@ func _onNextPressed():
 
 	# If on last page, finish
 	if _currentPage == _pages.size() - 1:
+		print("On last page, calling _onFinishPressed")
 		_onFinishPressed()
 	else:
+		print("Navigating to page ", _currentPage + 1)
 		_showPage(_currentPage + 1)
 
 func _onFinishPressed():
@@ -205,6 +220,7 @@ func _onConfirmationDialogChoice(choice: String):
 			_isClosingApp = false  # Reset flag
 
 func _onBreadcrumbStepClicked(step_index: int):
+	print("_onBreadcrumbStepClicked: step_index=", step_index, " current=", _currentPage, " total pages=", _pages.size())
 	# Save current page before navigating
 	_pages[_currentPage].save()
 	_projectCard.show_saved_indicator()
