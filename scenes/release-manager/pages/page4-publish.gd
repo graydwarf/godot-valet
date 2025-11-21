@@ -170,6 +170,13 @@ func _updateReviewSection(_value = null):
 	var allSettings = _selectedProjectItem.GetAllPlatformExportSettings()
 	var hasChannels = false
 
+	# Get project name as fallback for export filename
+	var fallbackFilename = ""
+	if _selectedProjectItem != null:
+		var projectPath = _selectedProjectItem.GetProjectPath()
+		if not projectPath.is_empty():
+			fallbackFilename = projectPath.get_file().get_basename()
+
 	for platform in allSettings.keys():
 		var settings = allSettings[platform]
 		if settings.get("enabled", false):
@@ -178,6 +185,8 @@ func _updateReviewSection(_value = null):
 			var rootPath = settings.get("exportPath", "")
 			var pathTemplate = settings.get("pathTemplate", [])
 			var exportFilename = settings.get("exportFilename", "")
+			if exportFilename.is_empty():
+				exportFilename = fallbackFilename
 			var fullPath = _buildFullExportPath(rootPath, pathTemplate, platform, version)
 
 			var channelLabel = Label.new()
