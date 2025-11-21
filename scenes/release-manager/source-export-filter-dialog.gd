@@ -16,6 +16,8 @@ signal cancelled()
 @onready var _addFileButton = %AddFileButton
 @onready var _cancelButton = %CancelButton
 @onready var _saveButton = %SaveButton
+@onready var _excludePatternsHelpButton = %ExcludePatternsHelpButton
+@onready var _additionalFilesHelpButton = %AdditionalFilesHelpButton
 
 # Tab buttons
 @onready var _projectFilesTab = %ProjectFilesTab
@@ -38,6 +40,37 @@ var _currentTab: int = 0  # 0=Project Files, 1=Exclude Patterns, 2=Additional Fi
 # Checkbox icons
 var _iconChecked: Texture2D
 var _iconUnchecked: Texture2D
+
+const PROJECT_FILES_HELP_TEXT = """Use the checkboxes to include or exclude files and folders from the Source export.
+
+- Click a folder to toggle all its contents
+- Checked items will be included in the export
+- Unchecked items will be excluded
+
+This tree shows all files in your project. Use it for fine-grained control over exactly which files are exported."""
+
+const EXCLUDE_PATTERNS_HELP_TEXT = """Add patterns to automatically exclude matching files and folders.
+
+Examples:
+- .git/ - Exclude the .git folder
+- .godot/ - Exclude the .godot cache folder
+- *.tmp - Exclude all .tmp files
+- exports/ - Exclude the exports folder
+
+Patterns support wildcards:
+- * matches any characters within a filename
+- Trailing / indicates a folder
+
+Patterns are applied in addition to unchecked items in Project Files."""
+
+const ADDITIONAL_FILES_HELP_TEXT = """Add files or folders from outside your project to include in the export.
+
+Use this to bundle external assets, documentation, or dependencies with your Source export.
+
+- Source: The path to the file or folder to include
+- Target: Where to place it in the export (relative to export root)
+
+For example, add a README.txt from your documents folder to appear at the root of your exported source."""
 
 func _ready():
 	visible = false
@@ -70,6 +103,10 @@ func _ready():
 		_cancelButton.pressed.connect(_onCancelPressed)
 	if _saveButton:
 		_saveButton.pressed.connect(_onSavePressed)
+	if _excludePatternsHelpButton:
+		_excludePatternsHelpButton.pressed.connect(_onExcludePatternsHelpPressed)
+	if _additionalFilesHelpButton:
+		_additionalFilesHelpButton.pressed.connect(_onAdditionalFilesHelpPressed)
 
 	# Load checkbox icons
 	_iconChecked = load("res://scenes/release-manager/assets/checkbox-checked.svg")
@@ -512,8 +549,121 @@ func _collapseTreeItem(item: TreeItem):
 		child = child.get_next()
 
 func _onHelpPressed():
-	# TODO: Show help dialog explaining include/exclude functionality
-	print("Help: This dialog allows you to configure which files to include/exclude in Source exports")
+	_showHelpDialog("Project Files", PROJECT_FILES_HELP_TEXT)
+
+func _onExcludePatternsHelpPressed():
+	_showHelpDialog("Exclude Patterns", EXCLUDE_PATTERNS_HELP_TEXT)
+
+func _onAdditionalFilesHelpPressed():
+	_showHelpDialog("Additional Files", ADDITIONAL_FILES_HELP_TEXT)
+
+func _showHelpDialog(titleText: String, content: String):
+	# Create card-styled help dialog overlay
+	var overlay = Control.new()
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.z_index = 200
+
+	# Semi-transparent background to dim the dialog behind
+	var dimmer = ColorRect.new()
+	dimmer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dimmer.color = Color(0, 0, 0, 0.5)
+	overlay.add_child(dimmer)
+
+	# Center container for the dialog card
+	var centerContainer = CenterContainer.new()
+	centerContainer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(centerContainer)
+
+	# The dialog card panel
+	var card = PanelContainer.new()
+	card.custom_minimum_size = Vector2(450, 0)
+	centerContainer.add_child(card)
+
+	# Apply card styling (rounded edges, border)
+	var cardTheme = Theme.new()
+	var cardStyleBox = StyleBoxFlat.new()
+	cardStyleBox.bg_color = _getAdjustedBackgroundColor(-0.08)
+	cardStyleBox.border_color = Color(0.6, 0.6, 0.6)
+	cardStyleBox.border_width_left = 1
+	cardStyleBox.border_width_top = 1
+	cardStyleBox.border_width_right = 1
+	cardStyleBox.border_width_bottom = 1
+	cardStyleBox.corner_radius_top_left = 6
+	cardStyleBox.corner_radius_top_right = 6
+	cardStyleBox.corner_radius_bottom_right = 6
+	cardStyleBox.corner_radius_bottom_left = 6
+	cardTheme.set_stylebox("panel", "PanelContainer", cardStyleBox)
+	card.theme = cardTheme
+
+	# Card content VBox
+	var cardContent = VBoxContainer.new()
+	cardContent.add_theme_constant_override("separation", 0)
+	card.add_child(cardContent)
+
+	# Card header
+	var header = PanelContainer.new()
+	cardContent.add_child(header)
+
+	# Header styling (bottom border only)
+	var headerTheme = Theme.new()
+	var headerStyleBox = StyleBoxFlat.new()
+	headerStyleBox.bg_color = Color(0, 0, 0, 0)
+	headerStyleBox.border_color = Color(0.6, 0.6, 0.6)
+	headerStyleBox.border_width_bottom = 1
+	headerTheme.set_stylebox("panel", "PanelContainer", headerStyleBox)
+	header.theme = headerTheme
+
+	# Header margin and label
+	var headerMargin = MarginContainer.new()
+	headerMargin.add_theme_constant_override("margin_left", 10)
+	headerMargin.add_theme_constant_override("margin_top", 10)
+	headerMargin.add_theme_constant_override("margin_right", 10)
+	headerMargin.add_theme_constant_override("margin_bottom", 10)
+	header.add_child(headerMargin)
+
+	var headerLabel = Label.new()
+	headerLabel.text = titleText
+	headerLabel.add_theme_font_size_override("font_size", 16)
+	headerMargin.add_child(headerLabel)
+
+	# Card body with content
+	var bodyMargin = MarginContainer.new()
+	bodyMargin.add_theme_constant_override("margin_left", 15)
+	bodyMargin.add_theme_constant_override("margin_top", 15)
+	bodyMargin.add_theme_constant_override("margin_right", 15)
+	bodyMargin.add_theme_constant_override("margin_bottom", 15)
+	cardContent.add_child(bodyMargin)
+
+	var bodyVBox = VBoxContainer.new()
+	bodyVBox.add_theme_constant_override("separation", 12)
+	bodyMargin.add_child(bodyVBox)
+
+	# Help content label
+	var contentLabel = Label.new()
+	contentLabel.text = content
+	contentLabel.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	bodyVBox.add_child(contentLabel)
+
+	# Close button at bottom
+	var buttonContainer = HBoxContainer.new()
+	buttonContainer.alignment = BoxContainer.ALIGNMENT_END
+	bodyVBox.add_child(buttonContainer)
+
+	var closeButton = Button.new()
+	closeButton.text = "Got it"
+	closeButton.custom_minimum_size = Vector2(80, 32)
+	closeButton.focus_mode = Control.FOCUS_NONE
+	closeButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	closeButton.pressed.connect(func(): overlay.queue_free())
+	buttonContainer.add_child(closeButton)
+
+	# Click on dimmer also closes
+	dimmer.gui_input.connect(func(event):
+		if event is InputEventMouseButton and event.pressed:
+			overlay.queue_free()
+	)
+
+	add_child(overlay)
 
 func _onAddPatternPressed():
 	# Add empty pattern that user can edit

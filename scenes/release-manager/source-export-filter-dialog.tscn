@@ -122,6 +122,7 @@ text = "Expand All"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
+focus_mode = 0
 text = "?"
 
 [node name="TreeContentPanel" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ProjectTreeCard/ProjectTreeContent"]
@@ -184,6 +185,13 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "+ Add Pattern"
+
+[node name="ExcludePatternsHelpButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ExcludePatternsCard/PatternsContent/PatternsHeader/PatternsHeaderMargin/PatternsHeaderRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+focus_mode = 0
+text = "?"
 
 [node name="PatternsContentPanel" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/ExcludePatternsCard/PatternsContent"]
 layout_mode = 2
@@ -249,6 +257,13 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "+ Add File/Folder"
+
+[node name="AdditionalFilesHelpButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/AdditionalFilesCard/FilesContent/FilesHeader/FilesHeaderMargin/FilesHeaderRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+focus_mode = 0
+text = "?"
 
 [node name="FilesContentPanel" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/CardContainer/AdditionalFilesCard/FilesContent"]
 layout_mode = 2
