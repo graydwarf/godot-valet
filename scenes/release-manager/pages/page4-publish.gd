@@ -15,6 +15,9 @@ signal page_modified()  # Emitted when any input is changed
 @onready var _profileHelpButton = %ProfileHelpButton
 @onready var _projectHelpButton = %ProjectHelpButton
 @onready var _exportTypeValueLabel = %ValueLabel
+@onready var _uploadUrlValue = %UploadUrlValue
+@onready var _versionValue = %VersionValue
+@onready var _channelsList = %ChannelsList
 
 # Card styling containers
 @onready var _itchHeaderContainer = $MarginContainer/VBoxContainer/ItchCard/VBoxContainer/HeaderContainer
@@ -32,9 +35,11 @@ func _ready():
 	_profileHelpButton.pressed.connect(_onProfileHelpButtonPressed)
 	_projectHelpButton.pressed.connect(_onProjectHelpButtonPressed)
 
-	# Connect input change signals for dirty tracking
+	# Connect input change signals for dirty tracking and review updates
 	_itchProfileLineEdit.text_changed.connect(_onInputChanged)
 	_itchProjectLineEdit.text_changed.connect(_onInputChanged)
+	_itchProfileLineEdit.text_changed.connect(_updateReviewSection)
+	_itchProjectLineEdit.text_changed.connect(_updateReviewSection)
 
 func _applyCardStyle():
 	_applyCardStyleToPanel(_itchCard, _itchHeaderContainer, _itchContentContainer)
@@ -109,6 +114,9 @@ func _loadPageData():
 	# Load selected export platforms from Build page
 	_updateExportTypeSummary()
 
+	# Update review section
+	_updateReviewSection()
+
 	# Reset state
 	_statusLabel.text = ""
 	_publishing = false
@@ -130,6 +138,82 @@ func _updateExportTypeSummary():
 		_exportTypeValueLabel.text = "None selected"
 	else:
 		_exportTypeValueLabel.text = ", ".join(selectedPlatforms)
+
+func _updateReviewSection(_value = null):
+	if _selectedProjectItem == null:
+		return
+
+	var profileName = _itchProfileLineEdit.text
+	var projectName = _itchProjectLineEdit.text
+
+	# Update upload URL
+	if profileName.is_empty() or projectName.is_empty():
+		_uploadUrlValue.text = "(enter profile and project name)"
+		_uploadUrlValue.modulate = Color(0.7, 0.7, 0.7, 1)
+	else:
+		_uploadUrlValue.text = "%s.itch.io/%s" % [profileName, projectName]
+		_uploadUrlValue.modulate = Color(1, 1, 1, 1)
+
+	# Update version
+	var version = _selectedProjectItem.GetProjectVersion()
+	_versionValue.text = version if not version.is_empty() else "(not set)"
+
+	# Clear existing channel items
+	for child in _channelsList.get_children():
+		child.queue_free()
+
+	# Get platform settings and build channel list
+	var allSettings = _selectedProjectItem.GetAllPlatformExportSettings()
+	var hasChannels = false
+
+	for platform in allSettings.keys():
+		var settings = allSettings[platform]
+		if settings.get("enabled", false):
+			hasChannels = true
+			var channelName = _getButlerChannelName(platform)
+			var exportPath = settings.get("exportPath", "")
+
+			var channelLabel = Label.new()
+			channelLabel.text = "  %s → %s:%s" % [platform, projectName, channelName]
+			channelLabel.add_theme_font_size_override("font_size", 12)
+			_channelsList.add_child(channelLabel)
+
+			# Show export path
+			var pathLabel = Label.new()
+			if exportPath.is_empty():
+				pathLabel.text = "    (no export path configured)"
+				pathLabel.modulate = Color(1.0, 0.6, 0.6, 1)
+			else:
+				pathLabel.text = "    From: %s" % exportPath
+				pathLabel.modulate = Color(0.6, 0.6, 0.6, 1)
+			pathLabel.add_theme_font_size_override("font_size", 11)
+			_channelsList.add_child(pathLabel)
+
+	if not hasChannels:
+		var noChannelsLabel = Label.new()
+		noChannelsLabel.text = "  (no platforms selected on Build page)"
+		noChannelsLabel.modulate = Color(0.7, 0.7, 0.7, 1)
+		noChannelsLabel.add_theme_font_size_override("font_size", 12)
+		_channelsList.add_child(noChannelsLabel)
+
+func _getButlerChannelName(platform: String) -> String:
+	match platform:
+		"Windows":
+			return "windows"
+		"macOS":
+			return "mac"
+		"Linux":
+			return "linux"
+		"Web":
+			return "html5"
+		"Android":
+			return "android"
+		"iOS":
+			return "ios"
+		"Source":
+			return "source"
+		_:
+			return platform.to_lower().replace(" ", "-")
 
 func _onInputChanged(_value = null):
 	# Emit signal when any input is modified
