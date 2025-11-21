@@ -202,8 +202,21 @@ func _updateReviewSection(_value = null):
 			else:
 				var displayPath = ""
 				if platform == "Source":
-					# Source is a folder, show folder path
-					displayPath = fullPath + "/"
+					# Source uploads folder contents, show what's inside
+					displayPath = fullPath
+					var contentInfo = _getFolderContentInfo(fullPath)
+					pathLabel.text = "    %s" % displayPath
+					pathLabel.modulate = Color(0.6, 0.6, 0.6, 1)
+					pathLabel.add_theme_font_size_override("font_size", 11)
+					_channelsList.add_child(pathLabel)
+
+					# Add a line showing folder contents summary
+					var contentsLabel = Label.new()
+					contentsLabel.text = "    └ %s" % contentInfo
+					contentsLabel.modulate = Color(0.5, 0.5, 0.5, 1)
+					contentsLabel.add_theme_font_size_override("font_size", 10)
+					_channelsList.add_child(contentsLabel)
+					continue  # Skip the normal pathLabel add below
 				else:
 					var fileExtension = _getFileExtension(platform)
 					displayPath = fullPath.path_join(exportFilename + fileExtension)
@@ -237,6 +250,35 @@ func _getButlerChannelName(platform: String) -> String:
 			return "source"
 		_:
 			return platform.to_lower().replace(" ", "-")
+
+func _getFolderContentInfo(folderPath: String) -> String:
+	var dir = DirAccess.open(folderPath)
+	if dir == null:
+		return "(folder not found)"
+
+	var fileCount = 0
+	var folderCount = 0
+
+	dir.list_dir_begin()
+	var fileName = dir.get_next()
+	while fileName != "":
+		if not fileName.begins_with("."):  # Skip hidden files
+			if dir.current_is_dir():
+				folderCount += 1
+			else:
+				fileCount += 1
+		fileName = dir.get_next()
+	dir.list_dir_end()
+
+	var parts = []
+	if folderCount > 0:
+		parts.append("%d folder%s" % [folderCount, "s" if folderCount != 1 else ""])
+	if fileCount > 0:
+		parts.append("%d file%s" % [fileCount, "s" if fileCount != 1 else ""])
+
+	if parts.is_empty():
+		return "(empty folder)"
+	return "Uploads: " + ", ".join(parts)
 
 func _getFileExtension(platform: String) -> String:
 	match platform:
