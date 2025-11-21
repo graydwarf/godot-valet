@@ -4,19 +4,27 @@ signal publish_started(destination: String)
 signal publish_completed(destination: String, success: bool)
 signal page_modified()  # Emitted when any input is changed
 
+@onready var _itchCard = %ItchCard
 @onready var _itchCheckBox = %ItchCheckBox
-@onready var _itchDetailsMargin = %ItchDetailsMargin
 @onready var _itchProfileLineEdit = %ItchProfileLineEdit
 @onready var _itchProjectLineEdit = %ItchProjectLineEdit
+@onready var _githubCard = %GithubCard
 @onready var _githubCheckBox = %GithubCheckBox
 @onready var _publishButton = %PublishButton
 @onready var _statusLabel = %StatusLabel
 @onready var _helpButton = %HelpButton
 @onready var _exportTypeValueLabel = %ValueLabel
 
+# Card styling containers
+@onready var _itchHeaderContainer = $MarginContainer/VBoxContainer/ItchCard/VBoxContainer/HeaderContainer
+@onready var _itchContentContainer = $MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer
+@onready var _githubHeaderContainer = $MarginContainer/VBoxContainer/GithubCard/VBoxContainer/HeaderContainer
+@onready var _githubContentContainer = $MarginContainer/VBoxContainer/GithubCard/VBoxContainer/ContentContainer
+
 var _publishing: bool = false
 
 func _ready():
+	_applyCardStyle()
 	_publishButton.pressed.connect(_onPublishPressed)
 	_itchCheckBox.toggled.connect(_onItchToggled)
 	_githubCheckBox.toggled.connect(_onDestinationToggled)
@@ -25,6 +33,60 @@ func _ready():
 	# Connect input change signals for dirty tracking
 	_itchProfileLineEdit.text_changed.connect(_onInputChanged)
 	_itchProjectLineEdit.text_changed.connect(_onInputChanged)
+
+func _applyCardStyle():
+	_applyCardStyleToPanel(_itchCard, _itchHeaderContainer, _itchContentContainer)
+	_applyCardStyleToPanel(_githubCard, _githubHeaderContainer, _githubContentContainer)
+
+func _applyCardStyleToPanel(outerPanel: PanelContainer, headerPanel: PanelContainer, contentPanel: PanelContainer):
+	# Outer panel with rounded corners and border
+	var outerTheme = Theme.new()
+	var outerStyleBox = StyleBoxFlat.new()
+	outerStyleBox.bg_color = _getAdjustedBackgroundColor(-0.08)
+	outerStyleBox.border_color = Color(0.6, 0.6, 0.6)
+	outerStyleBox.border_width_left = 1
+	outerStyleBox.border_width_top = 1
+	outerStyleBox.border_width_right = 1
+	outerStyleBox.border_width_bottom = 1
+	outerStyleBox.corner_radius_top_left = 6
+	outerStyleBox.corner_radius_top_right = 6
+	outerStyleBox.corner_radius_bottom_right = 6
+	outerStyleBox.corner_radius_bottom_left = 6
+	outerTheme.set_stylebox("panel", "PanelContainer", outerStyleBox)
+	outerPanel.theme = outerTheme
+
+	# Header with transparent background and bottom border only
+	var headerTheme = Theme.new()
+	var headerStyleBox = StyleBoxFlat.new()
+	headerStyleBox.bg_color = Color(0, 0, 0, 0)  # Transparent
+	headerStyleBox.border_color = Color(0.6, 0.6, 0.6)
+	headerStyleBox.border_width_left = 0
+	headerStyleBox.border_width_top = 0
+	headerStyleBox.border_width_right = 0
+	headerStyleBox.border_width_bottom = 1
+	headerTheme.set_stylebox("panel", "PanelContainer", headerStyleBox)
+	headerPanel.theme = headerTheme
+
+	# Content with transparent background (no borders)
+	var contentTheme = Theme.new()
+	var contentStyleBox = StyleBoxFlat.new()
+	contentStyleBox.bg_color = Color(0, 0, 0, 0)  # Transparent
+	contentStyleBox.border_width_left = 0
+	contentStyleBox.border_width_top = 0
+	contentStyleBox.border_width_right = 0
+	contentStyleBox.border_width_bottom = 0
+	contentTheme.set_stylebox("panel", "PanelContainer", contentStyleBox)
+	contentPanel.theme = contentTheme
+
+func _getAdjustedBackgroundColor(amount: float) -> Color:
+	var colorToSubtract = Color(amount, amount, amount, 0.0)
+	var baseColor = App.GetBackgroundColor()
+	return Color(
+		max(baseColor.r + colorToSubtract.r, 0),
+		max(baseColor.g + colorToSubtract.g, 0),
+		max(baseColor.b + colorToSubtract.b, 0),
+		baseColor.a
+	)
 
 func _loadPageData():
 	if _selectedProjectItem == null:
@@ -35,7 +97,8 @@ func _loadPageData():
 	_githubCheckBox.button_pressed = _selectedProjectItem.GetGithubEnabled()
 
 	# Update visibility based on checkbox state
-	_itchDetailsMargin.visible = _itchCheckBox.button_pressed
+	_itchContentContainer.visible = _itchCheckBox.button_pressed
+	_githubContentContainer.visible = _githubCheckBox.button_pressed
 
 	# Load itch.io settings
 	_itchProfileLineEdit.text = _selectedProjectItem.GetItchProfileName()
@@ -71,12 +134,14 @@ func _onInputChanged(_value = null):
 	page_modified.emit()
 
 func _onItchToggled(checked: bool):
-	# Show/hide itch.io details
-	_itchDetailsMargin.visible = checked
+	# Show/hide itch.io content
+	_itchContentContainer.visible = checked
 	_updatePublishButton()
 	page_modified.emit()
 
-func _onDestinationToggled(_value: bool):
+func _onDestinationToggled(checked: bool):
+	# Show/hide GitHub content
+	_githubContentContainer.visible = checked
 	_updatePublishButton()
 	page_modified.emit()
 
