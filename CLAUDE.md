@@ -82,6 +82,7 @@ The obfuscator processes both `.gd` script files and `.tscn` scene files:
 3. ✅ **Enum value preservation** - Enum values never obfuscated (two-pass architecture)
 4. ✅ **Cross-file enum handling** - Enum in one file won't conflict with variable in another
 5. ✅ **Scene file signal connections** - Method references in .tscn signal connections now updated to obfuscated names
+6. ✅ **CRITICAL: Comment-only obfuscation bug** - Scene files now only processed when function obfuscation enabled, preventing mismatch where scenes call obfuscated methods that don't exist in scripts (broke all signal connections when only comment obfuscation was enabled)
 
 ### Git Commits
 - `0ecd011` - Add callable pattern detection for .bind(), .unbind(), .call(), .callv()

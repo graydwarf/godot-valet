@@ -10,6 +10,7 @@ signal page_saved()  # Emitted after successful save to reset dirty flag
 @onready var _exportSelectedButton = %ExportSelectedButton
 @onready var _projectVersionLineEdit = %ProjectVersionLineEdit
 @onready var _refreshButton = %RefreshButton
+@onready var _editProjectButton = %EditProjectButton
 @onready var _saveButton = %SaveButton
 
 var _platformRows: Dictionary = {}  # platform_name -> {mainRow, checkbox, detailsSection, exportPath, exportFilename, obfuscation, button, configButton}
@@ -18,7 +19,7 @@ var _currentVersion: String = ""  # Store current version for comparison
 var _platformBuildConfigs: Dictionary = {}  # platform_name -> build config dict
 var _platformPathTemplates: Dictionary = {}  # platform_name -> path template array
 var _platformRootPaths: Dictionary = {}  # platform_name -> root export path (without template)
-var _buildConfigDialog: Window = null
+var _buildConfigDialog: Control = null
 var _pathSettingsDialog: Control = null
 var _filterDialog: Control = null
 var _yesNoDialog: Control = null
@@ -30,12 +31,14 @@ func _ready():
 	_exportSelectedButton.pressed.connect(_onExportSelectedPressed)
 	_projectVersionLineEdit.text_changed.connect(_onVersionChanged)
 	_refreshButton.pressed.connect(_onRefreshPressed)
+	_editProjectButton.pressed.connect(_onEditProjectPressed)
 	_saveButton.pressed.connect(_onSavePressed)
 
-	# Create build config dialog
+	# Create build config dialog (Control, not Window)
+	# Note: Will be added to root when shown so it covers entire wizard
 	_buildConfigDialog = load("res://scenes/release-manager/build-config-dialog.tscn").instantiate()
 	_buildConfigDialog.config_saved.connect(_onBuildConfigSaved)
-	add_child(_buildConfigDialog)
+	_buildConfigDialog.visible = false  # Start hidden
 
 	# Create export path settings page (Control, not Window)
 	# Note: Will be added to root when shown so it covers entire wizard
@@ -712,13 +715,19 @@ func _onConfigButtonPressed(platform: String):
 	var allPlatforms: Array[String] = []
 	allPlatforms.assign(_platformRows.keys())
 
-	# Get project path for Edit Project button
-	var projectPath = ""
-	if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
-		projectPath = _selectedProjectItem.GetProjectPath().get_base_dir()
+	# Add dialog to root if not already added (covers entire Release Manager)
+	if _buildConfigDialog.get_parent() == null:
+		# Find the ReleaseManager root node
+		var root = get_tree().current_scene
+		if root == null:
+			root = get_tree().root.get_child(get_tree().root.get_child_count() - 1)
+
+		root.add_child(_buildConfigDialog)
+		_buildConfigDialog.z_index = 1000  # Ensure it's on top
 
 	# Open the dialog
-	_buildConfigDialog.openForPlatform(platform, allPlatforms, _platformBuildConfigs, projectPath)
+	_buildConfigDialog.openForPlatform(platform, allPlatforms, _platformBuildConfigs)
+	_buildConfigDialog.move_to_front()  # Ensure it's rendered on top
 
 func _onBuildConfigSaved(platform: String, config: Dictionary):
 	# Store the config for this platform
@@ -956,6 +965,34 @@ func _onRefreshPressed():
 	_createPlatformRows()
 	_loadPlatformSettings()
 	_updateExportSelectedButtonState()
+
+func _onEditProjectPressed():
+	# Open the project in Godot Editor
+	if _selectedProjectItem == null or not is_instance_valid(_selectedProjectItem):
+		print("Error: No project selected")
+		return
+
+	var projectPath = _selectedProjectItem.GetProjectPath().get_base_dir()
+	if projectPath.is_empty():
+		print("Error: Project path not set")
+		return
+
+	# Get Godot path from the project's configured version
+	var godotVersionId = _selectedProjectItem.GetGodotVersionId()
+	var godotPath = _selectedProjectItem.GetGodotPath(godotVersionId)
+
+	if godotPath == null or godotPath == "???" or godotPath.is_empty():
+		# Fallback to default
+		godotPath = "C:/dad/apps/godot/godot-4.5-stable/Godot_v4.5-stable_win64.exe"
+
+	# Launch Godot editor for this project
+	var args = ["--editor", "--path", projectPath]
+	var pid = OS.create_process(godotPath, args)
+
+	if pid == -1:
+		print("Error: Failed to launch Godot editor")
+	else:
+		print("Opened project in Godot editor: ", projectPath)
 
 func _onSavePressed():
 	# Save all current settings

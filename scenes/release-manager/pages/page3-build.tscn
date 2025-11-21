@@ -51,9 +51,19 @@ size_flags_horizontal = 3
 unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 31)
 layout_mode = 2
+focus_mode = 0
 mouse_default_cursor_shape = 2
 tooltip_text = "Refresh export packages list"
 text = "Refresh"
+
+[node name="EditProjectButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonMargin/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 31)
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+tooltip_text = "Open project in Godot Editor to configure export settings"
+text = "Edit Project"
 
 [node name="ExportSelectedButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonMargin/HBoxContainer"]
 unique_name_in_owner = true

@@ -475,9 +475,31 @@ static func ObfuscateDirectory(path: String, autoloads : Array) -> void:
 	ObfuscateAllFiles(filteredFiles, globalObfuscationMap, autoloads)
 
 	# Also process .tscn files to update signal connection method references
+	# ONLY if function obfuscation is enabled (otherwise scene files call non-existent obfuscated methods)
 	var sceneFilters := ["tscn"]
 	var sceneFiles := FileHelper.GetFilesRecursive(path, sceneFilters)
-	ObfuscateSceneFiles(sceneFiles, globalObfuscationMap)
+
+	if _isObfuscatingFunctions:
+		# Function obfuscation enabled: Update scene file method references to match obfuscated names
+		ObfuscateSceneFiles(sceneFiles, globalObfuscationMap)
+	else:
+		# Function obfuscation disabled: Copy scene files as-is to preserve original method names
+		for scenePath in sceneFiles:
+			var content := FileAccess.get_file_as_string(scenePath)
+			if content == null or content == "":
+				continue
+
+			var relativePath: String = scenePath.replace(_inputDir, "")
+			var outputPath: String = _outputDir + relativePath
+			var outputDir: String = outputPath.get_base_dir()
+			DirAccess.make_dir_recursive_absolute(outputDir)
+
+			var file := FileAccess.open(outputPath, FileAccess.WRITE)
+			if file:
+				file.store_string(content)
+				file.close()
+			else:
+				printerr("Failed to copy scene file: ", outputPath)
 
 # Pass 1: Build global obfuscation map
 static func BuildGlobalObfuscationMap(allFiles) -> Dictionary:
