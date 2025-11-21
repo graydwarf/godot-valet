@@ -95,6 +95,15 @@ layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Your itch.io username"
 
+[node name="ProfileHelpButton" type="Button" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ItchProfileRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 31)
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+tooltip_text = "What is a profile name?"
+text = "?"
+
 [node name="ItchProjectRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox"]
 layout_mode = 2
 theme_override_constants/separation = 5
@@ -115,7 +124,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Your project slug on itch.io"
 
-[node name="HelpButton" type="Button" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ItchProjectRow"]
+[node name="ProjectHelpButton" type="Button" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ItchProjectRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 31)
 layout_mode = 2

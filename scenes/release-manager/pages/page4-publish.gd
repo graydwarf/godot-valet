@@ -12,7 +12,8 @@ signal page_modified()  # Emitted when any input is changed
 @onready var _githubCheckBox = %GithubCheckBox
 @onready var _publishButton = %PublishButton
 @onready var _statusLabel = %StatusLabel
-@onready var _helpButton = %HelpButton
+@onready var _profileHelpButton = %ProfileHelpButton
+@onready var _projectHelpButton = %ProjectHelpButton
 @onready var _exportTypeValueLabel = %ValueLabel
 
 # Card styling containers
@@ -28,7 +29,8 @@ func _ready():
 	_publishButton.pressed.connect(_onPublishPressed)
 	_itchCheckBox.toggled.connect(_onItchToggled)
 	_githubCheckBox.toggled.connect(_onDestinationToggled)
-	_helpButton.pressed.connect(_onHelpButtonPressed)
+	_profileHelpButton.pressed.connect(_onProfileHelpButtonPressed)
+	_projectHelpButton.pressed.connect(_onProjectHelpButtonPressed)
 
 	# Connect input change signals for dirty tracking
 	_itchProfileLineEdit.text_changed.connect(_onInputChanged)
@@ -179,8 +181,24 @@ func validate() -> bool:
 	# Page 4 is always valid (publish is optional)
 	return true
 
-func _onHelpButtonPressed():
-	# Create a simple info popup
+func _onProfileHelpButtonPressed():
+	var popup = AcceptDialog.new()
+	popup.title = "What is a Profile Name?"
+	popup.dialog_text = """Your profile name is your itch.io username.
+
+Examples:
+• If your itch.io page is: https://johndoe.itch.io
+• Your profile name is: johndoe
+
+This is used by butler to identify which account to upload to.
+You can find it in your itch.io dashboard URL or profile settings."""
+	popup.ok_button_text = "Got it!"
+	add_child(popup)
+	popup.popup_centered(Vector2i(450, 280))
+	popup.confirmed.connect(popup.queue_free)
+	popup.close_requested.connect(popup.queue_free)
+
+func _onProjectHelpButtonPressed():
 	var popup = AcceptDialog.new()
 	popup.title = "What is a Project Slug?"
 	popup.dialog_text = """A slug is the URL-friendly identifier for your project on itch.io.
