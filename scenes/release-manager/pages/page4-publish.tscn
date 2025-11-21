@@ -159,7 +159,7 @@ layout_mode = 2
 
 [node name="ReviewHeader" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 16
 text = "Pre-Publish Review"
 
 [node name="UploadUrlRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox"]
@@ -167,19 +167,16 @@ layout_mode = 2
 theme_override_constants/separation = 5
 
 [node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/UploadUrlRow"]
-custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
-size_flags_horizontal = 0
-size_flags_stretch_ratio = 0.0
+theme_override_font_sizes/font_size = 12
 text = "Upload URL:"
-horizontal_alignment = 2
 vertical_alignment = 1
-clip_text = true
 
 [node name="UploadUrlValue" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/UploadUrlRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
 text = "username.itch.io/project-slug"
 vertical_alignment = 1
 
@@ -188,19 +185,16 @@ layout_mode = 2
 theme_override_constants/separation = 5
 
 [node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/VersionRow"]
-custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
-size_flags_horizontal = 0
-size_flags_stretch_ratio = 0.0
+theme_override_font_sizes/font_size = 12
 text = "Version:"
-horizontal_alignment = 2
 vertical_alignment = 1
-clip_text = true
 
 [node name="VersionValue" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/VersionRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
 text = "v1.0.0"
 vertical_alignment = 1
 
