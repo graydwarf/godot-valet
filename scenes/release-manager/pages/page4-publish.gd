@@ -175,20 +175,22 @@ func _updateReviewSection(_value = null):
 		if settings.get("enabled", false):
 			hasChannels = true
 			var channelName = _getButlerChannelName(platform)
-			var exportPath = settings.get("exportPath", "")
+			var rootPath = settings.get("exportPath", "")
+			var pathTemplate = settings.get("pathTemplate", [])
+			var fullPath = _buildFullExportPath(rootPath, pathTemplate, platform, version)
 
 			var channelLabel = Label.new()
 			channelLabel.text = "  %s → %s:%s" % [platform, projectName, channelName]
 			channelLabel.add_theme_font_size_override("font_size", 12)
 			_channelsList.add_child(channelLabel)
 
-			# Show export path
+			# Show full export path
 			var pathLabel = Label.new()
-			if exportPath.is_empty():
+			if rootPath.is_empty():
 				pathLabel.text = "    (no export path configured)"
 				pathLabel.modulate = Color(1.0, 0.6, 0.6, 1)
 			else:
-				pathLabel.text = "    From: %s" % exportPath
+				pathLabel.text = "    %s" % fullPath
 				pathLabel.modulate = Color(0.6, 0.6, 0.6, 1)
 			pathLabel.add_theme_font_size_override("font_size", 11)
 			_channelsList.add_child(pathLabel)
@@ -218,6 +220,29 @@ func _getButlerChannelName(platform: String) -> String:
 			return "source"
 		_:
 			return platform.to_lower().replace(" ", "-")
+
+func _buildFullExportPath(rootPath: String, pathTemplate: Array, platform: String, version: String) -> String:
+	if rootPath.is_empty():
+		return ""
+
+	var fullPath = rootPath
+
+	for segment in pathTemplate:
+		var segmentType = segment.get("type", "")
+		var segmentValue = ""
+
+		match segmentType:
+			"version":
+				segmentValue = version if not version.is_empty() else "v1.0.0"
+			"platform":
+				segmentValue = platform
+			"custom":
+				segmentValue = segment.get("value", "")
+
+		if not segmentValue.is_empty():
+			fullPath = fullPath.path_join(segmentValue)
+
+	return fullPath
 
 func _onInputChanged(_value = null):
 	# Emit signal when any input is modified
