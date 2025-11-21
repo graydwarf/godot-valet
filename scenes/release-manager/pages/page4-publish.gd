@@ -18,6 +18,9 @@ signal page_modified()  # Emitted when any input is changed
 @onready var _uploadUrlValue = %UploadUrlValue
 @onready var _versionValue = %VersionValue
 @onready var _channelsList = %ChannelsList
+@onready var _reviewCard = %ReviewCard
+@onready var _reviewHeaderContainer = %ReviewHeaderContainer
+@onready var _reviewContentContainer = %ReviewContentContainer
 
 # Card styling containers
 @onready var _itchHeaderContainer = $MarginContainer/VBoxContainer/ItchCard/VBoxContainer/HeaderContainer
@@ -44,6 +47,7 @@ func _ready():
 func _applyCardStyle():
 	_applyCardStyleToPanel(_itchCard, _itchHeaderContainer, _itchContentContainer)
 	_applyCardStyleToPanel(_githubCard, _githubHeaderContainer, _githubContentContainer)
+	_applyCardStyleToPanel(_reviewCard, _reviewHeaderContainer, _reviewContentContainer)
 
 func _applyCardStyleToPanel(outerPanel: PanelContainer, headerPanel: PanelContainer, contentPanel: PanelContainer):
 	# Outer panel with rounded corners and border

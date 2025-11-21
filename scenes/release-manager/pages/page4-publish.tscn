@@ -154,25 +154,56 @@ size_flags_horizontal = 3
 text = "None selected"
 vertical_alignment = 1
 
-[node name="ReviewSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox"]
+[node name="ReviewCard" type="PanelContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox"]
+unique_name_in_owner = true
 layout_mode = 2
 
-[node name="ReviewHeader" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
+theme_override_constants/separation = 0
+
+[node name="ReviewHeaderContainer" type="PanelContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="HeaderMargin" type="MarginContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewHeaderContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 6
+
+[node name="ReviewHeaderLabel" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewHeaderContainer/HeaderMargin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
 text = "Pre-Publish Review"
 
-[node name="UploadUrlRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox"]
+[node name="ReviewContentContainer" type="PanelContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ContentMargin" type="MarginContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="ReviewContentVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="UploadUrlRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox"]
 layout_mode = 2
 theme_override_constants/separation = 5
 
-[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/UploadUrlRow"]
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox/UploadUrlRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Upload URL:"
 vertical_alignment = 1
 
-[node name="UploadUrlValue" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/UploadUrlRow"]
+[node name="UploadUrlValue" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox/UploadUrlRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -180,17 +211,17 @@ theme_override_font_sizes/font_size = 12
 text = "username.itch.io/project-slug"
 vertical_alignment = 1
 
-[node name="VersionRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox"]
+[node name="VersionRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox"]
 layout_mode = 2
 theme_override_constants/separation = 5
 
-[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/VersionRow"]
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox/VersionRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Version:"
 vertical_alignment = 1
 
-[node name="VersionValue" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/VersionRow"]
+[node name="VersionValue" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox/VersionRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -198,13 +229,13 @@ theme_override_font_sizes/font_size = 12
 text = "v1.0.0"
 vertical_alignment = 1
 
-[node name="ChannelsHeader" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox"]
+[node name="ChannelsHeader" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Butler Channels:"
 modulate = Color(0.7, 0.7, 0.7, 1)
 
-[node name="ChannelsList" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox"]
+[node name="ChannelsList" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 2
