@@ -79,7 +79,6 @@ layout_mode = 2
 theme_override_constants/separation = 0
 
 [node name="CardHeader" type="PanelContainer" parent="BackgroundPanel/MainMargin/MainVBox/ObfuscationCard/CardContent"]
-unique_name_in_owner = true
 layout_mode = 2
 
 [node name="HeaderMargin" type="MarginContainer" parent="BackgroundPanel/MainMargin/MainVBox/ObfuscationCard/CardContent/CardHeader"]
@@ -134,7 +133,6 @@ layout_mode = 2
 theme_override_constants/separation = 0
 
 [node name="CardHeader" type="PanelContainer" parent="BackgroundPanel/MainMargin/MainVBox/SourceFiltersCard/CardContent"]
-unique_name_in_owner = true
 layout_mode = 2
 
 [node name="HeaderMargin" type="MarginContainer" parent="BackgroundPanel/MainMargin/MainVBox/SourceFiltersCard/CardContent/CardHeader"]
@@ -187,7 +185,6 @@ layout_mode = 2
 theme_override_constants/separation = 0
 
 [node name="CardHeader" type="PanelContainer" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer/FunctionExcludesCard/CardContent"]
-unique_name_in_owner = true
 layout_mode = 2
 
 [node name="HeaderMargin" type="MarginContainer" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer/FunctionExcludesCard/CardContent/CardHeader"]
@@ -259,7 +256,6 @@ layout_mode = 2
 theme_override_constants/separation = 0
 
 [node name="CardHeader" type="PanelContainer" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer/VariableExcludesCard/CardContent"]
-unique_name_in_owner = true
 layout_mode = 2
 
 [node name="HeaderMargin" type="MarginContainer" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer/VariableExcludesCard/CardContent/CardHeader"]

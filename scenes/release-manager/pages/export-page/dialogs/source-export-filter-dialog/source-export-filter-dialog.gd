@@ -8,10 +8,8 @@ signal cancelled()
 @onready var _tree = %Tree
 @onready var _expandAllButton = %ExpandAllButton
 @onready var _helpButton = %HelpButton
-@onready var _excludeHeaderLabel = %ExcludeHeaderLabel
 @onready var _patternsList = %PatternsList
 @onready var _addPatternButton = %AddPatternButton
-@onready var _additionalFilesHeaderLabel = %AdditionalFilesHeaderLabel
 @onready var _filesList = %FilesList
 @onready var _addFileButton = %AddFileButton
 @onready var _cancelButton = %CancelButton
@@ -337,8 +335,8 @@ func _addFileToTree(parentItem: TreeItem, filePath: String, displayName: String)
 	# Column 1: Size
 	var file = FileAccess.open(filePath, FileAccess.READ)
 	if file:
-		var size = file.get_length()
-		var sizeText = _formatSize(size)
+		var fileSize = file.get_length()
+		var sizeText = _formatSize(fileSize)
 		item.set_text(1, sizeText)
 		file.close()
 

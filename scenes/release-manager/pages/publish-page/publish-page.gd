@@ -237,12 +237,12 @@ func _updateReviewSection(_value = null):
 					_channelsList.add_child(contentsLabel)
 
 					# Add last exported date for Source folder
-					var lastExportedLabel = Label.new()
+					var sourceLastExportedLabel = Label.new()
 					var folderModTime = _getFolderModifiedTime(fullPath)
-					lastExportedLabel.text = "    └ Last Exported: %s" % folderModTime
-					lastExportedLabel.modulate = Color(0.5, 0.5, 0.5, 1) if folderModTime != "(not found)" else Color(1.0, 0.6, 0.6, 1)
-					lastExportedLabel.add_theme_font_size_override("font_size", 10)
-					_channelsList.add_child(lastExportedLabel)
+					sourceLastExportedLabel.text = "    └ Last Exported: %s" % folderModTime
+					sourceLastExportedLabel.modulate = Color(0.5, 0.5, 0.5, 1) if folderModTime != "(not found)" else Color(1.0, 0.6, 0.6, 1)
+					sourceLastExportedLabel.add_theme_font_size_override("font_size", 10)
+					_channelsList.add_child(sourceLastExportedLabel)
 					continue  # Skip the normal pathLabel add below
 				else:
 					displayPath = fullPath.path_join(displayFilename + displayExtension)
