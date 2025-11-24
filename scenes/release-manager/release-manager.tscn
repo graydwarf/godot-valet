@@ -1,10 +1,10 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3 uid="uid://qk0llxhtqftg"]
 
-[ext_resource type="Script" path="res://scenes/release-manager/release-manager.gd" id="1"]
+[ext_resource type="Script" uid="uid://bfxtx286ai1ql" path="res://scenes/release-manager/release-manager.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/release-manager/components/project-card.tscn" id="2"]
-[ext_resource type="PackedScene" path="res://scenes/release-manager/components/wizard-breadcrumb.tscn" id="3"]
+[ext_resource type="PackedScene" uid="uid://d2ri2mnpmos3i" path="res://scenes/release-manager/components/wizard-breadcrumb.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/release-manager/pages/export-page/export-page.tscn" id="4"]
-[ext_resource type="PackedScene" path="res://scenes/release-manager/pages/publish-page/publish-page.tscn" id="5"]
+[ext_resource type="PackedScene" uid="uid://cgfyxcwjy0lrx" path="res://scenes/release-manager/pages/publish-page/publish-page.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://scenes/common/confirmation-dialog.tscn" id="6"]
 
 [node name="ReleaseManager" type="Panel"]
@@ -105,7 +105,6 @@ unique_name_in_owner = true
 visible = false
 layout_mode = 1
 
-[connection signal="step_clicked" from="VBoxContainer/MarginContainer/WizardBreadcrumb" to="." method="_onBreadcrumbStepClicked"]
 [connection signal="pressed" from="VBoxContainer/NavigationButtons/HBoxContainer/ExitButton" to="." method="_onExitPressed"]
 [connection signal="pressed" from="VBoxContainer/NavigationButtons/HBoxContainer/SaveButton" to="." method="_onSavePressed"]
 [connection signal="pressed" from="VBoxContainer/NavigationButtons/HBoxContainer/NextButton" to="." method="_onNextPressed"]
