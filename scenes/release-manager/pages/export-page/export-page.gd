@@ -42,19 +42,19 @@ func _ready():
 
 	# Create build config dialog (Control, not Window)
 	# Note: Will be added to root when shown so it covers entire wizard
-	_buildConfigDialog = load("res://scenes/release-manager/pages/export-page/dialogs/build-config-dialog.tscn").instantiate()
+	_buildConfigDialog = load("res://scenes/release-manager/pages/export-page/dialogs/build-config-dialog/build-config-dialog.tscn").instantiate()
 	_buildConfigDialog.config_saved.connect(_onBuildConfigSaved)
 	_buildConfigDialog.visible = false  # Start hidden
 
 	# Create export path settings page (Control, not Window)
 	# Note: Will be added to root when shown so it covers entire wizard
-	_pathSettingsDialog = load("res://scenes/release-manager/pages/export-page/dialogs/export-path-settings-dialog.tscn").instantiate()
+	_pathSettingsDialog = load("res://scenes/release-manager/pages/export-page/dialogs/export-path-settings-dialog/export-path-settings-dialog.tscn").instantiate()
 	_pathSettingsDialog.settings_saved.connect(_onPathSettingsSaved)
 	_pathSettingsDialog.cancelled.connect(_onPathSettingsCancelled)
 	_pathSettingsDialog.visible = false  # Start hidden
 
 	# Create include/exclude filter dialog (Control, not Window)
-	_filterDialog = load("res://scenes/release-manager/pages/export-page/dialogs/source-export-filter-dialog.tscn").instantiate()
+	_filterDialog = load("res://scenes/release-manager/pages/export-page/dialogs/source-export-filter-dialog/source-export-filter-dialog.tscn").instantiate()
 	_filterDialog.settings_saved.connect(_onFilterSettingsSaved)
 	_filterDialog.cancelled.connect(_onFilterSettingsCancelled)
 	_filterDialog.visible = false  # Start hidden
@@ -951,7 +951,7 @@ func _openFilenameSettingsDialog(platform: String, filenameType: String):
 
 	# Create dialog if not exists
 	if _filenameSettingsDialog == null:
-		_filenameSettingsDialog = load("res://scenes/release-manager/pages/export-page/dialogs/filename-settings-dialog.tscn").instantiate()
+		_filenameSettingsDialog = load("res://scenes/release-manager/pages/export-page/dialogs/filename-settings-dialog/filename-settings-dialog.tscn").instantiate()
 		_filenameSettingsDialog.settings_saved.connect(_onFilenameSettingsSaved)
 		_filenameSettingsDialog.cancelled.connect(_onFilenameSettingsCancelled)
 		_filenameSettingsDialog.visible = false

@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://bvx8ywqm2n5f6"]
 
-[ext_resource type="Script" path="res://scenes/release-manager/pages/export-page/dialogs/export-path-settings-dialog.gd" id="1_1a1a1"]
+[ext_resource type="Script" path="res://scenes/release-manager/pages/export-page/dialogs/export-path-settings-dialog/export-path-settings-dialog.gd" id="1_1a1a1"]
 [ext_resource type="Theme" uid="uid://dwoo5bj1luipm" path="res://assets/themes/global-themes/godot-dark-default.tres" id="2_theme"]
 
 [node name="ExportPathSettingsDialog" type="Control"]

@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://scenes/release-manager/pages/export-page/dialogs/obfuscation-help-dialog.gd" id="1"]
+[ext_resource type="Script" path="res://scenes/release-manager/pages/export-page/dialogs/obfuscation-help-dialog/obfuscation-help-dialog.gd" id="1"]
 
 [node name="ObfuscationHelpDialog" type="Window"]
 title = "Obfuscation Guide"
