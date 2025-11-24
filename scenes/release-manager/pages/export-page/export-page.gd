@@ -32,6 +32,7 @@ var _platformArchiveSync: Dictionary = {}  # platform_name -> bool (whether arch
 var _filenameSettingsDialog: Control = null
 var _currentFilenameDialogPlatform: String = ""  # Platform being configured
 var _currentFilenameDialogType: String = ""  # "export" or "archive"
+var _isLoadingData: bool = false  # Suppresses page_modified during _loadPageData()
 
 func _ready():
 	_exportSelectedButton.pressed.connect(_onExportSelectedPressed)
@@ -70,6 +71,9 @@ func _loadPageData():
 	if _selectedProjectItem == null:
 		return
 
+	# Suppress page_modified during data loading (not user changes)
+	_isLoadingData = true
+
 	# Load project version
 	_currentVersion = _selectedProjectItem.GetProjectVersion()
 	_projectVersionLineEdit.text = _currentVersion
@@ -80,6 +84,8 @@ func _loadPageData():
 
 	# Update Export Selected button state based on loaded settings
 	_updateExportSelectedButtonState()
+
+	_isLoadingData = false
 
 func _clearPlatformRows():
 	for child in _platformsContainer.get_children():
@@ -634,11 +640,13 @@ func _getAdjustedBackgroundColor(amount: float) -> Color:
 func _onVersionChanged(newText: String):
 	# Notify card of version change
 	version_changed.emit(_currentVersion, newText)
-	page_modified.emit()
+	if not _isLoadingData:
+		page_modified.emit()
 
 func _onInputChanged(_value = null):
 	# Emit signal when any input is modified
-	page_modified.emit()
+	if not _isLoadingData:
+		page_modified.emit()
 
 func _onPackageTypeChanged(index: int, platform: String, checksumCheckbox: CheckBox, checksumContainer: HBoxContainer):
 	# Update checksum tooltip based on package type selection

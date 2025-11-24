@@ -29,6 +29,7 @@ signal page_modified()  # Emitted when any input is changed
 @onready var _githubContentContainer = $MarginContainer/VBoxContainer/GithubCard/VBoxContainer/ContentContainer
 
 var _publishing: bool = false
+var _isLoadingData: bool = false  # Suppresses page_modified during _loadPageData()
 
 func _ready():
 	_applyCardStyle()
@@ -103,6 +104,9 @@ func _loadPageData():
 	if _selectedProjectItem == null:
 		return
 
+	# Suppress page_modified during data loading (not user changes)
+	_isLoadingData = true
+
 	# Load publish destination checkboxes
 	_itchCheckBox.button_pressed = _selectedProjectItem.GetItchEnabled()
 	_githubCheckBox.button_pressed = _selectedProjectItem.GetGithubEnabled()
@@ -125,6 +129,8 @@ func _loadPageData():
 	_statusLabel.text = ""
 	_publishing = false
 	_updatePublishButton()
+
+	_isLoadingData = false
 
 func _updateExportTypeSummary():
 	# Get all platform export settings from Build page
@@ -385,19 +391,22 @@ func _buildFullExportPath(rootPath: String, pathTemplate: Array, platform: Strin
 
 func _onInputChanged(_value = null):
 	# Emit signal when any input is modified
-	page_modified.emit()
+	if not _isLoadingData:
+		page_modified.emit()
 
 func _onItchToggled(checked: bool):
 	# Show/hide itch.io content
 	_itchContentContainer.visible = checked
 	_updatePublishButton()
-	page_modified.emit()
+	if not _isLoadingData:
+		page_modified.emit()
 
 func _onDestinationToggled(checked: bool):
 	# Show/hide GitHub content
 	_githubContentContainer.visible = checked
 	_updatePublishButton()
-	page_modified.emit()
+	if not _isLoadingData:
+		page_modified.emit()
 
 func _updatePublishButton():
 	var anySelected = _itchCheckBox.button_pressed || _githubCheckBox.button_pressed

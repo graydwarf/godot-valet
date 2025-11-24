@@ -15,6 +15,7 @@ var _pages: Array[WizardPageBase] = []
 var _selectedProjectItem = null
 var _hasUnsavedChanges: bool = false
 var _isClosingApp: bool = false  # Track if we're closing the app vs just the wizard
+var _isGoingBack: bool = false  # Track if we're navigating back vs exiting
 
 func _ready():
 	LoadTheme()
@@ -144,18 +145,12 @@ func _updateNavigationButtons():
 	# Exit/Back always visible
 	_exitButton.visible = true
 
-	# Change Exit button text based on page
-	if _currentPage == 0:
-		_exitButton.text = "Exit"
-	else:
-		_exitButton.text = "Back"
-
 	# Next visible on all pages
 	_nextButton.visible = true
 
 	# Change Next to Save & Close on last page
 	if _currentPage == _pages.size() - 1:
-		_nextButton.text = "Save && Close"
+		_nextButton.text = "Save & Close"
 	else:
 		_nextButton.text = "Next"
 
@@ -201,31 +196,41 @@ func _onExitPressed():
 		else:
 			queue_free()
 	else:
-		# Save current page before navigating back
-		_pages[_currentPage].save()
-		_projectCard.show_saved_indicator()
-		_hasUnsavedChanges = false
-		_showPage(_currentPage - 1)
+		# On other pages, go back - prompt if unsaved changes
+		if _hasUnsavedChanges:
+			_isGoingBack = true
+			_confirmationDialog.show_dialog("Do you want to save your changes before going back?")
+		else:
+			_showPage(_currentPage - 1)
 
 func _onConfirmationDialogChoice(choice: String):
 	match choice:
 		"save":
-			# Save current page and exit
+			# Save current page
 			_pages[_currentPage].save()
 			_projectCard.show_saved_indicator()
-			if _isClosingApp:
+			_hasUnsavedChanges = false
+			if _isGoingBack:
+				_isGoingBack = false
+				_showPage(_currentPage - 1)
+			elif _isClosingApp:
 				get_tree().quit()
 			else:
 				queue_free()
 		"dont_save":
-			# Exit without saving
-			if _isClosingApp:
+			# Discard changes
+			_hasUnsavedChanges = false
+			if _isGoingBack:
+				_isGoingBack = false
+				_showPage(_currentPage - 1)
+			elif _isClosingApp:
 				get_tree().quit()
 			else:
 				queue_free()
 		"cancel":
 			# Stay in wizard (dialog already hidden)
-			_isClosingApp = false  # Reset flag
+			_isClosingApp = false
+			_isGoingBack = false
 
 func _onBreadcrumbStepClicked(step_index: int):
 	print("_onBreadcrumbStepClicked: step_index=", step_index, " current=", _currentPage, " total pages=", _pages.size())
