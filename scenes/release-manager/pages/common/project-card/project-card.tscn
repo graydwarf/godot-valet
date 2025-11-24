@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource type="Script" path="res://scenes/release-manager/components/project-card.gd" id="1"]
+[ext_resource type="Script" path="res://scenes/release-manager/pages/common/project-card/project-card.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://wop6qk8dkl40" path="res://icon.svg" id="2"]
 
 [node name="ProjectCard" type="Panel"]

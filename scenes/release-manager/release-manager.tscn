@@ -1,8 +1,8 @@
 [gd_scene load_steps=7 format=3 uid="uid://qk0llxhtqftg"]
 
 [ext_resource type="Script" uid="uid://bfxtx286ai1ql" path="res://scenes/release-manager/release-manager.gd" id="1"]
-[ext_resource type="PackedScene" path="res://scenes/release-manager/components/project-card.tscn" id="2"]
-[ext_resource type="PackedScene" uid="uid://d2ri2mnpmos3i" path="res://scenes/release-manager/components/wizard-breadcrumb.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/release-manager/pages/common/project-card/project-card.tscn" id="2"]
+[ext_resource type="PackedScene" uid="uid://d2ri2mnpmos3i" path="res://scenes/release-manager/pages/common/wizard-breadcrumb/wizard-breadcrumb.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/release-manager/pages/export-page/export-page.tscn" id="4"]
 [ext_resource type="PackedScene" uid="uid://cgfyxcwjy0lrx" path="res://scenes/release-manager/pages/publish-page/publish-page.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://scenes/common/confirmation-dialog.tscn" id="6"]
