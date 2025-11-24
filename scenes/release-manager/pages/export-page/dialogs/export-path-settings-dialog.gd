@@ -21,6 +21,7 @@ signal cancelled()
 @onready var _pathSegmentsHeaderContainer = $BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/HeaderContainer
 @onready var _pathSegmentsContentContainer = $BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer
 
+
 var _currentPlatform: String = ""
 var _rootExportPath: String = ""
 var _pathSegments: Array = []  # Array of {type: "version|platform|date|custom", value: ""}

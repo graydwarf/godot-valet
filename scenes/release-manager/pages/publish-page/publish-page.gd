@@ -184,9 +184,20 @@ func _updateReviewSection(_value = null):
 			var channelName = _getButlerChannelName(platform)
 			var rootPath = settings.get("exportPath", "")
 			var pathTemplate = settings.get("pathTemplate", [])
-			var exportFilename = settings.get("exportFilename", "")
-			if exportFilename.is_empty():
-				exportFilename = fallbackFilename
+			var packageType = settings.get("packageType", 0)  # 0=No Zip, 1=Zip
+
+			# Use archive filename when zipping, otherwise use export filename
+			var displayFilename: String
+			var displayExtension: String
+			if packageType == 1:  # Zip enabled
+				displayFilename = settings.get("archiveFilename", "")
+				displayExtension = ".zip"
+			else:
+				displayFilename = settings.get("exportFilename", "")
+				displayExtension = _getFileExtension(platform)
+
+			if displayFilename.is_empty():
+				displayFilename = fallbackFilename
 			var fullPath = _buildFullExportPath(rootPath, pathTemplate, platform, version)
 
 			var channelLabel = Label.new()
@@ -199,6 +210,8 @@ func _updateReviewSection(_value = null):
 			if rootPath.is_empty():
 				pathLabel.text = "    (no export path configured)"
 				pathLabel.modulate = Color(1.0, 0.6, 0.6, 1)
+				pathLabel.add_theme_font_size_override("font_size", 11)
+				_channelsList.add_child(pathLabel)
 			else:
 				var displayPath = ""
 				if platform == "Source":
@@ -216,14 +229,29 @@ func _updateReviewSection(_value = null):
 					contentsLabel.modulate = Color(0.5, 0.5, 0.5, 1)
 					contentsLabel.add_theme_font_size_override("font_size", 10)
 					_channelsList.add_child(contentsLabel)
+
+					# Add last exported date for Source folder
+					var lastExportedLabel = Label.new()
+					var folderModTime = _getFolderModifiedTime(fullPath)
+					lastExportedLabel.text = "    └ Last Exported: %s" % folderModTime
+					lastExportedLabel.modulate = Color(0.5, 0.5, 0.5, 1) if folderModTime != "(not found)" else Color(1.0, 0.6, 0.6, 1)
+					lastExportedLabel.add_theme_font_size_override("font_size", 10)
+					_channelsList.add_child(lastExportedLabel)
 					continue  # Skip the normal pathLabel add below
 				else:
-					var fileExtension = _getFileExtension(platform)
-					displayPath = fullPath.path_join(exportFilename + fileExtension)
+					displayPath = fullPath.path_join(displayFilename + displayExtension)
 				pathLabel.text = "    %s" % displayPath
 				pathLabel.modulate = Color(0.6, 0.6, 0.6, 1)
-			pathLabel.add_theme_font_size_override("font_size", 11)
-			_channelsList.add_child(pathLabel)
+				pathLabel.add_theme_font_size_override("font_size", 11)
+				_channelsList.add_child(pathLabel)
+
+				# Add last exported date
+				var lastExportedLabel = Label.new()
+				var fileModTime = _getFileModifiedTime(displayPath)
+				lastExportedLabel.text = "    └ Last Exported: %s" % fileModTime
+				lastExportedLabel.modulate = Color(0.5, 0.5, 0.5, 1) if fileModTime != "(not found)" else Color(1.0, 0.6, 0.6, 1)
+				lastExportedLabel.add_theme_font_size_override("font_size", 10)
+				_channelsList.add_child(lastExportedLabel)
 
 	if not hasChannels:
 		var noChannelsLabel = Label.new()
@@ -279,6 +307,39 @@ func _getFolderContentInfo(folderPath: String) -> String:
 	if parts.is_empty():
 		return "(empty folder)"
 	return "Uploads: " + ", ".join(parts)
+
+func _getFileModifiedTime(filePath: String) -> String:
+	if not FileAccess.file_exists(filePath):
+		return "(not found)"
+	var modTime = FileAccess.get_modified_time(filePath)
+	return _formatUnixTime(modTime)
+
+func _getFolderModifiedTime(folderPath: String) -> String:
+	if not DirAccess.dir_exists_absolute(folderPath):
+		return "(not found)"
+	# For folders, get the most recent modification time of any file inside
+	var dir = DirAccess.open(folderPath)
+	if dir == null:
+		return "(not found)"
+	var latestTime: int = 0
+	dir.list_dir_begin()
+	var fileName = dir.get_next()
+	while fileName != "":
+		if not fileName.begins_with("."):
+			var fullPath = folderPath.path_join(fileName)
+			if not dir.current_is_dir():
+				var fileTime = FileAccess.get_modified_time(fullPath)
+				if fileTime > latestTime:
+					latestTime = fileTime
+		fileName = dir.get_next()
+	dir.list_dir_end()
+	if latestTime == 0:
+		return "(empty folder)"
+	return _formatUnixTime(latestTime)
+
+func _formatUnixTime(unixTime: int) -> String:
+	var datetime = Time.get_datetime_dict_from_unix_time(unixTime)
+	return "%02d/%02d/%04d %02d:%02d" % [datetime.month, datetime.day, datetime.year, datetime.hour, datetime.minute]
 
 func _getFileExtension(platform: String) -> String:
 	match platform:

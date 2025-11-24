@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://x4fws6b4u5j1"]
+[gd_scene load_steps=3 format=3 uid="uid://cjmlhj0ks8amq"]
 
-[ext_resource type="Script" path="res://scenes/release-manager/source-export-filter-dialog.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dp3hwck4ulpsi" path="res://scenes/release-manager/pages/export-page/dialogs/source-export-filter-dialog.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://dwoo5bj1luipm" path="res://assets/themes/global-themes/godot-dark-default.tres" id="2_theme"]
 
 [node name="SourceExportFilterDialog" type="Control"]

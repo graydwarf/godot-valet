@@ -3,8 +3,8 @@
 [ext_resource type="Script" path="res://scenes/release-manager/release-manager.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/release-manager/components/project-card.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/release-manager/components/wizard-breadcrumb.tscn" id="3"]
-[ext_resource type="PackedScene" path="res://scenes/release-manager/pages/page3-build.tscn" id="4"]
-[ext_resource type="PackedScene" path="res://scenes/release-manager/pages/page4-publish.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/release-manager/pages/export-page/export-page.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/release-manager/pages/publish-page/publish-page.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://scenes/common/confirmation-dialog.tscn" id="6"]
 
 [node name="ReleaseManager" type="Panel"]
@@ -56,10 +56,10 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="Page3Build" parent="VBoxContainer/PagesContainer" instance=ExtResource("4")]
+[node name="ExportPage" parent="VBoxContainer/PagesContainer" instance=ExtResource("4")]
 layout_mode = 1
 
-[node name="Page4Publish" parent="VBoxContainer/PagesContainer" instance=ExtResource("5")]
+[node name="PublishPage" parent="VBoxContainer/PagesContainer" instance=ExtResource("5")]
 layout_mode = 1
 
 [node name="HSeparator2" type="HSeparator" parent="VBoxContainer"]
@@ -82,16 +82,16 @@ layout_mode = 2
 mouse_default_cursor_shape = 2
 text = "Back"
 
-[node name="Spacer" type="Control" parent="VBoxContainer/NavigationButtons/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="BackButton" type="Button" parent="VBoxContainer/NavigationButtons/HBoxContainer"]
+[node name="SaveButton" type="Button" parent="VBoxContainer/NavigationButtons/HBoxContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 31)
 layout_mode = 2
 mouse_default_cursor_shape = 2
-text = "Back"
+text = "Save"
+
+[node name="Spacer" type="Control" parent="VBoxContainer/NavigationButtons/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="NextButton" type="Button" parent="VBoxContainer/NavigationButtons/HBoxContainer"]
 unique_name_in_owner = true
@@ -107,6 +107,6 @@ layout_mode = 1
 
 [connection signal="step_clicked" from="VBoxContainer/MarginContainer/WizardBreadcrumb" to="." method="_onBreadcrumbStepClicked"]
 [connection signal="pressed" from="VBoxContainer/NavigationButtons/HBoxContainer/ExitButton" to="." method="_onExitPressed"]
-[connection signal="pressed" from="VBoxContainer/NavigationButtons/HBoxContainer/BackButton" to="." method="_onBackPressed"]
+[connection signal="pressed" from="VBoxContainer/NavigationButtons/HBoxContainer/SaveButton" to="." method="_onSavePressed"]
 [connection signal="pressed" from="VBoxContainer/NavigationButtons/HBoxContainer/NextButton" to="." method="_onNextPressed"]
 [connection signal="confirmed" from="ConfirmationDialog" to="." method="_onConfirmationDialogChoice"]

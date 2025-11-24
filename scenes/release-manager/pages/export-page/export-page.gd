@@ -26,6 +26,12 @@ var _yesNoDialog: Control = null
 var _inputBlocker: Control = null  # Full-screen overlay to block all input during export
 var _exportCancelled: bool = false  # Flag to track if user cancelled export
 var _platformFilterConfigs: Dictionary = {}  # platform_name -> filter config dict
+var _platformExportFilenameTemplates: Dictionary = {}  # platform_name -> export filename template array
+var _platformArchiveFilenameTemplates: Dictionary = {}  # platform_name -> archive filename template array
+var _platformArchiveSync: Dictionary = {}  # platform_name -> bool (whether archive syncs with export)
+var _filenameSettingsDialog: Control = null
+var _currentFilenameDialogPlatform: String = ""  # Platform being configured
+var _currentFilenameDialogType: String = ""  # "export" or "archive"
 
 func _ready():
 	_exportSelectedButton.pressed.connect(_onExportSelectedPressed)
@@ -36,19 +42,19 @@ func _ready():
 
 	# Create build config dialog (Control, not Window)
 	# Note: Will be added to root when shown so it covers entire wizard
-	_buildConfigDialog = load("res://scenes/release-manager/build-config-dialog.tscn").instantiate()
+	_buildConfigDialog = load("res://scenes/release-manager/pages/export-page/dialogs/build-config-dialog.tscn").instantiate()
 	_buildConfigDialog.config_saved.connect(_onBuildConfigSaved)
 	_buildConfigDialog.visible = false  # Start hidden
 
 	# Create export path settings page (Control, not Window)
 	# Note: Will be added to root when shown so it covers entire wizard
-	_pathSettingsDialog = load("res://scenes/release-manager/export-path-settings-dialog.tscn").instantiate()
+	_pathSettingsDialog = load("res://scenes/release-manager/pages/export-page/dialogs/export-path-settings-dialog.tscn").instantiate()
 	_pathSettingsDialog.settings_saved.connect(_onPathSettingsSaved)
 	_pathSettingsDialog.cancelled.connect(_onPathSettingsCancelled)
 	_pathSettingsDialog.visible = false  # Start hidden
 
 	# Create include/exclude filter dialog (Control, not Window)
-	_filterDialog = load("res://scenes/release-manager/source-export-filter-dialog.tscn").instantiate()
+	_filterDialog = load("res://scenes/release-manager/pages/export-page/dialogs/source-export-filter-dialog.tscn").instantiate()
 	_filterDialog.settings_saved.connect(_onFilterSettingsSaved)
 	_filterDialog.cancelled.connect(_onFilterSettingsCancelled)
 	_filterDialog.visible = false  # Start hidden
@@ -100,20 +106,24 @@ func _loadPlatformSettings():
 
 			# If no root path saved, use project directory + exports as default
 			if rootPath.is_empty() and _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
-				var projectPath = _selectedProjectItem.GetProjectPath()
-				var projectDir = projectPath.get_base_dir()
+				# GetProjectDir() handles both path formats (with or without project.godot)
+				var projectDir = _selectedProjectItem.GetProjectDir()
 				rootPath = projectDir.path_join("exports")
 
 			_platformRootPaths[platform] = rootPath  # Store root path separately
-			data["exportPath"].text = ""  # Clear text so placeholder shows
 
-			# Get export filename, default to project name if not set
-			var exportFilename = settings.get("exportFilename", "")
-			if exportFilename.is_empty() and _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
-				var projectPath = _selectedProjectItem.GetProjectPath()
-				var projectName = projectPath.get_file().get_basename()  # Gets "project.godot" -> "project"
-				exportFilename = projectName
-			data["exportFilename"].text = exportFilename
+			# Load filename templates and sync state
+			var exportFilenameTemplate = settings.get("exportFilenameTemplate", [{"type": "project"}])
+			var archiveFilenameTemplate = settings.get("archiveFilenameTemplate", [{"type": "project"}])
+			var archiveSync = settings.get("archiveSync", false)
+
+			_platformExportFilenameTemplates[platform] = exportFilenameTemplate
+			_platformArchiveFilenameTemplates[platform] = archiveFilenameTemplate
+			_platformArchiveSync[platform] = archiveSync
+
+			# Update filename displays
+			_updateExportFilenameDisplay(platform)
+			_updateArchiveFilenameDisplay(platform)
 
 			# Restore build config (obfuscation settings)
 			if settings.has("buildConfig"):
@@ -155,7 +165,13 @@ func _loadPlatformSettings():
 			var isZip = (packageType == 1)
 			data["checksumCheckbox"].tooltip_text = _getChecksumTooltip(platform, isZip)
 
-			# For Source platform, show checksum only when Zip is selected
+			# Show/hide archive filename based on package type (all platforms use inline container)
+			if data.has("archiveContainer") and data["archiveContainer"] != null:
+				data["archiveContainer"].visible = isZip
+			# Toggle spacer visibility (visible when archive hidden to fill space)
+			if data.has("exportOptionsSpacer") and data["exportOptionsSpacer"] != null:
+				data["exportOptionsSpacer"].visible = not isZip
+			# For Source platform, show checksum only when Zip selected
 			if platform == "Source":
 				data["checksumContainer"].visible = isZip
 
@@ -169,16 +185,21 @@ func _loadPlatformSettings():
 		else:
 			# No saved settings - apply defaults for first-time use
 			if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
-				var projectPath = _selectedProjectItem.GetProjectPath()
-				var projectDir = projectPath.get_base_dir()
-				var projectName = projectPath.get_file().get_basename()
+				# GetProjectDir() handles both path formats (with or without project.godot)
+				var projectDir = _selectedProjectItem.GetProjectDir()
 
 				# Set default root path: project_directory/exports
 				var rootPath = projectDir.path_join("exports")
 				_platformRootPaths[platform] = rootPath
 
-				# Set default export filename: project name
-				data["exportFilename"].text = projectName
+				# Set default filename templates: project name only
+				_platformExportFilenameTemplates[platform] = [{"type": "project"}]
+				_platformArchiveFilenameTemplates[platform] = [{"type": "project"}]
+				_platformArchiveSync[platform] = false  # Default to not synced
+
+				# Update filename displays
+				_updateExportFilenameDisplay(platform)
+				_updateArchiveFilenameDisplay(platform)
 
 				# Set default path template: version, platform
 				_platformPathTemplates[platform] = [
@@ -321,20 +342,14 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	exportPathRow.add_child(exportPathLabel)
 
 	var exportPathEdit = LineEdit.new()
-	exportPathEdit.placeholder_text = "Click settings button to configure export path..."
+	exportPathEdit.placeholder_text = "No export path configured"
 	exportPathEdit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	exportPathEdit.name = "ExportPathEdit"
 	exportPathEdit.editable = false
+	exportPathEdit.selecting_enabled = true
+	exportPathEdit.context_menu_enabled = true
 	exportPathEdit.text_changed.connect(_onInputChanged)
 	exportPathRow.add_child(exportPathEdit)
-
-	var pathSettingsButton = Button.new()
-	pathSettingsButton.text = "⚙"
-	pathSettingsButton.custom_minimum_size = Vector2(32, 31)
-	pathSettingsButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	pathSettingsButton.tooltip_text = "Configure export path and structure"
-	pathSettingsButton.pressed.connect(_onPathSettingsPressed.bind(platform))
-	exportPathRow.add_child(pathSettingsButton)
 
 	var openFolderButton = Button.new()
 	openFolderButton.text = "🗀"
@@ -344,14 +359,23 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	openFolderButton.pressed.connect(_onOpenFolderButtonPressed.bind(platform))
 	exportPathRow.add_child(openFolderButton)
 
+	var pathSettingsButton = Button.new()
+	pathSettingsButton.text = "⚙"
+	pathSettingsButton.custom_minimum_size = Vector2(32, 31)
+	pathSettingsButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	pathSettingsButton.tooltip_text = "Configure export path and structure"
+	pathSettingsButton.pressed.connect(_onPathSettingsPressed.bind(platform))
+	exportPathRow.add_child(pathSettingsButton)
+
 	detailsVBox.add_child(exportPathRow)
 
-	# Export Filename Row
+	# Export Filename Row (hidden for Source platform - no executable)
 	var filenameRow = HBoxContainer.new()
 	filenameRow.add_theme_constant_override("separation", 5)
+	filenameRow.visible = (platform != "Source")
 
 	var filenameLabel = Label.new()
-	filenameLabel.text = "Export Filename:"
+	filenameLabel.text = _getExportFileLabel(platform)
 	filenameLabel.custom_minimum_size = Vector2(130, 0)
 	filenameLabel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	filenameLabel.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -359,13 +383,28 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	filenameRow.add_child(filenameLabel)
 
 	var filenameEdit = LineEdit.new()
-	filenameEdit.placeholder_text = "Base name for export..."
+	filenameEdit.placeholder_text = "No filename configured"
 	filenameEdit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	filenameEdit.name = "ExportFilenameEdit"
-	filenameEdit.text_changed.connect(_onInputChanged)
+	filenameEdit.editable = false
+	filenameEdit.selecting_enabled = true
+	filenameEdit.context_menu_enabled = true
 	filenameRow.add_child(filenameEdit)
 
+	var filenameOptionsButton = Button.new()
+	filenameOptionsButton.text = "⚙"
+	filenameOptionsButton.custom_minimum_size = Vector2(32, 31)
+	filenameOptionsButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	filenameOptionsButton.tooltip_text = "Configure export filename"
+	filenameOptionsButton.pressed.connect(_onExportFilenameOptionsPressed.bind(platform))
+	filenameOptionsButton.name = "ExportFilenameOptionsButton"
+	filenameRow.add_child(filenameOptionsButton)
+
 	detailsVBox.add_child(filenameRow)
+
+	# Archive variables (used later when creating inline archive container)
+	var archiveEdit: LineEdit = null
+	var archiveOptionsButton: Button = null
 
 	# Obfuscation Row
 	var obfuscationRow = HBoxContainer.new()
@@ -382,10 +421,10 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	var obfuscationDisplay = LineEdit.new()
 	obfuscationDisplay.placeholder_text = "None"
 	obfuscationDisplay.editable = false
+	obfuscationDisplay.selecting_enabled = true
+	obfuscationDisplay.context_menu_enabled = true
 	obfuscationDisplay.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	obfuscationDisplay.name = "ObfuscationDisplay"
-	obfuscationDisplay.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	obfuscationDisplay.gui_input.connect(_onObfuscationDisplayClicked.bind(platform))
 	obfuscationRow.add_child(obfuscationDisplay)
 
 	# Settings cog button
@@ -415,10 +454,10 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	var includeExcludeDisplay = LineEdit.new()
 	includeExcludeDisplay.placeholder_text = "No filters configured"
 	includeExcludeDisplay.editable = false
+	includeExcludeDisplay.selecting_enabled = true
+	includeExcludeDisplay.context_menu_enabled = true
 	includeExcludeDisplay.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	includeExcludeDisplay.name = "IncludeExcludeDisplay"
-	includeExcludeDisplay.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	includeExcludeDisplay.gui_input.connect(_onIncludeExcludeDisplayClicked.bind(platform))
 	includeExcludeRow.add_child(includeExcludeDisplay)
 
 	var includeExcludeConfigButton = Button.new()
@@ -483,6 +522,40 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 
 	exportOptionsRow.add_child(packageTypeContainer)
 
+	# Archive filename inline with Package dropdown (for all platforms, hidden when No Zip)
+	var archiveContainer: HBoxContainer = HBoxContainer.new()
+	archiveContainer.add_theme_constant_override("separation", 5)
+	archiveContainer.visible = false  # Hidden by default (No Zip is default)
+	archiveContainer.size_flags_horizontal = Control.SIZE_EXPAND_FILL  # Expand to fill available width
+
+	# Archive name label
+	var archiveLabel = Label.new()
+	archiveLabel.text = "Archive:"
+	archiveLabel.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	archiveContainer.add_child(archiveLabel)
+
+	# Archive filename edit - expand to fill available width
+	archiveEdit = LineEdit.new()
+	archiveEdit.placeholder_text = "No archive name configured"
+	archiveEdit.size_flags_horizontal = Control.SIZE_EXPAND_FILL  # Expand to fill available width
+	archiveEdit.name = "ArchiveFilenameEdit"
+	archiveEdit.editable = false
+	archiveEdit.selecting_enabled = true
+	archiveEdit.context_menu_enabled = true
+	archiveContainer.add_child(archiveEdit)
+
+	# Archive options button
+	archiveOptionsButton = Button.new()
+	archiveOptionsButton.text = "⚙"
+	archiveOptionsButton.custom_minimum_size = Vector2(32, 31)
+	archiveOptionsButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	archiveOptionsButton.tooltip_text = "Configure archive filename"
+	archiveOptionsButton.pressed.connect(_onArchiveFilenameOptionsPressed.bind(platform))
+	archiveOptionsButton.name = "ArchiveFilenameOptionsButton"
+	archiveContainer.add_child(archiveOptionsButton)
+
+	exportOptionsRow.add_child(archiveContainer)
+
 	# Generate Checksum checkbox (hidden for Source platform unless Zip selected)
 	var checksumContainer = HBoxContainer.new()
 	checksumContainer.add_theme_constant_override("separation", 5)
@@ -500,9 +573,10 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	# Update checksum tooltip and visibility when package type changes
 	packageTypeOption.item_selected.connect(_onPackageTypeChanged.bind(platform, checksumCheckbox, checksumContainer))
 
-	# Spacer to push Export button to the right
-	var exportOptionsSpacer = Control.new()
+	# Spacer to push Export button to the right (visible when archive hidden, hidden when archive visible)
+	var exportOptionsSpacer: Control = Control.new()
 	exportOptionsSpacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	exportOptionsSpacer.visible = true  # Visible by default (No Zip default, archive hidden)
 	exportOptionsRow.add_child(exportOptionsSpacer)
 
 	# Export button on same row, right-aligned
@@ -528,6 +602,11 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 		"detailsSection": detailsSection,
 		"exportPath": exportPathEdit,
 		"exportFilename": filenameEdit,
+		"exportFilenameOptionsButton": filenameOptionsButton,
+		"archiveFilename": archiveEdit,
+		"archiveFilenameOptionsButton": archiveOptionsButton,
+		"archiveContainer": archiveContainer,  # Inline archive container (all platforms)
+		"exportOptionsSpacer": exportOptionsSpacer,  # Spacer for pushing Export button right
 		"obfuscationDisplay": obfuscationDisplay,
 		"configButton": configButton,
 		"includeExcludeDisplay": includeExcludeDisplay,
@@ -566,6 +645,16 @@ func _onPackageTypeChanged(index: int, platform: String, checksumCheckbox: Check
 	var isZip = (index == 1)  # 0 = No Zip, 1 = Zip
 	checksumCheckbox.tooltip_text = _getChecksumTooltip(platform, isZip)
 
+	# Show/hide archive filename based on package type
+	var data = _platformRows.get(platform)
+	if data != null:
+		# Show inline archive container only when Zip is selected (all platforms)
+		if data.has("archiveContainer") and data["archiveContainer"] != null:
+			data["archiveContainer"].visible = isZip
+		# Toggle spacer - visible when archive hidden, hidden when archive visible
+		if data.has("exportOptionsSpacer") and data["exportOptionsSpacer"] != null:
+			data["exportOptionsSpacer"].visible = not isZip
+
 	# For Source platform, show checksum only when Zip is selected
 	if platform == "Source":
 		checksumContainer.visible = isZip
@@ -582,6 +671,24 @@ func _getChecksumTooltip(platform: String, isZip: bool) -> String:
 		# Get platform-specific extension
 		var extension = _getPlatformExtension(platform)
 		return "Generate SHA256 checksum file for the %s binary" % extension
+
+# Returns the label for the export filename field based on platform
+func _getExportFileLabel(platform: String) -> String:
+	match platform:
+		"Windows Desktop":
+			return "Exe File Name:"
+		"Linux/X11", "Linux":
+			return "Binary File Name:"
+		"Web":
+			return "HTML File Name:"
+		"macOS":
+			return "App File Name:"
+		"Android":
+			return "APK File Name:"
+		"iOS":
+			return "IPA File Name:"
+		_:
+			return "Export File Name:"
 
 func _getPlatformExtension(platform: String) -> String:
 	match platform:
@@ -647,21 +754,18 @@ func _onPlatformHeaderClicked(event: InputEvent, _platform: String, checkbox: Ch
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		checkbox.button_pressed = !checkbox.button_pressed
 
-func _onObfuscationDisplayClicked(event: InputEvent, platform: String):
-	# Open obfuscation settings when clicking on the display field
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		_onConfigButtonPressed(platform)
-
-func _onIncludeExcludeDisplayClicked(event: InputEvent, platform: String):
-	# Open include/exclude settings when clicking on the display field
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		_onIncludeExcludeConfigPressed(platform)
-
 func _onIncludeExcludeConfigPressed(platform: String):
+	# Show loading overlay while dialog initializes
+	_showLoadingOverlay("Loading project files...")
+
+	# Wait a frame to allow the overlay to render
+	await get_tree().process_frame
+
 	# Get project path
 	var projectPath = ""
 	if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
-		projectPath = _selectedProjectItem.GetProjectPath().get_base_dir()
+		# GetProjectDir() handles both path formats (with or without project.godot)
+		projectPath = _selectedProjectItem.GetProjectDir()
 
 	# Get current filter config for this platform (or empty dict if none)
 	var currentConfig = _platformFilterConfigs.get(platform, {})
@@ -679,6 +783,9 @@ func _onIncludeExcludeConfigPressed(platform: String):
 	# Open dialog
 	_filterDialog.openForPlatform(platform, projectPath, currentConfig)
 	_filterDialog.move_to_front()
+
+	# Hide loading overlay after dialog is shown
+	_hideLoadingOverlay()
 
 func _onFilterSettingsSaved(platform: String, filterConfig: Dictionary):
 	# Store the filter config for this platform
@@ -769,8 +876,8 @@ func _onPathSettingsPressed(platform: String):
 	if rootPath.is_empty():
 		# Default to project directory + exports subfolder
 		if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
-			var projectPath = _selectedProjectItem.GetProjectPath()
-			var projectDir = projectPath.get_base_dir()
+			# GetProjectDir() handles both path formats (with or without project.godot)
+			var projectDir = _selectedProjectItem.GetProjectDir()
 			rootPath = projectDir.path_join("exports")
 		else:
 			rootPath = "C:/exports"  # Fallback if no project selected
@@ -787,6 +894,7 @@ func _onPathSettingsPressed(platform: String):
 
 	# Open dialog (will cover entire wizard)
 	var projectVersion = _projectVersionLineEdit.text if _projectVersionLineEdit.text != "" else "v1.0.0"
+
 	_pathSettingsDialog.openForPlatform(platform, rootPath, currentTemplate, projectVersion)
 	_pathSettingsDialog.move_to_front()  # Ensure it's rendered on top
 
@@ -798,10 +906,6 @@ func _onPathSettingsSaved(platform: String, rootPath: String, pathTemplate: Arra
 	# Update the project version in the hidden field
 	if projectVersion != "":
 		_projectVersionLineEdit.text = projectVersion
-
-	# Clear the text field so placeholder shows
-	var data = _platformRows[platform]
-	data["exportPath"].text = ""
 
 	# Update the Export Path display to show full path with template
 	_updateExportPathDisplay(platform)
@@ -828,6 +932,196 @@ func _onPathSettingsSaved(platform: String, rootPath: String, pathTemplate: Arra
 func _onPathSettingsCancelled():
 	# User cancelled the path settings dialog, no action needed
 	pass
+
+# ============== Export/Archive Filename Handlers ==============
+
+func _onExportFilenameOptionsPressed(platform: String):
+	_openFilenameSettingsDialog(platform, "export")
+
+func _onArchiveFilenameOptionsPressed(platform: String):
+	_openFilenameSettingsDialog(platform, "archive")
+
+func _openFilenameSettingsDialog(platform: String, filenameType: String):
+	# Source platform doesn't have export filename - only archive
+	if filenameType == "export" and platform == "Source":
+		return
+
+	_currentFilenameDialogPlatform = platform
+	_currentFilenameDialogType = filenameType
+
+	# Create dialog if not exists
+	if _filenameSettingsDialog == null:
+		_filenameSettingsDialog = load("res://scenes/release-manager/pages/export-page/dialogs/filename-settings-dialog.tscn").instantiate()
+		_filenameSettingsDialog.settings_saved.connect(_onFilenameSettingsSaved)
+		_filenameSettingsDialog.cancelled.connect(_onFilenameSettingsCancelled)
+		_filenameSettingsDialog.visible = false
+
+	# Add to root if not already added
+	if _filenameSettingsDialog.get_parent() == null:
+		var root = get_tree().current_scene
+		if root == null:
+			root = get_tree().root.get_child(get_tree().root.get_child_count() - 1)
+		root.add_child(_filenameSettingsDialog)
+		_filenameSettingsDialog.z_index = 100
+
+	# Get current template
+	var currentTemplate: Array
+	if filenameType == "export":
+		currentTemplate = _platformExportFilenameTemplates.get(platform, [{"type": "project"}])
+	else:
+		currentTemplate = _platformArchiveFilenameTemplates.get(platform, [{"type": "project"}])
+
+	# Get project name for preview
+	var projectName = ""
+	if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
+		projectName = _selectedProjectItem.GetProjectPath().get_file().get_basename()
+		if projectName == "project":
+			projectName = _selectedProjectItem.GetProjectName()
+
+	var projectVersion = _projectVersionLineEdit.text if _projectVersionLineEdit.text != "" else "v1.0.0"
+	var extension = _getExportExtension(platform) if filenameType == "export" else ".zip"
+
+	# Get export template and sync state for archive dialogs
+	var exportTemplate = _platformExportFilenameTemplates.get(platform, [{"type": "project"}])
+	var isSynced = _platformArchiveSync.get(platform, false)
+
+	_filenameSettingsDialog.openForFilename(filenameType, platform, currentTemplate, projectName, projectVersion, extension, exportTemplate, isSynced)
+	_filenameSettingsDialog.move_to_front()
+
+func _onFilenameSettingsSaved(filenameType: String, filenameTemplate: Array, isSynced: bool):
+	var platform = _currentFilenameDialogPlatform
+
+	if filenameType == "export":
+		_platformExportFilenameTemplates[platform] = filenameTemplate
+		_updateExportFilenameDisplay(platform)
+		# If archive is synced, update its display too
+		if _platformArchiveSync.get(platform, false):
+			_updateArchiveFilenameDisplay(platform)
+	else:
+		_platformArchiveFilenameTemplates[platform] = filenameTemplate
+		_platformArchiveSync[platform] = isSynced
+		_updateArchiveFilenameDisplay(platform)
+
+	# Save immediately
+	_saveFilenameSettings(platform)
+
+func _onFilenameSettingsCancelled():
+	# User cancelled, no action needed
+	pass
+
+func _updateExportFilenameDisplay(platform: String):
+	var data = _platformRows.get(platform)
+	if data == null or not data.has("exportFilename"):
+		return
+
+	var template = _platformExportFilenameTemplates.get(platform, [{"type": "project"}])
+	var filename = _buildFileNameFromTemplate(template, platform)
+	var extension = _getExportExtension(platform)
+	var fullFilename = filename + extension
+	data["exportFilename"].text = fullFilename
+	data["exportFilename"].tooltip_text = fullFilename + "\nClick to configure"
+
+func _updateArchiveFilenameDisplay(platform: String):
+	var data = _platformRows.get(platform)
+	if data == null or not data.has("archiveFilename"):
+		return
+
+	# Use export template if synced, otherwise use archive template
+	var template: Array
+	if _platformArchiveSync.get(platform, false):
+		template = _platformExportFilenameTemplates.get(platform, [{"type": "project"}])
+	else:
+		template = _platformArchiveFilenameTemplates.get(platform, [{"type": "project"}])
+
+	var filename = _buildFileNameFromTemplate(template, platform)
+	var fullFilename = filename + ".zip"
+	data["archiveFilename"].text = fullFilename
+	data["archiveFilename"].tooltip_text = fullFilename + "\nClick to configure"
+
+func _getExportExtension(platform: String) -> String:
+	match platform:
+		"Windows", "Windows Desktop":
+			return ".exe"
+		"macOS":
+			return ".zip"
+		"Linux", "Linux/X11":
+			return ".x86_64"
+		"Web":
+			return ".html"
+		"Android":
+			return ".apk"
+		"iOS":
+			return ".ipa"
+		"Source":
+			return ""
+		_:
+			return ""
+
+func _saveFilenameSettings(platform: String):
+	if _selectedProjectItem == null or not is_instance_valid(_selectedProjectItem):
+		return
+
+	var platformSettings = _selectedProjectItem.GetPlatformExportSettings(platform)
+	if platformSettings.is_empty():
+		platformSettings = {
+			"enabled": false,
+			"exportPath": "",
+			"exportFilename": ""
+		}
+
+	# Save filename templates and sync state
+	platformSettings["exportFilenameTemplate"] = _platformExportFilenameTemplates.get(platform, [{"type": "project"}])
+	platformSettings["archiveFilenameTemplate"] = _platformArchiveFilenameTemplates.get(platform, [{"type": "project"}])
+	platformSettings["archiveSync"] = _platformArchiveSync.get(platform, false)
+
+	# Build the actual filenames (use export template for archive if synced)
+	var exportFilename = _buildFileNameFromTemplate(platformSettings["exportFilenameTemplate"], platform)
+	platformSettings["exportFilename"] = exportFilename
+
+	var archiveTemplate = platformSettings["exportFilenameTemplate"] if platformSettings["archiveSync"] else platformSettings["archiveFilenameTemplate"]
+	var archiveFilename = _buildFileNameFromTemplate(archiveTemplate, platform)
+	platformSettings["archiveFilename"] = archiveFilename
+
+	_selectedProjectItem.SetPlatformExportSettings(platform, platformSettings)
+	_selectedProjectItem.SaveProjectItem()
+
+# Builds the export filename from a filename template
+func _buildFileNameFromTemplate(filenameTemplate: Array, platform: String) -> String:
+	if filenameTemplate.is_empty():
+		# Default to project name if no template
+		if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
+			var projectName = _selectedProjectItem.GetProjectPath().get_file().get_basename()
+			if projectName == "project":
+				projectName = _selectedProjectItem.GetProjectName()
+			return projectName
+		return "export"
+
+	var parts: Array[String] = []
+	var version = _projectVersionLineEdit.text if _projectVersionLineEdit.text != "" else "v1.0.0"
+
+	for segment in filenameTemplate:
+		match segment["type"]:
+			"project":
+				if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
+					var projectName = _selectedProjectItem.GetProjectPath().get_file().get_basename()
+					if projectName == "project":
+						projectName = _selectedProjectItem.GetProjectName()
+					parts.append(projectName)
+				else:
+					parts.append("project")
+			"version":
+				parts.append(version)
+			"platform":
+				parts.append(platform.to_lower().replace(" ", "-"))
+			"custom":
+				var customValue = segment.get("value", "")
+				if not customValue.is_empty():
+					parts.append(customValue)
+
+	if parts.is_empty():
+		return "export"
+
+	return "-".join(parts)
 
 func _updateExportPathDisplay(platform: String):
 	# Update the export path LineEdit to show the full path with template
@@ -869,7 +1163,8 @@ func _updateExportPathDisplay(platform: String):
 					fullPath = fullPath.path_join(processedCustom)
 
 	# Use forward slashes (cross-platform compatible)
-	data["exportPath"].placeholder_text = fullPath
+	data["exportPath"].text = fullPath
+	data["exportPath"].tooltip_text = fullPath
 
 # Build the actual export path from template for export operations
 func _buildExportPathFromTemplate(platform: String, rootPath: String, version: String) -> String:
@@ -972,7 +1267,8 @@ func _onEditProjectPressed():
 		print("Error: No project selected")
 		return
 
-	var projectPath = _selectedProjectItem.GetProjectPath().get_base_dir()
+	# GetProjectDir() handles both path formats (with or without project.godot)
+	var projectPath = _selectedProjectItem.GetProjectDir()
 	if projectPath.is_empty():
 		print("Error: Project path not set")
 		return
@@ -1032,8 +1328,8 @@ func _exportPlatform(platform: String):
 		print("Error: Cannot export - project item is null or invalid")
 		return
 
-	var projectPath = _selectedProjectItem.GetProjectPath()
-	var projectDir = projectPath.get_base_dir()
+	# GetProjectDir() handles both path formats (with or without project.godot)
+	var projectDir = _selectedProjectItem.GetProjectDir()
 	var godotPath = ""
 	var godotVersionId = ""
 
@@ -1058,6 +1354,7 @@ func _exportPlatform(platform: String):
 	# Get export settings
 	var exportPath = _platformRootPaths.get(platform, "")
 	var exportFilename = data["exportFilename"].text
+	var archiveFilename = data["archiveFilename"].text
 
 	# Get export options from UI
 	var isDebug = (data["exportTypeOption"].selected == 1)  # 0=Release, 1=Debug
@@ -1258,7 +1555,7 @@ func _exportPlatform(platform: String):
 	if success and not _exportCancelled and shouldZip:
 		_updateStatus(data, "Creating zip archive...")
 		await get_tree().process_frame
-		var zipPath = await _createZipArchive(exportDestPath, exportFilename, version, platform)
+		var zipPath = await _createZipArchive(exportDestPath, archiveFilename)
 		if zipPath.is_empty():
 			success = false
 		else:
@@ -1341,6 +1638,14 @@ func save():
 			# Save path template if exists
 			if platform in _platformPathTemplates:
 				platformSettings["pathTemplate"] = _platformPathTemplates[platform]
+
+			# Save filename templates and sync state
+			if platform in _platformExportFilenameTemplates:
+				platformSettings["exportFilenameTemplate"] = _platformExportFilenameTemplates[platform]
+			if platform in _platformArchiveFilenameTemplates:
+				platformSettings["archiveFilenameTemplate"] = _platformArchiveFilenameTemplates[platform]
+			if platform in _platformArchiveSync:
+				platformSettings["archiveSync"] = _platformArchiveSync[platform]
 
 			_selectedProjectItem.SetPlatformExportSettings(platform, platformSettings)
 
@@ -1887,6 +2192,51 @@ func _setUIEnabled(enabled: bool):
 		if is_instance_valid(timer):
 			timer.stop()
 
+# Shows a loading overlay with custom message (no cancel button)
+func _showLoadingOverlay(message: String = "Loading..."):
+	if not is_instance_valid(_inputBlocker):
+		return
+
+	# Add to root if not already added
+	if _inputBlocker.get_parent() == null:
+		var root = owner
+		if root:
+			root.add_child(_inputBlocker)
+
+	# Update status text
+	var statusLabel = _inputBlocker.get_node_or_null("CenterContainer/VBoxContainer/StatusLabel")
+	if is_instance_valid(statusLabel):
+		statusLabel.text = message
+
+	# Hide cancel button for loading operations
+	var cancelButton = _inputBlocker.get_node_or_null("CenterContainer/VBoxContainer/CancelButton")
+	if is_instance_valid(cancelButton):
+		cancelButton.visible = false
+
+	# Show blocker and start spinner
+	_inputBlocker.visible = true
+	_inputBlocker.move_to_front()
+
+	var timer = _inputBlocker.get_node_or_null("SpinnerTimer")
+	if is_instance_valid(timer):
+		timer.start()
+
+# Hides the loading overlay
+func _hideLoadingOverlay():
+	if not is_instance_valid(_inputBlocker):
+		return
+
+	_inputBlocker.visible = false
+
+	var timer = _inputBlocker.get_node_or_null("SpinnerTimer")
+	if is_instance_valid(timer):
+		timer.stop()
+
+	# Restore cancel button visibility for future export operations
+	var cancelButton = _inputBlocker.get_node_or_null("CenterContainer/VBoxContainer/CancelButton")
+	if is_instance_valid(cancelButton):
+		cancelButton.visible = true
+
 func _updateExportSelectedButtonState():
 	# Check if any platform is selected
 	var anyPlatformSelected = false
@@ -1961,9 +2311,12 @@ func _validateExportPath(projectDir: String, exportRootPath: String, finalExport
 
 # Creates a zip archive of the export folder
 # Returns the path to the zip file, or empty string on failure
-func _createZipArchive(exportDir: String, filename: String, version: String, platform: String) -> String:
-	# Build zip filename: filename-platform-version.zip
-	var zipFilename = "%s-%s-%s.zip" % [filename, platform.replace(" ", "-").replace("/", "-"), version]
+func _createZipArchive(exportDir: String, archiveFilename: String) -> String:
+	# Use archive filename directly (already includes version/platform from template)
+	# Strip .zip if already present to avoid double extension
+	var zipFilename = archiveFilename
+	if not zipFilename.ends_with(".zip"):
+		zipFilename = zipFilename + ".zip"
 
 	# For Source platform, we need to:
 	# 1. Create zip from the source files that were copied into exportDir

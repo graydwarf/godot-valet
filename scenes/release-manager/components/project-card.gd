@@ -34,9 +34,8 @@ func _onProjectPathClicked(event: InputEvent):
 
 func _onFolderButtonPressed():
 	if _selectedProjectItem != null:
-		var projectPath = _selectedProjectItem.GetProjectPath()
-		# Open the folder containing the project, not the project file itself
-		var projectDir = projectPath.get_base_dir()
+		# GetProjectDir() handles both path formats (with or without project.godot)
+		var projectDir = _selectedProjectItem.GetProjectDir()
 		OS.shell_open(projectDir)
 
 # Called by wizard to update card with project info

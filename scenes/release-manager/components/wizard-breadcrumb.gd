@@ -3,7 +3,7 @@ class_name WizardBreadcrumb
 
 signal step_clicked(step_index: int)
 
-var _steps = ["Build", "Publish"]
+var _steps = ["Export", "Publish"]
 var _currentStep: int = 0
 var _stepButtons: Array[Button] = []
 

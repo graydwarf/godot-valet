@@ -6,7 +6,7 @@ extends Panel
 @onready var _breadcrumb = %WizardBreadcrumb
 @onready var _pagesContainer = %PagesContainer
 @onready var _exitButton = %ExitButton
-@onready var _backButton = %BackButton
+@onready var _saveButton = %SaveButton
 @onready var _nextButton = %NextButton
 @onready var _confirmationDialog = %ConfirmationDialog
 
@@ -141,28 +141,23 @@ func _showPage(pageIndex: int):
 	_updateNavigationButtons()
 
 func _updateNavigationButtons():
-	# Exit always visible
+	# Exit/Back always visible
 	_exitButton.visible = true
 
-	# Back visible if not on first page
-	_backButton.visible = (_currentPage > 0)
+	# Change Exit button text based on page
+	if _currentPage == 0:
+		_exitButton.text = "Exit"
+	else:
+		_exitButton.text = "Back"
 
 	# Next visible on all pages
 	_nextButton.visible = true
 
-	# Change Next to Finish on last page
+	# Change Next to Save & Close on last page
 	if _currentPage == _pages.size() - 1:
-		_nextButton.text = "Finish"
+		_nextButton.text = "Save && Close"
 	else:
 		_nextButton.text = "Next"
-
-func _onBackPressed():
-	if _currentPage > 0:
-		# Save current page before navigating
-		_pages[_currentPage].save()
-		_projectCard.show_saved_indicator()
-		_hasUnsavedChanges = false  # Just saved, new page starts clean
-		_showPage(_currentPage - 1)
 
 func _onNextPressed():
 	print("_onNextPressed called - current page: ", _currentPage, " total pages: ", _pages.size())
@@ -192,12 +187,25 @@ func _onFinishPressed():
 	# Close wizard
 	queue_free()
 
+func _onSavePressed():
+	# Save current page
+	_pages[_currentPage].save()
+	_projectCard.show_saved_indicator()
+	_hasUnsavedChanges = false
+
 func _onExitPressed():
-	if _hasUnsavedChanges:
-		_confirmationDialog.show_dialog("Do you want to save your changes before exiting?")
+	# On first page, exit the wizard; on other pages, go back
+	if _currentPage == 0:
+		if _hasUnsavedChanges:
+			_confirmationDialog.show_dialog("Do you want to save your changes before exiting?")
+		else:
+			queue_free()
 	else:
-		# No unsaved changes, just exit
-		queue_free()
+		# Save current page before navigating back
+		_pages[_currentPage].save()
+		_projectCard.show_saved_indicator()
+		_hasUnsavedChanges = false
+		_showPage(_currentPage - 1)
 
 func _onConfirmationDialogChoice(choice: String):
 	match choice:
@@ -240,6 +248,6 @@ func _onWindowCloseRequested():
 
 func set_navigation_enabled(enabled: bool):
 	# Enable/disable navigation buttons
-	_backButton.disabled = not enabled
 	_nextButton.disabled = not enabled
+	_saveButton.disabled = not enabled
 	_exitButton.disabled = not enabled

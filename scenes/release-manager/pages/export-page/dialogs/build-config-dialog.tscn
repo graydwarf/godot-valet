@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://b0l23i8vfixu2"]
+[gd_scene load_steps=3 format=3]
 
-[ext_resource type="Script" path="res://scenes/release-manager/build-config-dialog.gd" id="1"]
+[ext_resource type="Script" path="res://scenes/release-manager/pages/export-page/dialogs/build-config-dialog.gd" id="1"]
 [ext_resource type="Theme" uid="uid://dwoo5bj1luipm" path="res://assets/themes/global-themes/godot-dark-default.tres" id="2_theme"]
 
 [node name="ObfuscationConfigDialog" type="Control"]
@@ -67,8 +67,8 @@ vertical_alignment = 1
 unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
-tooltip_text = "Copy obfuscation settings from another platform"
 focus_mode = 0
+tooltip_text = "Copy obfuscation settings from another platform"
 
 [node name="ObfuscationCard" type="PanelContainer" parent="BackgroundPanel/MainMargin/MainVBox"]
 unique_name_in_owner = true
@@ -134,6 +134,7 @@ layout_mode = 2
 theme_override_constants/separation = 0
 
 [node name="CardHeader" type="PanelContainer" parent="BackgroundPanel/MainMargin/MainVBox/SourceFiltersCard/CardContent"]
+unique_name_in_owner = true
 layout_mode = 2
 
 [node name="HeaderMargin" type="MarginContainer" parent="BackgroundPanel/MainMargin/MainVBox/SourceFiltersCard/CardContent/CardHeader"]
@@ -186,6 +187,7 @@ layout_mode = 2
 theme_override_constants/separation = 0
 
 [node name="CardHeader" type="PanelContainer" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer/FunctionExcludesCard/CardContent"]
+unique_name_in_owner = true
 layout_mode = 2
 
 [node name="HeaderMargin" type="MarginContainer" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer/FunctionExcludesCard/CardContent/CardHeader"]
@@ -257,6 +259,7 @@ layout_mode = 2
 theme_override_constants/separation = 0
 
 [node name="CardHeader" type="PanelContainer" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer/VariableExcludesCard/CardContent"]
+unique_name_in_owner = true
 layout_mode = 2
 
 [node name="HeaderMargin" type="MarginContainer" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer/VariableExcludesCard/CardContent/CardHeader"]

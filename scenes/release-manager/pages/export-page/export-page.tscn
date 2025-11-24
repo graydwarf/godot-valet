@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://dcyvcer873qgk"]
+[gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://scenes/release-manager/pages/page3-build.gd" id="1"]
+[ext_resource type="Script" path="res://scenes/release-manager/pages/export-page/export-page.gd" id="1"]
 
-[node name="Page3Build" type="Control"]
+[node name="ExportPage" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -51,18 +51,18 @@ size_flags_horizontal = 3
 unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 31)
 layout_mode = 2
-tooltip_text = "Refresh export packages list"
 focus_mode = 0
 mouse_default_cursor_shape = 2
+tooltip_text = "Refresh export packages list"
 text = "Refresh"
 
 [node name="EditProjectButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonMargin/HBoxContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 31)
 layout_mode = 2
-tooltip_text = "Open project in Godot Editor to configure export settings"
 focus_mode = 0
 mouse_default_cursor_shape = 2
+tooltip_text = "Open project in Godot Editor to configure export settings"
 text = "Edit Project"
 
 [node name="ExportSelectedButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonMargin/HBoxContainer"]
@@ -76,8 +76,8 @@ text = "Export Selected"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 31)
 layout_mode = 2
-tooltip_text = "Save all settings"
 mouse_default_cursor_shape = 2
+tooltip_text = "Save all settings"
 text = "Save"
 
 [node name="SpacerRight" type="Control" parent="MarginContainer/VBoxContainer/ButtonMargin/HBoxContainer"]

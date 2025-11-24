@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://dbbq4qq6pnwox"]
+[gd_scene load_steps=2 format=3 uid="uid://cgfyxcwjy0lrx"]
 
-[ext_resource type="Script" path="res://scenes/release-manager/pages/page4-publish.gd" id="1"]
+[ext_resource type="Script" uid="uid://crafxq4xdbgcf" path="res://scenes/release-manager/pages/publish-page/publish-page.gd" id="1"]
 
-[node name="Page4Publish" type="Control"]
+[node name="PublishPage" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

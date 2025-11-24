@@ -1,20 +1,21 @@
-[gd_scene load_steps=3 format=3 uid="uid://d33botc3fytws"]
+[gd_scene load_steps=3 format=3 uid="uid://bvx8ywqm2n5f6"]
 
-[ext_resource type="Script" path="res://scenes/release-manager/export-path-settings-dialog.gd" id="1_1a1a1"]
+[ext_resource type="Script" path="res://scenes/release-manager/pages/export-page/dialogs/export-path-settings-dialog.gd" id="1_1a1a1"]
 [ext_resource type="Theme" uid="uid://dwoo5bj1luipm" path="res://assets/themes/global-themes/godot-dark-default.tres" id="2_theme"]
 
 [node name="ExportPathSettingsDialog" type="Control"]
-layout_mode = 3
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 0
 script = ExtResource("1_1a1a1")
 
 [node name="BackgroundPanel" type="Panel" parent="."]
 unique_name_in_owner = true
-layout_mode = 0
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -22,7 +23,7 @@ grow_vertical = 2
 theme = ExtResource("2_theme")
 
 [node name="MarginContainer" type="MarginContainer" parent="BackgroundPanel"]
-layout_mode = 0
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -76,9 +77,9 @@ theme_override_constants/separation = 8
 
 [node name="Label" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer/RootPathCard/VBoxContainer/HeaderContainer/HeaderMargin/HeaderRow"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
 text = "Root Export Folder"
 vertical_alignment = 1
+theme_override_font_sizes/font_size = 16
 
 [node name="ContentContainer" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/RootPathCard/VBoxContainer"]
 layout_mode = 2
@@ -106,10 +107,10 @@ scroll_active = false
 
 [node name="SelectFolderButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/RootPathCard/VBoxContainer/ContentContainer/ContentMargin/RootPathContainer"]
 unique_name_in_owner = true
-modulate = Color(1, 1, 0.6, 1)
 custom_minimum_size = Vector2(50, 31)
 layout_mode = 2
 text = "📁"
+modulate = Color(1, 1, 0.6, 1)
 
 [node name="ProjectVersionCard" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
@@ -135,9 +136,9 @@ theme_override_constants/separation = 8
 
 [node name="Label" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard/VBoxContainer/HeaderContainer/HeaderMargin/HeaderRow"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
 text = "Project Version"
 vertical_alignment = 1
+theme_override_font_sizes/font_size = 16
 
 [node name="ContentContainer" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard/VBoxContainer"]
 layout_mode = 2
@@ -181,9 +182,9 @@ theme_override_constants/separation = 8
 
 [node name="Label" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/HeaderContainer/HeaderMargin/HeaderRow"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
 text = "Path Segments"
 vertical_alignment = 1
+theme_override_font_sizes/font_size = 16
 
 [node name="ContentContainer" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer"]
 layout_mode = 2
@@ -264,8 +265,8 @@ layout_mode = 2
 
 [node name="PreviewTitle" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer/PreviewCard/VBoxContainer/HeaderContainer/HeaderMargin/HeaderRow"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
 text = "Export Path Preview"
+theme_override_font_sizes/font_size = 16
 
 [node name="ContentContainer" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/PreviewCard/VBoxContainer"]
 layout_mode = 2

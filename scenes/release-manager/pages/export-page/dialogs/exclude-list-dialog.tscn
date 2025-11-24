@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://bsr74le8q688n"]
+[gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://scenes/release-manager/exclude-list-dialog.gd" id="1"]
+[ext_resource type="Script" path="res://scenes/release-manager/pages/export-page/dialogs/exclude-list-dialog.gd" id="1"]
 
 [node name="ExcludeListDialog" type="Window"]
 title = "Obfuscation Exclude-Lists"
@@ -33,8 +33,8 @@ layout_mode = 2
 layout_mode = 2
 tooltip_text = "Functions listed here will NOT be obfuscated.
 Useful for functions called via strings that we can't detect automatically."
-mouse_filter = 0
 text = "Function Exclude-List:"
+mouse_filter = 0
 
 [node name="FunctionScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -56,8 +56,8 @@ layout_mode = 2
 layout_mode = 2
 tooltip_text = "Variables listed here will NOT be obfuscated.
 Useful for variables accessed via strings (e.g., set/get methods)."
-mouse_filter = 0
 text = "Variable Exclude-List:"
+mouse_filter = 0
 
 [node name="VariableScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2

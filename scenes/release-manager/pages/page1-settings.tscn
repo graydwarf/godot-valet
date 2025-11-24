@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://1irkidje7x5l"]
+[gd_scene load_steps=2 format=3 uid="uid://6jpml6sg81lf"]
 
-[ext_resource type="Script" uid="uid://cq2yealie10l6" path="res://scenes/release-manager/pages/page1-settings.gd" id="1"]
+[ext_resource type="Script" path="res://scenes/release-manager/pages/page1-settings.gd" id="1"]
 
 [node name="Page1Settings" type="Control"]
 layout_mode = 3

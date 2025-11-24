@@ -271,6 +271,15 @@ func GetEditedDate():
 func GetProjectPathBaseDir():
 	return _projectPathLabel.text.get_base_dir()
 
+# Returns the project directory (folder containing project.godot)
+# Handles both formats: with or without project.godot at the end
+func GetProjectDir() -> String:
+	if _projectPath.ends_with("project.godot"):
+		return _projectPath.get_base_dir()
+	else:
+		# Path is already the directory
+		return _projectPath
+
 func GetThumbnailPath():
 	return _thumbnailPath
 	

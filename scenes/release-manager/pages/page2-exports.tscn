@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://bg80m1dpsiue0"]
 
 [ext_resource type="Script" path="res://scenes/release-manager/pages/page2-exports.gd" id="1"]
 
@@ -38,37 +38,37 @@ theme_override_constants/separation = 8
 [node name="WindowsCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/PlatformsVBox"]
 unique_name_in_owner = true
 layout_mode = 2
+tooltip_text = "Export for Windows platform"
 mouse_default_cursor_shape = 2
 text = "Windows Desktop"
-tooltip_text = "Export for Windows platform"
 
 [node name="LinuxCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/PlatformsVBox"]
 unique_name_in_owner = true
 layout_mode = 2
+tooltip_text = "Export for Linux platform"
 mouse_default_cursor_shape = 2
 text = "Linux"
-tooltip_text = "Export for Linux platform"
 
 [node name="WebCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/PlatformsVBox"]
 unique_name_in_owner = true
 layout_mode = 2
+tooltip_text = "Export for Web (HTML5)"
 mouse_default_cursor_shape = 2
 text = "Web"
-tooltip_text = "Export for Web (HTML5)"
 
 [node name="SourceCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/PlatformsVBox"]
 unique_name_in_owner = true
 layout_mode = 2
+tooltip_text = "Export project source code"
 mouse_default_cursor_shape = 2
 text = "Source Code"
-tooltip_text = "Export project source code"
 
 [node name="HSeparator2" type="HSeparator" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 
 [node name="InfoLabel" type="Label" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Note: Export presets must be configured in Godot.
 Missing presets will show errors on export."
-theme_override_font_sizes/font_size = 12
 autowrap_mode = 2
