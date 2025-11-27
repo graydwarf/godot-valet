@@ -41,6 +41,7 @@ var _editedDate : Dictionary = {}
 var _sourceFilters := []
 var _customOrder := 999999  # Default high value for unordered items
 var _platformExportSettings := {}  # Per-platform export settings: {platform_name: {exportPath, exportFilename, obfuscation}}
+var _publishPlatformSelections := {}  # Per-platform publish checkbox state: {platform_name: bool}
 
 func _ready():
 	InitSignals()
@@ -254,6 +255,12 @@ func GetItchEnabled():
 func GetGithubEnabled():
 	return _githubEnabled
 
+func GetPublishPlatformSelections() -> Dictionary:
+	return _publishPlatformSelections
+
+func SetPublishPlatformSelections(selections: Dictionary):
+	_publishPlatformSelections = selections
+
 func GetShowTipsForErrors():
 	return _showTipsForErrors
 	
@@ -453,6 +460,7 @@ func SaveProjectItem():
 	config.set_value("ProjectSettings", "thumbnail_path", _thumbnailPath)
 	config.set_value("ProjectSettings", "custom_order", _customOrder)
 	config.set_value("ProjectSettings", "platform_export_settings", _platformExportSettings)
+	config.set_value("ProjectSettings", "publish_platform_selections", _publishPlatformSelections)
 
 	# Save the config file.
 	var err = config.save("user://" + App.GetProjectItemFolder() + "/" + _projectId + ".cfg")

@@ -358,6 +358,7 @@ func UpdateFavoritesBar():
 	_navigateToProjectButton.tooltip_text = "Navigate To Project In Treeview (Shortcut: Alt+1)"
 	_navigateToProjectButton.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
 	_navigateToProjectButton.ignore_texture_size = true
+	_navigateToProjectButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
 	# Load Godot icon (using TextureButton for consistent sizing with numbered icons)
 	var godotIcon = load("res://icon.svg") as Texture2D
@@ -383,6 +384,7 @@ func UpdateFavoritesBar():
 		favoriteButton.custom_minimum_size = Vector2(24, 24)
 		favoriteButton.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
 		favoriteButton.ignore_texture_size = true
+		favoriteButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		var fileName = _favorites[i].get_file() if _favorites[i].get_file() != "" else _favorites[i]
 		favoriteButton.tooltip_text = fileName + " (Shortcut: Alt+" + str(slotNumber) + ")"
 

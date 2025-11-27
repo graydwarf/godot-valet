@@ -158,6 +158,7 @@ func LoadProjectsIntoProjectContainer():
 			projectItem.SetThumbnailPath(config.get_value("ProjectSettings", "thumbnail_path", "res://icon.svg"))
 			projectItem.SetCustomOrder(config.get_value("ProjectSettings", "custom_order", 999999))
 			projectItem.SetAllPlatformExportSettings(config.get_value("ProjectSettings", "platform_export_settings", {}))
+			projectItem.SetPublishPlatformSelections(config.get_value("ProjectSettings", "publish_platform_selections", {}))
 
 			if isHidden:
 				hiddenProjectCount += 1

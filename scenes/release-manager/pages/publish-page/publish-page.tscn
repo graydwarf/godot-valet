@@ -1,6 +1,9 @@
-[gd_scene load_steps=2 format=3 uid="uid://cgfyxcwjy0lrx"]
+[gd_scene load_steps=5 format=3 uid="uid://cgfyxcwjy0lrx"]
 
 [ext_resource type="Script" uid="uid://crafxq4xdbgcf" path="res://scenes/release-manager/pages/publish-page/publish-page.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/release-manager/pages/publish-page/dialogs/butler-help-dialog/butler-help-dialog.tscn" id="2_butler"]
+[ext_resource type="PackedScene" path="res://scenes/release-manager/pages/publish-page/dialogs/profile-help-dialog/profile-help-dialog.tscn" id="3_profile"]
+[ext_resource type="PackedScene" path="res://scenes/release-manager/pages/publish-page/dialogs/project-help-dialog/project-help-dialog.tscn" id="4_project"]
 
 [node name="PublishPage" type="Control"]
 layout_mode = 3
@@ -23,33 +26,44 @@ theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer"]
 layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ScrollMargin" type="MarginContainer" parent="MarginContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_right = 6
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/ScrollContainer/ScrollMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 16
 
-[node name="ItchCard" type="PanelContainer" parent="MarginContainer/VBoxContainer"]
+[node name="ItchCard" type="PanelContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard"]
 layout_mode = 2
 theme_override_constants/separation = 0
 
-[node name="HeaderContainer" type="PanelContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer"]
+[node name="HeaderContainer" type="PanelContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer"]
 layout_mode = 2
 
-[node name="HeaderMargin" type="MarginContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/HeaderContainer"]
+[node name="HeaderMargin" type="MarginContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/HeaderContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
-[node name="HeaderRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/HeaderContainer/HeaderMargin"]
+[node name="HeaderRow" type="HBoxContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/HeaderContainer/HeaderMargin"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="ItchCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/HeaderContainer/HeaderMargin/HeaderRow"]
+[node name="ItchCheckBox" type="CheckBox" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/HeaderContainer/HeaderMargin/HeaderRow"]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Publish to itch.io"
@@ -57,29 +71,29 @@ focus_mode = 0
 mouse_default_cursor_shape = 2
 text = "itch.io"
 
-[node name="ContentContainer" type="PanelContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer"]
+[node name="ContentContainer" type="PanelContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer"]
 layout_mode = 2
 
-[node name="ContentMargin" type="MarginContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer"]
+[node name="ContentMargin" type="MarginContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
-[node name="ItchDetailsMargin" type="MarginContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin"]
+[node name="ItchDetailsMargin" type="MarginContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="ItchDetailsVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin"]
+[node name="ItchDetailsVBox" type="VBoxContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="ItchProfileRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox"]
+[node name="ItchProfileRow" type="HBoxContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox"]
 layout_mode = 2
 theme_override_constants/separation = 5
 
-[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ItchProfileRow"]
+[node name="Label" type="Label" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ItchProfileRow"]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 size_flags_horizontal = 0
@@ -89,13 +103,13 @@ horizontal_alignment = 2
 vertical_alignment = 1
 clip_text = true
 
-[node name="ItchProfileLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ItchProfileRow"]
+[node name="ItchProfileLineEdit" type="LineEdit" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ItchProfileRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Your itch.io username"
 
-[node name="ProfileHelpButton" type="Button" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ItchProfileRow"]
+[node name="ProfileHelpButton" type="Button" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ItchProfileRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 31)
 layout_mode = 2
@@ -104,11 +118,11 @@ focus_mode = 0
 mouse_default_cursor_shape = 2
 text = "?"
 
-[node name="ItchProjectRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox"]
+[node name="ItchProjectRow" type="HBoxContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox"]
 layout_mode = 2
 theme_override_constants/separation = 5
 
-[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ItchProjectRow"]
+[node name="Label" type="Label" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ItchProjectRow"]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 size_flags_horizontal = 0
@@ -118,13 +132,13 @@ horizontal_alignment = 2
 vertical_alignment = 1
 clip_text = true
 
-[node name="ItchProjectLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ItchProjectRow"]
+[node name="ItchProjectLineEdit" type="LineEdit" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ItchProjectRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Your project slug on itch.io"
 
-[node name="ProjectHelpButton" type="Button" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ItchProjectRow"]
+[node name="ProjectHelpButton" type="Button" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ItchProjectRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 31)
 layout_mode = 2
@@ -133,11 +147,11 @@ focus_mode = 0
 mouse_default_cursor_shape = 2
 text = "?"
 
-[node name="ExportTypeRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox"]
+[node name="ExportTypeRow" type="HBoxContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox"]
 layout_mode = 2
 theme_override_constants/separation = 5
 
-[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ExportTypeRow"]
+[node name="Label" type="Label" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ExportTypeRow"]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 size_flags_horizontal = 0
@@ -147,63 +161,63 @@ horizontal_alignment = 2
 vertical_alignment = 1
 clip_text = true
 
-[node name="ValueLabel" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ExportTypeRow"]
+[node name="ValueLabel" type="Label" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ExportTypeRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "None selected"
 vertical_alignment = 1
 
-[node name="ReviewCard" type="PanelContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox"]
+[node name="ReviewCard" type="PanelContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard"]
 layout_mode = 2
 theme_override_constants/separation = 0
 
-[node name="ReviewHeaderContainer" type="PanelContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer"]
+[node name="ReviewHeaderContainer" type="PanelContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="HeaderMargin" type="MarginContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewHeaderContainer"]
+[node name="HeaderMargin" type="MarginContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewHeaderContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 6
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 6
 
-[node name="ReviewHeaderLabel" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewHeaderContainer/HeaderMargin"]
+[node name="ReviewHeaderLabel" type="Label" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewHeaderContainer/HeaderMargin"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Publish Preview"
 
-[node name="ReviewContentContainer" type="PanelContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer"]
+[node name="ReviewContentContainer" type="PanelContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="ContentMargin" type="MarginContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer"]
+[node name="ContentMargin" type="MarginContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 8
 
-[node name="ReviewContentVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin"]
+[node name="ReviewContentVBox" type="VBoxContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="UploadUrlRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox"]
+[node name="UploadUrlRow" type="HBoxContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox"]
 layout_mode = 2
 theme_override_constants/separation = 5
 
-[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox/UploadUrlRow"]
+[node name="Label" type="Label" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox/UploadUrlRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Upload URL:"
 vertical_alignment = 1
 
-[node name="UploadUrlValue" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox/UploadUrlRow"]
+[node name="UploadUrlValue" type="Label" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox/UploadUrlRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -211,17 +225,17 @@ theme_override_font_sizes/font_size = 12
 text = "username.itch.io/project-slug"
 vertical_alignment = 1
 
-[node name="VersionRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox"]
+[node name="VersionRow" type="HBoxContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox"]
 layout_mode = 2
 theme_override_constants/separation = 5
 
-[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox/VersionRow"]
+[node name="Label" type="Label" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox/VersionRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Version:"
 vertical_alignment = 1
 
-[node name="VersionValue" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox/VersionRow"]
+[node name="VersionValue" type="Label" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox/VersionRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -229,25 +243,25 @@ theme_override_font_sizes/font_size = 12
 text = "v1.0.0"
 vertical_alignment = 1
 
-[node name="ChannelsHeader" type="Label" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox"]
+[node name="ChannelsHeader" type="Label" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox"]
 modulate = Color(0.7, 0.7, 0.7, 1)
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Butler Channels:"
 
-[node name="ChannelsList" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox"]
+[node name="ChannelsList" type="VBoxContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/ReviewCard/VBoxContainer/ReviewContentContainer/ContentMargin/ReviewContentVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 2
 
-[node name="PublishButtonContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox"]
+[node name="PublishButtonContainer" type="HBoxContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox"]
 layout_mode = 2
 
-[node name="Spacer" type="Control" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/PublishButtonContainer"]
+[node name="Spacer" type="Control" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/PublishButtonContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="PublishButton" type="Button" parent="MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/PublishButtonContainer"]
+[node name="PublishButton" type="Button" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/PublishButtonContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 31)
 layout_mode = 2
@@ -256,30 +270,39 @@ mouse_default_cursor_shape = 2
 disabled = true
 text = "Publish"
 
-[node name="GithubCard" type="PanelContainer" parent="MarginContainer/VBoxContainer"]
+[node name="ButlerHelpButton" type="Button" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer/ContentMargin/ItchDetailsMargin/ItchDetailsVBox/PublishButtonContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 31)
+layout_mode = 2
+tooltip_text = "Butler installation help"
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "?"
+
+[node name="GithubCard" type="PanelContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/GithubCard"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/GithubCard"]
 layout_mode = 2
 theme_override_constants/separation = 0
 
-[node name="HeaderContainer" type="PanelContainer" parent="MarginContainer/VBoxContainer/GithubCard/VBoxContainer"]
+[node name="HeaderContainer" type="PanelContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/GithubCard/VBoxContainer"]
 layout_mode = 2
 
-[node name="HeaderMargin" type="MarginContainer" parent="MarginContainer/VBoxContainer/GithubCard/VBoxContainer/HeaderContainer"]
+[node name="HeaderMargin" type="MarginContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/GithubCard/VBoxContainer/HeaderContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
-[node name="HeaderRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/GithubCard/VBoxContainer/HeaderContainer/HeaderMargin"]
+[node name="HeaderRow" type="HBoxContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/GithubCard/VBoxContainer/HeaderContainer/HeaderMargin"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="GithubCheckBox" type="CheckBox" parent="MarginContainer/VBoxContainer/GithubCard/VBoxContainer/HeaderContainer/HeaderMargin/HeaderRow"]
+[node name="GithubCheckBox" type="CheckBox" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/GithubCard/VBoxContainer/HeaderContainer/HeaderMargin/HeaderRow"]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Publish to GitHub as a release"
@@ -287,21 +310,94 @@ focus_mode = 0
 mouse_default_cursor_shape = 2
 text = "GitHub Releases"
 
-[node name="ContentContainer" type="PanelContainer" parent="MarginContainer/VBoxContainer/GithubCard/VBoxContainer"]
+[node name="ContentContainer" type="PanelContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/GithubCard/VBoxContainer"]
 layout_mode = 2
 
-[node name="ContentMargin" type="MarginContainer" parent="MarginContainer/VBoxContainer/GithubCard/VBoxContainer/ContentContainer"]
+[node name="ContentMargin" type="MarginContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/GithubCard/VBoxContainer/ContentContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
-[node name="ComingSoonLabel" type="Label" parent="MarginContainer/VBoxContainer/GithubCard/VBoxContainer/ContentContainer/ContentMargin"]
+[node name="ComingSoonLabel" type="Label" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/GithubCard/VBoxContainer/ContentContainer/ContentMargin"]
 modulate = Color(0.6, 0.6, 0.6, 1)
 layout_mode = 2
 text = "Coming soon..."
 
-[node name="StatusLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+[node name="OutputLogCard" type="PanelContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/OutputLogCard"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="HeaderContainer" type="PanelContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/OutputLogCard/VBoxContainer"]
+layout_mode = 2
+
+[node name="HeaderMargin" type="MarginContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/OutputLogCard/VBoxContainer/HeaderContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="HeaderRow" type="HBoxContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/OutputLogCard/VBoxContainer/HeaderContainer/HeaderMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/OutputLogCard/VBoxContainer/HeaderContainer/HeaderMargin/HeaderRow"]
+layout_mode = 2
+text = "Output Log"
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 16
+
+[node name="Spacer" type="Control" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/OutputLogCard/VBoxContainer/HeaderContainer/HeaderMargin/HeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ClearLogButton" type="Button" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/OutputLogCard/VBoxContainer/HeaderContainer/HeaderMargin/HeaderRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(60, 25)
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "Clear"
+
+[node name="ContentContainer" type="PanelContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/OutputLogCard/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ContentMargin" type="MarginContainer" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/OutputLogCard/VBoxContainer/ContentContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="OutputLog" type="RichTextLabel" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/OutputLogCard/VBoxContainer/ContentContainer/ContentMargin"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 300)
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "Ready to publish..."
+scroll_following = true
+selection_enabled = true
+
+[node name="StatusLabel" type="Label" parent="MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ButlerHelpDialog" parent="." instance=ExtResource("2_butler")]
+unique_name_in_owner = true
+
+[node name="ProfileHelpDialog" parent="." instance=ExtResource("3_profile")]
+unique_name_in_owner = true
+
+[node name="ProjectHelpDialog" parent="." instance=ExtResource("4_project")]
+unique_name_in_owner = true

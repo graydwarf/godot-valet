@@ -1,0 +1,102 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/release-manager/pages/publish-page/dialogs/profile-help-dialog/profile-help-dialog.gd" id="1"]
+[ext_resource type="Theme" uid="uid://dwoo5bj1luipm" path="res://assets/themes/global-themes/godot-dark-default.tres" id="2_theme"]
+
+[node name="ProfileHelpDialog" type="CanvasLayer"]
+layer = 100
+script = ExtResource("1")
+
+[node name="Dimmer" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0, 0, 0, 0.5)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DialogCard" type="PanelContainer" parent="CenterContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(450, 0)
+layout_mode = 2
+theme = ExtResource("2_theme")
+
+[node name="CardContent" type="VBoxContainer" parent="CenterContainer/DialogCard"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="CardHeader" type="PanelContainer" parent="CenterContainer/DialogCard/CardContent"]
+layout_mode = 2
+
+[node name="HeaderMargin" type="MarginContainer" parent="CenterContainer/DialogCard/CardContent/CardHeader"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="HeaderLabel" type="Label" parent="CenterContainer/DialogCard/CardContent/CardHeader/HeaderMargin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Profile Name Help"
+
+[node name="CardBody" type="MarginContainer" parent="CenterContainer/DialogCard/CardContent"]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="BodyVBox" type="VBoxContainer" parent="CenterContainer/DialogCard/CardContent/CardBody"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ContentLabel" type="RichTextLabel" parent="CenterContainer/DialogCard/CardContent/CardBody/BodyVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+bbcode_enabled = true
+text = "Your [b]profile name[/b] is your itch.io username.
+
+[b][color=#6bcfff]Example[/color][/b]
+
+If your itch.io page is:
+  [code]https://johndoe.itch.io[/code]
+
+Then your profile name is:
+  [code]johndoe[/code]
+
+[b][color=#6bcfff]How It's Used[/color][/b]
+
+Butler uses your profile name to construct the upload path:
+  [code]profile/project:channel[/code]
+
+Example: [code]johndoe/my-game:windows[/code]
+
+[b][color=#ffcc66]Finding Your Profile Name[/color][/b]
+
+Look at your itch.io dashboard URL or profile settings."
+fit_content = true
+
+[node name="ButtonContainer" type="HBoxContainer" parent="CenterContainer/DialogCard/CardContent/CardBody/BodyVBox"]
+layout_mode = 2
+
+[node name="Spacer" type="Control" parent="CenterContainer/DialogCard/CardContent/CardBody/BodyVBox/ButtonContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CloseButton" type="Button" parent="CenterContainer/DialogCard/CardContent/CardBody/BodyVBox/ButtonContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 32)
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "Close"

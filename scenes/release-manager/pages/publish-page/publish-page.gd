@@ -11,6 +11,7 @@ signal page_modified()  # Emitted when any input is changed
 @onready var _githubCard = %GithubCard
 @onready var _githubCheckBox = %GithubCheckBox
 @onready var _publishButton = %PublishButton
+@onready var _butlerHelpButton = %ButlerHelpButton
 @onready var _statusLabel = %StatusLabel
 @onready var _profileHelpButton = %ProfileHelpButton
 @onready var _projectHelpButton = %ProjectHelpButton
@@ -21,19 +22,34 @@ signal page_modified()  # Emitted when any input is changed
 @onready var _reviewCard = %ReviewCard
 @onready var _reviewHeaderContainer = %ReviewHeaderContainer
 @onready var _reviewContentContainer = %ReviewContentContainer
+@onready var _outputLogCard = %OutputLogCard
+@onready var _outputLog = %OutputLog
+@onready var _clearLogButton = %ClearLogButton
+@onready var _butlerHelpDialog = %ButlerHelpDialog
+@onready var _profileHelpDialog = %ProfileHelpDialog
+@onready var _projectHelpDialog = %ProjectHelpDialog
 
 # Card styling containers
-@onready var _itchHeaderContainer = $MarginContainer/VBoxContainer/ItchCard/VBoxContainer/HeaderContainer
-@onready var _itchContentContainer = $MarginContainer/VBoxContainer/ItchCard/VBoxContainer/ContentContainer
-@onready var _githubHeaderContainer = $MarginContainer/VBoxContainer/GithubCard/VBoxContainer/HeaderContainer
-@onready var _githubContentContainer = $MarginContainer/VBoxContainer/GithubCard/VBoxContainer/ContentContainer
+@onready var _itchHeaderContainer = $MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/HeaderContainer
+@onready var _itchContentContainer = $MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/ItchCard/VBoxContainer/ContentContainer
+@onready var _githubHeaderContainer = $MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/GithubCard/VBoxContainer/HeaderContainer
+@onready var _githubContentContainer = $MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/GithubCard/VBoxContainer/ContentContainer
+@onready var _outputLogHeaderContainer = $MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/OutputLogCard/VBoxContainer/HeaderContainer
+@onready var _outputLogContentContainer = $MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/OutputLogCard/VBoxContainer/ContentContainer
 
 var _publishing: bool = false
 var _isLoadingData: bool = false  # Suppresses page_modified during _loadPageData()
+var _butlerInfo: Dictionary = {"installed": false, "version": "", "path": "butler"}
+var _platformPublishCheckboxes: Dictionary = {}  # platform -> CheckBox
+var _platformsToPublish: Dictionary = {}  # platform -> bool (saved selections)
+var _publishCancelled: bool = false
 
 func _ready():
 	_applyCardStyle()
+	_detectButlerInstallation()
 	_publishButton.pressed.connect(_onPublishPressed)
+	_butlerHelpButton.pressed.connect(_onButlerHelpButtonPressed)
+	_clearLogButton.pressed.connect(_onClearLogPressed)
 	_itchCheckBox.toggled.connect(_onItchToggled)
 	_githubCheckBox.toggled.connect(_onDestinationToggled)
 	_profileHelpButton.pressed.connect(_onProfileHelpButtonPressed)
@@ -49,6 +65,7 @@ func _applyCardStyle():
 	_applyCardStyleToPanel(_itchCard, _itchHeaderContainer, _itchContentContainer)
 	_applyCardStyleToPanel(_githubCard, _githubHeaderContainer, _githubContentContainer)
 	_applyCardStyleToPanel(_reviewCard, _reviewHeaderContainer, _reviewContentContainer)
+	_applyCardStyleToPanel(_outputLogCard, _outputLogHeaderContainer, _outputLogContentContainer)
 
 func _applyCardStyleToPanel(outerPanel: PanelContainer, headerPanel: PanelContainer, contentPanel: PanelContainer):
 	# Outer panel with rounded corners and border
@@ -100,6 +117,41 @@ func _getAdjustedBackgroundColor(amount: float) -> Color:
 		baseColor.a
 	)
 
+# Detect if butler is installed and get version info
+func _detectButlerInstallation():
+	_butlerInfo = {"installed": false, "version": "", "path": "butler"}
+
+	# Try running butler --version
+	var output = []
+	var exitCode = OS.execute("butler", ["--version"], output, true, false)
+
+	if exitCode == OK and output.size() > 0:
+		_butlerInfo.installed = true
+		_butlerInfo.version = output[0].strip_edges()
+		_logOutput("[color=green]Butler detected: %s[/color]" % _butlerInfo.version)
+	else:
+		# Butler not in PATH, try common locations
+		var commonPaths = [
+			OS.get_environment("USERPROFILE") + "/.config/itch/bin/butler.exe",
+			"C:/Users/" + OS.get_environment("USERNAME") + "/.config/itch/bin/butler.exe"
+		]
+
+		for butlerPath in commonPaths:
+			if FileAccess.file_exists(butlerPath):
+				var testOutput = []
+				var testExitCode = OS.execute(butlerPath, ["--version"], testOutput, true, false)
+				if testExitCode == OK and testOutput.size() > 0:
+					_butlerInfo.installed = true
+					_butlerInfo.version = testOutput[0].strip_edges()
+					_butlerInfo.path = butlerPath
+					_logOutput("[color=green]Butler detected at: %s[/color]" % butlerPath)
+					_logOutput("[color=green]Version: %s[/color]" % _butlerInfo.version)
+					break
+
+		if not _butlerInfo.installed:
+			_logOutput("[color=red]Butler not found. Install butler to publish to itch.io.[/color]")
+			_logOutput("Download from: https://itch.io/docs/butler/")
+
 func _loadPageData():
 	if _selectedProjectItem == null:
 		return
@@ -118,6 +170,9 @@ func _loadPageData():
 	# Load itch.io settings
 	_itchProfileLineEdit.text = _selectedProjectItem.GetItchProfileName()
 	_itchProjectLineEdit.text = _selectedProjectItem.GetItchProjectName()
+
+	# Load saved publish platform selections
+	_platformsToPublish = _selectedProjectItem.GetPublishPlatformSelections()
 
 	# Load selected export platforms from Build page
 	_updateExportTypeSummary()
@@ -168,9 +223,10 @@ func _updateReviewSection(_value = null):
 	var version = _selectedProjectItem.GetProjectVersion()
 	_versionValue.text = version if not version.is_empty() else "(not set)"
 
-	# Clear existing channel items
+	# Clear existing channel items and checkbox references
 	for child in _channelsList.get_children():
 		child.queue_free()
+	_platformPublishCheckboxes.clear()
 
 	# Get platform settings and build channel list
 	var allSettings = _selectedProjectItem.GetAllPlatformExportSettings()
@@ -182,6 +238,9 @@ func _updateReviewSection(_value = null):
 		var projectPath = _selectedProjectItem.GetProjectPath()
 		if not projectPath.is_empty():
 			fallbackFilename = projectPath.get_file().get_basename()
+			# If project file is named "project.godot", use actual project name instead
+			if fallbackFilename == "project":
+				fallbackFilename = _selectedProjectItem.GetProjectName()
 
 	for platform in allSettings.keys():
 		var settings = allSettings[platform]
@@ -206,15 +265,31 @@ func _updateReviewSection(_value = null):
 				displayFilename = fallbackFilename
 			var fullPath = _buildFullExportPath(rootPath, pathTemplate, platform, version)
 
+			# Create row with checkbox for platform selection
+			var channelRow = HBoxContainer.new()
+			channelRow.add_theme_constant_override("separation", 8)
+
+			var checkbox = CheckBox.new()
+			checkbox.text = ""
+			checkbox.tooltip_text = "Include %s in publish" % platform
+			checkbox.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+			# Default to checked if no saved selection, or use saved value
+			checkbox.button_pressed = _platformsToPublish.get(platform, true)
+			checkbox.toggled.connect(_onPlatformCheckboxToggled.bind(platform))
+			channelRow.add_child(checkbox)
+			_platformPublishCheckboxes[platform] = checkbox
+
 			var channelLabel = Label.new()
-			channelLabel.text = "  %s → %s:%s" % [platform, projectName, channelName]
+			channelLabel.text = "%s → %s:%s" % [platform, projectName, channelName]
 			channelLabel.add_theme_font_size_override("font_size", 12)
-			_channelsList.add_child(channelLabel)
+			channelRow.add_child(channelLabel)
+
+			_channelsList.add_child(channelRow)
 
 			# Show full export path with filename
 			var pathLabel = Label.new()
 			if rootPath.is_empty():
-				pathLabel.text = "    (no export path configured)"
+				pathLabel.text = "      (no export path configured)"
 				pathLabel.modulate = Color(1.0, 0.6, 0.6, 1)
 				pathLabel.add_theme_font_size_override("font_size", 11)
 				_channelsList.add_child(pathLabel)
@@ -224,14 +299,14 @@ func _updateReviewSection(_value = null):
 					# Source uploads folder contents, show what's inside
 					displayPath = fullPath
 					var contentInfo = _getFolderContentInfo(fullPath)
-					pathLabel.text = "    %s" % displayPath
+					pathLabel.text = "      %s" % displayPath
 					pathLabel.modulate = Color(0.6, 0.6, 0.6, 1)
 					pathLabel.add_theme_font_size_override("font_size", 11)
 					_channelsList.add_child(pathLabel)
 
 					# Add a line showing folder contents summary
 					var contentsLabel = Label.new()
-					contentsLabel.text = "    └ %s" % contentInfo
+					contentsLabel.text = "      └ %s" % contentInfo
 					contentsLabel.modulate = Color(0.5, 0.5, 0.5, 1)
 					contentsLabel.add_theme_font_size_override("font_size", 10)
 					_channelsList.add_child(contentsLabel)
@@ -239,14 +314,14 @@ func _updateReviewSection(_value = null):
 					# Add last exported date for Source folder
 					var sourceLastExportedLabel = Label.new()
 					var folderModTime = _getFolderModifiedTime(fullPath)
-					sourceLastExportedLabel.text = "    └ Last Exported: %s" % folderModTime
+					sourceLastExportedLabel.text = "      └ Last Exported: %s" % folderModTime
 					sourceLastExportedLabel.modulate = Color(0.5, 0.5, 0.5, 1) if folderModTime != "(not found)" else Color(1.0, 0.6, 0.6, 1)
 					sourceLastExportedLabel.add_theme_font_size_override("font_size", 10)
 					_channelsList.add_child(sourceLastExportedLabel)
 					continue  # Skip the normal pathLabel add below
 				else:
 					displayPath = fullPath.path_join(displayFilename + displayExtension)
-				pathLabel.text = "    %s" % displayPath
+				pathLabel.text = "      %s" % displayPath
 				pathLabel.modulate = Color(0.6, 0.6, 0.6, 1)
 				pathLabel.add_theme_font_size_override("font_size", 11)
 				_channelsList.add_child(pathLabel)
@@ -254,25 +329,30 @@ func _updateReviewSection(_value = null):
 				# Add last exported date
 				var lastExportedLabel = Label.new()
 				var fileModTime = _getFileModifiedTime(displayPath)
-				lastExportedLabel.text = "    └ Last Exported: %s" % fileModTime
+				lastExportedLabel.text = "      └ Last Exported: %s" % fileModTime
 				lastExportedLabel.modulate = Color(0.5, 0.5, 0.5, 1) if fileModTime != "(not found)" else Color(1.0, 0.6, 0.6, 1)
 				lastExportedLabel.add_theme_font_size_override("font_size", 10)
 				_channelsList.add_child(lastExportedLabel)
 
 	if not hasChannels:
 		var noChannelsLabel = Label.new()
-		noChannelsLabel.text = "  (no platforms selected on Build page)"
+		noChannelsLabel.text = "  (no platforms selected on Export page)"
 		noChannelsLabel.modulate = Color(0.7, 0.7, 0.7, 1)
 		noChannelsLabel.add_theme_font_size_override("font_size", 12)
 		_channelsList.add_child(noChannelsLabel)
 
+func _onPlatformCheckboxToggled(checked: bool, platform: String):
+	_platformsToPublish[platform] = checked
+	if not _isLoadingData:
+		page_modified.emit()
+
 func _getButlerChannelName(platform: String) -> String:
 	match platform:
-		"Windows":
+		"Windows", "Windows Desktop":
 			return "windows"
 		"macOS":
 			return "mac"
-		"Linux":
+		"Linux", "Linux/X11":
 			return "linux"
 		"Web":
 			return "html5"
@@ -349,11 +429,11 @@ func _formatUnixTime(unixTime: int) -> String:
 
 func _getFileExtension(platform: String) -> String:
 	match platform:
-		"Windows":
+		"Windows", "Windows Desktop":
 			return ".exe"
 		"macOS":
 			return ".zip"  # macOS exports are typically zipped .app bundles
-		"Linux":
+		"Linux", "Linux/X11":
 			return ".x86_64"
 		"Web":
 			return ".html"
@@ -409,77 +489,185 @@ func _onDestinationToggled(checked: bool):
 		page_modified.emit()
 
 func _updatePublishButton():
-	var anySelected = _itchCheckBox.button_pressed || _githubCheckBox.button_pressed
-	_publishButton.disabled = !anySelected || _publishing
+	var anyDestinationSelected = _itchCheckBox.button_pressed || _githubCheckBox.button_pressed
+	var anyPlatformSelected = _getSelectedPlatformsToPublish().size() > 0
+	_publishButton.disabled = !anyDestinationSelected || !anyPlatformSelected || _publishing || !_butlerInfo.installed
+
+func _getSelectedPlatformsToPublish() -> Array[String]:
+	var selected: Array[String] = []
+	for platform in _platformPublishCheckboxes.keys():
+		if _platformPublishCheckboxes[platform].button_pressed:
+			selected.append(platform)
+	return selected
 
 func _onPublishPressed():
 	if _publishing:
 		return
 
+	if not _butlerInfo.installed:
+		_logOutput("[color=red]Error: Butler is not installed. Cannot publish.[/color]")
+		return
+
+	var profileName = _itchProfileLineEdit.text.strip_edges()
+	var projectSlug = _itchProjectLineEdit.text.strip_edges()
+
+	if profileName.is_empty() or projectSlug.is_empty():
+		_logOutput("[color=red]Error: Profile name and project slug are required.[/color]")
+		return
+
+	var platformsToPublish = _getSelectedPlatformsToPublish()
+	if platformsToPublish.is_empty():
+		_logOutput("[color=red]Error: No platforms selected to publish.[/color]")
+		return
+
 	_publishing = true
+	_publishCancelled = false
 	_updatePublishButton()
+	_statusLabel.text = "Publishing..."
 
-	var destinations: Array[String] = []
-	if _itchCheckBox.button_pressed:
-		destinations.append("itch.io")
-	if _githubCheckBox.button_pressed:
-		destinations.append("GitHub")
+	_logOutput("\n" + "=".repeat(60))
+	_logOutput("[color=cyan]Starting publish to itch.io...[/color]")
+	_logOutput("Profile: %s" % profileName)
+	_logOutput("Project: %s" % projectSlug)
+	_logOutput("Platforms: %s" % ", ".join(platformsToPublish))
+	_logOutput("=".repeat(60) + "\n")
 
-	_statusLabel.text = "Publishing to " + ", ".join(destinations) + "..."
+	var version = _selectedProjectItem.GetProjectVersion()
+	var allSettings = _selectedProjectItem.GetAllPlatformExportSettings()
+	var successCount = 0
+	var failCount = 0
 
-	# TODO: Actual publish logic
-	# For now, simulate publishing
-	for destination in destinations:
-		publish_started.emit(destination)
-		await get_tree().create_timer(2.0).timeout
-		publish_completed.emit(destination, true)
+	for platform in platformsToPublish:
+		if _publishCancelled:
+			_logOutput("[color=yellow]Publishing cancelled by user.[/color]")
+			break
 
-	_statusLabel.text = "Published successfully!"
+		var settings = allSettings.get(platform, {})
+		if settings.is_empty():
+			_logOutput("[color=red]No settings found for %s, skipping.[/color]" % platform)
+			failCount += 1
+			continue
+
+		var success = await _publishPlatform(platform, settings, profileName, projectSlug, version)
+		if success:
+			successCount += 1
+		else:
+			failCount += 1
+
+	_logOutput("\n" + "=".repeat(60))
+	if failCount == 0:
+		_logOutput("[color=green]All %d platform(s) published successfully![/color]" % successCount)
+		_statusLabel.text = "Published successfully!"
+	elif successCount > 0:
+		_logOutput("[color=yellow]%d succeeded, %d failed.[/color]" % [successCount, failCount])
+		_statusLabel.text = "Partial success (%d/%d)" % [successCount, successCount + failCount]
+	else:
+		_logOutput("[color=red]All %d platform(s) failed to publish.[/color]" % failCount)
+		_statusLabel.text = "Publish failed"
+	_logOutput("=".repeat(60))
+
 	_publishing = false
 	_updatePublishButton()
+
+	# Update review section to refresh "Last Exported" times
+	_updateReviewSection()
+
+func _publishPlatform(platform: String, settings: Dictionary, profileName: String, projectSlug: String, version: String) -> bool:
+	var channelName = _getButlerChannelName(platform)
+	var rootPath = settings.get("exportPath", "")
+	var pathTemplate = settings.get("pathTemplate", [])
+	var packageType = settings.get("packageType", 0)
+
+	if rootPath.is_empty():
+		_logOutput("[color=red][%s] No export path configured, skipping.[/color]" % platform)
+		return false
+
+	var fullPath = _buildFullExportPath(rootPath, pathTemplate, platform, version)
+	var uploadPath: String
+
+	if platform == "Source":
+		# For Source, upload the folder directly
+		uploadPath = fullPath
+		if not DirAccess.dir_exists_absolute(uploadPath):
+			_logOutput("[color=red][%s] Source folder not found: %s[/color]" % [platform, uploadPath])
+			return false
+	else:
+		# For other platforms, upload the file
+		var displayFilename: String
+		var displayExtension: String
+		if packageType == 1:  # Zip enabled
+			displayFilename = settings.get("archiveFilename", "")
+			displayExtension = ".zip"
+		else:
+			displayFilename = settings.get("exportFilename", "")
+			displayExtension = _getFileExtension(platform)
+
+		if displayFilename.is_empty():
+			var projectPath = _selectedProjectItem.GetProjectPath()
+			displayFilename = projectPath.get_file().get_basename()
+			if displayFilename == "project":
+				displayFilename = _selectedProjectItem.GetProjectName()
+
+		uploadPath = fullPath.path_join(displayFilename + displayExtension)
+
+		if not FileAccess.file_exists(uploadPath):
+			_logOutput("[color=red][%s] Export file not found: %s[/color]" % [platform, uploadPath])
+			return false
+
+	# Build butler command
+	var target = "%s/%s:%s" % [profileName, projectSlug, channelName]
+	var args = ["push", uploadPath, target]
+
+	# Add version if available
+	if not version.is_empty():
+		args.append("--userversion")
+		args.append(version.trim_prefix("v"))
+
+	_logOutput("\n[color=cyan][%s] Publishing...[/color]" % platform)
+	_logOutput("Command: butler %s" % " ".join(args))
+	_logOutput("File: %s" % uploadPath)
+	_logOutput("")
+
+	publish_started.emit(platform)
+
+	# Execute butler command and capture output
+	var output = []
+	var exitCode = OS.execute(_butlerInfo.path, args, output, true, false)
+
+	# Display output
+	for line in output:
+		var cleanLine = line.strip_edges()
+		if not cleanLine.is_empty():
+			_logOutput("  " + cleanLine)
+
+	if exitCode == OK:
+		_logOutput("[color=green][%s] Published successfully![/color]" % platform)
+		publish_completed.emit(platform, true)
+		return true
+	else:
+		_logOutput("[color=red][%s] Failed with exit code: %d[/color]" % [platform, exitCode])
+		publish_completed.emit(platform, false)
+		return false
+
+func _logOutput(message: String):
+	_outputLog.append_text(message + "\n")
+
+func _onClearLogPressed():
+	_outputLog.clear()
+	_outputLog.append_text("Ready to publish...\n")
 
 func validate() -> bool:
 	# Page 4 is always valid (publish is optional)
 	return true
 
+func _onButlerHelpButtonPressed():
+	_butlerHelpDialog.showDialog(_butlerInfo)
+
 func _onProfileHelpButtonPressed():
-	var popup = AcceptDialog.new()
-	popup.title = "What is a Profile Name?"
-	popup.dialog_text = """Your profile name is your itch.io username.
-
-Examples:
-• If your itch.io page is: https://johndoe.itch.io
-• Your profile name is: johndoe
-
-This is used by butler to identify which account to upload to.
-You can find it in your itch.io dashboard URL or profile settings."""
-	popup.ok_button_text = "Got it!"
-	add_child(popup)
-	popup.popup_centered(Vector2i(450, 280))
-	popup.confirmed.connect(popup.queue_free)
-	popup.close_requested.connect(popup.queue_free)
+	_profileHelpDialog.showDialog()
 
 func _onProjectHelpButtonPressed():
-	var popup = AcceptDialog.new()
-	popup.title = "What is a Project Slug?"
-	popup.dialog_text = """A slug is the URL-friendly identifier for your project on itch.io.
-
-Examples:
-• Project name: "My Awesome Game"
-• Slug: "my-awesome-game"
-• URL: https://username.itch.io/my-awesome-game
-
-The slug is:
-• Set when you create your project on itch.io
-• Lowercase and URL-friendly
-• Used in all API calls and butler uploads
-
-Find your slug in your project's URL on itch.io."""
-	popup.ok_button_text = "Got it!"
-	add_child(popup)
-	popup.popup_centered(Vector2i(500, 350))
-	popup.confirmed.connect(popup.queue_free)
-	popup.close_requested.connect(popup.queue_free)
+	_projectHelpDialog.showDialog()
 
 func save():
 	if _selectedProjectItem == null:
@@ -493,9 +681,7 @@ func save():
 	_selectedProjectItem.SetItchProfileName(_itchProfileLineEdit.text)
 	_selectedProjectItem.SetItchProjectName(_itchProjectLineEdit.text)
 
-	# Mark project as published with current date if published
-	if _publishing:
-		var currentDate = Time.get_datetime_string_from_system()
-		_selectedProjectItem.SetPublishedDate(currentDate)
+	# Save publish platform selections
+	_selectedProjectItem.SetPublishPlatformSelections(_platformsToPublish)
 
 	_selectedProjectItem.SaveProjectItem()

@@ -9,6 +9,7 @@ signal page_saved()  # Emitted after successful save to reset dirty flag
 @onready var _platformsContainer = %PlatformsContainer
 @onready var _exportSelectedButton = %ExportSelectedButton
 @onready var _projectVersionLineEdit = %ProjectVersionLineEdit
+@onready var _projectVersionCard = %ProjectVersionCard
 @onready var _refreshButton = %RefreshButton
 @onready var _editProjectButton = %EditProjectButton
 @onready var _saveButton = %SaveButton
@@ -66,6 +67,44 @@ func _ready():
 
 	# Create full-screen input blocker overlay (will be added to root when needed)
 	_createInputBlocker()
+
+	# Style the Project Version card to match platform cards
+	_styleProjectVersionCard()
+
+func _styleProjectVersionCard():
+	# Apply card theme (same as platform cards)
+	var panelTheme = Theme.new()
+	var styleBox = StyleBoxFlat.new()
+	styleBox.bg_color = _getAdjustedBackgroundColor(-0.08)
+	styleBox.border_color = Color(0.6, 0.6, 0.6)
+	styleBox.border_width_left = 1
+	styleBox.border_width_top = 1
+	styleBox.border_width_right = 1
+	styleBox.border_width_bottom = 1
+	styleBox.corner_radius_top_left = 6
+	styleBox.corner_radius_top_right = 6
+	styleBox.corner_radius_bottom_right = 6
+	styleBox.corner_radius_bottom_left = 6
+	panelTheme.set_stylebox("panel", "PanelContainer", styleBox)
+	_projectVersionCard.theme = panelTheme
+
+	# Style header container (bottom border only)
+	var headerContainer = _projectVersionCard.get_node("VBoxContainer/HeaderContainer")
+	var headerTheme = Theme.new()
+	var headerStyleBox = StyleBoxFlat.new()
+	headerStyleBox.bg_color = Color(0, 0, 0, 0)  # Transparent background
+	headerStyleBox.border_color = Color(0.6, 0.6, 0.6)
+	headerStyleBox.border_width_bottom = 1
+	headerTheme.set_stylebox("panel", "PanelContainer", headerStyleBox)
+	headerContainer.theme = headerTheme
+
+	# Style content container (transparent)
+	var contentContainer = _projectVersionCard.get_node("VBoxContainer/ContentContainer")
+	var contentTheme = Theme.new()
+	var contentStyleBox = StyleBoxFlat.new()
+	contentStyleBox.bg_color = Color(0, 0, 0, 0)
+	contentTheme.set_stylebox("panel", "PanelContainer", contentStyleBox)
+	contentContainer.theme = contentTheme
 
 func _loadPageData():
 	if _selectedProjectItem == null:
@@ -642,6 +681,10 @@ func _onVersionChanged(newText: String):
 	version_changed.emit(_currentVersion, newText)
 	if not _isLoadingData:
 		page_modified.emit()
+
+	# Update all platform export path displays (they use the version in their path)
+	for platform in _platformRows.keys():
+		_updateExportPathDisplay(platform)
 
 func _onInputChanged(_value = null):
 	# Emit signal when any input is modified
@@ -1630,6 +1673,7 @@ func save():
 				"enabled": data["checkbox"].button_pressed,
 				"exportPath": rootPath,
 				"exportFilename": data["exportFilename"].text,
+				"archiveFilename": data["archiveFilename"].text.get_basename(),  # Remove .zip extension for storage
 				"exportType": data["exportTypeOption"].selected,  # 0=Release, 1=Debug
 				"packageType": data["packageTypeOption"].selected,  # 0=No Zip, 1=Zip
 				"generateChecksum": data["checksumCheckbox"].button_pressed

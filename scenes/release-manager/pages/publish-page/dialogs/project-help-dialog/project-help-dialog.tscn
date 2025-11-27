@@ -1,0 +1,108 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/release-manager/pages/publish-page/dialogs/project-help-dialog/project-help-dialog.gd" id="1"]
+[ext_resource type="Theme" uid="uid://dwoo5bj1luipm" path="res://assets/themes/global-themes/godot-dark-default.tres" id="2_theme"]
+
+[node name="ProjectHelpDialog" type="CanvasLayer"]
+layer = 100
+script = ExtResource("1")
+
+[node name="Dimmer" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0, 0, 0, 0.5)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DialogCard" type="PanelContainer" parent="CenterContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 2
+theme = ExtResource("2_theme")
+
+[node name="CardContent" type="VBoxContainer" parent="CenterContainer/DialogCard"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="CardHeader" type="PanelContainer" parent="CenterContainer/DialogCard/CardContent"]
+layout_mode = 2
+
+[node name="HeaderMargin" type="MarginContainer" parent="CenterContainer/DialogCard/CardContent/CardHeader"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="HeaderLabel" type="Label" parent="CenterContainer/DialogCard/CardContent/CardHeader/HeaderMargin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Project Slug Help"
+
+[node name="CardBody" type="MarginContainer" parent="CenterContainer/DialogCard/CardContent"]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="BodyVBox" type="VBoxContainer" parent="CenterContainer/DialogCard/CardContent/CardBody"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ContentLabel" type="RichTextLabel" parent="CenterContainer/DialogCard/CardContent/CardBody/BodyVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+bbcode_enabled = true
+text = "A [b]slug[/b] is the URL-friendly identifier for your project on itch.io.
+
+[b][color=#6bcfff]Example[/color][/b]
+
+Project name: \"My Awesome Game\"
+Slug: [code]my-awesome-game[/code]
+URL: [code]https://username.itch.io/my-awesome-game[/code]
+
+[b][color=#6bcfff]Slug Characteristics[/color][/b]
+
+  - Set when you create your project on itch.io
+  - Lowercase letters and hyphens only
+  - URL-friendly (no spaces or special characters)
+  - Used in all API calls and butler uploads
+
+[b][color=#6bcfff]How It's Used[/color][/b]
+
+Butler uses the slug in the upload path:
+  [code]profile/project:channel[/code]
+
+Example: [code]johndoe/my-awesome-game:windows[/code]
+
+[b][color=#ffcc66]Finding Your Slug[/color][/b]
+
+Look at your project's URL on itch.io:
+  [code]https://username.itch.io/your-slug-here[/code]"
+fit_content = true
+
+[node name="ButtonContainer" type="HBoxContainer" parent="CenterContainer/DialogCard/CardContent/CardBody/BodyVBox"]
+layout_mode = 2
+
+[node name="Spacer" type="Control" parent="CenterContainer/DialogCard/CardContent/CardBody/BodyVBox/ButtonContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CloseButton" type="Button" parent="CenterContainer/DialogCard/CardContent/CardBody/BodyVBox/ButtonContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 32)
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "Close"

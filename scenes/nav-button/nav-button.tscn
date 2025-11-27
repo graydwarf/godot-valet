@@ -3,4 +3,5 @@
 [ext_resource type="Script" uid="uid://dapfu5ymff72p" path="res://scenes/nav-button/nav-button.gd" id="1_n3nv7"]
 
 [node name="GenericButton" type="Button"]
+mouse_default_cursor_shape = 2
 script = ExtResource("1_n3nv7")

@@ -72,6 +72,7 @@ vertical_alignment = 1
 [node name="SortByOptionButton" type="OptionButton" parent="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer/HBoxContainer3/VBoxContainer/HBoxContainer2"]
 unique_name_in_owner = true
 layout_mode = 2
+mouse_default_cursor_shape = 2
 item_count = 6
 popup/item_0/text = "None"
 popup/item_0/id = 0
@@ -100,6 +101,7 @@ theme_override_constants/separation = 4
 unique_name_in_owner = true
 layout_mode = 2
 focus_mode = 0
+mouse_default_cursor_shape = 2
 text = "Show Hidden"
 
 [node name="HiddenProjectItemCountLabel" type="Label" parent="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer/HBoxContainer3/VBoxContainer2/HBoxContainer"]
@@ -151,18 +153,24 @@ layout_mode = 2
 [node name="RunProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
 tooltip_text = "Runs the selected project without opening it in the Godot IDE."
 disabled = true
 text = "Run"
 
 [node name="EditProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
 tooltip_text = "Opens the selected project in an appropriate Godot IDE based on the version selected."
 disabled = true
 text = "Edit"
 
 [node name="ReleaseProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
 tooltip_text = "Opens the selected projects release configuration which supports exporting and publish to multiple platforms."
 disabled = true
 text = "Release"
@@ -170,18 +178,24 @@ text = "Release"
 [node name="FileExplorerButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
 tooltip_text = "Opens the selected projects release configuration which supports exporting and publish to multiple platforms."
 text = "File Explorer"
 
 [node name="ClaudeButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
 tooltip_text = "Launch Claude Code at the selected project's root directory"
 disabled = true
 text = "Claude Code"
 
 [node name="OpenProjectFolderButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
 tooltip_text = "Opens the selected projects release configuration which supports exporting and publish to multiple platforms."
 disabled = true
 text = "Open Folder"
@@ -199,12 +213,16 @@ color = Color(0.439216, 0.439216, 0.439216, 0.360784)
 [node name="NewProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
 tooltip_text = "Creates a new project management item. This does not create a new Godot project."
 text = "New / Import"
 
 [node name="ChangeProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
 tooltip_text = "Opens the project configuration dialog for the selected project."
 disabled = true
 text = "Configure Project"
@@ -212,6 +230,8 @@ text = "Configure Project"
 [node name="RemoveProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
 tooltip_text = "Permanently deletes the project template for the selected project. This does not delete any Godot project files."
 disabled = true
 text = "Remove"
@@ -241,11 +261,15 @@ color = Color(0.439216, 0.439216, 0.439216, 0.360784)
 
 [node name="SettingsButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
 tooltip_text = "Opens settings where you can configure things like Godot Versions."
 text = "Settings"
 
 [node name="AboutButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
 tooltip_text = "About Godot Valet and license information."
 text = "About"
 
