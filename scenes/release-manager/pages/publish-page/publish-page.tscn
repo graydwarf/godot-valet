@@ -384,6 +384,7 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 300)
 layout_mode = 2
 size_flags_vertical = 3
+focus_mode = 0
 bbcode_enabled = true
 text = "Ready to publish..."
 scroll_following = true
