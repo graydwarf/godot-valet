@@ -1,6 +1,10 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scenes/release-manager/pages/export-page/export-page.gd" id="1"]
+[ext_resource type="Texture2D" path="res://scenes/release-manager/assets/fluent-icons/arrow-clockwise.svg" id="2_refresh"]
+[ext_resource type="Texture2D" path="res://scenes/release-manager/assets/fluent-icons/code.svg" id="3_code"]
+[ext_resource type="Texture2D" path="res://scenes/release-manager/assets/fluent-icons/checkmark.svg" id="4_checkmark"]
+[ext_resource type="Texture2D" path="res://scenes/release-manager/assets/fluent-icons/save.svg" id="5_save"]
 
 [node name="ExportPage" type="Control"]
 layout_mode = 3
@@ -49,6 +53,7 @@ focus_mode = 0
 mouse_default_cursor_shape = 2
 tooltip_text = "Refresh export packages list"
 text = "Refresh"
+icon = ExtResource("2_refresh")
 
 [node name="EditProjectButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonMargin/HBoxContainer"]
 unique_name_in_owner = true
@@ -58,6 +63,7 @@ focus_mode = 0
 mouse_default_cursor_shape = 2
 tooltip_text = "Open project in Godot Editor to configure export settings"
 text = "Edit Project"
+icon = ExtResource("3_code")
 
 [node name="ExportSelectedButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonMargin/HBoxContainer"]
 unique_name_in_owner = true
@@ -65,6 +71,7 @@ custom_minimum_size = Vector2(150, 31)
 layout_mode = 2
 mouse_default_cursor_shape = 2
 text = "Export Selected"
+icon = ExtResource("4_checkmark")
 
 [node name="SaveButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonMargin/HBoxContainer"]
 unique_name_in_owner = true
@@ -73,6 +80,8 @@ layout_mode = 2
 mouse_default_cursor_shape = 2
 tooltip_text = "Save all settings"
 text = "Save"
+icon = ExtResource("5_save")
+alignment = 0
 
 [node name="SpacerRight" type="Control" parent="MarginContainer/VBoxContainer/ButtonMargin/HBoxContainer"]
 layout_mode = 2

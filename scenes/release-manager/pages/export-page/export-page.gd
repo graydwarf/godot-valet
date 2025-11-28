@@ -1,5 +1,13 @@
 extends WizardPageBase
 
+# FluentUI icons for dynamic buttons
+const ICON_FOLDER_OPEN = preload("res://scenes/release-manager/assets/fluent-icons/folder-open.svg")
+const ICON_SETTINGS = preload("res://scenes/release-manager/assets/fluent-icons/settings.svg")
+const ICON_PLAY = preload("res://scenes/release-manager/assets/fluent-icons/play.svg")
+const ICON_EDIT = preload("res://scenes/release-manager/assets/fluent-icons/edit.svg")
+const ICON_ARROW_EXPORT = preload("res://scenes/release-manager/assets/fluent-icons/arrow-export.svg")
+const ICON_DISMISS = preload("res://scenes/release-manager/assets/fluent-icons/dismiss.svg")
+
 signal build_started(platform: String)
 signal build_completed(platform: String, success: bool)
 signal version_changed(old_version: String, new_version: String)
@@ -398,7 +406,8 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	exportPathRow.add_child(exportPathEdit)
 
 	var openFolderButton = Button.new()
-	openFolderButton.text = "🗀"
+	openFolderButton.icon = ICON_FOLDER_OPEN
+	openFolderButton.expand_icon = true
 	openFolderButton.custom_minimum_size = Vector2(32, 31)
 	openFolderButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	openFolderButton.tooltip_text = "Open export folder"
@@ -406,7 +415,8 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	exportPathRow.add_child(openFolderButton)
 
 	var pathSettingsButton = Button.new()
-	pathSettingsButton.text = "⚙"
+	pathSettingsButton.icon = ICON_SETTINGS
+	pathSettingsButton.expand_icon = true
 	pathSettingsButton.custom_minimum_size = Vector2(32, 31)
 	pathSettingsButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	pathSettingsButton.tooltip_text = "Configure export path and structure"
@@ -438,7 +448,8 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	filenameRow.add_child(filenameEdit)
 
 	var filenameOptionsButton = Button.new()
-	filenameOptionsButton.text = "⚙"
+	filenameOptionsButton.icon = ICON_SETTINGS
+	filenameOptionsButton.expand_icon = true
 	filenameOptionsButton.custom_minimum_size = Vector2(32, 31)
 	filenameOptionsButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	filenameOptionsButton.tooltip_text = "Configure export filename"
@@ -475,7 +486,8 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 
 	# Settings cog button
 	var configButton = Button.new()
-	configButton.text = "⚙"
+	configButton.icon = ICON_SETTINGS
+	configButton.expand_icon = true
 	configButton.custom_minimum_size = Vector2(32, 31)
 	configButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	configButton.tooltip_text = "Configure obfuscation settings for this platform"
@@ -507,7 +519,8 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	includeExcludeRow.add_child(includeExcludeDisplay)
 
 	var includeExcludeConfigButton = Button.new()
-	includeExcludeConfigButton.text = "⚙"
+	includeExcludeConfigButton.icon = ICON_SETTINGS
+	includeExcludeConfigButton.expand_icon = true
 	includeExcludeConfigButton.custom_minimum_size = Vector2(32, 31)
 	includeExcludeConfigButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	includeExcludeConfigButton.tooltip_text = "Configure include/exclude settings"
@@ -592,7 +605,8 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 
 	# Archive options button
 	archiveOptionsButton = Button.new()
-	archiveOptionsButton.text = "⚙"
+	archiveOptionsButton.icon = ICON_SETTINGS
+	archiveOptionsButton.expand_icon = true
 	archiveOptionsButton.custom_minimum_size = Vector2(32, 31)
 	archiveOptionsButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	archiveOptionsButton.tooltip_text = "Configure archive filename"
@@ -641,7 +655,8 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	# Export & Run button (all platforms)
 	var exportAndRunButton = Button.new()
 	exportAndRunButton.text = "Export & Run"
-	exportAndRunButton.custom_minimum_size = Vector2(110, 31)
+	exportAndRunButton.icon = ICON_PLAY
+	exportAndRunButton.custom_minimum_size = Vector2(125, 31)
 	exportAndRunButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	exportAndRunButton.tooltip_text = "Export and then run the exported application"
 	exportAndRunButton.pressed.connect(_onExportAndRunPressed.bind(platform))
@@ -654,7 +669,8 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	if platform == "Source":
 		exportAndEditButton = Button.new()
 		exportAndEditButton.text = "Export & Edit"
-		exportAndEditButton.custom_minimum_size = Vector2(110, 31)
+		exportAndEditButton.icon = ICON_EDIT
+		exportAndEditButton.custom_minimum_size = Vector2(125, 31)
 		exportAndEditButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		exportAndEditButton.tooltip_text = "Export source and then open in Godot Editor"
 		exportAndEditButton.pressed.connect(_onExportAndEditPressed.bind(platform))
@@ -665,7 +681,8 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	# Export & Open button (all platforms)
 	var exportAndOpenButton = Button.new()
 	exportAndOpenButton.text = "Export & Open"
-	exportAndOpenButton.custom_minimum_size = Vector2(115, 31)
+	exportAndOpenButton.icon = ICON_FOLDER_OPEN
+	exportAndOpenButton.custom_minimum_size = Vector2(130, 31)
 	exportAndOpenButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	exportAndOpenButton.tooltip_text = "Export and then open the export folder"
 	exportAndOpenButton.pressed.connect(_onExportAndOpenPressed.bind(platform))
@@ -676,6 +693,7 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	# Export button (all platforms)
 	var exportButton = Button.new()
 	exportButton.text = "Export"
+	exportButton.icon = ICON_ARROW_EXPORT
 	exportButton.custom_minimum_size = Vector2(100, 31)
 	exportButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	exportButton.tooltip_text = "Export without any post-export action"
@@ -2343,7 +2361,8 @@ func _createInputBlocker():
 	var cancelButton = Button.new()
 	cancelButton.name = "CancelButton"
 	cancelButton.text = "Cancel Export"
-	cancelButton.custom_minimum_size = Vector2(150, 40)
+	cancelButton.icon = ICON_DISMISS
+	cancelButton.custom_minimum_size = Vector2(160, 40)
 	cancelButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	cancelButton.pressed.connect(_onCancelExportPressed)
 	vbox.add_child(cancelButton)
