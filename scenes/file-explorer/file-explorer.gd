@@ -7,6 +7,7 @@ class_name FileExplorer
 @onready var _filePreviewer: Control = %FilePreviewer
 @onready var _soundPlayerGrid: SoundPlayerGrid = %SoundPlayerGrid
 @onready var _imageToolbar: HBoxContainer = %RightPaneSubToolbar
+@onready var _backgroundColorPicker: ColorPickerButton = %BackgroundColorPicker
 
 var _currentProjectConfigured: bool = false
 var _imageExtensions: Array[String] = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg", ".tga"]
@@ -16,6 +17,8 @@ func _ready():
 	RemoveGodotButtonFocusBorder()
 	# Hide image toolbar initially (only show when image is selected)
 	_setImageToolbarVisible(false)
+	# Load saved image background color
+	_loadImageBackgroundColor()
 
 func RemoveGodotButtonFocusBorder():
 	# Remove focus border from Godot toggle button
@@ -579,4 +582,11 @@ func _on_tile_button_pressed() -> void:
 	_filePreviewer.ApplyImageDisplayMode(3) # TILE
 
 func _on_background_color_changed(color: Color) -> void:
+	_filePreviewer.SetImageBackgroundColor(color)
+	App.SetImagePreviewBackgroundColor(color)
+
+# Load image background color from App settings
+func _loadImageBackgroundColor():
+	var color = App.GetImagePreviewBackgroundColor()
+	_backgroundColorPicker.color = color
 	_filePreviewer.SetImageBackgroundColor(color)

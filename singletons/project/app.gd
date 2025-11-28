@@ -20,6 +20,7 @@ var _claudeCodeLaunchCommand = 'start cmd /k "cd /d {project_path} && claude"'
 var _claudeCodeButtonEnabled = true
 var _claudeApiChatButtonEnabled = false
 var _disclaimerAccepted = false
+var _imagePreviewBackgroundColor = Color(0.15, 0.15, 0.15, 1.0)
 
 func _ready():
 	LoadSavedSolutionSettings()
@@ -88,6 +89,13 @@ func SetDisclaimerAccepted(value):
 	_disclaimerAccepted = value
 	SaveSolutionSettings()
 
+func GetImagePreviewBackgroundColor():
+	return _imagePreviewBackgroundColor
+
+func SetImagePreviewBackgroundColor(value):
+	_imagePreviewBackgroundColor = value
+	SaveSolutionSettings()
+
 # Returns true if running as exported binary (not from editor)
 func IsRunningAsBinary() -> bool:
 	return not OS.has_feature("editor")
@@ -151,6 +159,7 @@ func LoadSavedSolutionSettings():
 		_claudeCodeButtonEnabled = config.get_value("SolutionSettings", "claude_code_button_enabled", true)
 		_claudeApiChatButtonEnabled = config.get_value("SolutionSettings", "claude_api_chat_button_enabled", false)
 		_disclaimerAccepted = config.get_value("SolutionSettings", "disclaimer_accepted", false)
+		_imagePreviewBackgroundColor = config.get_value("SolutionSettings", "image_preview_background_color", Color(0.15, 0.15, 0.15, 1.0))
 	else:
 		OS.alert("An error occured loading the solution configuration file")
 	
@@ -168,6 +177,7 @@ func SaveSolutionSettings():
 	config.set_value("SolutionSettings", "claude_code_button_enabled", _claudeCodeButtonEnabled)
 	config.set_value("SolutionSettings", "claude_api_chat_button_enabled", _claudeApiChatButtonEnabled)
 	config.set_value("SolutionSettings", "disclaimer_accepted", _disclaimerAccepted)
+	config.set_value("SolutionSettings", "image_preview_background_color", _imagePreviewBackgroundColor)
 
 	# Save the config file.
 	var err = config.save(_solutionConfigFile)
