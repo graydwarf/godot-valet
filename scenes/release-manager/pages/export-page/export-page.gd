@@ -750,9 +750,11 @@ func _onVersionChanged(newText: String):
 	if not _isLoadingData:
 		page_modified.emit()
 
-	# Update all platform export path displays (they use the version in their path)
+	# Update all platform displays (they use the version in their path/filename)
 	for platform in _platformRows.keys():
 		_updateExportPathDisplay(platform)
+		_updateExportFilenameDisplay(platform)
+		_updateArchiveFilenameDisplay(platform)
 
 func _onInputChanged(_value = null):
 	# Emit signal when any input is modified
