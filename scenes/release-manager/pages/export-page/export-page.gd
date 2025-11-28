@@ -20,7 +20,6 @@ signal page_saved()  # Emitted after successful save to reset dirty flag
 @onready var _projectVersionCard = %ProjectVersionCard
 @onready var _refreshButton = %RefreshButton
 @onready var _editProjectButton = %EditProjectButton
-@onready var _saveButton = %SaveButton
 
 var _platformRows: Dictionary = {}  # platform_name -> {mainRow, checkbox, detailsSection, exportPath, exportFilename, obfuscation, button, configButton}
 var _exportingPlatforms: Array[String] = []
@@ -48,7 +47,6 @@ func _ready():
 	_projectVersionLineEdit.text_changed.connect(_onVersionChanged)
 	_refreshButton.pressed.connect(_onRefreshPressed)
 	_editProjectButton.pressed.connect(_onEditProjectPressed)
-	_saveButton.pressed.connect(_onSavePressed)
 
 	# Create build config dialog (Control, not Window)
 	# Note: Will be added to root when shown so it covers entire wizard
