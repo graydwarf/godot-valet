@@ -213,9 +213,6 @@ func _loadPlatformSettings():
 			# Show/hide archive filename based on package type (all platforms use inline container)
 			if data.has("archiveContainer") and data["archiveContainer"] != null:
 				data["archiveContainer"].visible = isZip
-			# Toggle spacer visibility (visible when archive hidden to fill space)
-			if data.has("exportOptionsSpacer") and data["exportOptionsSpacer"] != null:
-				data["exportOptionsSpacer"].visible = not isZip
 			# For Source platform, show checksum only when Zip selected
 			if platform == "Source":
 				data["checksumContainer"].visible = isZip
@@ -226,7 +223,11 @@ func _loadPlatformSettings():
 
 			# Show/hide details section based on enabled state
 			data["detailsSection"].visible = isEnabled
-			data["button"].disabled = !isEnabled
+			# Enable/disable all export action buttons
+			_setExportButtonsDisabled(data, !isEnabled)
+			# Keep Export & Run disabled if Zip is selected (can't run a zip file)
+			if isZip and is_instance_valid(data["exportAndRunButton"]):
+				data["exportAndRunButton"].disabled = true
 		else:
 			# No saved settings - apply defaults for first-time use
 			if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
@@ -618,23 +619,72 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	# Update checksum tooltip and visibility when package type changes
 	packageTypeOption.item_selected.connect(_onPackageTypeChanged.bind(platform, checksumCheckbox, checksumContainer))
 
-	# Spacer to push Export button to the right (visible when archive hidden, hidden when archive visible)
-	var exportOptionsSpacer: Control = Control.new()
-	exportOptionsSpacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	exportOptionsSpacer.visible = true  # Visible by default (No Zip default, archive hidden)
-	exportOptionsRow.add_child(exportOptionsSpacer)
+	detailsVBox.add_child(exportOptionsRow)
 
-	# Export button on same row, right-aligned
+	# === Export Actions Row (buttons vary by platform) ===
+	var exportActionsRow = HBoxContainer.new()
+	exportActionsRow.add_theme_constant_override("separation", 15)
+
+	var exportActionsLabel = Label.new()
+	exportActionsLabel.text = "Export Actions:"
+	exportActionsLabel.custom_minimum_size = Vector2(130, 0)
+	exportActionsLabel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	exportActionsLabel.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	exportActionsLabel.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	exportActionsRow.add_child(exportActionsLabel)
+
+	# Spacer to push buttons to the right
+	var exportActionsSpacer = Control.new()
+	exportActionsSpacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	exportActionsRow.add_child(exportActionsSpacer)
+
+	# Export & Run button (all platforms)
+	var exportAndRunButton = Button.new()
+	exportAndRunButton.text = "Export & Run"
+	exportAndRunButton.custom_minimum_size = Vector2(110, 31)
+	exportAndRunButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	exportAndRunButton.tooltip_text = "Export and then run the exported application"
+	exportAndRunButton.pressed.connect(_onExportAndRunPressed.bind(platform))
+	exportAndRunButton.name = "ExportAndRunButton"
+	exportAndRunButton.disabled = true
+	exportActionsRow.add_child(exportAndRunButton)
+
+	# Export & Edit button (Source platform only)
+	var exportAndEditButton: Button = null
+	if platform == "Source":
+		exportAndEditButton = Button.new()
+		exportAndEditButton.text = "Export & Edit"
+		exportAndEditButton.custom_minimum_size = Vector2(110, 31)
+		exportAndEditButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		exportAndEditButton.tooltip_text = "Export source and then open in Godot Editor"
+		exportAndEditButton.pressed.connect(_onExportAndEditPressed.bind(platform))
+		exportAndEditButton.name = "ExportAndEditButton"
+		exportAndEditButton.disabled = true
+		exportActionsRow.add_child(exportAndEditButton)
+
+	# Export & Open button (all platforms)
+	var exportAndOpenButton = Button.new()
+	exportAndOpenButton.text = "Export & Open"
+	exportAndOpenButton.custom_minimum_size = Vector2(115, 31)
+	exportAndOpenButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	exportAndOpenButton.tooltip_text = "Export and then open the export folder"
+	exportAndOpenButton.pressed.connect(_onExportAndOpenPressed.bind(platform))
+	exportAndOpenButton.name = "ExportAndOpenButton"
+	exportAndOpenButton.disabled = true
+	exportActionsRow.add_child(exportAndOpenButton)
+
+	# Export button (all platforms)
 	var exportButton = Button.new()
 	exportButton.text = "Export"
 	exportButton.custom_minimum_size = Vector2(100, 31)
 	exportButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	exportButton.tooltip_text = "Export without any post-export action"
 	exportButton.pressed.connect(_onExportPressed.bind(platform))
 	exportButton.name = "ExportButton"
-	exportButton.disabled = true  # Disabled until platform is selected
-	exportOptionsRow.add_child(exportButton)
+	exportButton.disabled = true
+	exportActionsRow.add_child(exportButton)
 
-	detailsVBox.add_child(exportOptionsRow)
+	detailsVBox.add_child(exportActionsRow)
 
 	detailsSection.add_child(detailsVBox)
 	container.add_child(detailsSection)
@@ -651,7 +701,6 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 		"archiveFilename": archiveEdit,
 		"archiveFilenameOptionsButton": archiveOptionsButton,
 		"archiveContainer": archiveContainer,  # Inline archive container (all platforms)
-		"exportOptionsSpacer": exportOptionsSpacer,  # Spacer for pushing Export button right
 		"obfuscationDisplay": obfuscationDisplay,
 		"configButton": configButton,
 		"includeExcludeDisplay": includeExcludeDisplay,
@@ -661,6 +710,9 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 		"checksumCheckbox": checksumCheckbox,
 		"checksumContainer": checksumContainer,
 		"button": exportButton,
+		"exportAndRunButton": exportAndRunButton,
+		"exportAndEditButton": exportAndEditButton,  # Only exists for Source platform
+		"exportAndOpenButton": exportAndOpenButton,
 		"status": statusLabel
 	}
 
@@ -702,9 +754,9 @@ func _onPackageTypeChanged(index: int, platform: String, checksumCheckbox: Check
 		# Show inline archive container only when Zip is selected (all platforms)
 		if data.has("archiveContainer") and data["archiveContainer"] != null:
 			data["archiveContainer"].visible = isZip
-		# Toggle spacer - visible when archive hidden, hidden when archive visible
-		if data.has("exportOptionsSpacer") and data["exportOptionsSpacer"] != null:
-			data["exportOptionsSpacer"].visible = not isZip
+		# Disable Export & Run when Zip is selected (can't run a zip file)
+		if is_instance_valid(data["exportAndRunButton"]):
+			data["exportAndRunButton"].disabled = isZip or not data["checkbox"].button_pressed
 
 	# For Source platform, show checksum only when Zip is selected
 	if platform == "Source":
@@ -754,6 +806,17 @@ func _getPlatformExtension(platform: String) -> String:
 		_:
 			return "binary"
 
+# Helper function to enable/disable all export action buttons for a platform
+func _setExportButtonsDisabled(data: Dictionary, disabled: bool):
+	if is_instance_valid(data["button"]):
+		data["button"].disabled = disabled
+	if is_instance_valid(data["exportAndRunButton"]):
+		data["exportAndRunButton"].disabled = disabled
+	if is_instance_valid(data["exportAndOpenButton"]):
+		data["exportAndOpenButton"].disabled = disabled
+	if data["exportAndEditButton"] != null and is_instance_valid(data["exportAndEditButton"]):
+		data["exportAndEditButton"].disabled = disabled
+
 func _onPlatformToggled(checked: bool, platform: String):
 	var data = _platformRows[platform]
 
@@ -763,8 +826,14 @@ func _onPlatformToggled(checked: bool, platform: String):
 	# Update Export Selected button state
 	_updateExportSelectedButtonState()
 
-	# Enable/disable export button
-	data["button"].disabled = !checked
+	# Enable/disable all export action buttons
+	_setExportButtonsDisabled(data, !checked)
+
+	# Keep Export & Run disabled if Zip is selected (can't run a zip file)
+	if checked:
+		var isZip = (data["packageTypeOption"].selected == 1)
+		if isZip and is_instance_valid(data["exportAndRunButton"]):
+			data["exportAndRunButton"].disabled = true
 
 	if checked:
 		# Auto-fill from the previous checked platform
@@ -1278,6 +1347,123 @@ func _onExportPressed(platform: String):
 	# Re-enable UI after export completes
 	_setUIEnabled(true)
 
+# Exports and then runs the exported application
+func _onExportAndRunPressed(platform: String):
+	if _selectedProjectItem == null or not is_instance_valid(_selectedProjectItem):
+		print("Error: Cannot export - project item is null or invalid")
+		return
+
+	save()
+	await _exportPlatform(platform)
+	_setUIEnabled(true)
+
+	# Check if export was cancelled or failed
+	if _exportCancelled:
+		return
+
+	# Get exported file path and run it
+	var exportPath = _getExportedFilePath(platform)
+	if exportPath.is_empty():
+		print("Error: Could not determine exported file path")
+		return
+
+	if platform == "Source":
+		# For Source, run with Godot
+		var godotVersionId = _selectedProjectItem.GetGodotVersionId()
+		var godotPath = _selectedProjectItem.GetGodotPath(godotVersionId)
+		if godotPath == null or godotPath == "???" or godotPath.is_empty():
+			godotPath = "C:/dad/apps/godot/godot-4.5-stable/Godot_v4.5-stable_win64.exe"
+		var args = ["--path", exportPath]
+		var pid = OS.create_process(godotPath, args)
+		if pid == -1:
+			print("Error: Failed to run exported source project")
+		else:
+			print("Running exported source project: ", exportPath)
+	else:
+		# For other platforms, run the executable directly
+		if FileAccess.file_exists(exportPath):
+			var pid = OS.create_process(exportPath, [])
+			if pid == -1:
+				print("Error: Failed to run exported application: ", exportPath)
+			else:
+				print("Running exported application: ", exportPath)
+		else:
+			print("Error: Exported file not found: ", exportPath)
+
+# Exports and then opens the export folder (Source only)
+func _onExportAndEditPressed(platform: String):
+	if _selectedProjectItem == null or not is_instance_valid(_selectedProjectItem):
+		print("Error: Cannot export - project item is null or invalid")
+		return
+
+	save()
+	await _exportPlatform(platform)
+	_setUIEnabled(true)
+
+	# Check if export was cancelled or failed
+	if _exportCancelled:
+		return
+
+	# Get exported path (which is the source folder for Source platform)
+	var exportPath = _getExportedFilePath(platform)
+	if exportPath.is_empty():
+		print("Error: Could not determine exported path")
+		return
+
+	# Open in Godot Editor
+	var godotVersionId = _selectedProjectItem.GetGodotVersionId()
+	var godotPath = _selectedProjectItem.GetGodotPath(godotVersionId)
+	if godotPath == null or godotPath == "???" or godotPath.is_empty():
+		godotPath = "C:/dad/apps/godot/godot-4.5-stable/Godot_v4.5-stable_win64.exe"
+
+	var args = ["--editor", "--path", exportPath]
+	var pid = OS.create_process(godotPath, args)
+	if pid == -1:
+		print("Error: Failed to open exported source in Godot Editor")
+	else:
+		print("Opened exported source in Godot Editor: ", exportPath)
+
+# Exports and then opens the export folder
+func _onExportAndOpenPressed(platform: String):
+	if _selectedProjectItem == null or not is_instance_valid(_selectedProjectItem):
+		print("Error: Cannot export - project item is null or invalid")
+		return
+
+	save()
+	await _exportPlatform(platform)
+	_setUIEnabled(true)
+
+	# Check if export was cancelled or failed
+	if _exportCancelled:
+		return
+
+	# Open the export folder
+	_onOpenFolderButtonPressed(platform)
+
+# Returns the full path to the exported file/folder for a platform
+func _getExportedFilePath(platform: String) -> String:
+	var rootPath = _platformRootPaths.get(platform, "")
+	if rootPath.is_empty():
+		return ""
+
+	var version = _projectVersionLineEdit.text
+	if version.is_empty():
+		version = "v1.0.0"
+
+	var exportDestPath = _buildExportPathFromTemplate(platform, rootPath, version)
+
+	if platform == "Source":
+		# For Source, return the folder path
+		return exportDestPath
+	else:
+		# For other platforms, return the executable path
+		var data = _platformRows.get(platform)
+		if data == null:
+			return ""
+		var exportFilename = data["exportFilename"].text
+		var filenameWithExtension = _addPlatformExtension(exportFilename, platform)
+		return exportDestPath.path_join(filenameWithExtension)
+
 func _onOpenFolderButtonPressed(platform: String):
 	var rootPath = _platformRootPaths.get(platform, "")
 
@@ -1396,8 +1582,7 @@ func _exportPlatform(platform: String):
 	_updateStatus(data, "")
 	await get_tree().process_frame  # Wait one frame so user sees it clear
 	_updateStatus(data, "Exporting...")
-	if is_instance_valid(data["button"]):
-		data["button"].disabled = true
+	_setExportButtonsDisabled(data, true)
 
 	# Emit signal
 	build_started.emit(platform)
@@ -1421,8 +1606,7 @@ func _exportPlatform(platform: String):
 	# Validate export path and filename
 	if exportPath.is_empty() or exportFilename.is_empty():
 		_updateStatus(data, "Error: Missing path/filename")
-		if is_instance_valid(data["button"]):
-			data["button"].disabled = false
+		_setExportButtonsDisabled(data, false)
 		_exportingPlatforms.erase(platform)
 		build_completed.emit(platform, false)
 		return
@@ -1434,8 +1618,7 @@ func _exportPlatform(platform: String):
 
 		if godotPath == null or godotPath == "???":
 			_updateStatus(data, "Error: Godot path not found")
-			if is_instance_valid(data["button"]):
-				data["button"].disabled = false
+			_setExportButtonsDisabled(data, false)
 			_exportingPlatforms.erase(platform)
 			build_completed.emit(platform, false)
 			return
@@ -1444,8 +1627,7 @@ func _exportPlatform(platform: String):
 		presetName = _getExportPresetName(platform)
 		if presetName.is_empty():
 			_updateStatus(data, "Error: Unknown platform")
-			if is_instance_valid(data["button"]):
-				data["button"].disabled = false
+			_setExportButtonsDisabled(data, false)
 			_exportingPlatforms.erase(platform)
 			build_completed.emit(platform, false)
 			return
@@ -1462,8 +1644,7 @@ func _exportPlatform(platform: String):
 	var validation = _validateExportPath(projectDir, exportPath, exportDestPath)
 	if not validation["valid"]:
 		_updateStatus(data, "Error: " + validation["error"])
-		if is_instance_valid(data["button"]):
-			data["button"].disabled = false
+		_setExportButtonsDisabled(data, false)
 		_exportingPlatforms.erase(platform)
 		build_completed.emit(platform, false)
 		return
@@ -1489,8 +1670,7 @@ func _exportPlatform(platform: String):
 			# User cancelled, abort export
 			_updateStatus(data, "Export cancelled")
 			await get_tree().create_timer(0.5).timeout  # Show cancelled status
-			if is_instance_valid(data["button"]):
-				data["button"].disabled = false
+			_setExportButtonsDisabled(data, false)
 			_exportingPlatforms.erase(platform)
 			build_completed.emit(platform, false)
 			# Keep blocker hidden since export is cancelled
@@ -1507,8 +1687,7 @@ func _exportPlatform(platform: String):
 			await get_tree().process_frame
 			if not _clearDirectory(exportDestPath):
 				_updateStatus(data, "Error: Failed to clear folder")
-				if is_instance_valid(data["button"]):
-					data["button"].disabled = false
+				_setExportButtonsDisabled(data, false)
 				_exportingPlatforms.erase(platform)
 				build_completed.emit(platform, false)
 				_setUIEnabled(true)
@@ -1529,8 +1708,7 @@ func _exportPlatform(platform: String):
 		var err = DirAccess.make_dir_recursive_absolute(exportDestPath)
 		if err != OK:
 			_updateStatus(data, "Error: Cannot create export folder")
-			if is_instance_valid(data["button"]):
-				data["button"].disabled = false
+			_setExportButtonsDisabled(data, false)
 			_exportingPlatforms.erase(platform)
 			build_completed.emit(platform, false)
 			return
@@ -1631,8 +1809,7 @@ func _exportPlatform(platform: String):
 		_updateStatus(data, "✗ Failed")
 		await get_tree().create_timer(1.0).timeout  # Show failure for 1 second
 
-	if is_instance_valid(data["button"]):
-		data["button"].disabled = false
+	_setExportButtonsDisabled(data, false)
 	_exportingPlatforms.erase(platform)
 
 	build_completed.emit(platform, success)
