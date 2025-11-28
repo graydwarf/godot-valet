@@ -110,6 +110,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "+ {platform}"
 
+[node name="AddDateButton" type="Button" parent="MarginContainer/VBoxContainer/SegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/AddButtonsContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "+ {date}"
+
 [node name="AddCustomButton" type="Button" parent="MarginContainer/VBoxContainer/SegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/AddButtonsContainer"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -177,6 +183,7 @@ text = "Save"
 [connection signal="pressed" from="MarginContainer/VBoxContainer/SegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/AddButtonsContainer/AddProjectButton" to="." method="_onAddProjectPressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/SegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/AddButtonsContainer/AddVersionButton" to="." method="_onAddVersionPressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/SegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/AddButtonsContainer/AddPlatformButton" to="." method="_onAddPlatformPressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/SegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/AddButtonsContainer/AddDateButton" to="." method="_onAddDatePressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/SegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/AddButtonsContainer/AddCustomButton" to="." method="_onAddCustomPressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/ButtonContainer/CancelButton" to="." method="_onCancelPressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/ButtonContainer/SaveButton" to="." method="_onSavePressed"]

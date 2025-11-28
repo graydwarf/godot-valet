@@ -29,6 +29,7 @@ var _syncCheckbox: CheckBox = null
 var _isSynced: bool = false
 
 const SEGMENT_HEIGHT = 40
+const DEFAULT_DATE_FORMAT = "{year}-{month}-{day}"
 
 func _ready():
 	_applyPanelBackground()
@@ -218,6 +219,13 @@ func _createSegmentRow(index: int, segment: Dictionary):
 			label.text = "{platform}"
 			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			contentControl = label
+		"date":
+			var lineEdit = LineEdit.new()
+			lineEdit.text = segment.get("value", DEFAULT_DATE_FORMAT)
+			lineEdit.placeholder_text = "e.g., {year}-{month}-{day}"
+			lineEdit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			lineEdit.text_changed.connect(_onDateSegmentChanged.bind(index))
+			contentControl = lineEdit
 		"custom":
 			var lineEdit = LineEdit.new()
 			lineEdit.text = segment.get("value", "custom")
@@ -278,6 +286,10 @@ func _buildFilenameFromTemplate(template: Array) -> String:
 				parts.append(_projectVersion)
 			"platform":
 				parts.append(_currentPlatform.to_lower().replace(" ", "-"))
+			"date":
+				var dateFormat = segment.get("value", DEFAULT_DATE_FORMAT)
+				var processedDate = _processDatetimeTokens(dateFormat)
+				parts.append(processedDate)
 			"custom":
 				var customValue = segment.get("value", "")
 				if not customValue.is_empty():
@@ -314,6 +326,25 @@ func _onCustomSegmentChanged(newText: String, index: int):
 		_filenameSegments[index]["value"] = newText
 		_updatePreview()
 
+func _onDateSegmentChanged(newText: String, index: int):
+	if index >= 0 and index < _filenameSegments.size():
+		_filenameSegments[index]["value"] = newText
+		_updatePreview()
+
+# Processes datetime tokens like {year}, {month}, {day}, etc.
+func _processDatetimeTokens(text: String) -> String:
+	var now = Time.get_datetime_dict_from_system()
+
+	var result = text
+	result = result.replace("{year}", str(now.year))
+	result = result.replace("{month}", str(now.month).pad_zeros(2))
+	result = result.replace("{day}", str(now.day).pad_zeros(2))
+	result = result.replace("{hour}", str(now.hour).pad_zeros(2))
+	result = result.replace("{minute}", str(now.minute).pad_zeros(2))
+	result = result.replace("{second}", str(now.second).pad_zeros(2))
+
+	return result
+
 func _onAddProjectPressed():
 	_filenameSegments.append({"type": "project"})
 	_rebuildSegmentsList()
@@ -326,6 +357,11 @@ func _onAddVersionPressed():
 
 func _onAddPlatformPressed():
 	_filenameSegments.append({"type": "platform"})
+	_rebuildSegmentsList()
+	_updatePreview()
+
+func _onAddDatePressed():
+	_filenameSegments.append({"type": "date", "value": DEFAULT_DATE_FORMAT})
 	_rebuildSegmentsList()
 	_updatePreview()
 
