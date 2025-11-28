@@ -61,6 +61,8 @@ func LoadSound(soundPath: String):
 	if audioStream:
 		_audioPlayer.stream = audioStream
 		_playButton.disabled = false
+		# Apply current loop state to the new stream
+		_applyLoopState(_loopCheckBox.button_pressed)
 	else:
 		_playButton.disabled = true
 		print("Failed to load audio: ", soundPath)
@@ -182,14 +184,17 @@ func _on_audio_finished():
 		_playButton.text = "▶"
 
 func _on_loop_toggled(toggled: bool):
+	_applyLoopState(toggled)
+
+func _applyLoopState(loopEnabled: bool):
 	if _audioPlayer.stream:
 		# Set loop mode based on audio format
 		if _audioPlayer.stream is AudioStreamWAV:
-			_audioPlayer.stream.loop_mode = AudioStreamWAV.LOOP_FORWARD if toggled else AudioStreamWAV.LOOP_DISABLED
+			_audioPlayer.stream.loop_mode = AudioStreamWAV.LOOP_FORWARD if loopEnabled else AudioStreamWAV.LOOP_DISABLED
 		elif _audioPlayer.stream is AudioStreamMP3:
-			_audioPlayer.stream.loop = toggled
+			_audioPlayer.stream.loop = loopEnabled
 		elif _audioPlayer.stream is AudioStreamOggVorbis:
-			_audioPlayer.stream.loop = toggled
+			_audioPlayer.stream.loop = loopEnabled
 
 func _on_volume_changed(value: float):
 	var db = linear_to_db(value / 100.0)
