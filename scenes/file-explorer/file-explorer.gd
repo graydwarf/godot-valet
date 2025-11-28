@@ -6,17 +6,31 @@ class_name FileExplorer
 @onready var _fileTreeViewExplorer: Control = %FileTreeViewExplorer
 @onready var _filePreviewer: Control = %FilePreviewer
 @onready var _soundPlayerGrid: SoundPlayerGrid = %SoundPlayerGrid
+@onready var _imageToolbar: HBoxContainer = %RightPaneSubToolbar
 
 var _currentProjectConfigured: bool = false
+var _imageExtensions: Array[String] = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg", ".tga"]
 
 func _ready():
 	InitSignals()
 	RemoveGodotButtonFocusBorder()
+	# Hide image toolbar initially (only show when image is selected)
+	_setImageToolbarVisible(false)
 
 func RemoveGodotButtonFocusBorder():
 	# Remove focus border from Godot toggle button
 	var empty_style = StyleBoxEmpty.new()
 	%GodotToggleButton.add_theme_stylebox_override("focus", empty_style)
+
+# Show/hide image toolbar while preserving its space in the layout
+func _setImageToolbarVisible(is_visible: bool):
+	# Use modulate alpha to hide visually but preserve space
+	_imageToolbar.modulate.a = 1.0 if is_visible else 0.0
+	# Disable mouse interaction when hidden
+	_imageToolbar.mouse_filter = Control.MOUSE_FILTER_STOP if is_visible else Control.MOUSE_FILTER_IGNORE
+	for child in _imageToolbar.get_children():
+		if child is BaseButton:
+			child.mouse_filter = Control.MOUSE_FILTER_STOP if is_visible else Control.MOUSE_FILTER_IGNORE
 
 # Gently strobe a button to draw user's attention
 func _strobe_button(button: BaseButton):
@@ -156,7 +170,14 @@ func _on_file_selected(filePath: String):
 	_filePreviewer.PreviewFile(filePath)
 	%PathLabel.text = filePath
 
+	# Show image toolbar only when an image is selected
+	var extension = "." + filePath.get_extension().to_lower()
+	_setImageToolbarVisible(extension in _imageExtensions)
+
 func _on_directory_selected(dirPath: String):
+	# Hide image toolbar when directory is selected
+	_setImageToolbarVisible(false)
+
 	# Don't change preview if project view (Godot toggle) is active
 	if %GodotToggleButton.button_pressed:
 		return
@@ -187,6 +208,7 @@ func ShowSoundPlayerGrid(soundPaths: Array[String]):
 	_soundPlayerGrid.visible = true
 	_filePreviewer.visible = false
 	%DestinationTreeView.visible = false
+	_setImageToolbarVisible(false)  # Hide image toolbar when showing audio
 	_soundPlayerGrid.LoadSounds(soundPaths)
 
 # Show the file previewer and hide other views
@@ -222,6 +244,7 @@ func _on_godot_toggle_button_toggled(toggled_on: bool) -> void:
 	# Toggle between file preview and destination tree view
 	%FilePreviewer.visible = not toggled_on
 	_soundPlayerGrid.visible = false  # Hide sound grid when switching modes
+	_setImageToolbarVisible(false)  # Hide image toolbar when switching modes
 	%DestinationTreeView.visible = toggled_on
 	%CopyLeftButton.visible = toggled_on
 	%CopyRightButton.visible = toggled_on
