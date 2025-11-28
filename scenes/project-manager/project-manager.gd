@@ -26,6 +26,7 @@ func _ready():
 	LoadBackgroundColor()
 	LoadCustomScrollContainerTheme()
 	UpdateClaudeButtonVisibility()
+	UpdateClaudeApiChatButtonVisibility()
 	
 func LoadCustomScrollContainerTheme():
 	var customWidth = 20
@@ -236,6 +237,7 @@ func InitSignals():
 	Signals.connect("HidingProjectItem", HidingProjectItem)
 	Signals.connect("ReorderProjectItems", ReorderProjectItems)
 	Signals.connect("ClaudeCodeButtonEnabledChanged", ClaudeCodeButtonEnabledChanged)
+	Signals.connect("ClaudeApiChatButtonEnabledChanged", ClaudeApiChatButtonEnabledChanged)
 
 func HidingProjectItem():
 	ToggleHiddenProjectVisibility()
@@ -264,8 +266,14 @@ func BackgroundColorChanged(color = null):
 func ClaudeCodeButtonEnabledChanged(_enabled: bool):
 	UpdateClaudeButtonVisibility()
 
+func ClaudeApiChatButtonEnabledChanged(_enabled: bool):
+	UpdateClaudeApiChatButtonVisibility()
+
 func UpdateClaudeButtonVisibility():
 	%ClaudeButton.visible = App.GetClaudeCodeButtonEnabled()
+
+func UpdateClaudeApiChatButtonVisibility():
+	%ClaudeApiChatButton.visible = App.GetClaudeApiChatButtonEnabled()
 
 func RestoreProjectSelection():
 	if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
@@ -621,6 +629,13 @@ func InitializeCustomOrderIfNeeded():
 
 func _on_claude_button_pressed() -> void:
 	LaunchClaudeCode()
+
+func _on_claude_api_chat_button_pressed() -> void:
+	OpenClaudeApiChat()
+
+func OpenClaudeApiChat():
+	var claudeChat = load("res://scenes/claude/claude.tscn").instantiate()
+	add_child(claudeChat)
 
 func _on_file_explorer_button_pressed() -> void:
 	OpenFileExplorer()

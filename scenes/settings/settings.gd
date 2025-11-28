@@ -6,6 +6,7 @@ func _ready():
 	LoadBackgroundColor(App.GetBackgroundColor())
 	LoadClaudeCodeCommand()
 	LoadClaudeCodeButtonEnabled()
+	LoadClaudeApiChatButtonEnabled()
 
 func InitSignals():
 	Signals.connect("BackgroundColorTemporarilyChanged", BackgroundColorTemporarilyChanged)
@@ -38,6 +39,9 @@ func LoadClaudeCodeCommand():
 func LoadClaudeCodeButtonEnabled():
 	%ClaudeCodeEnabledCheckBox.button_pressed = App.GetClaudeCodeButtonEnabled()
 
+func LoadClaudeApiChatButtonEnabled():
+	%ClaudeApiChatEnabledCheckBox.button_pressed = App.GetClaudeApiChatButtonEnabled()
+
 func SaveClaudeCodeCommand():
 	var command = %ClaudeCodeLineEdit.text.strip_edges()
 	if command.is_empty():
@@ -50,6 +54,10 @@ func _on_reset_button_pressed():
 func _on_claude_code_enabled_check_box_toggled(toggled_on: bool):
 	App.SetClaudeCodeButtonEnabled(toggled_on)
 	Signals.emit_signal("ClaudeCodeButtonEnabledChanged", toggled_on)
+
+func _on_claude_api_chat_enabled_check_box_toggled(toggled_on: bool):
+	App.SetClaudeApiChatButtonEnabled(toggled_on)
+	Signals.emit_signal("ClaudeApiChatButtonEnabledChanged", toggled_on)
 
 func _on_close_button_pressed():
 	SaveClaudeCodeCommand()

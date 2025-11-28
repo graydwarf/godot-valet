@@ -18,6 +18,7 @@ var _showHidden = false
 var _sortType = Enums.SortByType.EditedDate
 var _claudeCodeLaunchCommand = 'start cmd /k "cd /d {project_path} && claude"'
 var _claudeCodeButtonEnabled = true
+var _claudeApiChatButtonEnabled = false
 
 func _ready():
 	LoadSavedSolutionSettings()
@@ -70,6 +71,13 @@ func GetClaudeCodeButtonEnabled():
 
 func SetClaudeCodeButtonEnabled(value):
 	_claudeCodeButtonEnabled = value
+	SaveSolutionSettings()
+
+func GetClaudeApiChatButtonEnabled():
+	return _claudeApiChatButtonEnabled
+
+func SetClaudeApiChatButtonEnabled(value):
+	_claudeApiChatButtonEnabled = value
 	SaveSolutionSettings()
 
 func SetLastUpdateTime(value):
@@ -125,6 +133,7 @@ func LoadSavedSolutionSettings():
 		_sortType = config.get_value("SolutionSettings", "sort_type", Enums.SortByType.EditedDate)
 		_claudeCodeLaunchCommand = config.get_value("SolutionSettings", "claude_code_launch_command", GetDefaultClaudeCodeLaunchCommand())
 		_claudeCodeButtonEnabled = config.get_value("SolutionSettings", "claude_code_button_enabled", true)
+		_claudeApiChatButtonEnabled = config.get_value("SolutionSettings", "claude_api_chat_button_enabled", false)
 	else:
 		OS.alert("An error occured loading the solution configuration file")
 	
@@ -140,6 +149,7 @@ func SaveSolutionSettings():
 	config.set_value("SolutionSettings", "sort_type", _sortType)
 	config.set_value("SolutionSettings", "claude_code_launch_command", _claudeCodeLaunchCommand)
 	config.set_value("SolutionSettings", "claude_code_button_enabled", _claudeCodeButtonEnabled)
+	config.set_value("SolutionSettings", "claude_api_chat_button_enabled", _claudeApiChatButtonEnabled)
 
 	# Save the config file.
 	var err = config.save(_solutionConfigFile)

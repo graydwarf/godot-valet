@@ -22,3 +22,4 @@ signal MoveVersionItemUp
 signal BackgroundColorChanged
 signal BackgroundColorTemporarilyChanged
 signal ClaudeCodeButtonEnabledChanged
+signal ClaudeApiChatButtonEnabledChanged
