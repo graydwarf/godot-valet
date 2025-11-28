@@ -1,7 +1,10 @@
-[gd_scene load_steps=3 format=3 uid="uid://bvx8ywqm2n5f6"]
+[gd_scene load_steps=6 format=3 uid="uid://bvx8ywqm2n5f6"]
 
 [ext_resource type="Script" path="res://scenes/release-manager/pages/export-page/dialogs/export-path-settings-dialog/export-path-settings-dialog.gd" id="1_1a1a1"]
 [ext_resource type="Theme" uid="uid://dwoo5bj1luipm" path="res://assets/themes/global-themes/godot-dark-default.tres" id="2_theme"]
+[ext_resource type="Texture2D" path="res://scenes/release-manager/assets/fluent-icons/folder-open.svg" id="3_folder"]
+[ext_resource type="Texture2D" path="res://scenes/release-manager/assets/fluent-icons/dismiss.svg" id="4_dismiss"]
+[ext_resource type="Texture2D" path="res://scenes/release-manager/assets/fluent-icons/save.svg" id="5_save"]
 
 [node name="ExportPathSettingsDialog" type="Control"]
 layout_mode = 1
@@ -107,10 +110,10 @@ scroll_active = false
 
 [node name="SelectFolderButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/RootPathCard/VBoxContainer/ContentContainer/ContentMargin/RootPathContainer"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(50, 31)
+custom_minimum_size = Vector2(40, 31)
 layout_mode = 2
-text = "📁"
-modulate = Color(1, 1, 0.6, 1)
+icon = ExtResource("3_folder")
+icon_alignment = 1
 
 [node name="ProjectVersionCard" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
@@ -290,24 +293,30 @@ scroll_active = false
 [node name="ButtonContainer" type="HBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="CancelButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer"]
+[node name="BackButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer"]
 custom_minimum_size = Vector2(100, 31)
 layout_mode = 2
-text = "Cancel"
-
-[node name="Spacer" type="Control" parent="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
+text = "Back"
 
 [node name="SaveButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer"]
 custom_minimum_size = Vector2(100, 31)
 layout_mode = 2
 text = "Save"
 
+[node name="Spacer" type="Control" parent="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SaveCloseButton" type="Button" parent="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer"]
+custom_minimum_size = Vector2(130, 31)
+layout_mode = 2
+text = "Save & Close"
+
 [connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/RootPathCard/VBoxContainer/ContentContainer/ContentMargin/RootPathContainer/SelectFolderButton" to="." method="_onSelectFolderPressed"]
 [connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/AddButtonsContainer/AddVersionButton" to="." method="_onAddVersionPressed"]
 [connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/AddButtonsContainer/AddPlatformButton" to="." method="_onAddPlatformPressed"]
 [connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/AddButtonsContainer/AddDateButton" to="." method="_onAddDatePressed"]
 [connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer/ContentMargin/ContentVBox/AddButtonsContainer/AddCustomButton" to="." method="_onAddCustomPressed"]
-[connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer/CancelButton" to="." method="_onCancelPressed"]
+[connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer/BackButton" to="." method="_onBackPressed"]
 [connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer/SaveButton" to="." method="_onSavePressed"]
+[connection signal="pressed" from="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer/SaveCloseButton" to="." method="_onSaveClosePressed"]

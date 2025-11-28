@@ -1,5 +1,10 @@
 extends Control
 
+# FluentUI icons for dynamic buttons
+const ICON_ARROW_UP = preload("res://scenes/release-manager/assets/fluent-icons/arrow-up.svg")
+const ICON_ARROW_DOWN = preload("res://scenes/release-manager/assets/fluent-icons/arrow-down.svg")
+const ICON_DELETE = preload("res://scenes/release-manager/assets/fluent-icons/delete.svg")
+
 signal settings_saved(platform: String, root_path: String, path_template: Array, project_version: String)
 signal cancelled()
 
@@ -176,24 +181,27 @@ func _createSegmentRow(index: int, segment: Dictionary):
 
 	# Up button
 	var upButton = Button.new()
-	upButton.text = "↑"
-	upButton.custom_minimum_size.x = 40
+	upButton.icon = ICON_ARROW_UP
+	upButton.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	upButton.custom_minimum_size.x = 32
 	upButton.disabled = (index == 0)
 	upButton.pressed.connect(_onMoveUpPressed.bind(index))
 	row.add_child(upButton)
 
 	# Down button
 	var downButton = Button.new()
-	downButton.text = "↓"
-	downButton.custom_minimum_size.x = 40
+	downButton.icon = ICON_ARROW_DOWN
+	downButton.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	downButton.custom_minimum_size.x = 32
 	downButton.disabled = (index == _pathSegments.size() - 1)
 	downButton.pressed.connect(_onMoveDownPressed.bind(index))
 	row.add_child(downButton)
 
 	# Delete button
 	var deleteButton = Button.new()
-	deleteButton.text = "×"
-	deleteButton.custom_minimum_size.x = 40
+	deleteButton.icon = ICON_DELETE
+	deleteButton.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	deleteButton.custom_minimum_size.x = 32
 	deleteButton.pressed.connect(_onDeletePressed.bind(index))
 	row.add_child(deleteButton)
 
@@ -324,11 +332,16 @@ func _onFolderSelected(dir: String):
 	_updatePreview()
 
 func _onSavePressed():
-	# Emit signal with root path, path template, and project version
+	# Emit signal with root path, path template, and project version (stay on page)
+	var projectVersion = _projectVersionLineEdit.text
+	settings_saved.emit(_currentPlatform, _rootExportPath, _pathSegments, projectVersion)
+
+func _onSaveClosePressed():
+	# Emit signal with root path, path template, and project version, then close
 	var projectVersion = _projectVersionLineEdit.text
 	settings_saved.emit(_currentPlatform, _rootExportPath, _pathSegments, projectVersion)
 	visible = false
 
-func _onCancelPressed():
+func _onBackPressed():
 	cancelled.emit()
 	visible = false
