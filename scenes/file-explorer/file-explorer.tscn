@@ -448,6 +448,15 @@ texture_normal = ExtResource("17_grid")
 ignore_texture_size = true
 stretch_mode = 5
 
+[node name="BackgroundColorPicker" type="ColorPickerButton" parent="VBoxContainer/MarginContainer2/MainContent/HSplitContainer/RightSection/VBoxContainer/RightPaneSubToolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+tooltip_text = "Change image background color"
+mouse_default_cursor_shape = 2
+color = Color(0.15, 0.15, 0.15, 1)
+edit_alpha = false
+
 [node name="ContentContainer" type="Control" parent="VBoxContainer/MarginContainer2/MainContent/HSplitContainer/RightSection/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -509,4 +518,5 @@ layout_mode = 2
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/MainContent/HSplitContainer/RightSection/VBoxContainer/RightPaneSubToolbar/ActualSizeButton" to="." method="_on_actual_size_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/MainContent/HSplitContainer/RightSection/VBoxContainer/RightPaneSubToolbar/StretchButton" to="." method="_on_stretch_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/MainContent/HSplitContainer/RightSection/VBoxContainer/RightPaneSubToolbar/TileButton" to="." method="_on_tile_button_pressed"]
+[connection signal="color_changed" from="VBoxContainer/MarginContainer2/MainContent/HSplitContainer/RightSection/VBoxContainer/RightPaneSubToolbar/BackgroundColorPicker" to="." method="_on_background_color_changed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/MainContent/hBoxContainer/BackButton" to="." method="_on_back_button_pressed"]

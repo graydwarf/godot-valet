@@ -577,3 +577,6 @@ func _on_stretch_button_pressed() -> void:
 
 func _on_tile_button_pressed() -> void:
 	_filePreviewer.ApplyImageDisplayMode(3) # TILE
+
+func _on_background_color_changed(color: Color) -> void:
+	_filePreviewer.SetImageBackgroundColor(color)

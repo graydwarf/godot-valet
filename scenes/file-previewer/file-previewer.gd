@@ -769,3 +769,14 @@ func _on_stretch_button_pressed():
 
 func _on_tile_button_pressed():
 	ApplyImageDisplayMode(ImageDisplayMode.TILE)
+
+# Set the background color for the image preview area
+func SetImageBackgroundColor(color: Color):
+	if has_node("%ImageBackground"):
+		%ImageBackground.color = color
+
+# Get the current background color
+func GetImageBackgroundColor() -> Color:
+	if has_node("%ImageBackground"):
+		return %ImageBackground.color
+	return Color(0.15, 0.15, 0.15, 1.0)
