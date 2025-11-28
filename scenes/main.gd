@@ -10,6 +10,19 @@ func _ready():
 	LoadAdminSettings()
 	LoadProjectSettings()
 	LoadTheme()
+
+	# Show disclaimer for binary users who haven't accepted yet
+	if App.ShouldShowDisclaimer():
+		ShowDisclaimerDialog()
+	else:
+		AddProjectManagerScene()
+
+func ShowDisclaimerDialog():
+	var dialog = load("res://scenes/disclaimer-dialog/disclaimer-dialog.tscn").instantiate()
+	dialog.accepted.connect(_on_disclaimer_accepted)
+	add_child(dialog)
+
+func _on_disclaimer_accepted():
 	AddProjectManagerScene()
 
 func AddProjectManagerScene():

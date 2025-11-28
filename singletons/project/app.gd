@@ -19,6 +19,7 @@ var _sortType = Enums.SortByType.EditedDate
 var _claudeCodeLaunchCommand = 'start cmd /k "cd /d {project_path} && claude"'
 var _claudeCodeButtonEnabled = true
 var _claudeApiChatButtonEnabled = false
+var _disclaimerAccepted = false
 
 func _ready():
 	LoadSavedSolutionSettings()
@@ -80,6 +81,21 @@ func SetClaudeApiChatButtonEnabled(value):
 	_claudeApiChatButtonEnabled = value
 	SaveSolutionSettings()
 
+func GetDisclaimerAccepted():
+	return _disclaimerAccepted
+
+func SetDisclaimerAccepted(value):
+	_disclaimerAccepted = value
+	SaveSolutionSettings()
+
+# Returns true if running as exported binary (not from editor)
+func IsRunningAsBinary() -> bool:
+	return not OS.has_feature("editor")
+
+# Returns true if we need to show the disclaimer (binary + not yet accepted)
+func ShouldShowDisclaimer() -> bool:
+	return IsRunningAsBinary() and not _disclaimerAccepted
+
 func SetLastUpdateTime(value):
 	_lastUpdateTime = value
 
@@ -134,6 +150,7 @@ func LoadSavedSolutionSettings():
 		_claudeCodeLaunchCommand = config.get_value("SolutionSettings", "claude_code_launch_command", GetDefaultClaudeCodeLaunchCommand())
 		_claudeCodeButtonEnabled = config.get_value("SolutionSettings", "claude_code_button_enabled", true)
 		_claudeApiChatButtonEnabled = config.get_value("SolutionSettings", "claude_api_chat_button_enabled", false)
+		_disclaimerAccepted = config.get_value("SolutionSettings", "disclaimer_accepted", false)
 	else:
 		OS.alert("An error occured loading the solution configuration file")
 	
@@ -150,6 +167,7 @@ func SaveSolutionSettings():
 	config.set_value("SolutionSettings", "claude_code_launch_command", _claudeCodeLaunchCommand)
 	config.set_value("SolutionSettings", "claude_code_button_enabled", _claudeCodeButtonEnabled)
 	config.set_value("SolutionSettings", "claude_api_chat_button_enabled", _claudeApiChatButtonEnabled)
+	config.set_value("SolutionSettings", "disclaimer_accepted", _disclaimerAccepted)
 
 	# Save the config file.
 	var err = config.save(_solutionConfigFile)
