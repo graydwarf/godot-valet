@@ -1,5 +1,10 @@
 extends Control
 
+# FluentUI icons for dynamic buttons
+const ICON_ARROW_UP = preload("res://scenes/release-manager/assets/fluent-icons/arrow-up.svg")
+const ICON_ARROW_DOWN = preload("res://scenes/release-manager/assets/fluent-icons/arrow-down.svg")
+const ICON_DELETE = preload("res://scenes/release-manager/assets/fluent-icons/delete.svg")
+
 signal settings_saved(filename_type: String, filename_template: Array, is_synced: bool)
 signal cancelled()
 
@@ -225,24 +230,27 @@ func _createSegmentRow(index: int, segment: Dictionary):
 
 	# Up button
 	var upButton = Button.new()
-	upButton.text = "^"
-	upButton.custom_minimum_size.x = 40
+	upButton.icon = ICON_ARROW_UP
+	upButton.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	upButton.custom_minimum_size.x = 32
 	upButton.disabled = (index == 0)
 	upButton.pressed.connect(_onMoveUpPressed.bind(index))
 	row.add_child(upButton)
 
 	# Down button
 	var downButton = Button.new()
-	downButton.text = "v"
-	downButton.custom_minimum_size.x = 40
+	downButton.icon = ICON_ARROW_DOWN
+	downButton.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	downButton.custom_minimum_size.x = 32
 	downButton.disabled = (index == _filenameSegments.size() - 1)
 	downButton.pressed.connect(_onMoveDownPressed.bind(index))
 	row.add_child(downButton)
 
 	# Delete button
 	var deleteButton = Button.new()
-	deleteButton.text = "x"
-	deleteButton.custom_minimum_size.x = 40
+	deleteButton.icon = ICON_DELETE
+	deleteButton.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	deleteButton.custom_minimum_size.x = 32
 	deleteButton.pressed.connect(_onDeletePressed.bind(index))
 	row.add_child(deleteButton)
 
