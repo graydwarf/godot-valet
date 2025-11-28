@@ -115,50 +115,6 @@ layout_mode = 2
 icon = ExtResource("3_folder")
 icon_alignment = 1
 
-[node name="ProjectVersionCard" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="VBoxContainer" type="VBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard"]
-layout_mode = 2
-theme_override_constants/separation = 0
-
-[node name="HeaderContainer" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard/VBoxContainer"]
-layout_mode = 2
-
-[node name="HeaderMargin" type="MarginContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard/VBoxContainer/HeaderContainer"]
-layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 10
-
-[node name="HeaderRow" type="HBoxContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard/VBoxContainer/HeaderContainer/HeaderMargin"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Label" type="Label" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard/VBoxContainer/HeaderContainer/HeaderMargin/HeaderRow"]
-layout_mode = 2
-text = "Project Version"
-vertical_alignment = 1
-theme_override_font_sizes/font_size = 16
-
-[node name="ContentContainer" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard/VBoxContainer"]
-layout_mode = 2
-
-[node name="ContentMargin" type="MarginContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard/VBoxContainer/ContentContainer"]
-layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 10
-
-[node name="ProjectVersionLineEdit" type="LineEdit" parent="BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard/VBoxContainer/ContentContainer/ContentMargin"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-placeholder_text = "e.g., v1.0.0"
-
 [node name="PathSegmentsCard" type="PanelContainer" parent="BackgroundPanel/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2

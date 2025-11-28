@@ -5,7 +5,7 @@ const ICON_ARROW_UP = preload("res://scenes/release-manager/assets/fluent-icons/
 const ICON_ARROW_DOWN = preload("res://scenes/release-manager/assets/fluent-icons/arrow-down.svg")
 const ICON_DELETE = preload("res://scenes/release-manager/assets/fluent-icons/delete.svg")
 
-signal settings_saved(platform: String, root_path: String, path_template: Array, project_version: String)
+signal settings_saved(platform: String, root_path: String, path_template: Array)
 signal cancelled()
 
 @onready var _platformLabel = %PlatformLabel
@@ -14,21 +14,18 @@ signal cancelled()
 @onready var _rootPathLabel = %RootPathLabel
 @onready var _rootPathCard = %RootPathCard
 @onready var _previewCard = %PreviewCard
-@onready var _projectVersionCard = %ProjectVersionCard
 @onready var _pathSegmentsCard = %PathSegmentsCard
-@onready var _projectVersionLineEdit = %ProjectVersionLineEdit
 @onready var _rootPathHeaderContainer = $BackgroundPanel/MarginContainer/VBoxContainer/RootPathCard/VBoxContainer/HeaderContainer
 @onready var _rootPathContentContainer = $BackgroundPanel/MarginContainer/VBoxContainer/RootPathCard/VBoxContainer/ContentContainer
 @onready var _previewHeaderContainer = $BackgroundPanel/MarginContainer/VBoxContainer/PreviewCard/VBoxContainer/HeaderContainer
 @onready var _previewContentContainer = $BackgroundPanel/MarginContainer/VBoxContainer/PreviewCard/VBoxContainer/ContentContainer
-@onready var _projectVersionHeaderContainer = $BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard/VBoxContainer/HeaderContainer
-@onready var _projectVersionContentContainer = $BackgroundPanel/MarginContainer/VBoxContainer/ProjectVersionCard/VBoxContainer/ContentContainer
 @onready var _pathSegmentsHeaderContainer = $BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/HeaderContainer
 @onready var _pathSegmentsContentContainer = $BackgroundPanel/MarginContainer/VBoxContainer/PathSegmentsCard/VBoxContainer/ContentContainer
 
 
 var _currentPlatform: String = ""
 var _rootExportPath: String = ""
+var _projectVersion: String = ""  # Stored for preview only, not editable here
 var _pathSegments: Array = []  # Array of {type: "version|platform|date|custom", value: ""}
 var _folderDialog: FileDialog = null
 
@@ -48,8 +45,6 @@ func _ready():
 		_applyCardStyle(_rootPathCard, _rootPathHeaderContainer, _rootPathContentContainer)
 	if _previewCard != null and _previewHeaderContainer != null and _previewContentContainer != null:
 		_applyCardStyle(_previewCard, _previewHeaderContainer, _previewContentContainer)
-	if _projectVersionCard != null and _projectVersionHeaderContainer != null and _projectVersionContentContainer != null:
-		_applyCardStyle(_projectVersionCard, _projectVersionHeaderContainer, _projectVersionContentContainer)
 	if _pathSegmentsCard != null and _pathSegmentsHeaderContainer != null and _pathSegmentsContentContainer != null:
 		_applyCardStyle(_pathSegmentsCard, _pathSegmentsHeaderContainer, _pathSegmentsContentContainer)
 
@@ -108,15 +103,11 @@ func openForPlatform(platform: String, rootPath: String, currentTemplate: Array,
 	_currentPlatform = platform
 	_rootExportPath = rootPath
 	_pathSegments = currentTemplate.duplicate(true)
+	_projectVersion = projectVersion  # Store for preview
 
 	# Update platform display
 	_platformLabel.text = "Platform: " + platform
 	_rootPathLabel.text = rootPath
-	_projectVersionLineEdit.text = projectVersion
-
-	# Connect version change to update preview
-	if not _projectVersionLineEdit.text_changed.is_connected(_onVersionChanged):
-		_projectVersionLineEdit.text_changed.connect(_onVersionChanged)
 
 	# Load current template
 	_rebuildSegmentsList()
@@ -124,9 +115,6 @@ func openForPlatform(platform: String, rootPath: String, currentTemplate: Array,
 
 	# Show the control
 	visible = true
-
-func _onVersionChanged(_new_text: String):
-	_updatePreview()
 
 func _rebuildSegmentsList():
 	# Clear existing segments
@@ -281,7 +269,7 @@ func _updatePreview():
 	for segment in _pathSegments:
 		match segment["type"]:
 			"version":
-				var version = _projectVersionLineEdit.text if _projectVersionLineEdit.text != "" else "v1.0.0"
+				var version = _projectVersion if _projectVersion != "" else "v1.0.0"
 				previewPath = previewPath.path_join(version)
 			"platform":
 				previewPath = previewPath.path_join(_currentPlatform)
@@ -332,14 +320,12 @@ func _onFolderSelected(dir: String):
 	_updatePreview()
 
 func _onSavePressed():
-	# Emit signal with root path, path template, and project version (stay on page)
-	var projectVersion = _projectVersionLineEdit.text
-	settings_saved.emit(_currentPlatform, _rootExportPath, _pathSegments, projectVersion)
+	# Emit signal with root path and path template (stay on page)
+	settings_saved.emit(_currentPlatform, _rootExportPath, _pathSegments)
 
 func _onSaveClosePressed():
-	# Emit signal with root path, path template, and project version, then close
-	var projectVersion = _projectVersionLineEdit.text
-	settings_saved.emit(_currentPlatform, _rootExportPath, _pathSegments, projectVersion)
+	# Emit signal with root path and path template, then close
+	settings_saved.emit(_currentPlatform, _rootExportPath, _pathSegments)
 	visible = false
 
 func _onBackPressed():

@@ -1034,14 +1034,10 @@ func _onPathSettingsPressed(platform: String):
 	_pathSettingsDialog.openForPlatform(platform, rootPath, currentTemplate, projectVersion)
 	_pathSettingsDialog.move_to_front()  # Ensure it's rendered on top
 
-func _onPathSettingsSaved(platform: String, rootPath: String, pathTemplate: Array, projectVersion: String):
+func _onPathSettingsSaved(platform: String, rootPath: String, pathTemplate: Array):
 	# Store the template and root path for this platform
 	_platformPathTemplates[platform] = pathTemplate
 	_platformRootPaths[platform] = rootPath
-
-	# Update the project version in the hidden field
-	if projectVersion != "":
-		_projectVersionLineEdit.text = projectVersion
 
 	# Update the Export Path display to show full path with template
 	_updateExportPathDisplay(platform)
