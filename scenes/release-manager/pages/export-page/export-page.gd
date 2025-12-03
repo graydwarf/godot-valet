@@ -1167,15 +1167,20 @@ func _onFilenameSettingsCancelled():
 	# User cancelled, no action needed
 	pass
 
+# Returns the actual export filename (with extension) for a platform, computed from the template
+# This is used for actual exports - NOT for display (which may show examples for Web)
+func _getActualExportFilename(platform: String) -> String:
+	var template = _platformExportFilenameTemplates.get(platform, [{"type": "project"}])
+	var filename = _buildFileNameFromTemplate(template, platform)
+	var extension = _getExportExtension(platform)
+	return filename + extension
+
 func _updateExportFilenameDisplay(platform: String):
 	var data = _platformRows.get(platform)
 	if data == null or not data.has("exportFilename"):
 		return
 
-	var template = _platformExportFilenameTemplates.get(platform, [{"type": "project"}])
-	var filename = _buildFileNameFromTemplate(template, platform)
-	var extension = _getExportExtension(platform)
-	var fullFilename = filename + extension
+	var fullFilename = _getActualExportFilename(platform)
 
 	# Web platform shows multiple files with rename preview
 	if platform == "Web":
@@ -1184,6 +1189,7 @@ func _updateExportFilenameDisplay(platform: String):
 		if data.has("renameToIndexCheckbox") and data["renameToIndexCheckbox"] != null:
 			if data["renameToIndexCheckbox"].button_pressed:
 				htmlName = "index.html"
+		var filename = fullFilename.get_basename()  # Remove extension for .js/.wasm display
 		var displayText = "%s, %s.js, %s.wasm, etc..." % [htmlName, filename, filename]
 		data["exportFilename"].text = displayText
 		data["exportFilename"].tooltip_text = "Showing a few examples of the web file names that will be generated."
@@ -1507,12 +1513,8 @@ func _getExportedFilePath(platform: String) -> String:
 		return exportDestPath
 	else:
 		# For other platforms, return the executable path
-		var data = _platformRows.get(platform)
-		if data == null:
-			return ""
-		var exportFilename = data["exportFilename"].text
-		var filenameWithExtension = _addPlatformExtension(exportFilename, platform)
-		return exportDestPath.path_join(filenameWithExtension)
+		var exportFilename = _getActualExportFilename(platform)
+		return exportDestPath.path_join(exportFilename)
 
 func _onOpenFolderButtonPressed(platform: String):
 	var rootPath = _platformRootPaths.get(platform, "")
@@ -1639,7 +1641,7 @@ func _exportPlatform(platform: String):
 
 	# Get export settings
 	var exportPath = _platformRootPaths.get(platform, "")
-	var exportFilename = data["exportFilename"].text
+	var exportFilename = _getActualExportFilename(platform)
 	var archiveFilename = data["archiveFilename"].text
 
 	# Get export options from UI
@@ -1706,16 +1708,20 @@ func _exportPlatform(platform: String):
 		# IMPORTANT: Hide blocker before showing dialog (in case previous platform left it visible)
 		_setUIEnabled(true)
 
-		# Prompt user with three options: Clear & Export, Overwrite, Cancel
-		var overwriteDialog = _getYesNoDialog()
+		# Prompt user - show Overwrite option only for No Zip (zip overwrite has unexpected behavior)
+		var confirmDialog = _getYesNoDialog()
 		_updateStatus(data, "Awaiting confirmation...")
 		await get_tree().process_frame  # Let UI update
-		var buttons: Array[String] = ["Clear & Export", "Overwrite", "Cancel"]
-		overwriteDialog.show_dialog_with_buttons(
+		var buttons: Array[String]
+		if shouldZip:
+			buttons = ["Clear & Export", "Cancel"]
+		else:
+			buttons = ["Clear & Export", "Overwrite", "Cancel"]
+		confirmDialog.show_dialog_with_buttons(
 			"Export folder already exists:\n" + exportDestPath + "\n\nHow would you like to proceed?",
 			buttons
 		)
-		var choice = await overwriteDialog.confirmed
+		var choice = await confirmDialog.confirmed
 
 		if choice == "Cancel":
 			# User cancelled, abort export
@@ -1728,6 +1734,7 @@ func _exportPlatform(platform: String):
 			return
 		elif choice == "Clear & Export":
 			shouldClearFolder = true
+		# else: Overwrite - leave shouldClearFolder = false
 
 		# User confirmed, NOW show the blocker overlay (after dialog dismissed)
 		_setUIEnabled(false)
