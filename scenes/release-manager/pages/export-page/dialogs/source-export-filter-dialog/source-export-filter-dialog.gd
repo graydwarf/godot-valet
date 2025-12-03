@@ -215,6 +215,8 @@ func _uncheckItemByPath(item: TreeItem, targetPath: String) -> bool:
 			# Found it! Uncheck this item
 			metadata["checked"] = false
 			item.set_icon(0, _iconUnchecked)
+			# Propagate uncheck state to all children (folder was unchecked, so all contents should be unchecked)
+			_propagateCheckState(item, false)
 			return true
 
 	# Recurse to children

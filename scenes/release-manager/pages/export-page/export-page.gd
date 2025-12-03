@@ -471,6 +471,7 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 		renameToIndexCheckbox.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		renameToIndexCheckbox.name = "RenameToIndexCheckbox"
 		renameToIndexCheckbox.toggled.connect(_onInputChanged.unbind(1))
+		renameToIndexCheckbox.toggled.connect(_onRenameToIndexToggled.bind(platform).unbind(1))
 		filenameRow.add_child(renameToIndexCheckbox)
 
 	detailsVBox.add_child(filenameRow)
@@ -779,6 +780,10 @@ func _onInputChanged(_value = null):
 	# Emit signal when any input is modified
 	if not _isLoadingData:
 		page_modified.emit()
+
+func _onRenameToIndexToggled(platform: String):
+	# Update the filename display to show index.html or original name
+	_updateExportFilenameDisplay(platform)
 
 func _onPackageTypeChanged(index: int, platform: String, checksumCheckbox: CheckBox, checksumContainer: HBoxContainer):
 	# Update checksum tooltip based on package type selection
@@ -1171,8 +1176,20 @@ func _updateExportFilenameDisplay(platform: String):
 	var filename = _buildFileNameFromTemplate(template, platform)
 	var extension = _getExportExtension(platform)
 	var fullFilename = filename + extension
-	data["exportFilename"].text = fullFilename
-	data["exportFilename"].tooltip_text = fullFilename
+
+	# Web platform shows multiple files with rename preview
+	if platform == "Web":
+		var htmlName = fullFilename
+		# Check if rename to index.html is enabled
+		if data.has("renameToIndexCheckbox") and data["renameToIndexCheckbox"] != null:
+			if data["renameToIndexCheckbox"].button_pressed:
+				htmlName = "index.html"
+		var displayText = "%s, %s.js, %s.wasm, etc..." % [htmlName, filename, filename]
+		data["exportFilename"].text = displayText
+		data["exportFilename"].tooltip_text = "Showing a few examples of the web file names that will be generated."
+	else:
+		data["exportFilename"].text = fullFilename
+		data["exportFilename"].tooltip_text = fullFilename
 
 func _updateArchiveFilenameDisplay(platform: String):
 	var data = _platformRows.get(platform)
