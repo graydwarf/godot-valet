@@ -7,6 +7,7 @@ const ICON_PLAY = preload("res://scenes/release-manager/assets/fluent-icons/play
 const ICON_EDIT = preload("res://scenes/release-manager/assets/fluent-icons/edit.svg")
 const ICON_ARROW_EXPORT = preload("res://scenes/release-manager/assets/fluent-icons/arrow-export.svg")
 const ICON_DISMISS = preload("res://scenes/release-manager/assets/fluent-icons/dismiss.svg")
+const ICON_ARROW_RIGHT = preload("res://scenes/release-manager/assets/fluent-icons/arrow-right.svg")
 
 signal build_started(platform: String)
 signal build_completed(platform: String, success: bool)
@@ -211,6 +212,11 @@ func _loadPlatformSettings():
 			data["exportTypeOption"].selected = exportType
 			data["packageTypeOption"].selected = packageType
 			data["checksumCheckbox"].button_pressed = generateChecksum
+
+			# Restore rename to index.html setting (Web platform only)
+			if platform == "Web" and data["renameToIndexCheckbox"] != null:
+				var renameToIndex = settings.get("renameToIndex", false)
+				data["renameToIndexCheckbox"].button_pressed = renameToIndex
 
 			# Update checksum tooltip and visibility based on loaded package type
 			var isZip = (packageType == 1)
@@ -454,6 +460,18 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	filenameOptionsButton.pressed.connect(_onExportFilenameOptionsPressed.bind(platform))
 	filenameOptionsButton.name = "ExportFilenameOptionsButton"
 	filenameRow.add_child(filenameOptionsButton)
+
+	# Rename to index.html checkbox (Web platform only)
+	var renameToIndexCheckbox: CheckBox = null
+	if platform == "Web":
+		renameToIndexCheckbox = CheckBox.new()
+		renameToIndexCheckbox.icon = ICON_ARROW_RIGHT
+		renameToIndexCheckbox.text = "index.html"
+		renameToIndexCheckbox.tooltip_text = "Rename HTML file to index.html (required for itch.io)"
+		renameToIndexCheckbox.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		renameToIndexCheckbox.name = "RenameToIndexCheckbox"
+		renameToIndexCheckbox.toggled.connect(_onInputChanged.unbind(1))
+		filenameRow.add_child(renameToIndexCheckbox)
 
 	detailsVBox.add_child(filenameRow)
 
@@ -714,6 +732,7 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 		"exportPath": exportPathEdit,
 		"exportFilename": filenameEdit,
 		"exportFilenameOptionsButton": filenameOptionsButton,
+		"renameToIndexCheckbox": renameToIndexCheckbox,  # Web platform only, null for others
 		"archiveFilename": archiveEdit,
 		"archiveFilenameOptionsButton": archiveOptionsButton,
 		"archiveContainer": archiveContainer,  # Inline archive container (all platforms)
@@ -801,7 +820,7 @@ func _getExportFileLabel(platform: String) -> String:
 		"Linux/X11", "Linux":
 			return "Binary File Name:"
 		"Web":
-			return "HTML File Name:"
+			return "Web File Names:"  # e.g., game.html, game.js, game.wasm
 		"macOS":
 			return "App File Name:"
 		"Android":
@@ -1153,7 +1172,7 @@ func _updateExportFilenameDisplay(platform: String):
 	var extension = _getExportExtension(platform)
 	var fullFilename = filename + extension
 	data["exportFilename"].text = fullFilename
-	data["exportFilename"].tooltip_text = fullFilename + "\nClick to configure"
+	data["exportFilename"].tooltip_text = fullFilename
 
 func _updateArchiveFilenameDisplay(platform: String):
 	var data = _platformRows.get(platform)
@@ -1610,6 +1629,7 @@ func _exportPlatform(platform: String):
 	var isDebug = (data["exportTypeOption"].selected == 1)  # 0=Release, 1=Debug
 	var shouldZip = (data["packageTypeOption"].selected == 1)  # 0=No Zip, 1=Zip
 	var shouldChecksum = data["checksumCheckbox"].button_pressed
+	var shouldRenameToIndex = (platform == "Web" and data["renameToIndexCheckbox"] != null and data["renameToIndexCheckbox"].button_pressed)
 
 	# Check if obfuscation is enabled (any option selected in build config)
 	var obfuscationEnabled = false
@@ -1792,6 +1812,20 @@ func _exportPlatform(platform: String):
 		await get_tree().create_timer(0.3).timeout
 		_cleanupTempDir(tempObfuscatedDir)
 
+	# Rename HTML file to index.html for Web platform (required for itch.io)
+	if success and not _exportCancelled and shouldRenameToIndex:
+		_updateStatus(data, "Renaming to index.html...")
+		await get_tree().process_frame
+		var htmlFilename = _addPlatformExtension(exportFilename, platform)  # e.g., "game.html"
+		var originalHtmlPath = exportDestPath.path_join(htmlFilename)
+		var indexHtmlPath = exportDestPath.path_join("index.html")
+		if FileAccess.file_exists(originalHtmlPath):
+			var renameErr = DirAccess.rename_absolute(originalHtmlPath, indexHtmlPath)
+			if renameErr != OK:
+				push_warning("Failed to rename HTML to index.html: %s" % renameErr)
+		else:
+			push_warning("HTML file not found for rename: %s" % originalHtmlPath)
+
 	# Post-export steps: zip and checksum
 	var finalOutputPath = exportDestPath  # Default to folder for checksum
 
@@ -1869,6 +1903,10 @@ func save():
 				"packageType": data["packageTypeOption"].selected,  # 0=No Zip, 1=Zip
 				"generateChecksum": data["checksumCheckbox"].button_pressed
 			}
+
+			# Save rename to index.html setting (Web platform only)
+			if platform == "Web" and data["renameToIndexCheckbox"] != null:
+				platformSettings["renameToIndex"] = data["renameToIndexCheckbox"].button_pressed
 
 			# Save build config if exists
 			if platform in _platformBuildConfigs:
