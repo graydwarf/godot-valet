@@ -37,16 +37,20 @@ signal page_modified()  # Emitted when any input is changed
 @onready var _outputLogHeaderContainer = $MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/OutputLogCard/VBoxContainer/HeaderContainer
 @onready var _outputLogContentContainer = $MarginContainer/ScrollContainer/ScrollMargin/VBoxContainer/OutputLogCard/VBoxContainer/ContentContainer
 
+const MOCK_PUBLISH: bool = false  # Set to true for testing without real publishing
+
 var _publishing: bool = false
 var _isLoadingData: bool = false  # Suppresses page_modified during _loadPageData()
 var _butlerInfo: Dictionary = {"installed": false, "version": "", "path": "butler"}
 var _platformPublishCheckboxes: Dictionary = {}  # platform -> CheckBox
 var _platformsToPublish: Dictionary = {}  # platform -> bool (saved selections)
 var _publishCancelled: bool = false
+var _inputBlocker: Control = null  # Full-screen overlay to block all input during publish
 
 func _ready():
 	_applyCardStyle()
 	_detectButlerInstallation()
+	_createInputBlocker()
 	_publishButton.pressed.connect(_onPublishPressed)
 	_butlerHelpButton.pressed.connect(_onButlerHelpButtonPressed)
 	_clearLogButton.pressed.connect(_onClearLogPressed)
@@ -520,12 +524,16 @@ func _onPublishPressed():
 		_logOutput("[color=red]Error: No platforms selected to publish.[/color]")
 		return
 
+	# Clear output log for fresh publish attempt
+	_outputLog.clear()
+
 	_publishing = true
 	_publishCancelled = false
 	_updatePublishButton()
 	_statusLabel.text = "Publishing..."
+	_setUIEnabled(false)
 
-	_logOutput("\n" + "=".repeat(60))
+	_logOutput("=".repeat(60))
 	_logOutput("[color=cyan]Starting publish to itch.io...[/color]")
 	_logOutput("Profile: %s" % profileName)
 	_logOutput("Project: %s" % projectSlug)
@@ -568,12 +576,33 @@ func _onPublishPressed():
 
 	_publishing = false
 	_updatePublishButton()
+	_setUIEnabled(true)
 
 	# Update review section to refresh "Last Exported" times
 	_updateReviewSection()
 
 func _publishPlatform(platform: String, settings: Dictionary, profileName: String, projectSlug: String, version: String) -> bool:
 	var channelName = _getButlerChannelName(platform)
+
+	# Mock publish mode for testing
+	if MOCK_PUBLISH:
+		_logOutput("\n[color=yellow][MOCK] [%s] Simulating publish...[/color]" % platform)
+		_logOutput("[MOCK] Channel: %s/%s:%s" % [profileName, projectSlug, channelName])
+		publish_started.emit(platform)
+
+		# Simulate 5 second publish with progress updates
+		for i in range(5):
+			if _publishCancelled:
+				_logOutput("[color=yellow][MOCK] [%s] Publish cancelled.[/color]" % platform)
+				publish_completed.emit(platform, false)
+				return false
+			await get_tree().create_timer(1.0).timeout
+			_logOutput("[MOCK] [%s] Progress: %d%%..." % [platform, (i + 1) * 20])
+
+		_logOutput("[color=green][MOCK] [%s] Published successfully![/color]" % platform)
+		publish_completed.emit(platform, true)
+		return true
+
 	var rootPath = settings.get("exportPath", "")
 	var pathTemplate = settings.get("pathTemplate", [])
 	var packageType = settings.get("packageType", 0)
@@ -685,3 +714,96 @@ func save():
 	_selectedProjectItem.SetPublishPlatformSelections(_platformsToPublish)
 
 	_selectedProjectItem.SaveProjectItem()
+
+func _createInputBlocker():
+	# Create overlay container
+	_inputBlocker = Control.new()
+	_inputBlocker.name = "PublishBlockerOverlay"
+	_inputBlocker.mouse_filter = Control.MOUSE_FILTER_STOP  # Block all mouse input
+	_inputBlocker.focus_mode = Control.FOCUS_ALL  # Block keyboard input
+	_inputBlocker.visible = false
+	_inputBlocker.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_inputBlocker.z_index = 1000  # Very high z-index to be above everything
+
+	# Semi-transparent black background
+	var background = ColorRect.new()
+	background.color = Color(0, 0, 0, 0.7)
+	background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_inputBlocker.add_child(background)
+
+	# Center container for spinner and cancel button
+	var centerContainer = CenterContainer.new()
+	centerContainer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_inputBlocker.add_child(centerContainer)
+
+	# VBox for vertical layout
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 20)
+	centerContainer.add_child(vbox)
+
+	# Spinner label (animated)
+	var spinnerLabel = Label.new()
+	spinnerLabel.name = "SpinnerLabel"
+	spinnerLabel.text = "◜"  # First frame of spinner
+	spinnerLabel.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	spinnerLabel.add_theme_font_size_override("font_size", 48)
+	vbox.add_child(spinnerLabel)
+
+	# Status message label
+	var statusLabel = Label.new()
+	statusLabel.name = "StatusLabel"
+	statusLabel.text = "Publishing..."
+	statusLabel.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	statusLabel.add_theme_font_size_override("font_size", 18)
+	vbox.add_child(statusLabel)
+
+	# Start spinner animation timer
+	var timer = Timer.new()
+	timer.name = "SpinnerTimer"
+	timer.wait_time = 0.15  # Rotate every 150ms
+	timer.autostart = false
+	timer.timeout.connect(_updateSpinner.bind(spinnerLabel))
+	_inputBlocker.add_child(timer)
+
+func _updateSpinner(spinnerLabel: Label):
+	# Rotate through spinner characters
+	var spinnerChars = ["◜", "◝", "◞", "◟"]
+	var currentIndex = spinnerChars.find(spinnerLabel.text)
+	var nextIndex = (currentIndex + 1) % spinnerChars.size()
+	spinnerLabel.text = spinnerChars[nextIndex]
+
+func _setUIEnabled(enabled: bool):
+	# Show/hide full-screen input blocker overlay
+	if not is_instance_valid(_inputBlocker):
+		return
+
+	if not enabled:
+		# Reset cancellation flag when starting publish
+		_publishCancelled = false
+
+		# Add to root if not already added
+		if _inputBlocker.get_parent() == null:
+			var root = get_tree().current_scene
+			if root == null:
+				root = get_tree().root.get_child(get_tree().root.get_child_count() - 1)
+			if root:
+				root.add_child(_inputBlocker)
+
+		# Show blocker and start spinner
+		_inputBlocker.visible = true
+		_inputBlocker.move_to_front()
+
+		var timer = _inputBlocker.get_node_or_null("SpinnerTimer")
+		if is_instance_valid(timer):
+			timer.start()
+
+		# Reset status text
+		var statusLabel = _inputBlocker.get_node_or_null("CenterContainer/VBoxContainer/StatusLabel")
+		if is_instance_valid(statusLabel):
+			statusLabel.text = "Publishing..."
+	else:
+		# Hide blocker and stop spinner
+		_inputBlocker.visible = false
+		var timer = _inputBlocker.get_node_or_null("SpinnerTimer")
+		if is_instance_valid(timer):
+			timer.stop()
