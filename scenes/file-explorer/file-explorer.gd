@@ -26,14 +26,14 @@ func RemoveGodotButtonFocusBorder():
 	%GodotToggleButton.add_theme_stylebox_override("focus", empty_style)
 
 # Show/hide image toolbar while preserving its space in the layout
-func _setImageToolbarVisible(is_visible: bool):
+func _setImageToolbarVisible(toolbar_visible: bool):
 	# Use modulate alpha to hide visually but preserve space
-	_imageToolbar.modulate.a = 1.0 if is_visible else 0.0
+	_imageToolbar.modulate.a = 1.0 if toolbar_visible else 0.0
 	# Disable mouse interaction when hidden
-	_imageToolbar.mouse_filter = Control.MOUSE_FILTER_STOP if is_visible else Control.MOUSE_FILTER_IGNORE
+	_imageToolbar.mouse_filter = Control.MOUSE_FILTER_STOP if toolbar_visible else Control.MOUSE_FILTER_IGNORE
 	for child in _imageToolbar.get_children():
 		if child is BaseButton:
-			child.mouse_filter = Control.MOUSE_FILTER_STOP if is_visible else Control.MOUSE_FILTER_IGNORE
+			child.mouse_filter = Control.MOUSE_FILTER_STOP if toolbar_visible else Control.MOUSE_FILTER_IGNORE
 
 # Gently strobe a button to draw user's attention
 func _strobe_button(button: BaseButton):
@@ -142,9 +142,9 @@ func _on_file_selected(filePath: String):
 
 		# Only skip strobe for audio files when audio filter is active
 		if _fileTreeViewExplorer.IsAudioFilterActive():
-			var extension = "." + filePath.get_extension().to_lower()
+			var fileExt = "." + filePath.get_extension().to_lower()
 			var audioExtensions = [".ogg", ".mp3", ".wav", ".aac"]
-			if extension in audioExtensions:
+			if fileExt in audioExtensions:
 				would_show_preview = false
 
 		# Strobe the toggle button to hint the user can hide project view
@@ -156,10 +156,10 @@ func _on_file_selected(filePath: String):
 
 	# Check if audio filter is active - if so, always use sound player grid for audio files
 	if _fileTreeViewExplorer.IsAudioFilterActive():
-		var extension = "." + filePath.get_extension().to_lower()
+		var fileExt = "." + filePath.get_extension().to_lower()
 		var audioExtensions = [".ogg", ".mp3", ".wav", ".aac"]
 
-		if extension in audioExtensions:
+		if fileExt in audioExtensions:
 			# Audio file(s) with audio filter active - use sound player grid
 			ShowSoundPlayerGrid(selectedFiles)
 			if selectedFiles.size() > 1:

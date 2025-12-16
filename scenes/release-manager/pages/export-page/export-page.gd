@@ -1409,42 +1409,18 @@ func _onExportAndRunPressed(platform: String):
 		print("Error: Cannot export - project item is null or invalid")
 		return
 
-	save()
-	await _exportPlatform(platform)
-	_setUIEnabled(true)
-
-	# Check if export was cancelled or failed
-	if _exportCancelled:
-		return
-
-	# Get exported file path and run it
-	var exportPath = _getExportedFilePath(platform)
-	if exportPath.is_empty():
-		print("Error: Could not determine exported file path")
-		return
-
+	# Capture godot path for Source platform before await (may become invalid)
+	var godotPath = ""
 	if platform == "Source":
-		# For Source, run with Godot
 		var godotVersionId = _selectedProjectItem.GetGodotVersionId()
-		var godotPath = _selectedProjectItem.GetGodotPath(godotVersionId)
+		godotPath = _selectedProjectItem.GetGodotPath(godotVersionId)
 		if godotPath == null or godotPath == "???" or godotPath.is_empty():
 			godotPath = "C:/dad/apps/godot/godot-4.5-stable/Godot_v4.5-stable_win64.exe"
-		var args = ["--path", exportPath]
-		var pid = OS.create_process(godotPath, args)
-		if pid == -1:
-			print("Error: Failed to run exported source project")
-		else:
-			print("Running exported source project: ", exportPath)
-	else:
-		# For other platforms, run the executable directly
-		if FileAccess.file_exists(exportPath):
-			var pid = OS.create_process(exportPath, [])
-			if pid == -1:
-				print("Error: Failed to run exported application: ", exportPath)
-			else:
-				print("Running exported application: ", exportPath)
-		else:
-			print("Error: Exported file not found: ", exportPath)
+
+	save()
+	# Pass runAfterExport=true so the app runs BEFORE zipping (which deletes the exe)
+	await _exportPlatform(platform, true, godotPath)
+	_setUIEnabled(true)
 
 # Exports and then opens the export folder (Source only)
 func _onExportAndEditPressed(platform: String):
@@ -1452,6 +1428,13 @@ func _onExportAndEditPressed(platform: String):
 		print("Error: Cannot export - project item is null or invalid")
 		return
 
+	# CRITICAL: Capture paths BEFORE await, as _selectedProjectItem may become invalid
+	var exportedFilePath = _getExportedFilePath(platform)
+	var godotVersionId = _selectedProjectItem.GetGodotVersionId()
+	var godotPath = _selectedProjectItem.GetGodotPath(godotVersionId)
+	if godotPath == null or godotPath == "???" or godotPath.is_empty():
+		godotPath = "C:/dad/apps/godot/godot-4.5-stable/Godot_v4.5-stable_win64.exe"
+
 	save()
 	await _exportPlatform(platform)
 	_setUIEnabled(true)
@@ -1460,18 +1443,13 @@ func _onExportAndEditPressed(platform: String):
 	if _exportCancelled:
 		return
 
-	# Get exported path (which is the source folder for Source platform)
-	var exportPath = _getExportedFilePath(platform)
+	# Use pre-captured path
+	var exportPath = exportedFilePath
 	if exportPath.is_empty():
 		print("Error: Could not determine exported path")
 		return
 
-	# Open in Godot Editor
-	var godotVersionId = _selectedProjectItem.GetGodotVersionId()
-	var godotPath = _selectedProjectItem.GetGodotPath(godotVersionId)
-	if godotPath == null or godotPath == "???" or godotPath.is_empty():
-		godotPath = "C:/dad/apps/godot/godot-4.5-stable/Godot_v4.5-stable_win64.exe"
-
+	# Open in Godot Editor (using pre-captured godotPath)
 	var args = ["--editor", "--path", exportPath]
 	var pid = OS.create_process(godotPath, args)
 	if pid == -1:
@@ -1603,7 +1581,7 @@ func _onExportSelectedPressed():
 	# Re-enable UI after all exports complete
 	_setUIEnabled(true)
 
-func _exportPlatform(platform: String):
+func _exportPlatform(platform: String, runAfterExport: bool = false, godotPathForRun: String = ""):
 	if platform in _exportingPlatforms:
 		return  # Already exporting
 
@@ -1849,6 +1827,26 @@ func _exportPlatform(platform: String):
 				push_warning("Failed to rename HTML to index.html: %s" % renameErr)
 		else:
 			push_warning("HTML file not found for rename: %s" % originalHtmlPath)
+
+	# Run the exported application if requested (BEFORE zipping, which deletes the exe)
+	if success and not _exportCancelled and runAfterExport and platform != "Source":
+		var executablePath = exportDestPath.path_join(_addPlatformExtension(exportFilename, platform))
+		if FileAccess.file_exists(executablePath):
+			var runPid = OS.create_process(executablePath, [])
+			if runPid == -1:
+				print("Error: Failed to run exported application: ", executablePath)
+			else:
+				print("Running exported application: ", executablePath)
+		else:
+			print("Error: Exported file not found for run: ", executablePath)
+	elif success and not _exportCancelled and runAfterExport and platform == "Source":
+		# For Source, run with Godot
+		var args = ["--path", exportDestPath]
+		var runPid = OS.create_process(godotPathForRun, args)
+		if runPid == -1:
+			print("Error: Failed to run exported source project")
+		else:
+			print("Running exported source project: ", exportDestPath)
 
 	# Post-export steps: zip and checksum
 	var finalOutputPath = exportDestPath  # Default to folder for checksum
