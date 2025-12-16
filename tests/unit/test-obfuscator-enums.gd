@@ -158,3 +158,27 @@ func test():
 	framework.assert_false(symbol_map.has("Attack"), "Attack should NOT be obfuscated")
 	framework.assert_true(symbol_map.has("test"), "test function should be obfuscated")
 	framework.assert_true(symbol_map.has("_currentAnimationState"), "_currentAnimationState variable should be obfuscated")
+
+func test_enum_type_name_not_obfuscated():
+	# Arrange - Enum type name used with dot notation should not be obfuscated
+	var code = """enum ScreenCorner { TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT }
+
+var corner = ScreenCorner.TOP_RIGHT
+
+func get_corner():
+	return ScreenCorner.BOTTOM_LEFT"""
+	var symbol_map = {}
+
+	# Act
+	ObfuscateHelper.BuildSymbolMap(code, symbol_map)
+
+	# Assert - enum type name should NOT be obfuscated
+	framework.assert_false(symbol_map.has("ScreenCorner"), "ScreenCorner (enum type name) should NOT be in symbol map")
+	# enum values should also not be obfuscated
+	framework.assert_false(symbol_map.has("TOP_LEFT"), "TOP_LEFT should NOT be in symbol map")
+	framework.assert_false(symbol_map.has("TOP_RIGHT"), "TOP_RIGHT should NOT be in symbol map")
+	framework.assert_false(symbol_map.has("BOTTOM_LEFT"), "BOTTOM_LEFT should NOT be in symbol map")
+	framework.assert_false(symbol_map.has("BOTTOM_RIGHT"), "BOTTOM_RIGHT should NOT be in symbol map")
+	# regular identifiers should be obfuscated
+	framework.assert_true(symbol_map.has("corner"), "corner variable should be obfuscated")
+	framework.assert_true(symbol_map.has("get_corner"), "get_corner function should be obfuscated")

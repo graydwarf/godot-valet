@@ -314,15 +314,21 @@ static func SetVariableExcludeList(excludeList: Array[String]) -> void:
 static func SetExternalPluginClasses(classList: Array[String]) -> void:
 	_externalPluginClasses = classList
 
-# Extracts enum values from code and adds them to exclusion list
-# Enum values should never be obfuscated as they're runtime constants
+# Extracts enum type names and values from code and adds them to exclusion list
+# Enum type names and values should never be obfuscated as they're runtime constants
 static func AddEnumValuesToExcludeList(content: String) -> void:
 	var regex := RegEx.new()
 	# Match: enum EnumName { ... } or enum { ... }
-	regex.compile(r"enum\s+\w*\s*\{([^}]+)\}")
+	# Capture group 1 = enum type name (optional), capture group 2 = enum body
+	regex.compile(r"enum\s+(\w+)?\s*\{([^}]+)\}")
 
 	for match in regex.search_all(content):
-		var enum_body = match.get_string(1)
+		# Extract enum type name (if present) and add to exclusion list
+		var enum_name = match.get_string(1)
+		if enum_name != "" and enum_name not in _enumValueExcludeList:
+			_enumValueExcludeList.append(enum_name)
+
+		var enum_body = match.get_string(2)
 
 		# Extract individual enum values (handle VALUE = 5, VALUE, etc.)
 		var value_regex := RegEx.new()
