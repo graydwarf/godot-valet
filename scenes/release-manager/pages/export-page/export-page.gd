@@ -1604,6 +1604,9 @@ func _exportPlatform(platform: String, runAfterExport: bool = false, godotPathFo
 		godotVersionId = _selectedProjectItem.GetGodotVersionId()
 		godotPath = _selectedProjectItem.GetGodotPath(godotVersionId)
 
+	# Capture export filename BEFORE awaits (uses _selectedProjectItem internally)
+	var exportFilename = _getActualExportFilename(platform)
+
 	# Now we can safely proceed with awaits - all data is captured locally
 	var data = _platformRows[platform]
 	_exportingPlatforms.append(platform)
@@ -1619,7 +1622,6 @@ func _exportPlatform(platform: String, runAfterExport: bool = false, godotPathFo
 
 	# Get export settings
 	var exportPath = _platformRootPaths.get(platform, "")
-	var exportFilename = _getActualExportFilename(platform)
 	var archiveFilename = data["archiveFilename"].text
 
 	# Get export options from UI
