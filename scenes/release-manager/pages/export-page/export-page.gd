@@ -8,6 +8,8 @@ const ICON_EDIT = preload("res://scenes/release-manager/assets/fluent-icons/edit
 const ICON_ARROW_EXPORT = preload("res://scenes/release-manager/assets/fluent-icons/arrow-export.svg")
 const ICON_DISMISS = preload("res://scenes/release-manager/assets/fluent-icons/dismiss.svg")
 const ICON_ARROW_RIGHT = preload("res://scenes/release-manager/assets/fluent-icons/arrow-right.svg")
+const ICON_CHEVRON_DOWN = preload("res://scenes/release-manager/assets/fluent-icons/chevron-down.svg")
+const ICON_CHEVRON_UP = preload("res://scenes/release-manager/assets/fluent-icons/chevron-up.svg")
 
 signal build_started(platform: String)
 signal build_completed(platform: String, success: bool)
@@ -42,6 +44,7 @@ var _filenameSettingsDialog: Control = null
 var _currentFilenameDialogPlatform: String = ""  # Platform being configured
 var _currentFilenameDialogType: String = ""  # "export" or "archive"
 var _isLoadingData: bool = false  # Suppresses page_modified during _loadPageData()
+var _platformExportOutput: Dictionary = {}  # platform_name -> last export output string
 
 func _ready():
 	_exportSelectedButton.pressed.connect(_onExportSelectedPressed)
@@ -719,7 +722,47 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	exportButton.disabled = true
 	exportActionsRow.add_child(exportButton)
 
+	# Output log toggle button (always visible)
+	var outputLogToggle = Button.new()
+	outputLogToggle.icon = ICON_CHEVRON_DOWN
+	outputLogToggle.expand_icon = true
+	outputLogToggle.custom_minimum_size = Vector2(32, 31)
+	outputLogToggle.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	outputLogToggle.tooltip_text = "Show export output"
+	outputLogToggle.pressed.connect(_onOutputLogTogglePressed.bind(platform))
+	outputLogToggle.name = "OutputLogToggle"
+	exportActionsRow.add_child(outputLogToggle)
+
 	detailsVBox.add_child(exportActionsRow)
+
+	# Output log area (hidden by default, shown when toggle clicked)
+	var outputLogContainer = HBoxContainer.new()
+	outputLogContainer.name = "OutputLogContainer"
+	outputLogContainer.visible = false
+	outputLogContainer.add_theme_constant_override("separation", 5)
+
+	var outputLogLabel = Label.new()
+	outputLogLabel.text = "Export Output:"
+	outputLogLabel.custom_minimum_size = Vector2(130, 0)
+	outputLogLabel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	outputLogLabel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	outputLogLabel.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	outputLogContainer.add_child(outputLogLabel)
+
+	var outputLogText = TextEdit.new()
+	outputLogText.name = "OutputLogText"
+	outputLogText.custom_minimum_size = Vector2(0, 450)
+	outputLogText.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	outputLogText.editable = false
+	outputLogText.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	var stylebox = StyleBoxFlat.new()
+	stylebox.bg_color = Color(0.1, 0.1, 0.1)
+	stylebox.set_content_margin_all(8)
+	outputLogText.add_theme_stylebox_override("normal", stylebox)
+	outputLogText.add_theme_stylebox_override("read_only", stylebox)
+	outputLogContainer.add_child(outputLogText)
+
+	detailsVBox.add_child(outputLogContainer)
 
 	detailsSection.add_child(detailsVBox)
 	container.add_child(detailsSection)
@@ -749,6 +792,9 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 		"exportAndRunButton": exportAndRunButton,
 		"exportAndEditButton": exportAndEditButton,  # Only exists for Source platform
 		"exportAndOpenButton": exportAndOpenButton,
+		"outputLogToggle": outputLogToggle,
+		"outputLogContainer": outputLogContainer,
+		"outputLogText": outputLogText,
 		"status": statusLabel
 	}
 
@@ -1808,7 +1854,7 @@ func _exportPlatform(platform: String, runAfterExport: bool = false, godotPathFo
 			var exportTypeText = "debug" if isDebug else "release"
 			_updateStatus(data, "Exporting %s to %s..." % [exportTypeText, platform])
 			await get_tree().process_frame  # Let UI update
-			success = await _runGodotExport(godotPath, projectDirToExport, presetName, outputPath, data, isDebug)
+			success = await _runGodotExport(godotPath, projectDirToExport, presetName, outputPath, data, isDebug, platform)
 
 	# Clean up temp obfuscated directory if created
 	if tempObfuscatedDir != "":
@@ -1972,14 +2018,14 @@ func _addPlatformExtension(filename: String, platform: String) -> String:
 
 	return filename + extension
 
-func _runGodotExport(godotPath: String, projectPath: String, presetName: String, outputPath: String, data: Dictionary, isDebug: bool = false) -> bool:
+func _runGodotExport(godotPath: String, projectPath: String, presetName: String, outputPath: String, data: Dictionary, isDebug: bool = false, platform: String = "") -> bool:
 	# Build Godot export command
 	var exportFlag = "--export-debug" if isDebug else "--export-release"
 	var command = "\"%s\" --headless --path \"%s\" %s \"%s\" \"%s\"" % [godotPath, projectPath, exportFlag, presetName, outputPath]
 
-	# Redirect output to null to suppress verbose Godot export messages
-	# Only capture errors by checking output file existence
-	var fullCommand = "%s > nul 2>&1" % [command]
+	# Capture output to a temp file for debugging export failures
+	var tempOutputFile = ProjectSettings.globalize_path("user://temp_export_output_%s.txt" % str(Time.get_ticks_msec()))
+	var fullCommand = "%s > \"%s\" 2>&1" % [command, tempOutputFile]
 
 	# Execute export command in background
 	var pid = OS.create_process("cmd.exe", ["/c", fullCommand])
@@ -1994,19 +2040,32 @@ func _runGodotExport(godotPath: String, projectPath: String, presetName: String,
 			# User cancelled - kill the export process
 			OS.kill(pid)
 			_updateStatus(data, "Export process terminated")
+			_cleanupTempOutputFile(tempOutputFile)
 			return false
 
 		await get_tree().create_timer(0.1).timeout  # Check every 100ms
 
 	# Check if cancelled after process completed naturally
 	if _exportCancelled:
+		_cleanupTempOutputFile(tempOutputFile)
 		return false
+
+	# Read and store the export output
+	var exportOutput = _readTempOutputFile(tempOutputFile)
+	_cleanupTempOutputFile(tempOutputFile)
 
 	# Verify output file was created
 	if not FileAccess.file_exists(outputPath):
 		print("Export command completed but output file not found: ", outputPath)
 		_updateStatus(data, "Error: Output file not created")
+		# Store output and show toggle on failure
+		if platform != "":
+			_storeExportOutput(platform, exportOutput)
 		return false
+
+	# On success, clear any previous output
+	if platform != "":
+		_clearExportOutput(platform)
 
 	return true
 
@@ -2764,3 +2823,63 @@ func _generateChecksum(targetPath: String, isZip: bool, platform: String, filena
 	file.close()
 
 	return true
+
+# Reads content from a temp output file
+func _readTempOutputFile(filePath: String) -> String:
+	if not FileAccess.file_exists(filePath):
+		return ""
+	var file = FileAccess.open(filePath, FileAccess.READ)
+	if file == null:
+		return ""
+	var content = file.get_as_text()
+	file.close()
+	return content
+
+# Deletes a temp output file
+func _cleanupTempOutputFile(filePath: String):
+	if FileAccess.file_exists(filePath):
+		DirAccess.remove_absolute(filePath)
+
+# Stores export output and populates the output text
+func _storeExportOutput(platform: String, output: String):
+	_platformExportOutput[platform] = output
+	var data = _platformRows.get(platform)
+	if data == null:
+		return
+	# Populate output text
+	if data.has("outputLogText") and is_instance_valid(data["outputLogText"]):
+		data["outputLogText"].text = output if output != "" else "(No output captured)"
+
+# Clears export output and hides the output area
+func _clearExportOutput(platform: String):
+	_platformExportOutput.erase(platform)
+	var data = _platformRows.get(platform)
+	if data == null:
+		return
+	# Hide output area and clear text
+	if data.has("outputLogContainer") and is_instance_valid(data["outputLogContainer"]):
+		data["outputLogContainer"].visible = false
+	if data.has("outputLogText") and is_instance_valid(data["outputLogText"]):
+		data["outputLogText"].text = ""
+
+# Toggles visibility of the output log area
+func _onOutputLogTogglePressed(platform: String):
+	var data = _platformRows.get(platform)
+	if data == null:
+		return
+	if not data.has("outputLogContainer") or not is_instance_valid(data["outputLogContainer"]):
+		return
+	if not data.has("outputLogToggle") or not is_instance_valid(data["outputLogToggle"]):
+		return
+
+	var container = data["outputLogContainer"]
+	var toggle = data["outputLogToggle"]
+	container.visible = not container.visible
+
+	# Update icon based on visibility
+	if container.visible:
+		toggle.icon = ICON_CHEVRON_UP
+		toggle.tooltip_text = "Hide export output"
+	else:
+		toggle.icon = ICON_CHEVRON_DOWN
+		toggle.tooltip_text = "Show export output"
