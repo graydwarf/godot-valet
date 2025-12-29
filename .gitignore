@@ -21,3 +21,9 @@ local_settings.cfg
 .mcp.json
 .claude/settings.local.json
 v0.11.md
+
+# Code Quality Manager generated files
+.gdqube.cfg
+.gdqube_state.json
+code_quality_report.*
+integrate-godot-qube.md

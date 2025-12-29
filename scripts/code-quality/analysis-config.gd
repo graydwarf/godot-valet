@@ -1,0 +1,162 @@
+# Godot Qube - Code quality analyzer for GDScript
+# https://poplava.itch.io
+class_name QubeConfig
+extends Resource
+## Configuration for analysis thresholds and enabled checks
+
+# File limits
+@export var line_limit_soft: int = 200
+@export var line_limit_hard: int = 300
+
+# Function limits
+@export var function_line_limit: int = 30
+@export var function_line_critical: int = 60
+@export var max_parameters: int = 4
+@export var max_nesting: int = 3
+
+# Style limits
+@export var max_line_length: int = 120
+
+# Enabled checks (all enabled by default)
+@export var check_file_length: bool = true
+@export var check_function_length: bool = true
+@export var check_parameters: bool = true
+@export var check_nesting: bool = true
+@export var check_todo_comments: bool = true
+@export var check_long_lines: bool = true
+@export var check_print_statements: bool = true
+@export var check_empty_functions: bool = true
+@export var check_magic_numbers: bool = true
+@export var check_commented_code: bool = true
+@export var check_missing_types: bool = true
+@export var check_cyclomatic_complexity: bool = true
+@export var check_god_class: bool = true
+@export var check_naming_conventions: bool = true
+
+# Complexity thresholds
+@export var cyclomatic_warning: int = 10
+@export var cyclomatic_critical: int = 15
+
+# God class thresholds
+@export var god_class_functions: int = 20
+@export var god_class_signals: int = 10
+@export var god_class_exports: int = 15
+
+# Paths to exclude from analysis
+@export var excluded_paths: Array[String] = [
+	"addons/",
+	".godot/",
+	"tests/mocks/",
+	"exports/"
+]
+
+# Patterns for TODO detection
+var todo_patterns: Array[String] = ["TODO", "FIXME", "HACK", "XXX", "BUG", "TEMP"]
+
+# Patterns for print detection (whitelist DebugLogger)
+var print_patterns: Array[String] = ["print(", "print_debug(", "prints(", "printt(", "printraw("]
+var print_whitelist: Array[String] = ["DebugLogger"]
+
+# Allowed magic numbers (won't be flagged)
+var allowed_numbers: Array = [0, 1, -1, 2, 0.0, 1.0, 0.5, 2.0, -1.0, 100, 255, 10, 60, 90, 180, 360]
+
+# Patterns that indicate commented-out code (not regular comments)
+var commented_code_patterns: Array[String] = [
+	"#var ", "#func ", "#if ", "#for ", "#while ", "#match ", "#return ",
+	"#elif ", "#else:", "#class ", "#signal ", "#const ", "#@export",
+	"#.connect(", "#.emit(", "#await ", "#preload(", "#load("
+]
+
+static func get_default():
+	var config = load("res://scripts/code-quality/analysis-config.gd").new()
+	config.load_project_config()
+	return config
+
+
+# Load settings from .gdqube.cfg if it exists in project root
+func load_project_config(project_path: String = "res://") -> void:
+	var config_path := project_path.path_join(".gdqube.cfg")
+	print("[QubeConfig] load_project_config called with: ", project_path)
+	print("[QubeConfig] config_path: ", config_path)
+	if not FileAccess.file_exists(config_path):
+		print("[QubeConfig] File does not exist at: ", config_path)
+		return
+
+	var file := FileAccess.open(config_path, FileAccess.READ)
+	if not file:
+		print("[QubeConfig] Failed to open file: ", config_path)
+		return
+
+	print("[QubeConfig] File opened successfully, parsing...")
+	var current_section := ""
+	while not file.eof_reached():
+		var line := file.get_line().strip_edges()
+
+		# Skip empty lines and comments
+		if line.is_empty() or line.begins_with("#") or line.begins_with(";"):
+			continue
+
+		# Section header
+		if line.begins_with("[") and line.ends_with("]"):
+			current_section = line.substr(1, line.length() - 2).to_lower()
+			print("[QubeConfig] Entered section: ", current_section)
+			continue
+
+		# Key-value pair
+		var eq_pos := line.find("=")
+		if eq_pos > 0:
+			var key := line.substr(0, eq_pos).strip_edges().to_lower()
+			var value := line.substr(eq_pos + 1).strip_edges()
+			print("[QubeConfig] Applying: section=%s key=%s value=%s" % [current_section, key, value])
+			_apply_config_value(current_section, key, value)
+
+	print("[QubeConfig] After parsing - line_limit_soft: ", line_limit_soft)
+
+
+func _apply_config_value(section: String, key: String, value: String) -> void:
+	match section:
+		"limits":
+			match key:
+				"file_lines_soft": line_limit_soft = int(value)
+				"file_lines_hard": line_limit_hard = int(value)
+				"function_lines": function_line_limit = int(value)
+				"function_lines_critical": function_line_critical = int(value)
+				"max_parameters": max_parameters = int(value)
+				"max_nesting": max_nesting = int(value)
+				"max_line_length": max_line_length = int(value)
+				"cyclomatic_warning": cyclomatic_warning = int(value)
+				"cyclomatic_critical": cyclomatic_critical = int(value)
+				"god_class_functions": god_class_functions = int(value)
+				"god_class_signals": god_class_signals = int(value)
+		"checks":
+			var enabled := value.to_lower() in ["true", "1", "yes", "on"]
+			match key:
+				"file_length": check_file_length = enabled
+				"function_length": check_function_length = enabled
+				"cyclomatic_complexity": check_cyclomatic_complexity = enabled
+				"parameters": check_parameters = enabled
+				"nesting": check_nesting = enabled
+				"todo_comments": check_todo_comments = enabled
+				"print_statements": check_print_statements = enabled
+				"empty_functions": check_empty_functions = enabled
+				"magic_numbers": check_magic_numbers = enabled
+				"commented_code": check_commented_code = enabled
+				"missing_types": check_missing_types = enabled
+				"god_class": check_god_class = enabled
+				"long_lines": check_long_lines = enabled
+				"naming_conventions": check_naming_conventions = enabled
+		"exclude":
+			if key == "paths":
+				# Parse comma-separated list
+				excluded_paths.clear()
+				for path in value.split(","):
+					var trimmed := path.strip_edges()
+					if not trimmed.is_empty():
+						excluded_paths.append(trimmed)
+
+
+func is_path_excluded(path: String) -> bool:
+	for excluded in excluded_paths:
+		if path.contains(excluded):
+			return true
+	return false

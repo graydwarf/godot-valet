@@ -351,6 +351,7 @@ func DisableEditButtons():
 	_removeProjectButton.disabled = true
 	#%FileExplorerButton.disabled = false
 	%ClaudeButton.disabled = true
+	%CodeQualityButton.disabled = true
 
 func EnableEditButtons():
 	_runProjectButton.disabled = false
@@ -361,6 +362,7 @@ func EnableEditButtons():
 	_removeProjectButton.disabled = false
 	#%FileExplorerButton.disabled = true
 	%ClaudeButton.disabled = false
+	%CodeQualityButton.disabled = false
 
 func RunProject():
 	if !is_instance_valid(_selectedProjectItem):
@@ -629,6 +631,24 @@ func InitializeCustomOrderIfNeeded():
 
 func _on_claude_button_pressed() -> void:
 	LaunchClaudeCode()
+
+func _on_code_quality_button_pressed() -> void:
+	if _selectedProjectItem == null:
+		return
+
+	var scene = load("res://scenes/code-quality-manager/code-quality-manager.tscn")
+	if scene == null:
+		push_error("ERROR: Failed to load code-quality-manager.tscn")
+		return
+
+	var manager = scene.instantiate()
+	if manager == null:
+		push_error("ERROR: Failed to instantiate code quality manager")
+		return
+
+	add_child(manager)
+	manager.move_to_front()
+	manager.Configure(_selectedProjectItem)
 
 func _on_claude_api_chat_button_pressed() -> void:
 	OpenClaudeApiChat()

@@ -131,12 +131,16 @@ caret_blink = true
 caret_blink_interval = 0.5
 
 [node name="OpenProjectPathFolder" type="Button" parent="VBoxContainer/MarginContainer2/MainContent/ProjectContextContainer/ProjectPathHBoxContainer"]
-custom_minimum_size = Vector2(125, 31)
+custom_minimum_size = Vector2(48, 32)
 layout_mode = 2
 size_flags_horizontal = 8
 tooltip_text = "Opens folder to the specified project path."
+focus_mode = 0
 mouse_default_cursor_shape = 2
-text = "Open Folder"
+flat = true
+icon = ExtResource("15_folder")
+icon_modulate = Color(1, 1, 1, 1)
+expand_icon = true
 
 [node name="FileExplorerToolbar" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/MainContent"]
 layout_mode = 2

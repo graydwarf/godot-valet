@@ -192,6 +192,15 @@ tooltip_text = "Launch Claude Code at the selected project's root directory"
 disabled = true
 text = "Claude Code"
 
+[node name="CodeQualityButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+tooltip_text = "Analyze code quality for the selected project"
+disabled = true
+text = "Code Quality"
+
 [node name="ClaudeApiChatButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 unique_name_in_owner = true
 visible = false
@@ -295,6 +304,7 @@ dialog_autowrap = true
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ReleaseProjectButton" to="." method="_on_release_project_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/FileExplorerButton" to="." method="_on_file_explorer_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ClaudeButton" to="." method="_on_claude_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/CodeQualityButton" to="." method="_on_code_quality_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ClaudeApiChatButton" to="." method="_on_claude_api_chat_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/OpenProjectFolderButton" to="." method="_on_open_project_folder_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/NewProjectButton" to="." method="_on_new_project_button_pressed"]
