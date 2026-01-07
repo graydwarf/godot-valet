@@ -42,6 +42,9 @@ extends Resource
 @export var god_class_signals: int = 10
 @export var god_class_exports: int = 15
 
+# Include addons directory in analysis (off by default)
+@export var include_addons: bool = false
+
 # Paths to exclude from analysis
 @export var excluded_paths: Array[String] = [
 	"addons/",
@@ -145,6 +148,7 @@ func _apply_config_value(section: String, key: String, value: String) -> void:
 				"god_class": check_god_class = enabled
 				"long_lines": check_long_lines = enabled
 				"naming_conventions": check_naming_conventions = enabled
+				"include_addons": include_addons = enabled
 		"exclude":
 			if key == "paths":
 				# Parse comma-separated list
@@ -157,6 +161,9 @@ func _apply_config_value(section: String, key: String, value: String) -> void:
 
 func is_path_excluded(path: String) -> bool:
 	for excluded in excluded_paths:
+		# Skip addons exclusion if include_addons is enabled
+		if excluded == "addons/" and include_addons:
+			continue
 		if path.contains(excluded):
 			return true
 	return false

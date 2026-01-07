@@ -1,6 +1,6 @@
 extends Panel
 
-@onready var _licenseTextEdit = $CenterContainer/Panel/VBoxContainer/ScrollContainer/MarginContainer2/LicenseTextEdit
+@onready var _licenseTextEdit = $CenterContainer/Panel/VBoxContainer/ScrollContainer/MarginContainer2/CardsVBox/LicensesCard/VBoxContainer/LicenseTextEdit
 
 func _ready():
 	LoadLicenseText()
@@ -30,6 +30,15 @@ func LoadLicenseText():
 
 func _on_close_button_pressed():
 	queue_free()
+
+func _on_discord_button_pressed():
+	OS.shell_open("https://discord.gg/9GnrTKXGfq")
+
+func _on_github_button_pressed():
+	OS.shell_open("https://github.com/graydwarf/godot-valet")
+
+func _on_more_tools_button_pressed():
+	OS.shell_open("https://poplava.itch.io")
 
 func _input(event):
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:

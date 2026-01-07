@@ -1175,12 +1175,8 @@ func _openFilenameSettingsDialog(platform: String, filenameType: String):
 	else:
 		currentTemplate = _platformArchiveFilenameTemplates.get(platform, [{"type": "project"}])
 
-	# Get project name for preview
-	var projectName = ""
-	if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
-		projectName = _selectedProjectItem.GetProjectPath().get_file().get_basename()
-		if projectName == "project":
-			projectName = _selectedProjectItem.GetProjectName()
+	# Get project name for preview (uses folder name, not "project.godot")
+	var projectName = _getProjectNameForFilename()
 
 	var projectVersion = _projectVersionLineEdit.text if _projectVersionLineEdit.text != "" else "v1.0.0"
 	var extension = _getExportExtension(platform) if filenameType == "export" else ".zip"
@@ -1312,9 +1308,7 @@ func _buildFileNameFromTemplate(filenameTemplate: Array, platform: String) -> St
 	if filenameTemplate.is_empty():
 		# Default to project name if no template
 		if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
-			var projectName = _selectedProjectItem.GetProjectPath().get_file().get_basename()
-			if projectName == "project":
-				projectName = _selectedProjectItem.GetProjectName()
+			var projectName = _getProjectNameForFilename()
 			return projectName
 		return "export"
 
@@ -1325,12 +1319,10 @@ func _buildFileNameFromTemplate(filenameTemplate: Array, platform: String) -> St
 		match segment["type"]:
 			"project":
 				if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
-					var projectName = _selectedProjectItem.GetProjectPath().get_file().get_basename()
-					if projectName == "project":
-						projectName = _selectedProjectItem.GetProjectName()
+					var projectName = _getProjectNameForFilename()
 					parts.append(projectName)
 				else:
-					parts.append("project")
+					parts.append("export")
 			"version":
 				parts.append(version)
 			"platform":
@@ -1344,6 +1336,28 @@ func _buildFileNameFromTemplate(filenameTemplate: Array, platform: String) -> St
 		return "export"
 
 	return "-".join(parts)
+
+# Gets the project name for use in filenames
+# Uses the project folder name (e.g., "godot-valet" from the path)
+# Falls back to GetProjectName() if folder name extraction fails
+func _getProjectNameForFilename() -> String:
+	if _selectedProjectItem == null or not is_instance_valid(_selectedProjectItem):
+		return "export"
+
+	# GetProjectPath returns path to project.godot, e.g., "C:/path/to/godot-valet/project.godot"
+	# We want the folder name "godot-valet", not the file name "project"
+	var projectPath = _selectedProjectItem.GetProjectPath()
+	var folderPath = projectPath.get_base_dir()  # "C:/path/to/godot-valet"
+	var folderName = folderPath.get_file()  # "godot-valet"
+
+	if folderName.is_empty():
+		# Fall back to configured project name
+		var configuredName = _selectedProjectItem.GetProjectName()
+		if not configuredName.is_empty():
+			return configuredName
+		return "export"
+
+	return folderName
 
 func _updateExportPathDisplay(platform: String):
 	# Update the export path LineEdit to show the full path with template

@@ -54,6 +54,7 @@ const QubeResult = preload("res://scripts/code-quality/analysis-result.gd")
 @onready var _typeAnnotationsCheck: CheckBox = %TypeAnnotationsCheck
 @onready var _longLinesCheck: CheckBox = %LongLinesCheck
 @onready var _namingCheck: CheckBox = %NamingCheck
+@onready var _includeAddonsCheck: CheckBox = %IncludeAddonsCheck
 
 # Help panel
 @onready var _helpPanel: Control = %HelpPanel
@@ -187,6 +188,7 @@ func _applySettingsToUI():
 	_typeAnnotationsCheck.button_pressed = _currentConfig.check_missing_types
 	_longLinesCheck.button_pressed = _currentConfig.check_long_lines
 	_namingCheck.button_pressed = _currentConfig.check_naming_conventions
+	_includeAddonsCheck.button_pressed = _currentConfig.include_addons
 
 func _applyUIToSettings():
 	if _currentConfig == null:
@@ -219,6 +221,7 @@ func _applyUIToSettings():
 	_currentConfig.check_missing_types = _typeAnnotationsCheck.button_pressed
 	_currentConfig.check_long_lines = _longLinesCheck.button_pressed
 	_currentConfig.check_naming_conventions = _namingCheck.button_pressed
+	_currentConfig.include_addons = _includeAddonsCheck.button_pressed
 
 func _on_scan_button_pressed():
 	# Close help panel if open
@@ -393,21 +396,23 @@ func _createIssueItem(issue) -> Control:
 	typeBadge.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	hbox.add_child(typeBadge)
 
-	# Spacer for Claude column
-	var sep4 = Control.new()
-	sep4.custom_minimum_size = Vector2(8, 0)
-	hbox.add_child(sep4)
+	# Only show Claude button if enabled in settings
+	if App.GetClaudeCodeButtonEnabled():
+		# Spacer for Claude column
+		var sep4 = Control.new()
+		sep4.custom_minimum_size = Vector2(8, 0)
+		hbox.add_child(sep4)
 
-	# Claude/AI button - 30px to match header, 16px icon inside
-	var claudeButton = TextureButton.new()
-	claudeButton.texture_normal = _sparkleIcon
-	claudeButton.custom_minimum_size = Vector2(30, 0)
-	claudeButton.ignore_texture_size = true
-	claudeButton.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-	claudeButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	claudeButton.tooltip_text = "Analyze with Claude Code"
-	claudeButton.pressed.connect(_onClaudeButtonPressed.bind(issue))
-	hbox.add_child(claudeButton)
+		# Claude/AI button - 30px to match header, 16px icon inside
+		var claudeButton = TextureButton.new()
+		claudeButton.texture_normal = _sparkleIcon
+		claudeButton.custom_minimum_size = Vector2(30, 0)
+		claudeButton.ignore_texture_size = true
+		claudeButton.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+		claudeButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		claudeButton.tooltip_text = "Analyze with Claude Code"
+		claudeButton.pressed.connect(_onClaudeButtonPressed.bind(issue))
+		hbox.add_child(claudeButton)
 
 	return hbox
 
@@ -914,6 +919,7 @@ func _saveSettings():
 		file.store_line("missing_types = %s" % str(_currentConfig.check_missing_types).to_lower())
 		file.store_line("long_lines = %s" % str(_currentConfig.check_long_lines).to_lower())
 		file.store_line("naming_conventions = %s" % str(_currentConfig.check_naming_conventions).to_lower())
+		file.store_line("include_addons = %s" % str(_currentConfig.include_addons).to_lower())
 		file.store_line("")
 
 		file.close()
