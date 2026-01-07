@@ -32,6 +32,12 @@ extends Resource
 @export var check_cyclomatic_complexity: bool = true
 @export var check_god_class: bool = true
 @export var check_naming_conventions: bool = true
+@export var check_unused_variables: bool = true
+@export var check_unused_parameters: bool = true
+@export var ignore_underscore_prefix: bool = true  # Skip _var names as intentionally unused
+
+# Scanning options
+@export var respect_gdignore: bool = true  # Skip directories containing .gdignore files
 
 # Complexity thresholds
 @export var cyclomatic_warning: int = 10
@@ -149,6 +155,10 @@ func _apply_config_value(section: String, key: String, value: String) -> void:
 				"long_lines": check_long_lines = enabled
 				"naming_conventions": check_naming_conventions = enabled
 				"include_addons": include_addons = enabled
+				"unused_variables": check_unused_variables = enabled
+				"unused_parameters": check_unused_parameters = enabled
+				"ignore_underscore_prefix": ignore_underscore_prefix = enabled
+				"respect_gdignore": respect_gdignore = enabled
 		"exclude":
 			if key == "paths":
 				# Parse comma-separated list

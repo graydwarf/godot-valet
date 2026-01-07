@@ -55,6 +55,9 @@ const QubeResult = preload("res://scripts/code-quality/analysis-result.gd")
 @onready var _longLinesCheck: CheckBox = %LongLinesCheck
 @onready var _namingCheck: CheckBox = %NamingCheck
 @onready var _includeAddonsCheck: CheckBox = %IncludeAddonsCheck
+@onready var _unusedVarsCheck: CheckBox = %UnusedVarsCheck
+@onready var _unusedParamsCheck: CheckBox = %UnusedParamsCheck
+@onready var _respectGdignoreCheck: CheckBox = %RespectGdignoreCheck
 
 # Help panel
 @onready var _helpPanel: Control = %HelpPanel
@@ -189,6 +192,9 @@ func _applySettingsToUI():
 	_longLinesCheck.button_pressed = _currentConfig.check_long_lines
 	_namingCheck.button_pressed = _currentConfig.check_naming_conventions
 	_includeAddonsCheck.button_pressed = _currentConfig.include_addons
+	_unusedVarsCheck.button_pressed = _currentConfig.check_unused_variables
+	_unusedParamsCheck.button_pressed = _currentConfig.check_unused_parameters
+	_respectGdignoreCheck.button_pressed = _currentConfig.respect_gdignore
 
 func _applyUIToSettings():
 	if _currentConfig == null:
@@ -222,6 +228,9 @@ func _applyUIToSettings():
 	_currentConfig.check_long_lines = _longLinesCheck.button_pressed
 	_currentConfig.check_naming_conventions = _namingCheck.button_pressed
 	_currentConfig.include_addons = _includeAddonsCheck.button_pressed
+	_currentConfig.check_unused_variables = _unusedVarsCheck.button_pressed
+	_currentConfig.check_unused_parameters = _unusedParamsCheck.button_pressed
+	_currentConfig.respect_gdignore = _respectGdignoreCheck.button_pressed
 
 func _on_scan_button_pressed():
 	# Close help panel if open
@@ -544,7 +553,9 @@ const ISSUE_TYPES := {
 	"naming-function": "Naming: Function",
 	"naming-signal": "Naming: Signal",
 	"naming-const": "Naming: Constant",
-	"naming-enum": "Naming: Enum"
+	"naming-enum": "Naming: Enum",
+	"unused-variable": "Unused Variable",
+	"unused-parameter": "Unused Parameter"
 }
 
 func _generateHTMLReport() -> String:
@@ -920,6 +931,9 @@ func _saveSettings():
 		file.store_line("long_lines = %s" % str(_currentConfig.check_long_lines).to_lower())
 		file.store_line("naming_conventions = %s" % str(_currentConfig.check_naming_conventions).to_lower())
 		file.store_line("include_addons = %s" % str(_currentConfig.include_addons).to_lower())
+		file.store_line("unused_variables = %s" % str(_currentConfig.check_unused_variables).to_lower())
+		file.store_line("unused_parameters = %s" % str(_currentConfig.check_unused_parameters).to_lower())
+		file.store_line("respect_gdignore = %s" % str(_currentConfig.respect_gdignore).to_lower())
 		file.store_line("")
 
 		file.close()
@@ -965,6 +979,9 @@ func _on_reset_all_pressed():
 	_typeAnnotationsCheck.button_pressed = true
 	_longLinesCheck.button_pressed = true
 	_namingCheck.button_pressed = true
+	_unusedVarsCheck.button_pressed = true
+	_unusedParamsCheck.button_pressed = true
+	_respectGdignoreCheck.button_pressed = true
 
 # Individual reset handlers
 func _on_file_lines_reset():

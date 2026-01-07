@@ -525,6 +525,24 @@ layout_mode = 2
 button_pressed = true
 text = "Naming Conventions"
 
+[node name="UnusedVarsCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard/CodeChecksCardVBox/ContentMargin/ChecksGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Unused Variables"
+
+[node name="UnusedParamsCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard/CodeChecksCardVBox/ContentMargin/ChecksGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Unused Parameters"
+
+[node name="RespectGdignoreCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard/CodeChecksCardVBox/ContentMargin/ChecksGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Respect .gdignore"
+
 [node name="ScanButton" type="Button" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox"]
 unique_name_in_owner = true
 layout_mode = 2
