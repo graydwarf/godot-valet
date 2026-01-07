@@ -436,6 +436,35 @@ icon = ExtResource("5_reset")
 flat = true
 icon_alignment = 1
 
+[node name="GodClassSignalsLabel" type="Label" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid"]
+custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
+text = "God Class Signals:"
+horizontal_alignment = 2
+
+[node name="GodClassSignalsSpin" type="SpinBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+editable = true
+max_value = 999999999.0
+value = 10.0
+
+[node name="GodClassSignalsCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+
+[node name="GodClassSignalsReset" type="Button" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+tooltip_text = "Reset to default"
+focus_mode = 0
+mouse_default_cursor_shape = 2
+icon = ExtResource("5_reset")
+flat = true
+icon_alignment = 1
+
 [node name="CodeChecksCard" type="PanelContainer" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox"]
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_card")
@@ -585,10 +614,152 @@ size_flags_horizontal = 3
 [node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/ContentHBox/ResultsPanel"]
 layout_mode = 2
 
-[node name="FilterMargin" type="MarginContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer"]
+[node name="StatsCardMargin" type="MarginContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 5
+
+[node name="StatsCard" type="PanelContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="StatsCardVBox" type="VBoxContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="HeaderPanel" type="PanelContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card_header")
+
+[node name="HeaderMargin" type="MarginContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/HeaderPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 6
+
+[node name="StatsHeaderLabel" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/HeaderPanel/HeaderMargin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "ANALYSIS SUMMARY"
+
+[node name="ContentMargin" type="MarginContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="StatsGrid" type="GridContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 6
+
+[node name="FilesHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 11
+text = "Files"
+horizontal_alignment = 1
+
+[node name="LinesHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 11
+text = "Lines"
+horizontal_alignment = 1
+
+[node name="CriticalHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 11
+text = "Critical"
+horizontal_alignment = 1
+
+[node name="WarningsHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 11
+text = "Warnings"
+horizontal_alignment = 1
+
+[node name="InfoHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 11
+text = "Info"
+horizontal_alignment = 1
+
+[node name="DebtHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 11
+text = "Debt"
+horizontal_alignment = 1
+
+[node name="FilesValue" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "-"
+horizontal_alignment = 1
+
+[node name="LinesValue" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "-"
+horizontal_alignment = 1
+
+[node name="CriticalValue" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.42, 0.42, 1)
+theme_override_font_sizes/font_size = 20
+text = "-"
+horizontal_alignment = 1
+
+[node name="WarningsValue" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.85, 0.24, 1)
+theme_override_font_sizes/font_size = 20
+text = "-"
+horizontal_alignment = 1
+
+[node name="InfoValue" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.42, 0.8, 0.47, 1)
+theme_override_font_sizes/font_size = 20
+text = "-"
+horizontal_alignment = 1
+
+[node name="DebtValue" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "-"
+horizontal_alignment = 1
+
+[node name="FilterMargin" type="MarginContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 5
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 5
 
@@ -1135,3 +1306,4 @@ text = "Export HTML"
 [connection signal="pressed" from="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid/MaxParamsReset" to="." method="_on_max_params_reset"]
 [connection signal="pressed" from="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid/MaxNestingReset" to="." method="_on_max_nesting_reset"]
 [connection signal="pressed" from="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid/GodClassReset" to="." method="_on_god_class_reset"]
+[connection signal="pressed" from="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid/GodClassSignalsReset" to="." method="_on_god_class_signals_reset"]

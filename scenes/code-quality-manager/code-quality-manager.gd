@@ -26,6 +26,14 @@ const QubeResult = preload("res://scripts/code-quality/analysis-result.gd")
 @onready var _typeFilter: OptionButton = %TypeFilter
 @onready var _fileFilter: LineEdit = %FileFilter
 
+# Stats labels
+@onready var _filesValue: Label = %FilesValue
+@onready var _linesValue: Label = %LinesValue
+@onready var _criticalValue: Label = %CriticalValue
+@onready var _warningsValue: Label = %WarningsValue
+@onready var _infoValue: Label = %InfoValue
+@onready var _debtValue: Label = %DebtValue
+
 # Threshold controls - SpinBoxes
 @onready var _fileLinesWarn: SpinBox = %FileLinesWarn
 @onready var _fileLinesCrit: SpinBox = %FileLinesCrit
@@ -34,6 +42,7 @@ const QubeResult = preload("res://scripts/code-quality/analysis-result.gd")
 @onready var _complexityWarn: SpinBox = %ComplexityWarn
 @onready var _complexityCrit: SpinBox = %ComplexityCrit
 @onready var _godClassWarn: SpinBox = %GodClassWarn
+@onready var _godClassSignalsSpin: SpinBox = %GodClassSignalsSpin
 @onready var _maxParamsSpin: SpinBox = %MaxParamsSpin
 @onready var _maxNestingSpin: SpinBox = %MaxNestingSpin
 
@@ -42,6 +51,7 @@ const QubeResult = preload("res://scripts/code-quality/analysis-result.gd")
 @onready var _funcLinesCheck: CheckBox = %FuncLinesCheck
 @onready var _complexityCheck: CheckBox = %ComplexityCheck
 @onready var _godClassCheck: CheckBox = %GodClassCheck
+@onready var _godClassSignalsCheck: CheckBox = %GodClassSignalsCheck
 @onready var _maxParamsCheck: CheckBox = %MaxParamsCheck
 @onready var _maxNestingCheck: CheckBox = %MaxNestingCheck
 
@@ -171,6 +181,7 @@ func _applySettingsToUI():
 	_complexityWarn.value = _currentConfig.cyclomatic_warning
 	_complexityCrit.value = _currentConfig.cyclomatic_critical
 	_godClassWarn.value = _currentConfig.god_class_functions
+	_godClassSignalsSpin.value = _currentConfig.god_class_signals
 	_maxParamsSpin.value = _currentConfig.max_parameters
 	_maxNestingSpin.value = _currentConfig.max_nesting
 
@@ -179,6 +190,7 @@ func _applySettingsToUI():
 	_funcLinesCheck.button_pressed = _currentConfig.check_function_length
 	_complexityCheck.button_pressed = _currentConfig.check_cyclomatic_complexity
 	_godClassCheck.button_pressed = _currentConfig.check_god_class
+	_godClassSignalsCheck.button_pressed = _currentConfig.check_god_class  # Shares same check
 	_maxParamsCheck.button_pressed = _currentConfig.check_parameters
 	_maxNestingCheck.button_pressed = _currentConfig.check_nesting
 
@@ -207,6 +219,7 @@ func _applyUIToSettings():
 	_currentConfig.cyclomatic_warning = int(_complexityWarn.value)
 	_currentConfig.cyclomatic_critical = int(_complexityCrit.value)
 	_currentConfig.god_class_functions = int(_godClassWarn.value)
+	_currentConfig.god_class_signals = int(_godClassSignalsSpin.value)
 	_currentConfig.max_parameters = int(_maxParamsSpin.value)
 	_currentConfig.max_nesting = int(_maxNestingSpin.value)
 
@@ -260,6 +273,7 @@ func _applySpinBoxValues():
 	_complexityWarn.apply()
 	_complexityCrit.apply()
 	_godClassWarn.apply()
+	_godClassSignalsSpin.apply()
 	_maxParamsSpin.apply()
 	_maxNestingSpin.apply()
 
@@ -278,12 +292,35 @@ func _runAnalysis():
 	_updateLastScannedLabel()
 	_saveLastScanned()
 
+	_updateStats()
 	_displayResults()
 
 	var issueCount = _currentResult.issues.size()
 	_scanButton.disabled = false
 	_exportJSONButton.disabled = (issueCount == 0)
 	_exportHTMLButton.disabled = (issueCount == 0)
+
+func _updateStats():
+	if _currentResult == null:
+		_filesValue.text = "-"
+		_linesValue.text = "-"
+		_criticalValue.text = "-"
+		_warningsValue.text = "-"
+		_infoValue.text = "-"
+		_debtValue.text = "-"
+		return
+
+	_filesValue.text = str(_currentResult.files_analyzed)
+	_linesValue.text = str(_currentResult.total_lines)
+
+	var critical: int = _currentResult.get_issues_by_severity(QubeIssue.Severity.CRITICAL).size()
+	var warnings: int = _currentResult.get_issues_by_severity(QubeIssue.Severity.WARNING).size()
+	var info: int = _currentResult.get_issues_by_severity(QubeIssue.Severity.INFO).size()
+
+	_criticalValue.text = str(critical)
+	_warningsValue.text = str(warnings)
+	_infoValue.text = str(info)
+	_debtValue.text = str(_currentResult.get_total_debt_score())
 
 func _displayResults():
 	# Clear existing results
@@ -912,6 +949,7 @@ func _saveSettings():
 		file.store_line("cyclomatic_warning = %d" % _currentConfig.cyclomatic_warning)
 		file.store_line("cyclomatic_critical = %d" % _currentConfig.cyclomatic_critical)
 		file.store_line("god_class_functions = %d" % _currentConfig.god_class_functions)
+		file.store_line("god_class_signals = %d" % _currentConfig.god_class_signals)
 		file.store_line("")
 
 		# Write enabled checks
@@ -961,6 +999,7 @@ func _on_reset_all_pressed():
 	_complexityWarn.value = 10
 	_complexityCrit.value = 15
 	_godClassWarn.value = 20
+	_godClassSignalsSpin.value = 10
 	_maxParamsSpin.value = 4
 	_maxNestingSpin.value = 3
 
@@ -969,6 +1008,7 @@ func _on_reset_all_pressed():
 	_funcLinesCheck.button_pressed = true
 	_complexityCheck.button_pressed = true
 	_godClassCheck.button_pressed = true
+	_godClassSignalsCheck.button_pressed = true
 	_maxParamsCheck.button_pressed = true
 	_maxNestingCheck.button_pressed = true
 	_todoCheck.button_pressed = true
@@ -1010,3 +1050,7 @@ func _on_max_nesting_reset():
 func _on_god_class_reset():
 	_godClassWarn.value = 20
 	_godClassCheck.button_pressed = true
+
+func _on_god_class_signals_reset():
+	_godClassSignalsSpin.value = 10
+	_godClassSignalsCheck.button_pressed = true
