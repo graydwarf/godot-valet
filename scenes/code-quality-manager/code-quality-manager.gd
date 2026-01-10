@@ -1,11 +1,11 @@
 # gdlint:ignore-file:file-length
 extends Panel
 
-# Preload analyzer scripts
-const QubeAnalyzer = preload("res://scripts/code-quality/code-analyzer.gd")
-const QubeConfig = preload("res://scripts/code-quality/analysis-config.gd")
-const QubeIssue = preload("res://scripts/code-quality/issue.gd")
-const QubeResult = preload("res://scripts/code-quality/analysis-result.gd")
+# Preload analyzer scripts from GDScript Linter addon
+const GDLintAnalyzer = preload("res://addons/gdscript-linter/analyzer/code-analyzer.gd")
+const GDLintConfig = preload("res://addons/gdscript-linter/analyzer/analysis-config.gd")
+const GDLintIssue = preload("res://addons/gdscript-linter/analyzer/issue.gd")
+const GDLintResult = preload("res://addons/gdscript-linter/analyzer/analysis-result.gd")
 const SettingsCardBuilderScript = preload("res://scenes/code-quality-manager/ui/settings-card-builder.gd")
 const SettingsManagerScript = preload("res://scenes/code-quality-manager/ui/settings-manager.gd")
 
@@ -117,7 +117,7 @@ func _ready():
 
 
 func _init_config_and_settings_panel() -> void:
-	_currentConfig = QubeConfig.new()
+	_currentConfig = GDLintConfig.new()
 	var reset_icon = load("res://scenes/code-quality-manager/assets/arrow-reset.svg")
 	var card_builder = SettingsCardBuilderScript.new(reset_icon)
 	card_builder.build_settings_panel(_settingsPanel, _settings_controls)
@@ -298,7 +298,7 @@ func Configure(selectedProjectItem):
 
 
 func _loadSettings():
-	_currentConfig = QubeConfig.new()
+	_currentConfig = GDLintConfig.new()
 	var projectDir = _selectedProjectItem.GetProjectDir()
 	var configPath = projectDir.path_join(".gdqube.cfg")
 	if FileAccess.file_exists(configPath):
@@ -376,9 +376,9 @@ func _get_available_types_for_severity(sev_filter: String) -> Dictionary:
 		var matches_severity := false
 		match sev_filter:
 			"all": matches_severity = true
-			"critical": matches_severity = issue.severity == QubeIssue.Severity.CRITICAL
-			"warning": matches_severity = issue.severity == QubeIssue.Severity.WARNING
-			"info": matches_severity = issue.severity == QubeIssue.Severity.INFO
+			"critical": matches_severity = issue.severity == GDLintIssue.Severity.CRITICAL
+			"warning": matches_severity = issue.severity == GDLintIssue.Severity.WARNING
+			"info": matches_severity = issue.severity == GDLintIssue.Severity.INFO
 
 		if matches_severity:
 			available[issue.check_id] = true
@@ -408,8 +408,7 @@ func _on_scan_button_pressed():
 func _run_analysis():
 	var projectDir = _selectedProjectItem.GetProjectDir()
 
-	var analyzer = QubeAnalyzer.new()
-	analyzer.config = _currentConfig
+	var analyzer = GDLintAnalyzer.new(_currentConfig)
 
 	_currentResult = analyzer.analyze_directory(projectDir)
 
@@ -880,9 +879,9 @@ func _group_issues_by_severity(issues: Array) -> Dictionary:
 	var grouped := {"critical": [], "warning": [], "info": []}
 	for issue in issues:
 		match issue.severity:
-			QubeIssue.Severity.CRITICAL: grouped.critical.append(issue)
-			QubeIssue.Severity.WARNING: grouped.warning.append(issue)
-			QubeIssue.Severity.INFO: grouped.info.append(issue)
+			GDLintIssue.Severity.CRITICAL: grouped.critical.append(issue)
+			GDLintIssue.Severity.WARNING: grouped.warning.append(issue)
+			GDLintIssue.Severity.INFO: grouped.info.append(issue)
 	return grouped
 
 
@@ -954,9 +953,9 @@ func _format_issue(issue, color: String) -> String:
 	if _settings_manager.claude_code_enabled:
 		var severity_str: String = "unknown"
 		match issue.severity:
-			QubeIssue.Severity.CRITICAL: severity_str = "critical"
-			QubeIssue.Severity.WARNING: severity_str = "warning"
-			QubeIssue.Severity.INFO: severity_str = "info"
+			GDLintIssue.Severity.CRITICAL: severity_str = "critical"
+			GDLintIssue.Severity.WARNING: severity_str = "warning"
+			GDLintIssue.Severity.INFO: severity_str = "info"
 
 		var claude_data := "%s|%d|%s|%s|%s" % [
 			issue.file_path, issue.line, issue.check_id, severity_str,
@@ -1028,9 +1027,9 @@ func _matches_severity(issue) -> bool:
 	if _currentSeverityFilter == "all":
 		return true
 	match _currentSeverityFilter:
-		"critical": return issue.severity == QubeIssue.Severity.CRITICAL
-		"warning": return issue.severity == QubeIssue.Severity.WARNING
-		"info": return issue.severity == QubeIssue.Severity.INFO
+		"critical": return issue.severity == GDLintIssue.Severity.CRITICAL
+		"warning": return issue.severity == GDLintIssue.Severity.WARNING
+		"info": return issue.severity == GDLintIssue.Severity.INFO
 	return false
 
 
@@ -1156,9 +1155,9 @@ func _launch_claude_code_batch(issues: Array, use_plan_mode: bool) -> void:
 		var issue = issues[i]
 		var severity_str: String = "unknown"
 		match issue.severity:
-			QubeIssue.Severity.CRITICAL: severity_str = "critical"
-			QubeIssue.Severity.WARNING: severity_str = "warning"
-			QubeIssue.Severity.INFO: severity_str = "info"
+			GDLintIssue.Severity.CRITICAL: severity_str = "critical"
+			GDLintIssue.Severity.WARNING: severity_str = "warning"
+			GDLintIssue.Severity.INFO: severity_str = "info"
 
 		prompt += "%d. %s:%d\n" % [i + 1, _toResPath(issue.file_path), issue.line]
 		prompt += "   Type: %s | Severity: %s\n" % [issue.check_id, severity_str]
@@ -1228,9 +1227,9 @@ func _launch_claude_code_batch_custom(issues: Array, custom_command: String, cus
 		var issue = issues[i]
 		var severity_str: String = "unknown"
 		match issue.severity:
-			QubeIssue.Severity.CRITICAL: severity_str = "critical"
-			QubeIssue.Severity.WARNING: severity_str = "warning"
-			QubeIssue.Severity.INFO: severity_str = "info"
+			GDLintIssue.Severity.CRITICAL: severity_str = "critical"
+			GDLintIssue.Severity.WARNING: severity_str = "warning"
+			GDLintIssue.Severity.INFO: severity_str = "info"
 
 		prompt += "%d. %s:%d\n" % [i + 1, _toResPath(issue.file_path), issue.line]
 		prompt += "   Type: %s | Severity: %s\n" % [issue.check_id, severity_str]
@@ -1341,9 +1340,9 @@ func _on_export_json_pressed():
 		"timestamp": Time.get_datetime_string_from_system(),
 		"summary": {
 			"total_issues": _currentResult.issues.size(),
-			"critical": _currentResult.issues.filter(func(i): return i.severity == QubeIssue.Severity.CRITICAL).size(),
-			"warning": _currentResult.issues.filter(func(i): return i.severity == QubeIssue.Severity.WARNING).size(),
-			"info": _currentResult.issues.filter(func(i): return i.severity == QubeIssue.Severity.INFO).size()
+			"critical": _currentResult.issues.filter(func(i): return i.severity == GDLintIssue.Severity.CRITICAL).size(),
+			"warning": _currentResult.issues.filter(func(i): return i.severity == GDLintIssue.Severity.WARNING).size(),
+			"info": _currentResult.issues.filter(func(i): return i.severity == GDLintIssue.Severity.INFO).size()
 		},
 		"issues": []
 	}
@@ -1351,9 +1350,9 @@ func _on_export_json_pressed():
 	for issue in _currentResult.issues:
 		var severity_str := "unknown"
 		match issue.severity:
-			QubeIssue.Severity.CRITICAL: severity_str = "critical"
-			QubeIssue.Severity.WARNING: severity_str = "warning"
-			QubeIssue.Severity.INFO: severity_str = "info"
+			GDLintIssue.Severity.CRITICAL: severity_str = "critical"
+			GDLintIssue.Severity.WARNING: severity_str = "warning"
+			GDLintIssue.Severity.INFO: severity_str = "info"
 		data["issues"].append({
 			"file": issue.file_path,
 			"line": issue.line,
@@ -1390,9 +1389,9 @@ func _on_export_html_pressed():
 
 
 func _generateHTMLReport() -> String:
-	var critical: Array = _currentResult.issues.filter(func(i): return i.severity == QubeIssue.Severity.CRITICAL)
-	var warnings: Array = _currentResult.issues.filter(func(i): return i.severity == QubeIssue.Severity.WARNING)
-	var info: Array = _currentResult.issues.filter(func(i): return i.severity == QubeIssue.Severity.INFO)
+	var critical: Array = _currentResult.issues.filter(func(i): return i.severity == GDLintIssue.Severity.CRITICAL)
+	var warnings: Array = _currentResult.issues.filter(func(i): return i.severity == GDLintIssue.Severity.WARNING)
+	var info: Array = _currentResult.issues.filter(func(i): return i.severity == GDLintIssue.Severity.INFO)
 
 	var types_by_severity: Dictionary = {
 		"all": {},

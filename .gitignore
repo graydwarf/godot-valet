@@ -27,3 +27,7 @@ v0.11.md
 .gdqube_state.json
 code_quality_report.*
 integrate-godot-qube.md
+
+# Dev-only tooling (hardcoded local paths)
+scripts/sync-linter.ps1
+addons/linter-sync/

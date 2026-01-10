@@ -1,11 +1,11 @@
-# Godot Qube - Code quality analyzer for GDScript
+# GDScript Linter - Static code quality analyzer
 # https://poplava.itch.io
-class_name QubeResult
+class_name GDLintResult
 extends RefCounted
 ## Holds complete results from a code analysis run
 
-const IssueClass = preload("res://scripts/code-quality/issue.gd")
-const FileResultClass = preload("res://scripts/code-quality/file-result.gd")
+const IssueClass = preload("res://addons/gdscript-linter/analyzer/issue.gd")
+const FileResultClass = preload("res://addons/gdscript-linter/analyzer/file-result.gd")
 
 var issues: Array = []
 var ignored_issues: Array = []
@@ -18,6 +18,9 @@ var file_results: Array = []
 
 func add_issue(issue) -> void:
 	issues.append(issue)
+
+func add_ignored_issue(issue) -> void:
+	ignored_issues.append(issue)
 
 func add_file_result(result) -> void:
 	file_results.append(result)

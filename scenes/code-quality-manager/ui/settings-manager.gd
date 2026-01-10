@@ -125,7 +125,7 @@ func _load_project_settings() -> void:
 	respect_gdignore = cfg.get_value("scanning", "respect_gdignore", true)
 	config.respect_gdignore = respect_gdignore
 	scan_addons = cfg.get_value("scanning", "scan_addons", false)
-	config.include_addons = scan_addons
+	config.scan_addons = scan_addons
 	remember_filter_selections = cfg.get_value("scanning", "remember_filters", false)
 
 	# Load saved filter selections
@@ -372,7 +372,7 @@ func _on_respect_gdignore_toggled(pressed: bool) -> void:
 
 func _on_scan_addons_toggled(pressed: bool) -> void:
 	scan_addons = pressed
-	config.include_addons = pressed
+	config.scan_addons = pressed
 	save_project_setting("code_quality/scanning/scan_addons", pressed)
 
 
