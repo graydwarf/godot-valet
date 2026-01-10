@@ -1641,21 +1641,17 @@ func _onExportSelectedPressed():
 	# Re-enable UI after all exports complete
 	_setUIEnabled(true)
 
-func _exportPlatform(platform: String, runAfterExport: bool = false, godotPathForRun: String = ""):
-	if platform in _exportingPlatforms:
-		return  # Already exporting
-
+# Returns context dictionary with all data needed for export, or {"error": "message"} on failure
+func _prepareExportContext(platform: String, runAfterExport: bool, godotPathForRun: String) -> Dictionary:
 	# Abort if we're no longer in the scene tree (user navigated away)
 	if not is_inside_tree():
-		return
+		return {"error": "Not in scene tree"}
 
 	# CRITICAL: Capture all data from _selectedProjectItem BEFORE any awaits
-	# The project item may be freed during awaits if the page changes
 	if _selectedProjectItem == null or not is_instance_valid(_selectedProjectItem):
 		print("Error: Cannot export - project item is null or invalid")
-		return
+		return {"error": "Project item invalid"}
 
-	# GetProjectDir() handles both path formats (with or without project.godot)
 	var projectDir = _selectedProjectItem.GetProjectDir()
 	var godotPath = ""
 	var godotVersionId = ""
@@ -1664,33 +1660,18 @@ func _exportPlatform(platform: String, runAfterExport: bool = false, godotPathFo
 		godotVersionId = _selectedProjectItem.GetGodotVersionId()
 		godotPath = _selectedProjectItem.GetGodotPath(godotVersionId)
 
-	# Capture export filename BEFORE awaits (uses _selectedProjectItem internally)
 	var exportFilename = _getActualExportFilename(platform)
-
-	# Now we can safely proceed with awaits - all data is captured locally
 	var data = _platformRows[platform]
-	_exportingPlatforms.append(platform)
-
-	# Reset UI - clear status first, then show exporting
-	_updateStatus(data, "")
-	await get_tree().process_frame  # Wait one frame so user sees it clear
-	_updateStatus(data, "Exporting...")
-	_setExportButtonsDisabled(data, true)
-
-	# Emit signal
-	build_started.emit(platform)
-
-	# Get export settings
 	var exportPath = _platformRootPaths.get(platform, "")
 	var archiveFilename = data["archiveFilename"].text
 
 	# Get export options from UI
-	var isDebug = (data["exportTypeOption"].selected == 1)  # 0=Release, 1=Debug
-	var shouldZip = (data["packageTypeOption"].selected == 1)  # 0=No Zip, 1=Zip
+	var isDebug = (data["exportTypeOption"].selected == 1)
+	var shouldZip = (data["packageTypeOption"].selected == 1)
 	var shouldChecksum = data["checksumCheckbox"].button_pressed
 	var shouldRenameToIndex = (platform == "Web" and data["renameToIndexCheckbox"] != null and data["renameToIndexCheckbox"].button_pressed)
 
-	# Check if obfuscation is enabled (any option selected in build config)
+	# Check if obfuscation is enabled
 	var obfuscationEnabled = false
 	if platform in _platformBuildConfigs:
 		var config = _platformBuildConfigs[platform]
@@ -1698,65 +1679,66 @@ func _exportPlatform(platform: String, runAfterExport: bool = false, godotPathFo
 
 	# Validate export path and filename
 	if exportPath.is_empty() or exportFilename.is_empty():
-		_updateStatus(data, "Error: Missing path/filename")
-		_setExportButtonsDisabled(data, false)
-		_exportingPlatforms.erase(platform)
-		build_completed.emit(platform, false)
-		return
+		return {"error": "Missing path/filename"}
 
-	# Skip Godot path validation for Source platform (doesn't need Godot export)
+	# Validate Godot path for non-Source platforms
 	var presetName = ""
-
 	if platform != "Source":
-
 		if godotPath == null or godotPath == "???":
-			_updateStatus(data, "Error: Godot path not found")
-			_setExportButtonsDisabled(data, false)
-			_exportingPlatforms.erase(platform)
-			build_completed.emit(platform, false)
-			return
-
-		# Map platform to export preset name
+			return {"error": "Godot path not found"}
 		presetName = _getExportPresetName(platform)
 		if presetName.is_empty():
-			_updateStatus(data, "Error: Unknown platform")
-			_setExportButtonsDisabled(data, false)
-			_exportingPlatforms.erase(platform)
-			build_completed.emit(platform, false)
-			return
+			return {"error": "Unknown platform"}
 
-	# Get version from version field
+	# Get version
 	var version = _projectVersionLineEdit.text
 	if version.is_empty():
-		version = "v1.0.0"  # Default version if not specified
+		version = "v1.0.0"
 
-	# Build export path using template (includes all segments from template)
+	# Build and validate export destination path
 	var exportDestPath = _buildExportPathFromTemplate(platform, exportPath, version)
-
-	# Validate export path won't cause recursive loops
 	var validation = _validateExportPath(projectDir, exportPath, exportDestPath)
 	if not validation["valid"]:
-		_updateStatus(data, "Error: " + validation["error"])
-		_setExportButtonsDisabled(data, false)
-		_exportingPlatforms.erase(platform)
-		build_completed.emit(platform, false)
-		return
+		return {"error": validation["error"]}
 
-	# Check if export directory already exists and prompt user
-	var shouldClearFolder = false
+	return {
+		"platform": platform,
+		"project_dir": projectDir,
+		"godot_path": godotPath,
+		"export_filename": exportFilename,
+		"export_path": exportPath,
+		"export_dest_path": exportDestPath,
+		"archive_filename": archiveFilename,
+		"preset_name": presetName,
+		"is_debug": isDebug,
+		"should_zip": shouldZip,
+		"should_checksum": shouldChecksum,
+		"should_rename_to_index": shouldRenameToIndex,
+		"obfuscation_enabled": obfuscationEnabled,
+		"run_after_export": runAfterExport,
+		"godot_path_for_run": godotPathForRun,
+		"temp_obfuscated_dir": ""
+	}
+
+# Handles folder existence check, overwrite dialog, and directory creation. Returns false on failure/cancel.
+func _setupExportDestination(ctx: Dictionary, data: Dictionary) -> bool:
+	var exportDestPath = ctx["export_dest_path"]
+	var shouldZip = ctx["should_zip"]
+
 	if DirAccess.dir_exists_absolute(exportDestPath):
-		# IMPORTANT: Hide blocker before showing dialog (in case previous platform left it visible)
+		# Hide blocker before showing dialog
 		_setUIEnabled(true)
 
-		# Prompt user - show Overwrite option only for No Zip (zip overwrite has unexpected behavior)
 		var confirmDialog = _getYesNoDialog()
 		_updateStatus(data, "Awaiting confirmation...")
-		await get_tree().process_frame  # Let UI update
+		await get_tree().process_frame
+
 		var buttons: Array[String]
 		if shouldZip:
 			buttons = ["Clear & Export", "Cancel"]
 		else:
 			buttons = ["Clear & Export", "Overwrite", "Cancel"]
+
 		confirmDialog.show_dialog_with_buttons(
 			"Export folder already exists:\n" + exportDestPath + "\n\nHow would you like to proceed?",
 			buttons
@@ -1764,123 +1746,109 @@ func _exportPlatform(platform: String, runAfterExport: bool = false, godotPathFo
 		var choice = await confirmDialog.confirmed
 
 		if choice == "Cancel":
-			# User cancelled, abort export
 			_updateStatus(data, "Export cancelled")
-			await get_tree().create_timer(0.5).timeout  # Show cancelled status
-			_setExportButtonsDisabled(data, false)
-			_exportingPlatforms.erase(platform)
-			build_completed.emit(platform, false)
-			# Keep blocker hidden since export is cancelled
-			return
-		elif choice == "Clear & Export":
-			shouldClearFolder = true
-		# else: Overwrite - leave shouldClearFolder = false
+			await get_tree().create_timer(0.5).timeout
+			return false
 
-		# User confirmed, NOW show the blocker overlay (after dialog dismissed)
+		# User confirmed, show blocker
 		_setUIEnabled(false)
 
-		# Clear folder if user selected that option
-		if shouldClearFolder:
+		if choice == "Clear & Export":
 			_updateStatus(data, "Clearing export folder...")
 			await get_tree().process_frame
 			if not _clearDirectory(exportDestPath):
 				_updateStatus(data, "Error: Failed to clear folder")
-				_setExportButtonsDisabled(data, false)
-				_exportingPlatforms.erase(platform)
-				build_completed.emit(platform, false)
 				_setUIEnabled(true)
-				return
+				return false
 
-		# User confirmed, continue with export
 		_updateStatus(data, "Preparing export...")
-		await get_tree().create_timer(0.5).timeout  # Show status for half second
+		await get_tree().create_timer(0.5).timeout
 	else:
-		# No overwrite needed, show blocker now
 		_setUIEnabled(false)
-
-		# Create version directory
 		_updateStatus(data, "Creating version folder...")
-		await get_tree().create_timer(0.5).timeout  # Show status
+		await get_tree().create_timer(0.5).timeout
 
-		# Create export destination directory recursively (includes all template segments)
 		var err = DirAccess.make_dir_recursive_absolute(exportDestPath)
 		if err != OK:
 			_updateStatus(data, "Error: Cannot create export folder")
-			_setExportButtonsDisabled(data, false)
-			_exportingPlatforms.erase(platform)
-			build_completed.emit(platform, false)
-			return
+			return false
 
-	# Handle Source platform differently (copy files instead of Godot export)
-	var success = true  # Track overall success
-	var tempObfuscatedDir = ""
+	return true
 
-	if platform == "Source":
-		# Source platform: Copy project directory into export destination
-		# If obfuscation enabled, obfuscate first then copy
-		var sourceDirToCopy = projectDir
+# Runs obfuscation if enabled and updates context with temp directory. Returns success status.
+func _runObfuscationIfEnabled(ctx: Dictionary, data: Dictionary) -> bool:
+	if not ctx["obfuscation_enabled"] or _exportCancelled:
+		return true
 
-		if obfuscationEnabled and not _exportCancelled:
-			_updateStatus(data, "Obfuscating project...")
-			await get_tree().process_frame  # Let UI update
-			var obfResult = await _runObfuscation(projectDir, platform, data)
-			if not obfResult["success"] or _exportCancelled:
-				success = false
-			else:
-				sourceDirToCopy = obfResult["obfuscated_dir"]
-				tempObfuscatedDir = obfResult["obfuscated_dir"]
-				# Show obfuscation complete status briefly
-				_updateStatus(data, "Obfuscation complete")
-				await get_tree().create_timer(0.5).timeout
+	_updateStatus(data, "Obfuscating project...")
+	await get_tree().process_frame
 
-		if success and not _exportCancelled:
-			_updateStatus(data, "Copying source files...")
-			await get_tree().process_frame  # Let UI update
-			# Get filter config for Source platform
-			var filterConfig = _platformFilterConfigs.get(platform, {})
-			success = await _copySourceFiles(sourceDirToCopy, exportDestPath, exportPath, data, filterConfig)
-	else:
-		# Regular Godot export platforms
-		# Add platform-specific file extension
-		var filenameWithExtension = _addPlatformExtension(exportFilename, platform)
+	var obfResult = await _runObfuscation(ctx["project_dir"], ctx["platform"], data)
+	if not obfResult["success"] or _exportCancelled:
+		return false
 
-		# Build output file path: exportDestPath/filename.ext
-		var outputPath = exportDestPath.path_join(filenameWithExtension)
+	ctx["working_dir"] = obfResult["obfuscated_dir"]
+	ctx["temp_obfuscated_dir"] = obfResult["obfuscated_dir"]
 
-		# Handle obfuscation if enabled - obfuscate BEFORE export
-		var projectDirToExport = projectDir
+	_updateStatus(data, "Obfuscation complete")
+	await get_tree().create_timer(0.5).timeout
+	return true
 
-		if obfuscationEnabled and not _exportCancelled:
-			_updateStatus(data, "Obfuscating project...")
-			await get_tree().process_frame  # Let UI update
-			var obfResult = await _runObfuscation(projectDir, platform, data)
-			if not obfResult["success"] or _exportCancelled:
-				success = false
-			else:
-				projectDirToExport = obfResult["obfuscated_dir"]
-				tempObfuscatedDir = obfResult["obfuscated_dir"]
-				# Show obfuscation complete status briefly
-				_updateStatus(data, "Obfuscation complete")
-				await get_tree().create_timer(0.5).timeout
+# Exports Source platform by copying files. Returns success status.
+func _exportSourcePlatform(ctx: Dictionary, data: Dictionary) -> bool:
+	var sourceDirToCopy = ctx.get("working_dir", ctx["project_dir"])
 
-		# Execute export command (from obfuscated dir if obfuscation enabled)
-		if success and not _exportCancelled:
-			var exportTypeText = "debug" if isDebug else "release"
-			_updateStatus(data, "Exporting %s to %s..." % [exportTypeText, platform])
-			await get_tree().process_frame  # Let UI update
-			success = await _runGodotExport(godotPath, projectDirToExport, presetName, outputPath, data, isDebug, platform)
+	if not await _runObfuscationIfEnabled(ctx, data):
+		return false
 
-	# Clean up temp obfuscated directory if created
-	if tempObfuscatedDir != "":
-		_updateStatus(data, "Cleaning up...")
-		await get_tree().create_timer(0.3).timeout
-		_cleanupTempDir(tempObfuscatedDir)
+	# Update source dir if obfuscation created a new one
+	sourceDirToCopy = ctx.get("working_dir", ctx["project_dir"])
 
-	# Rename HTML file to index.html for Web platform (required for itch.io)
-	if success and not _exportCancelled and shouldRenameToIndex:
+	if _exportCancelled:
+		return false
+
+	_updateStatus(data, "Copying source files...")
+	await get_tree().process_frame
+
+	var filterConfig = _platformFilterConfigs.get(ctx["platform"], {})
+	return await _copySourceFiles(sourceDirToCopy, ctx["export_dest_path"], ctx["export_path"], data, filterConfig)
+
+# Exports regular platforms using Godot export. Returns success status.
+func _exportRegularPlatform(ctx: Dictionary, data: Dictionary) -> bool:
+	var projectDirToExport = ctx["project_dir"]
+
+	if not await _runObfuscationIfEnabled(ctx, data):
+		return false
+
+	# Update project dir if obfuscation created a new one
+	projectDirToExport = ctx.get("working_dir", ctx["project_dir"])
+
+	if _exportCancelled:
+		return false
+
+	var filenameWithExtension = _addPlatformExtension(ctx["export_filename"], ctx["platform"])
+	var outputPath = ctx["export_dest_path"].path_join(filenameWithExtension)
+
+	var exportTypeText = "debug" if ctx["is_debug"] else "release"
+	_updateStatus(data, "Exporting %s to %s..." % [exportTypeText, ctx["platform"]])
+	await get_tree().process_frame
+
+	return await _runGodotExport(ctx["godot_path"], projectDirToExport, ctx["preset_name"], outputPath, data, ctx["is_debug"], ctx["platform"])
+
+# Handles post-export steps: HTML rename, run app, zip, checksum. Returns success status.
+func _runPostExportSteps(ctx: Dictionary, data: Dictionary, success: bool) -> bool:
+	if not success or _exportCancelled:
+		return success
+
+	var platform = ctx["platform"]
+	var exportDestPath = ctx["export_dest_path"]
+	var exportFilename = ctx["export_filename"]
+
+	# Rename HTML to index.html for Web platform
+	if ctx["should_rename_to_index"]:
 		_updateStatus(data, "Renaming to index.html...")
 		await get_tree().process_frame
-		var htmlFilename = _addPlatformExtension(exportFilename, platform)  # e.g., "game.html"
+		var htmlFilename = _addPlatformExtension(exportFilename, platform)
 		var originalHtmlPath = exportDestPath.path_join(htmlFilename)
 		var indexHtmlPath = exportDestPath.path_join("index.html")
 		if FileAccess.file_exists(originalHtmlPath):
@@ -1890,8 +1858,37 @@ func _exportPlatform(platform: String, runAfterExport: bool = false, godotPathFo
 		else:
 			push_warning("HTML file not found for rename: %s" % originalHtmlPath)
 
-	# Run the exported application if requested (BEFORE zipping, which deletes the exe)
-	if success and not _exportCancelled and runAfterExport and platform != "Source":
+	# Run exported application if requested (before zipping)
+	if ctx["run_after_export"]:
+		_runExportedApplication(ctx)
+
+	# Create zip archive
+	var finalOutputPath = exportDestPath
+	if ctx["should_zip"]:
+		_updateStatus(data, "Creating zip archive...")
+		await get_tree().process_frame
+		var zipPath = await _createZipArchive(exportDestPath, ctx["archive_filename"])
+		if zipPath.is_empty():
+			return false
+		finalOutputPath = zipPath
+
+	# Generate checksum
+	if ctx["should_checksum"]:
+		_updateStatus(data, "Generating checksum...")
+		await get_tree().process_frame
+		var checksumSuccess = _generateChecksum(finalOutputPath, ctx["should_zip"], platform, exportFilename)
+		if not checksumSuccess:
+			print("Warning: Failed to generate checksum for ", finalOutputPath)
+
+	return true
+
+# Runs the exported application (non-async helper)
+func _runExportedApplication(ctx: Dictionary):
+	var platform = ctx["platform"]
+	var exportDestPath = ctx["export_dest_path"]
+	var exportFilename = ctx["export_filename"]
+
+	if platform != "Source":
 		var executablePath = exportDestPath.path_join(_addPlatformExtension(exportFilename, platform))
 		if FileAccess.file_exists(executablePath):
 			var runPid = OS.create_process(executablePath, [])
@@ -1901,50 +1898,81 @@ func _exportPlatform(platform: String, runAfterExport: bool = false, godotPathFo
 				print("Running exported application: ", executablePath)
 		else:
 			print("Error: Exported file not found for run: ", executablePath)
-	elif success and not _exportCancelled and runAfterExport and platform == "Source":
-		# For Source, run with Godot
+	else:
 		var args = ["--path", exportDestPath]
-		var runPid = OS.create_process(godotPathForRun, args)
+		var runPid = OS.create_process(ctx["godot_path_for_run"], args)
 		if runPid == -1:
 			print("Error: Failed to run exported source project")
 		else:
 			print("Running exported source project: ", exportDestPath)
 
-	# Post-export steps: zip and checksum
-	var finalOutputPath = exportDestPath  # Default to folder for checksum
+# Cleans up export state and updates final status
+func _finalizeExport(ctx: Dictionary, data: Dictionary, success: bool):
+	# Clean up temp obfuscated directory
+	if ctx["temp_obfuscated_dir"] != "":
+		_updateStatus(data, "Cleaning up...")
+		await get_tree().create_timer(0.3).timeout
+		_cleanupTempDir(ctx["temp_obfuscated_dir"])
 
-	if success and not _exportCancelled and shouldZip:
-		_updateStatus(data, "Creating zip archive...")
-		await get_tree().process_frame
-		var zipPath = await _createZipArchive(exportDestPath, archiveFilename)
-		if zipPath.is_empty():
-			success = false
-		else:
-			finalOutputPath = zipPath
-
-	if success and not _exportCancelled and shouldChecksum:
-		_updateStatus(data, "Generating checksum...")
-		await get_tree().process_frame
-		var checksumSuccess = _generateChecksum(finalOutputPath, shouldZip, platform, exportFilename)
-		if not checksumSuccess:
-			# Checksum failure is non-fatal, just log it
-			print("Warning: Failed to generate checksum for ", finalOutputPath)
-
-	# Update UI with final status (check if still valid)
+	# Update final status
 	if _exportCancelled:
 		_updateStatus(data, "✗ Cancelled")
-		await get_tree().create_timer(1.0).timeout
 	elif success:
 		_updateStatus(data, "✓ Complete")
-		await get_tree().create_timer(1.0).timeout  # Show success for 1 second
 	else:
 		_updateStatus(data, "✗ Failed")
-		await get_tree().create_timer(1.0).timeout  # Show failure for 1 second
+	await get_tree().create_timer(1.0).timeout
 
 	_setExportButtonsDisabled(data, false)
-	_exportingPlatforms.erase(platform)
+	_exportingPlatforms.erase(ctx["platform"])
+	build_completed.emit(ctx["platform"], success)
 
-	build_completed.emit(platform, success)
+# Helper to handle early exit with proper cleanup
+func _abortExport(ctx: Dictionary, data: Dictionary, errorMsg: String):
+	_updateStatus(data, errorMsg)
+	_setExportButtonsDisabled(data, false)
+	_exportingPlatforms.erase(ctx["platform"])
+	build_completed.emit(ctx["platform"], false)
+
+func _exportPlatform(platform: String, runAfterExport: bool = false, godotPathForRun: String = ""):
+	if platform in _exportingPlatforms:
+		return
+
+	# Phase 1: Prepare context with all needed data (before any awaits)
+	var ctx = _prepareExportContext(platform, runAfterExport, godotPathForRun)
+	if ctx.has("error"):
+		if ctx["error"] != "Not in scene tree" and ctx["error"] != "Project item invalid":
+			var data = _platformRows[platform]
+			_updateStatus(data, "Error: " + ctx["error"])
+		return
+
+	var data = _platformRows[platform]
+	_exportingPlatforms.append(platform)
+
+	# Initialize UI
+	_updateStatus(data, "")
+	await get_tree().process_frame
+	_updateStatus(data, "Exporting...")
+	_setExportButtonsDisabled(data, true)
+	build_started.emit(platform)
+
+	# Phase 2: Setup export destination (handles overwrite dialog)
+	if not await _setupExportDestination(ctx, data):
+		_abortExport(ctx, data, "")  # Status already set by _setupExportDestination
+		return
+
+	# Phase 3-4: Run export (source or regular platform)
+	var success: bool
+	if platform == "Source":
+		success = await _exportSourcePlatform(ctx, data)
+	else:
+		success = await _exportRegularPlatform(ctx, data)
+
+	# Phase 5: Post-export steps (rename, run, zip, checksum)
+	success = await _runPostExportSteps(ctx, data, success)
+
+	# Phase 6: Finalize (cleanup and status)
+	await _finalizeExport(ctx, data, success)
 
 func validate() -> bool:
 	# Only block navigation if export path equals project path (dangerous)
