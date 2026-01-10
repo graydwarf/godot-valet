@@ -86,9 +86,42 @@ func configure(p_project_directory: String) -> void:
 
 # Load all settings from App singleton and per-project config
 func load_settings() -> void:
+	_reset_project_settings_to_defaults()
 	_load_global_settings()
 	_load_project_settings()
 	_apply_to_ui()
+
+
+# Reset per-project settings to defaults before loading new project
+func _reset_project_settings_to_defaults() -> void:
+	# Scanning settings
+	respect_gdignore = true
+	scan_addons = false
+	remember_filter_selections = false
+
+	# Filter selections
+	saved_severity_filter = 0
+	saved_type_filter = "all"
+	saved_file_filter = ""
+
+	# Code checks - all enabled by default
+	check_naming_conventions = true
+	check_long_lines = true
+	check_todo_comments = true
+	check_print_statements = true
+	check_magic_numbers = true
+	check_commented_code = true
+	check_missing_types = true
+	check_function_length = true
+	check_parameters = true
+	check_nesting = true
+	check_cyclomatic_complexity = true
+	check_empty_functions = true
+	check_missing_return_type = true
+	check_file_length = true
+	check_god_class = true
+	check_unused_variables = true
+	check_unused_parameters = true
 
 
 func _load_global_settings() -> void:
