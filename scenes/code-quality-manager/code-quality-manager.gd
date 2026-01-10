@@ -1,3 +1,4 @@
+# gdlint:ignore-file:file-length
 extends Panel
 
 # Preload analyzer scripts
@@ -5,573 +6,14 @@ const QubeAnalyzer = preload("res://scripts/code-quality/code-analyzer.gd")
 const QubeConfig = preload("res://scripts/code-quality/analysis-config.gd")
 const QubeIssue = preload("res://scripts/code-quality/issue.gd")
 const QubeResult = preload("res://scripts/code-quality/analysis-result.gd")
+const SettingsCardBuilderScript = preload("res://scenes/code-quality-manager/ui/settings-card-builder.gd")
+const SettingsManagerScript = preload("res://scenes/code-quality-manager/ui/settings-manager.gd")
 
-# UI References - Project Card Header
-@onready var _thumbTextureRect: TextureRect = %ThumbTextureRect
-@onready var _projectNameLabel: Label = %ProjectNameLabel
-@onready var _projectPathLabel: Label = %ProjectPathLabel
-@onready var _folderButton: Button = %FolderButton
-@onready var _lastScannedLabel: Label = %LastScannedLabel
+const ISSUES_PER_CATEGORY := 100
 
-# UI References - Footer
-@onready var _scanButton: Button = %ScanButton
-@onready var _saveButton: Button = %SaveButton
-@onready var _resultsVBox: VBoxContainer = %ResultsVBox
-@onready var _resultsCountLabel: Label = %ResultsCountLabel
-@onready var _exportJSONButton: Button = %ExportJSONButton
-@onready var _exportHTMLButton: Button = %ExportHTMLButton
-
-# Filter controls
-@onready var _severityFilter: OptionButton = %SeverityFilter
-@onready var _typeFilter: OptionButton = %TypeFilter
-@onready var _fileFilter: LineEdit = %FileFilter
-
-# Stats labels
-@onready var _filesValue: Label = %FilesValue
-@onready var _linesValue: Label = %LinesValue
-@onready var _criticalValue: Label = %CriticalValue
-@onready var _warningsValue: Label = %WarningsValue
-@onready var _infoValue: Label = %InfoValue
-@onready var _debtValue: Label = %DebtValue
-
-# Threshold controls - SpinBoxes
-@onready var _fileLinesWarn: SpinBox = %FileLinesWarn
-@onready var _fileLinesCrit: SpinBox = %FileLinesCrit
-@onready var _funcLinesWarn: SpinBox = %FuncLinesWarn
-@onready var _funcLinesCrit: SpinBox = %FuncLinesCrit
-@onready var _complexityWarn: SpinBox = %ComplexityWarn
-@onready var _complexityCrit: SpinBox = %ComplexityCrit
-@onready var _godClassWarn: SpinBox = %GodClassWarn
-@onready var _godClassSignalsSpin: SpinBox = %GodClassSignalsSpin
-@onready var _maxParamsSpin: SpinBox = %MaxParamsSpin
-@onready var _maxNestingSpin: SpinBox = %MaxNestingSpin
-
-# Threshold controls - Enable checkboxes
-@onready var _fileLinesCheck: CheckBox = %FileLinesCheck
-@onready var _funcLinesCheck: CheckBox = %FuncLinesCheck
-@onready var _complexityCheck: CheckBox = %ComplexityCheck
-@onready var _godClassCheck: CheckBox = %GodClassCheck
-@onready var _godClassSignalsCheck: CheckBox = %GodClassSignalsCheck
-@onready var _maxParamsCheck: CheckBox = %MaxParamsCheck
-@onready var _maxNestingCheck: CheckBox = %MaxNestingCheck
-
-# Code checks
-@onready var _todoCheck: CheckBox = %TodoCheck
-@onready var _printCheck: CheckBox = %PrintCheck
-@onready var _emptyFuncCheck: CheckBox = %EmptyFuncCheck
-@onready var _magicNumCheck: CheckBox = %MagicNumCheck
-@onready var _commentedCodeCheck: CheckBox = %CommentedCodeCheck
-@onready var _typeAnnotationsCheck: CheckBox = %TypeAnnotationsCheck
-@onready var _longLinesCheck: CheckBox = %LongLinesCheck
-@onready var _namingCheck: CheckBox = %NamingCheck
-@onready var _includeAddonsCheck: CheckBox = %IncludeAddonsCheck
-@onready var _unusedVarsCheck: CheckBox = %UnusedVarsCheck
-@onready var _unusedParamsCheck: CheckBox = %UnusedParamsCheck
-@onready var _respectGdignoreCheck: CheckBox = %RespectGdignoreCheck
-
-# Help panel
-@onready var _helpPanel: Control = %HelpPanel
-@onready var _resultsScroll: ScrollContainer = %ResultsScroll
-@onready var _closeHelpButton: Button = %CloseHelpButton
-
-# Reset icon
-var _resetIcon: Texture2D
-
-# Claude/AI icon
-var _sparkleIcon: Texture2D
-
-# Column headers
-@onready var _columnHeaderHBox: HBoxContainer = %ColumnHeaderHBox
-@onready var _locationHeader: Label = %LocationHeader
-@onready var _messageHeader: Label = %MessageHeader
-@onready var _typeHeader: Label = %TypeHeader
-@onready var _severitySep: VSeparator = %SeveritySep
-@onready var _locationSep: VSeparator = %LocationSep
-@onready var _messageSep: VSeparator = %MessageSep
-
-# Column widths (for resizable headers)
-var _locationColumnWidth: float = 280.0
-var _typeColumnWidth: float = 120.0
-var _draggingSeparator: VSeparator = null
-var _dragStartX: float = 0.0
-var _dragStartWidth: float = 0.0
-
-var _selectedProjectItem = null
-var _currentConfig: Resource = null
-var _currentResult = null
-var _allIssues: Array = []
-var _lastScannedTimestamp: String = ""
-
-func _ready():
-	# Load Claude icon for AI buttons
-	_sparkleIcon = load("res://scenes/claude/assets/claude.png")
-
-	# Set up column separator drag handlers
-	_setupColumnSeparatorDrag(_locationSep, _locationHeader)
-	_setupColumnSeparatorDrag(_messageSep, _typeHeader)
-
-func _setupColumnSeparatorDrag(separator: VSeparator, targetHeader: Label):
-	separator.gui_input.connect(func(event: InputEvent):
-		if event is InputEventMouseButton:
-			if event.button_index == MOUSE_BUTTON_LEFT:
-				if event.pressed:
-					_draggingSeparator = separator
-					_dragStartX = get_global_mouse_position().x
-					_dragStartWidth = targetHeader.custom_minimum_size.x
-				else:
-					_draggingSeparator = null
-	)
-
-func _input(event: InputEvent):
-	if _draggingSeparator == null:
-		return
-	if event is InputEventMouseMotion:
-		var delta = get_global_mouse_position().x - _dragStartX
-		var newWidth: float
-		# Location separator adjusts location column
-		if _draggingSeparator == _locationSep:
-			newWidth = clampf(_dragStartWidth + delta, 100.0, 600.0)
-			_locationHeader.custom_minimum_size.x = newWidth
-			_locationColumnWidth = newWidth
-		# Message separator adjusts type column (inverse - drag right = smaller type)
-		elif _draggingSeparator == _messageSep:
-			newWidth = clampf(_dragStartWidth - delta, 80.0, 300.0)
-			_typeHeader.custom_minimum_size.x = newWidth
-			_typeColumnWidth = newWidth
-		# Refresh display to apply new widths
-		if _currentResult != null:
-			_displayResults()
-
-# Called by ProjectManager to configure with selected project
-func Configure(selectedProjectItem):
-	_selectedProjectItem = selectedProjectItem
-	_projectNameLabel.text = selectedProjectItem.GetProjectName()
-	_projectPathLabel.text = selectedProjectItem.GetProjectDir()
-	_loadThumbnail()
-	_loadSettings()
-	_loadLastScanned()
-
-func _loadSettings():
-	_currentConfig = QubeConfig.new()
-	print("=== LOAD SETTINGS ===")
-	print("Default line_limit_soft: ", _currentConfig.line_limit_soft)
-	# Try to load project-specific config
-	var projectDir = _selectedProjectItem.GetProjectDir()
-	var configPath = projectDir.path_join(".gdqube.cfg")
-	print("projectDir: ", projectDir)
-	print("configPath: ", configPath)
-	print("File exists check: ", FileAccess.file_exists(configPath))
-	if FileAccess.file_exists(configPath):
-		print("Calling load_project_config with: ", projectDir)
-		_currentConfig.load_project_config(projectDir)
-		print("After load_project_config - line_limit_soft: ", _currentConfig.line_limit_soft)
-	else:
-		print("Config file does not exist, using defaults")
-	_applySettingsToUI()
-	print("After _applySettingsToUI - _fileLinesWarn.value: ", _fileLinesWarn.value)
-
-func _applySettingsToUI():
-	if _currentConfig == null:
-		return
-	# Apply threshold values
-	_fileLinesWarn.value = _currentConfig.line_limit_soft
-	_fileLinesCrit.value = _currentConfig.line_limit_hard
-	_funcLinesWarn.value = _currentConfig.function_line_limit
-	_funcLinesCrit.value = _currentConfig.function_line_critical
-	_complexityWarn.value = _currentConfig.cyclomatic_warning
-	_complexityCrit.value = _currentConfig.cyclomatic_critical
-	_godClassWarn.value = _currentConfig.god_class_functions
-	_godClassSignalsSpin.value = _currentConfig.god_class_signals
-	_maxParamsSpin.value = _currentConfig.max_parameters
-	_maxNestingSpin.value = _currentConfig.max_nesting
-
-	# Apply threshold enable checkboxes
-	_fileLinesCheck.button_pressed = _currentConfig.check_file_length
-	_funcLinesCheck.button_pressed = _currentConfig.check_function_length
-	_complexityCheck.button_pressed = _currentConfig.check_cyclomatic_complexity
-	_godClassCheck.button_pressed = _currentConfig.check_god_class
-	_godClassSignalsCheck.button_pressed = _currentConfig.check_god_class  # Shares same check
-	_maxParamsCheck.button_pressed = _currentConfig.check_parameters
-	_maxNestingCheck.button_pressed = _currentConfig.check_nesting
-
-	# Apply code checks
-	_todoCheck.button_pressed = _currentConfig.check_todo_comments
-	_printCheck.button_pressed = _currentConfig.check_print_statements
-	_emptyFuncCheck.button_pressed = _currentConfig.check_empty_functions
-	_magicNumCheck.button_pressed = _currentConfig.check_magic_numbers
-	_commentedCodeCheck.button_pressed = _currentConfig.check_commented_code
-	_typeAnnotationsCheck.button_pressed = _currentConfig.check_missing_types
-	_longLinesCheck.button_pressed = _currentConfig.check_long_lines
-	_namingCheck.button_pressed = _currentConfig.check_naming_conventions
-	_includeAddonsCheck.button_pressed = _currentConfig.include_addons
-	_unusedVarsCheck.button_pressed = _currentConfig.check_unused_variables
-	_unusedParamsCheck.button_pressed = _currentConfig.check_unused_parameters
-	_respectGdignoreCheck.button_pressed = _currentConfig.respect_gdignore
-
-func _applyUIToSettings():
-	if _currentConfig == null:
-		return
-	# Apply threshold values
-	_currentConfig.line_limit_soft = int(_fileLinesWarn.value)
-	_currentConfig.line_limit_hard = int(_fileLinesCrit.value)
-	_currentConfig.function_line_limit = int(_funcLinesWarn.value)
-	_currentConfig.function_line_critical = int(_funcLinesCrit.value)
-	_currentConfig.cyclomatic_warning = int(_complexityWarn.value)
-	_currentConfig.cyclomatic_critical = int(_complexityCrit.value)
-	_currentConfig.god_class_functions = int(_godClassWarn.value)
-	_currentConfig.god_class_signals = int(_godClassSignalsSpin.value)
-	_currentConfig.max_parameters = int(_maxParamsSpin.value)
-	_currentConfig.max_nesting = int(_maxNestingSpin.value)
-
-	# Apply threshold enable checkboxes
-	_currentConfig.check_file_length = _fileLinesCheck.button_pressed
-	_currentConfig.check_function_length = _funcLinesCheck.button_pressed
-	_currentConfig.check_cyclomatic_complexity = _complexityCheck.button_pressed
-	_currentConfig.check_god_class = _godClassCheck.button_pressed
-	_currentConfig.check_parameters = _maxParamsCheck.button_pressed
-	_currentConfig.check_nesting = _maxNestingCheck.button_pressed
-
-	# Apply code checks
-	_currentConfig.check_todo_comments = _todoCheck.button_pressed
-	_currentConfig.check_print_statements = _printCheck.button_pressed
-	_currentConfig.check_empty_functions = _emptyFuncCheck.button_pressed
-	_currentConfig.check_magic_numbers = _magicNumCheck.button_pressed
-	_currentConfig.check_commented_code = _commentedCodeCheck.button_pressed
-	_currentConfig.check_missing_types = _typeAnnotationsCheck.button_pressed
-	_currentConfig.check_long_lines = _longLinesCheck.button_pressed
-	_currentConfig.check_naming_conventions = _namingCheck.button_pressed
-	_currentConfig.include_addons = _includeAddonsCheck.button_pressed
-	_currentConfig.check_unused_variables = _unusedVarsCheck.button_pressed
-	_currentConfig.check_unused_parameters = _unusedParamsCheck.button_pressed
-	_currentConfig.respect_gdignore = _respectGdignoreCheck.button_pressed
-
-func _on_scan_button_pressed():
-	# Close help panel if open
-	_closeHelp()
-
-	_scanButton.disabled = true
-	_exportJSONButton.disabled = true
-	_exportHTMLButton.disabled = true
-
-	# Force all SpinBoxes to commit any pending text input
-	_applySpinBoxValues()
-
-	# Apply current UI settings to config
-	_applyUIToSettings()
-
-	# Save settings before scanning
-	_saveSettings()
-
-	# Use call_deferred to allow UI to update
-	call_deferred("_runAnalysis")
-
-func _applySpinBoxValues():
-	_fileLinesWarn.apply()
-	_fileLinesCrit.apply()
-	_funcLinesWarn.apply()
-	_funcLinesCrit.apply()
-	_complexityWarn.apply()
-	_complexityCrit.apply()
-	_godClassWarn.apply()
-	_godClassSignalsSpin.apply()
-	_maxParamsSpin.apply()
-	_maxNestingSpin.apply()
-
-func _runAnalysis():
-	var projectDir = _selectedProjectItem.GetProjectDir()
-
-	var analyzer = QubeAnalyzer.new()
-	analyzer.config = _currentConfig
-
-	_currentResult = analyzer.analyze_directory(projectDir)
-
-	_allIssues = _currentResult.issues.duplicate()
-
-	# Update and save last scanned timestamp
-	_lastScannedTimestamp = Time.get_datetime_string_from_system().replace("T", " ").substr(0, 16)
-	_updateLastScannedLabel()
-	_saveLastScanned()
-
-	_updateStats()
-	_displayResults()
-
-	var issueCount = _currentResult.issues.size()
-	_scanButton.disabled = false
-	_exportJSONButton.disabled = (issueCount == 0)
-	_exportHTMLButton.disabled = (issueCount == 0)
-
-func _updateStats():
-	if _currentResult == null:
-		_filesValue.text = "-"
-		_linesValue.text = "-"
-		_criticalValue.text = "-"
-		_warningsValue.text = "-"
-		_infoValue.text = "-"
-		_debtValue.text = "-"
-		return
-
-	_filesValue.text = str(_currentResult.files_analyzed)
-	_linesValue.text = str(_currentResult.total_lines)
-
-	var critical: int = _currentResult.get_issues_by_severity(QubeIssue.Severity.CRITICAL).size()
-	var warnings: int = _currentResult.get_issues_by_severity(QubeIssue.Severity.WARNING).size()
-	var info: int = _currentResult.get_issues_by_severity(QubeIssue.Severity.INFO).size()
-
-	_criticalValue.text = str(critical)
-	_warningsValue.text = str(warnings)
-	_infoValue.text = str(info)
-	_debtValue.text = str(_currentResult.get_total_debt_score())
-
-func _displayResults():
-	# Clear existing results
-	for child in _resultsVBox.get_children():
-		child.queue_free()
-
-	# Get filtered issues
-	var filtered = _getFilteredIssues()
-	_resultsCountLabel.text = "%d issues" % filtered.size()
-
-	if filtered.size() == 0:
-		var label = Label.new()
-		label.text = "No issues found matching filters." if _allIssues.size() > 0 else "No issues found. Great job!"
-		label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_resultsVBox.add_child(label)
-		return
-
-	# Display filtered issues
-	for issue in filtered:
-		var item = _createIssueItem(issue)
-		_resultsVBox.add_child(item)
-
-func _getFilteredIssues() -> Array:
-	var filtered: Array = []
-	var severityIndex = _severityFilter.selected
-	var typeIndex = _typeFilter.selected
-	var fileFilterText = _fileFilter.text.to_lower()
-
-	for issue in _allIssues:
-		var severityStr = issue.get_severity_string()
-
-		# Severity filter
-		if severityIndex > 0:
-			var severityMatch = false
-			match severityIndex:
-				1: severityMatch = (severityStr == "critical")
-				2: severityMatch = (severityStr == "warning")
-				3: severityMatch = (severityStr == "info")
-			if not severityMatch:
-				continue
-
-		# Type filter
-		if typeIndex > 0:
-			var typeMatch = false
-			var checkId = issue.check_id.to_lower()
-			match typeIndex:
-				1: typeMatch = checkId.contains("complexity") or checkId.contains("cyclomatic")
-				2: typeMatch = checkId.contains("length") or checkId.contains("lines") or checkId.contains("long")
-				3: typeMatch = checkId.contains("param")
-				4: typeMatch = checkId.contains("nesting")
-				5: typeMatch = checkId.contains("god")
-			if not typeMatch:
-				continue
-
-		# File filter
-		if fileFilterText != "" and not issue.file_path.to_lower().contains(fileFilterText):
-			continue
-
-		filtered.append(issue)
-
-	return filtered
-
-func _createIssueItem(issue) -> Control:
-	var hbox = HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 0)
-
-	# Severity icon - fixed width (matches header)
-	var severityLabel = Label.new()
-	severityLabel.text = issue.get_severity_icon()
-	severityLabel.tooltip_text = issue.get_severity_string().capitalize()
-	severityLabel.custom_minimum_size = Vector2(30, 0)
-	hbox.add_child(severityLabel)
-
-	# Spacer for separator alignment
-	var sep1 = Control.new()
-	sep1.custom_minimum_size = Vector2(8, 0)
-	hbox.add_child(sep1)
-
-	# Location (file:line) - dynamic width from header
-	var locationButton = Button.new()
-	var resPath = _toResPath(issue.file_path)
-	locationButton.text = "%s:%d" % [resPath, issue.line]
-	locationButton.flat = true
-	locationButton.custom_minimum_size = Vector2(_locationColumnWidth, 0)
-	locationButton.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	locationButton.clip_text = true
-	locationButton.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	locationButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	locationButton.add_theme_color_override("font_color", Color(0.4, 0.7, 1.0))
-	locationButton.add_theme_color_override("font_hover_color", Color(0.6, 0.85, 1.0))
-	locationButton.tooltip_text = issue.file_path
-	locationButton.pressed.connect(_onLocationPressed.bind(issue))
-	hbox.add_child(locationButton)
-
-	# Spacer for separator alignment
-	var sep2 = Control.new()
-	sep2.custom_minimum_size = Vector2(8, 0)
-	hbox.add_child(sep2)
-
-	# Message - expandable with ellipsis
-	var messageLabel = Label.new()
-	messageLabel.text = issue.message
-	messageLabel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	messageLabel.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	hbox.add_child(messageLabel)
-
-	# Spacer for separator alignment
-	var sep3 = Control.new()
-	sep3.custom_minimum_size = Vector2(8, 0)
-	hbox.add_child(sep3)
-
-	# Type badge - dynamic width from header
-	var typeBadge = Label.new()
-	typeBadge.text = issue.check_id
-	typeBadge.add_theme_font_size_override("font_size", 11)
-	typeBadge.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
-	typeBadge.custom_minimum_size = Vector2(_typeColumnWidth, 0)
-	typeBadge.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	hbox.add_child(typeBadge)
-
-	# Only show Claude button if enabled in settings
-	if App.GetClaudeCodeButtonEnabled():
-		# Spacer for Claude column
-		var sep4 = Control.new()
-		sep4.custom_minimum_size = Vector2(8, 0)
-		hbox.add_child(sep4)
-
-		# Claude/AI button - 30px to match header, 16px icon inside
-		var claudeButton = TextureButton.new()
-		claudeButton.texture_normal = _sparkleIcon
-		claudeButton.custom_minimum_size = Vector2(30, 0)
-		claudeButton.ignore_texture_size = true
-		claudeButton.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-		claudeButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		claudeButton.tooltip_text = "Analyze with Claude Code"
-		claudeButton.pressed.connect(_onClaudeButtonPressed.bind(issue))
-		hbox.add_child(claudeButton)
-
-	return hbox
-
-# Convert absolute path to res:// path relative to project directory
-func _toResPath(absolutePath: String) -> String:
-	if _selectedProjectItem == null:
-		return absolutePath
-	var projectDir = _selectedProjectItem.GetProjectDir()
-	# Normalize slashes for comparison
-	var normalizedPath = absolutePath.replace("\\", "/")
-	var normalizedProject = projectDir.replace("\\", "/")
-	if normalizedPath.begins_with(normalizedProject):
-		var relativePath = normalizedPath.substr(normalizedProject.length())
-		if relativePath.begins_with("/"):
-			relativePath = relativePath.substr(1)
-		return "res://" + relativePath
-	return absolutePath
-
-func _onLocationPressed(issue):
-	# Copy file path to clipboard for now
-	DisplayServer.clipboard_set(issue.file_path + ":" + str(issue.line))
-
-func _onClaudeButtonPressed(issue):
-	var projectDir = _selectedProjectItem.GetProjectDir()
-	var resPath = _toResPath(issue.file_path)
-
-	# Build prompt with issue context
-	var prompt = "I have a code quality issue to address:\\n\\n"
-	prompt += "File: %s\\n" % resPath
-	prompt += "Line: %d\\n" % issue.line
-	prompt += "Issue Type: %s\\n" % issue.check_id
-	prompt += "Severity: %s\\n" % issue.get_severity_string()
-	prompt += "Message: %s\\n\\n" % issue.message
-	prompt += "Please analyze this issue and create a plan to fix it."
-
-	# Escape single quotes for PowerShell
-	var escapedPrompt = prompt.replace("'", "''")
-
-	print("Launching Claude Code with issue context:")
-	print("  File: ", resPath)
-	print("  Line: ", issue.line)
-	print("  Type: ", issue.check_id)
-	print("  Project: ", projectDir)
-
-	# Launch in Windows Terminal (wt) for better experience
-	# Use -NoProfile to skip user profile (avoids posh-git errors etc)
-	OS.create_process("wt", ["-d", projectDir, "powershell", "-NoProfile", "-NoExit", "-Command", "claude --permission-mode plan '%s'" % escapedPrompt])
-
-func _on_filter_changed(_value = null):
-	if _currentResult != null:
-		_displayResults()
-
-func _on_file_filter_changed(_text: String):
-	if _currentResult != null:
-		_displayResults()
-
-func _on_export_json_pressed():
-	if _currentResult == null:
-		return
-
-	var projectDir = _selectedProjectItem.GetProjectDir()
-	var exportPath = projectDir + "/code_quality_report.json"
-
-	var data = {
-		"project": _selectedProjectItem.GetProjectName(),
-		"path": projectDir,
-		"timestamp": Time.get_datetime_string_from_system(),
-		"summary": {
-			"total_issues": _allIssues.size(),
-			"critical": _allIssues.filter(func(i): return i.get_severity_string() == "critical").size(),
-			"warning": _allIssues.filter(func(i): return i.get_severity_string() == "warning").size(),
-			"info": _allIssues.filter(func(i): return i.get_severity_string() == "info").size()
-		},
-		"issues": []
-	}
-
-	for issue in _allIssues:
-		data["issues"].append({
-			"file": issue.file_path,
-			"line": issue.line,
-			"severity": issue.get_severity_string(),
-			"type": issue.check_id,
-			"message": issue.message
-		})
-
-	var file = FileAccess.open(exportPath, FileAccess.WRITE)
-	if file:
-		file.store_string(JSON.stringify(data, "\t"))
-		file.close()
-		# Open the folder containing the file
-		OS.shell_show_in_file_manager(exportPath)
-	else:
-		push_error("Could not write JSON file: " + exportPath)
-
-func _on_export_html_pressed():
-	if _currentResult == null:
-		return
-
-	var projectDir = _selectedProjectItem.GetProjectDir()
-	var exportPath = projectDir + "/code_quality_report.html"
-
-	var html = _generateHTMLReport()
-
-	var file = FileAccess.open(exportPath, FileAccess.WRITE)
-	if file:
-		file.store_string(html)
-		file.close()
-		OS.shell_open(exportPath)
-	else:
-		push_error("Could not write HTML file: " + exportPath)
-
-# Issue type display names
+# Issue type display names mapped to check_ids
 const ISSUE_TYPES := {
+	"all": "All Types",
 	"file-length": "File Length",
 	"long-function": "Long Function",
 	"long-line": "Long Line",
@@ -595,12 +37,1363 @@ const ISSUE_TYPES := {
 	"unused-parameter": "Unused Parameter"
 }
 
-func _generateHTMLReport() -> String:
-	var critical: Array = _currentResult.get_issues_by_severity(QubeIssue.Severity.CRITICAL)
-	var warnings: Array = _currentResult.get_issues_by_severity(QubeIssue.Severity.WARNING)
-	var info: Array = _currentResult.get_issues_by_severity(QubeIssue.Severity.INFO)
+# UI References - Project Card Header
+@onready var _thumbTextureRect: TextureRect = %ThumbTextureRect
+@onready var _projectNameLabel: Label = %ProjectNameLabel
+@onready var _projectPathLabel: Label = %ProjectPathLabel
+@onready var _folderButton: Button = %FolderButton
+@onready var _lastScannedLabel: Label = %LastScannedLabel
 
-	# Collect types by severity for linked filtering
+# UI References - Toolbar and main UI
+@onready var _scanButton: Button = %ScanButton
+@onready var _exportJSONButton: Button = %ExportJSONButton
+@onready var _exportHTMLButton: Button = %ExportHTMLButton
+@onready var _settingsButton: Button = %SettingsButton
+@onready var _severityFilter: OptionButton = %SeverityFilter
+@onready var _typeFilter: OptionButton = %TypeFilter
+@onready var _fileFilter: LineEdit = %FileFilter
+@onready var _resultsLabel: RichTextLabel = %ResultsLabel
+@onready var _settingsPanel: PanelContainer = %SettingsPanel
+@onready var _resultsScroll: ScrollContainer = %ResultsScroll
+
+# UI References - Report Card
+@onready var _reportCard: PanelContainer = %ReportCard
+@onready var _headerContainer: PanelContainer = %HeaderContainer
+@onready var _contentContainer: PanelContainer = %ContentContainer
+@onready var _headerLabel: Label = %HeaderLabel
+
+# Busy overlay
+var _busy_overlay: Control
+var _busy_spinner: Label
+var _busy_animation_timer: Timer
+var _spinner_frames := ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+var _spinner_frame_index: int = 0
+
+# State
+var _selectedProjectItem = null
+var _currentConfig: Resource = null
+var _currentResult = null
+var _lastScannedTimestamp: String = ""
+
+# Filter state
+var _currentSeverityFilter: String = "all"
+var _currentTypeFilter: String = "all"
+var _currentFileFilter: String = ""
+
+# Claude button interaction state
+var _hovered_claude_link: String = ""
+var _claude_context_menu: PopupMenu
+var _claude_tooltip: PanelContainer
+var _grouped_issues_by_type: Dictionary = {}  # check_id -> Array of issues
+var _grouped_issues_by_severity: Dictionary = {}  # severity -> Array of issues
+
+# Claude customize dialog
+var _claude_customize_popup: PanelContainer
+var _claude_customize_context: RichTextLabel
+var _claude_customize_command: LineEdit
+var _claude_customize_instructions: TextEdit
+var _claude_customize_pending_link: String = ""
+var _claude_context_menu_link: String = ""
+
+# Settings manager and controls
+var _settings_manager: RefCounted
+var _settings_controls: Dictionary = {}
+
+# Track if checks changed while settings panel was open
+var _checks_changed_while_settings_open: bool = false
+
+
+func _ready():
+	_init_config_and_settings_panel()
+	_init_settings_manager()
+	_setup_filters()
+	_connect_signals()
+	_setup_claude_context_menu()
+	_setup_claude_tooltip()
+	_setup_claude_customize_popup()
+	_apply_initial_visibility()
+	_add_results_styling()
+	_setup_busy_overlay()
+
+
+func _init_config_and_settings_panel() -> void:
+	_currentConfig = QubeConfig.new()
+	var reset_icon = load("res://scenes/code-quality-manager/assets/arrow-reset.svg")
+	var card_builder = SettingsCardBuilderScript.new(reset_icon)
+	card_builder.build_settings_panel(_settingsPanel, _settings_controls)
+
+
+func _init_settings_manager() -> void:
+	_settings_manager = SettingsManagerScript.new(_currentConfig)
+	_settings_manager.controls = _settings_controls
+	_settings_manager.display_refresh_needed.connect(_on_display_refresh_needed)
+	_settings_manager.setting_changed.connect(_on_setting_changed)
+	_settings_manager.connect_controls(_exportJSONButton, _exportHTMLButton)
+
+
+func _setup_filters() -> void:
+	_severityFilter.clear()
+	_severityFilter.add_item("All Severities", 0)
+	_severityFilter.add_item("Critical", 1)
+	_severityFilter.add_item("Warnings", 2)
+	_severityFilter.add_item("Info", 3)
+	_populate_type_filter()
+
+
+func _connect_signals() -> void:
+	_resultsLabel.meta_underlined = false
+	_resultsLabel.meta_clicked.connect(_on_link_clicked)
+	_resultsLabel.meta_hover_started.connect(_on_meta_hover_started)
+	_resultsLabel.meta_hover_ended.connect(_on_meta_hover_ended)
+	_resultsLabel.gui_input.connect(_on_results_gui_input)
+	_severityFilter.item_selected.connect(_on_severity_filter_changed)
+	_typeFilter.item_selected.connect(_on_type_filter_changed)
+	_fileFilter.text_changed.connect(_on_file_filter_changed)
+
+
+func _apply_initial_visibility() -> void:
+	_exportJSONButton.visible = _settings_manager.show_json_export
+	_exportHTMLButton.visible = _settings_manager.show_html_export
+	_exportJSONButton.disabled = true
+	_exportHTMLButton.disabled = true
+	_settingsPanel.visible = false
+
+
+func _add_results_styling() -> void:
+	var results_style := StyleBoxFlat.new()
+	results_style.bg_color = Color(0, 0, 0, 0)
+	_resultsLabel.add_theme_stylebox_override("normal", results_style)
+	_style_report_card()
+	_style_scrollbar()
+
+
+func _style_report_card() -> void:
+	# Get base background color and darken slightly for card
+	var base_color := Color(0.18, 0.20, 0.25)  # Default dark theme approximation
+	var card_bg := base_color.darkened(0.08)
+
+	# Style outer card panel (rounded corners, border)
+	var card_theme := Theme.new()
+	var card_style := StyleBoxFlat.new()
+	card_style.bg_color = card_bg
+	card_style.border_color = Color(0.6, 0.6, 0.6)
+	card_style.set_border_width_all(1)
+	card_style.set_corner_radius_all(6)
+	card_theme.set_stylebox("panel", "PanelContainer", card_style)
+	_reportCard.theme = card_theme
+
+	# Style header container (transparent bg, bottom border only)
+	var header_theme := Theme.new()
+	var header_style := StyleBoxFlat.new()
+	header_style.bg_color = Color(0, 0, 0, 0)
+	header_style.border_color = Color(0.6, 0.6, 0.6)
+	header_style.border_width_bottom = 1
+	header_theme.set_stylebox("panel", "PanelContainer", header_style)
+	_headerContainer.theme = header_theme
+
+	# Style content container (transparent)
+	var content_theme := Theme.new()
+	var content_style := StyleBoxFlat.new()
+	content_style.bg_color = Color(0, 0, 0, 0)
+	content_theme.set_stylebox("panel", "PanelContainer", content_style)
+	_contentContainer.theme = content_theme
+
+
+func _style_scrollbar() -> void:
+	# Match scrollbar width to Project Manager style (20px)
+	var scrollbar := _resultsScroll.get_v_scroll_bar()
+	if scrollbar:
+		scrollbar.custom_minimum_size.x = 20
+
+
+func _setup_busy_overlay() -> void:
+	# Create overlay container that covers the entire panel
+	_busy_overlay = Control.new()
+	_busy_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_busy_overlay.mouse_filter = Control.MOUSE_FILTER_STOP  # Block all mouse input
+	_busy_overlay.visible = false
+	_busy_overlay.z_index = 100
+	add_child(_busy_overlay)
+	# Move to front so it's above all siblings including OuterMargin
+	move_child(_busy_overlay, -1)
+
+	# Semi-transparent dark background
+	var bg := ColorRect.new()
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.color = Color(0.1, 0.12, 0.15, 0.85)
+	_busy_overlay.add_child(bg)
+
+	# Center container for spinner and text
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_busy_overlay.add_child(center)
+
+	# Panel for the loading indicator
+	var panel := PanelContainer.new()
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.15, 0.17, 0.21, 0.95)
+	panel_style.set_corner_radius_all(8)
+	panel_style.set_content_margin_all(24)
+	panel.add_theme_stylebox_override("panel", panel_style)
+	center.add_child(panel)
+
+	# VBox for spinner and label
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 12)
+	panel.add_child(vbox)
+
+	# Spinner label (static hourglass since analysis blocks the thread)
+	_busy_spinner = Label.new()
+	_busy_spinner.text = "⏳"
+	_busy_spinner.add_theme_font_size_override("font_size", 48)
+	_busy_spinner.add_theme_color_override("font_color", Color(0.4, 0.6, 0.9))
+	_busy_spinner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(_busy_spinner)
+
+	# "Scanning..." label
+	var label := Label.new()
+	label.text = "Scanning codebase...\nThis may take a moment."
+	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.75))
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(label)
+
+	# Animation timer
+	_busy_animation_timer = Timer.new()
+	_busy_animation_timer.wait_time = 0.08
+	_busy_animation_timer.timeout.connect(_on_busy_animation_tick)
+	add_child(_busy_animation_timer)
+
+
+func _on_busy_animation_tick() -> void:
+	_spinner_frame_index = (_spinner_frame_index + 1) % _spinner_frames.size()
+	_busy_spinner.text = _spinner_frames[_spinner_frame_index]
+
+
+func _show_busy_overlay() -> void:
+	_spinner_frame_index = 0
+	_busy_spinner.text = _spinner_frames[0]
+	# Ensure overlay fills the entire panel
+	_busy_overlay.size = size
+	_busy_overlay.position = Vector2.ZERO
+	_busy_overlay.visible = true
+	_busy_overlay.move_to_front()
+	_busy_animation_timer.start()
+
+
+func _hide_busy_overlay() -> void:
+	_busy_overlay.visible = false
+	_busy_animation_timer.stop()
+
+
+# Called by ProjectManager to configure with selected project
+func Configure(selectedProjectItem):
+	_selectedProjectItem = selectedProjectItem
+	_projectNameLabel.text = selectedProjectItem.GetProjectName()
+	_projectPathLabel.text = selectedProjectItem.GetProjectDir()
+	_loadThumbnail()
+	_loadSettings()
+	_loadLastScanned()
+
+
+func _loadSettings():
+	_currentConfig = QubeConfig.new()
+	var projectDir = _selectedProjectItem.GetProjectDir()
+	var configPath = projectDir.path_join(".gdqube.cfg")
+	if FileAccess.file_exists(configPath):
+		_currentConfig.load_project_config(projectDir)
+	_settings_manager.config = _currentConfig
+	_settings_manager.project_directory = projectDir
+	_settings_manager.load_settings()
+	_restoreFilterSelections()
+
+
+func _restoreFilterSelections() -> void:
+	if not _settings_manager.remember_filter_selections:
+		return
+
+	# Restore severity filter
+	var saved_severity: int = _settings_manager.saved_severity_filter
+	if saved_severity >= 0 and saved_severity < _severityFilter.item_count:
+		_severityFilter.select(saved_severity)
+		match saved_severity:
+			0: _currentSeverityFilter = "all"
+			1: _currentSeverityFilter = "critical"
+			2: _currentSeverityFilter = "warning"
+			3: _currentSeverityFilter = "info"
+
+	# Restore type filter (find by metadata)
+	var saved_type: String = _settings_manager.saved_type_filter
+	for i in range(_typeFilter.item_count):
+		if _typeFilter.get_item_metadata(i) == saved_type:
+			_typeFilter.select(i)
+			_currentTypeFilter = saved_type
+			break
+
+	# Restore file filter
+	var saved_file: String = _settings_manager.saved_file_filter
+	if not saved_file.is_empty():
+		_fileFilter.text = saved_file
+		_currentFileFilter = saved_file.to_lower()
+
+
+func _on_display_refresh_needed() -> void:
+	if _currentResult:
+		_display_results()
+
+
+func _on_setting_changed(key: String, _value: Variant) -> void:
+	if key.begins_with("check_") or key == "all_checks":
+		_checks_changed_while_settings_open = true
+
+
+func _populate_type_filter(sev_filter: String = "all") -> void:
+	_typeFilter.clear()
+	var idx := 0
+
+	_typeFilter.add_item("All Types", idx)
+	_typeFilter.set_item_metadata(idx, "all")
+	idx += 1
+
+	var available_types := _get_available_types_for_severity(sev_filter)
+
+	for check_id in ISSUE_TYPES:
+		if check_id == "all":
+			continue
+		if sev_filter == "all" or check_id in available_types:
+			_typeFilter.add_item(ISSUE_TYPES[check_id], idx)
+			_typeFilter.set_item_metadata(idx, check_id)
+			idx += 1
+
+
+func _get_available_types_for_severity(sev_filter: String) -> Dictionary:
+	var available: Dictionary = {}
+	if not _currentResult:
+		return available
+
+	for issue in _currentResult.issues:
+		var matches_severity := false
+		match sev_filter:
+			"all": matches_severity = true
+			"critical": matches_severity = issue.severity == QubeIssue.Severity.CRITICAL
+			"warning": matches_severity = issue.severity == QubeIssue.Severity.WARNING
+			"info": matches_severity = issue.severity == QubeIssue.Severity.INFO
+
+		if matches_severity:
+			available[issue.check_id] = true
+
+	return available
+
+
+func _on_scan_button_pressed():
+	_settingsPanel.visible = false
+	_resultsScroll.visible = true
+
+	_scanButton.disabled = true
+	_exportJSONButton.disabled = true
+	_exportHTMLButton.disabled = true
+	_resultsLabel.text = "[color=#888888]Analyzing codebase...[/color]"
+
+	# Show busy overlay before starting analysis
+	_show_busy_overlay()
+
+	# Wait two frames to ensure overlay renders before blocking analysis
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	_run_analysis()
+
+
+func _run_analysis():
+	var projectDir = _selectedProjectItem.GetProjectDir()
+
+	var analyzer = QubeAnalyzer.new()
+	analyzer.config = _currentConfig
+
+	_currentResult = analyzer.analyze_directory(projectDir)
+
+	# Update and save last scanned timestamp
+	_lastScannedTimestamp = Time.get_datetime_string_from_system().replace("T", " ").substr(0, 16)
+	_updateLastScannedLabel()
+	_saveLastScanned()
+
+	_display_results()
+
+	_scanButton.disabled = false
+	var issueCount = _currentResult.issues.size()
+	_exportJSONButton.disabled = (issueCount == 0)
+	_exportHTMLButton.disabled = (issueCount == 0)
+
+	# Hide busy overlay when done
+	_hide_busy_overlay()
+
+
+func _on_severity_filter_changed(index: int) -> void:
+	match index:
+		0: _currentSeverityFilter = "all"
+		1: _currentSeverityFilter = "critical"
+		2: _currentSeverityFilter = "warning"
+		3: _currentSeverityFilter = "info"
+
+	if _currentResult:
+		var prev_type := _currentTypeFilter
+		_populate_type_filter(_currentSeverityFilter)
+
+		var restored := false
+		for i in range(_typeFilter.item_count):
+			if _typeFilter.get_item_metadata(i) == prev_type:
+				_typeFilter.select(i)
+				_currentTypeFilter = prev_type
+				restored = true
+				break
+
+		if not restored:
+			_typeFilter.select(0)
+			_currentTypeFilter = "all"
+
+		_display_results()
+
+	_save_filter_selections()
+
+
+func _on_type_filter_changed(index: int) -> void:
+	_currentTypeFilter = _typeFilter.get_item_metadata(index)
+	if _currentResult:
+		_display_results()
+	_save_filter_selections()
+
+
+func _on_file_filter_changed(new_text: String) -> void:
+	_currentFileFilter = new_text.to_lower()
+	if _currentResult:
+		_display_results()
+	_save_filter_selections()
+
+
+func _save_filter_selections() -> void:
+	if _settings_manager:
+		_settings_manager.save_filter_selections(
+			_severityFilter.selected,
+			_currentTypeFilter,
+			_fileFilter.text
+		)
+
+
+func _on_settings_button_pressed() -> void:
+	var was_visible := _settingsPanel.visible
+	_settingsPanel.visible = not _settingsPanel.visible
+	_resultsScroll.visible = not _settingsPanel.visible
+
+	# If closing settings and checks changed, re-run analysis
+	if was_visible and _checks_changed_while_settings_open:
+		_checks_changed_while_settings_open = false
+		if _currentResult:
+			call_deferred("_run_analysis")
+
+
+# === CLAUDE CODE INTEGRATION ===
+
+func _setup_claude_context_menu() -> void:
+	_claude_context_menu = PopupMenu.new()
+	_claude_context_menu.add_item("Plan Fix (default)", 0)
+	_claude_context_menu.add_item("Fix Immediately", 1)
+	_claude_context_menu.add_separator()
+	_claude_context_menu.add_item("Customize...", 2)
+	_claude_context_menu.id_pressed.connect(_on_claude_context_menu_selected)
+	add_child(_claude_context_menu)
+
+
+func _setup_claude_tooltip() -> void:
+	var label := Label.new()
+	label.text = "Click: Plan mode | Shift+Click: Fix now | Right-click: Options"
+	label.add_theme_font_size_override("font_size", 11)
+	label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
+
+	_claude_tooltip = PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.11, 0.13, 0.16, 0.95)
+	style.border_color = Color(0.3, 0.3, 0.35)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(4)
+	style.set_content_margin_all(6)
+	_claude_tooltip.add_theme_stylebox_override("panel", style)
+	_claude_tooltip.add_child(label)
+	_claude_tooltip.visible = false
+	_claude_tooltip.z_index = 100
+	add_child(_claude_tooltip)
+
+
+func _setup_claude_customize_popup() -> void:
+	_claude_customize_popup = _create_popup_container()
+	var vbox := _create_popup_vbox()
+	_claude_customize_popup.add_child(vbox)
+
+	_add_popup_title(vbox)
+	_add_popup_context_section(vbox)
+	_add_popup_command_section(vbox)
+	_add_popup_instructions_section(vbox)
+	_add_popup_buttons(vbox)
+
+	add_child(_claude_customize_popup)
+
+
+func _create_popup_container() -> PanelContainer:
+	var popup := PanelContainer.new()
+	popup.custom_minimum_size = Vector2(550, 500)
+	popup.visible = false
+	popup.z_index = 200
+	popup.top_level = true
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.11, 0.13, 0.16, 0.98)
+	style.border_color = Color(0.3, 0.35, 0.45, 0.8)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(8)
+	style.set_content_margin_all(16)
+	popup.add_theme_stylebox_override("panel", style)
+	return popup
+
+
+func _create_popup_vbox() -> VBoxContainer:
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	return vbox
+
+
+func _add_popup_title(vbox: VBoxContainer) -> void:
+	var title := Label.new()
+	title.text = "Customize Claude Launch"
+	title.add_theme_font_size_override("font_size", 16)
+	title.add_theme_color_override("font_color", Color(0.9, 0.9, 0.95))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+
+	var sep := HSeparator.new()
+	sep.add_theme_constant_override("separation", 6)
+	vbox.add_child(sep)
+
+
+func _create_section_label(label_text: String) -> Label:
+	var label := Label.new()
+	label.text = label_text
+	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_color_override("font_color", Color(0.75, 0.75, 0.8))
+	return label
+
+
+func _add_popup_context_section(vbox: VBoxContainer) -> void:
+	vbox.add_child(_create_section_label("Issue Context:"))
+
+	_claude_customize_context = RichTextLabel.new()
+	_claude_customize_context.bbcode_enabled = true
+	_claude_customize_context.fit_content = false
+	_claude_customize_context.scroll_active = true
+	_claude_customize_context.custom_minimum_size = Vector2(0, 100)
+	_claude_customize_context.add_theme_font_size_override("normal_font_size", 11)
+	_claude_customize_context.add_theme_color_override("default_color", Color(0.7, 0.75, 0.8))
+
+	var context_style := StyleBoxFlat.new()
+	context_style.bg_color = Color(0.09, 0.11, 0.14, 1.0)
+	context_style.set_corner_radius_all(4)
+	context_style.set_content_margin_all(8)
+	_claude_customize_context.add_theme_stylebox_override("normal", context_style)
+	vbox.add_child(_claude_customize_context)
+
+
+func _add_popup_command_section(vbox: VBoxContainer) -> void:
+	vbox.add_child(_create_section_label("Launch Command:"))
+
+	_claude_customize_command = LineEdit.new()
+	_claude_customize_command.placeholder_text = "claude --permission-mode plan"
+	_claude_customize_command.add_theme_font_size_override("font_size", 12)
+	vbox.add_child(_claude_customize_command)
+
+
+func _add_popup_instructions_section(vbox: VBoxContainer) -> void:
+	vbox.add_child(_create_section_label("Custom Instructions:"))
+
+	_claude_customize_instructions = TextEdit.new()
+	_claude_customize_instructions.placeholder_text = "Additional instructions for Claude..."
+	_claude_customize_instructions.add_theme_font_size_override("font_size", 12)
+	_claude_customize_instructions.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_claude_customize_instructions.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	vbox.add_child(_claude_customize_instructions)
+
+
+func _add_popup_buttons(vbox: VBoxContainer) -> void:
+	var btn_container := HBoxContainer.new()
+	btn_container.alignment = BoxContainer.ALIGNMENT_END
+	btn_container.add_theme_constant_override("separation", 8)
+	vbox.add_child(btn_container)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = "Cancel"
+	cancel_btn.custom_minimum_size = Vector2(80, 32)
+	cancel_btn.pressed.connect(_on_claude_customize_cancel)
+	btn_container.add_child(cancel_btn)
+
+	var launch_btn := Button.new()
+	launch_btn.text = "Launch"
+	launch_btn.custom_minimum_size = Vector2(80, 32)
+	launch_btn.pressed.connect(_on_claude_customize_launch)
+	btn_container.add_child(launch_btn)
+
+
+func _show_claude_customize_popup() -> void:
+	_claude_customize_command.text = _settings_manager.claude_code_command
+	_claude_customize_instructions.text = _settings_manager.claude_custom_instructions
+
+	var context_text := ""
+
+	if _claude_customize_pending_link.begins_with("claude://"):
+		var encoded_data: String = _claude_customize_pending_link.substr(9)
+		var decoded_data: String = encoded_data.uri_decode()
+		var parts := decoded_data.split("|")
+		if parts.size() >= 5:
+			context_text = "[b]Single Issue[/b]\n"
+			context_text += "[color=#8899aa]File:[/color] %s\n" % parts[0]
+			context_text += "[color=#8899aa]Line:[/color] %s\n" % parts[1]
+			context_text += "[color=#8899aa]Type:[/color] %s\n" % parts[2]
+			context_text += "[color=#8899aa]Severity:[/color] %s\n" % parts[3]
+			context_text += "[color=#8899aa]Message:[/color] %s" % parts[4]
+
+	elif _claude_customize_pending_link.begins_with("claude-type://"):
+		var type_key: String = _claude_customize_pending_link.substr(14).uri_decode()
+		if _grouped_issues_by_type.has(type_key):
+			var issues: Array = _grouped_issues_by_type[type_key]
+			context_text = "[b]Batch: %d issues of type '%s'[/b]\n\n" % [issues.size(), type_key]
+			for i in range(mini(issues.size(), 5)):
+				var issue = issues[i]
+				context_text += "[color=#6688aa]%d.[/color] %s:%d - %s\n" % [i + 1, issue.file_path, issue.line, issue.message]
+			if issues.size() > 5:
+				context_text += "[color=#666677]... and %d more[/color]" % (issues.size() - 5)
+
+	elif _claude_customize_pending_link.begins_with("claude-severity://"):
+		var severity_key: String = _claude_customize_pending_link.substr(18)
+		if _grouped_issues_by_severity.has(severity_key):
+			var issues: Array = _grouped_issues_by_severity[severity_key]
+			context_text = "[b]Batch: %d %s issues[/b]\n\n" % [issues.size(), severity_key]
+			for i in range(mini(issues.size(), 5)):
+				var issue = issues[i]
+				context_text += "[color=#6688aa]%d.[/color] %s:%d - %s\n" % [i + 1, issue.file_path, issue.line, issue.message]
+			if issues.size() > 5:
+				context_text += "[color=#666677]... and %d more[/color]" % (issues.size() - 5)
+
+	_claude_customize_context.clear()
+	_claude_customize_context.append_text(context_text)
+
+	var screen_size := DisplayServer.screen_get_size()
+	var popup_size := _claude_customize_popup.custom_minimum_size
+	_claude_customize_popup.global_position = Vector2(
+		(screen_size.x - popup_size.x) / 2,
+		(screen_size.y - popup_size.y) / 2
+	)
+	_claude_customize_popup.visible = true
+
+
+func _on_claude_customize_cancel() -> void:
+	_claude_customize_popup.visible = false
+	_claude_customize_pending_link = ""
+
+
+func _on_claude_customize_launch() -> void:
+	_claude_customize_popup.visible = false
+
+	if _claude_customize_pending_link.is_empty():
+		return
+
+	var custom_command := _claude_customize_command.text.strip_edges()
+	var custom_instructions := _claude_customize_instructions.text
+
+	if _claude_customize_pending_link.begins_with("claude://"):
+		var encoded_data: String = _claude_customize_pending_link.substr(9)
+		var decoded_data: String = encoded_data.uri_decode()
+		var parts := decoded_data.split("|")
+
+		if parts.size() >= 5:
+			var issue_data := {
+				"file_path": parts[0],
+				"line": int(parts[1]),
+				"check_id": parts[2],
+				"severity": parts[3],
+				"message": parts[4]
+			}
+			_launch_claude_code_custom(issue_data, custom_command, custom_instructions)
+
+	elif _claude_customize_pending_link.begins_with("claude-type://"):
+		var type_key: String = _claude_customize_pending_link.substr(14).uri_decode()
+		if _grouped_issues_by_type.has(type_key):
+			_launch_claude_code_batch_custom(_grouped_issues_by_type[type_key], custom_command, custom_instructions)
+
+	elif _claude_customize_pending_link.begins_with("claude-severity://"):
+		var severity_key: String = _claude_customize_pending_link.substr(18)
+		if _grouped_issues_by_severity.has(severity_key):
+			_launch_claude_code_batch_custom(_grouped_issues_by_severity[severity_key], custom_command, custom_instructions)
+
+	_claude_customize_pending_link = ""
+
+
+func _on_meta_hover_started(meta: Variant) -> void:
+	var link := str(meta)
+	if link.begins_with("claude://") or link.begins_with("claude-type://") or link.begins_with("claude-severity://"):
+		_hovered_claude_link = link
+		_show_claude_tooltip()
+
+
+func _on_meta_hover_ended(_meta: Variant) -> void:
+	_hovered_claude_link = ""
+	_hide_claude_tooltip()
+
+
+func _show_claude_tooltip() -> void:
+	if not _claude_tooltip or not _settings_manager.claude_code_enabled:
+		return
+	var mouse_pos := get_global_mouse_position()
+	_claude_tooltip.global_position = mouse_pos + Vector2(15, -30)
+	_claude_tooltip.visible = true
+
+
+func _hide_claude_tooltip() -> void:
+	if _claude_tooltip:
+		_claude_tooltip.visible = false
+
+
+func _on_results_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		if mb.button_index == MOUSE_BUTTON_RIGHT and mb.pressed:
+			if _hovered_claude_link != "" and _settings_manager.claude_code_enabled:
+				_hide_claude_tooltip()
+				_claude_context_menu_link = _hovered_claude_link
+				_claude_context_menu.position = DisplayServer.mouse_get_position() + Vector2i(16, -8)
+				_claude_context_menu.popup()
+				get_viewport().set_input_as_handled()
+
+
+func _on_claude_context_menu_selected(id: int) -> void:
+	if _claude_context_menu_link == "":
+		return
+
+	if id == 2:
+		_claude_customize_pending_link = _claude_context_menu_link
+		_show_claude_customize_popup()
+		return
+
+	var use_plan_mode := (id == 0)
+
+	if _claude_context_menu_link.begins_with("claude://"):
+		var encoded_data: String = _claude_context_menu_link.substr(9)
+		var decoded_data: String = encoded_data.uri_decode()
+		var parts := decoded_data.split("|")
+
+		if parts.size() >= 5:
+			var issue_data := {
+				"file_path": parts[0],
+				"line": int(parts[1]),
+				"check_id": parts[2],
+				"severity": parts[3],
+				"message": parts[4]
+			}
+			_launch_claude_code(issue_data, use_plan_mode)
+		return
+
+	if _claude_context_menu_link.begins_with("claude-type://"):
+		var type_key: String = _claude_context_menu_link.substr(14).uri_decode()
+		if _grouped_issues_by_type.has(type_key):
+			_launch_claude_code_batch(_grouped_issues_by_type[type_key], use_plan_mode)
+		return
+
+	if _claude_context_menu_link.begins_with("claude-severity://"):
+		var severity_key: String = _claude_context_menu_link.substr(18)
+		if _grouped_issues_by_severity.has(severity_key):
+			_launch_claude_code_batch(_grouped_issues_by_severity[severity_key], use_plan_mode)
+
+
+# === RESULTS DISPLAY ===
+
+func _display_results() -> void:
+	if not _currentResult:
+		return
+
+	_grouped_issues_by_type.clear()
+	_grouped_issues_by_severity.clear()
+
+	# Update header label with summary
+	_headerLabel.text = _build_header_text()
+
+	# Build body content
+	var filtered := _filter_issues(_currentResult.issues.duplicate())
+	var bbcode := _build_active_filters_text(filtered.size())
+
+	var grouped := _group_issues_by_severity(filtered)
+
+	_grouped_issues_by_severity = {
+		"critical": grouped.critical,
+		"warning": grouped.warning,
+		"info": grouped.info
+	}
+
+	bbcode += _format_severity_section(grouped.critical, "CRITICAL", "🔴", "#ff6b6b", "critical")
+	bbcode += _format_severity_section(grouped.warning, "WARNINGS", "🟡", "#ffd93d", "warning")
+	bbcode += _format_severity_section(grouped.info, "INFO", "🔵", "#6bcb77", "info")
+
+	if filtered.size() == 0:
+		bbcode += "[color=#888888]No issues matching current filters[/color]"
+
+	if _settings_manager.show_ignored_issues:
+		bbcode += _format_ignored_section()
+
+	_resultsLabel.text = bbcode
+
+
+func _build_header_text() -> String:
+	var parts: Array[String] = [
+		"Code Quality Report",
+		"Files: %d" % _currentResult.files_analyzed,
+		"Lines: %d" % _currentResult.total_lines,
+		"Time: %dms" % _currentResult.analysis_time_ms
+	]
+
+	if _settings_manager.show_total_issues:
+		parts.append("Issues: %d" % _currentResult.issues.size())
+	if _settings_manager.show_debt:
+		parts.append("Debt: %d" % _currentResult.get_total_debt_score())
+
+	return "  -  ".join(parts)
+
+
+func _build_active_filters_text(count: int) -> String:
+	var active: Array[String] = []
+	if _currentSeverityFilter != "all":
+		active.append(_currentSeverityFilter.capitalize())
+	if _currentTypeFilter != "all":
+		active.append(ISSUE_TYPES.get(_currentTypeFilter, _currentTypeFilter))
+	if _currentFileFilter != "":
+		active.append("\"%s\"" % _currentFileFilter)
+	if active.size() > 0:
+		return "[color=#888888]Filters: %s (%d matches)[/color]\n\n" % [", ".join(active), count]
+	return ""
+
+
+func _group_issues_by_severity(issues: Array) -> Dictionary:
+	var grouped := {"critical": [], "warning": [], "info": []}
+	for issue in issues:
+		match issue.severity:
+			QubeIssue.Severity.CRITICAL: grouped.critical.append(issue)
+			QubeIssue.Severity.WARNING: grouped.warning.append(issue)
+			QubeIssue.Severity.INFO: grouped.info.append(issue)
+	return grouped
+
+
+func _format_severity_section(issues: Array, label: String, emoji: String, color: String, severity_key: String) -> String:
+	if issues.size() == 0:
+		return ""
+	var bbcode := "[color=%s][b]%s %s (%d)[/b][/color]" % [color, emoji, label, issues.size()]
+
+	if _settings_manager.claude_code_enabled:
+		bbcode += " [url=claude-severity://%s][img=20x20]res://scenes/code-quality-manager/assets/claude.png[/img][/url]" % severity_key
+
+	bbcode += "\n"
+	bbcode += _format_issues_by_type(issues, color, severity_key)
+	return bbcode + "\n"
+
+
+func _format_issues_by_type(issues: Array, color: String, severity_key: String) -> String:
+	var bbcode := ""
+
+	var by_type: Dictionary = {}
+	for issue in issues:
+		var check_id: String = issue.check_id
+		if not by_type.has(check_id):
+			by_type[check_id] = []
+		by_type[check_id].append(issue)
+
+	for check_id in by_type:
+		var type_key := "%s|%s" % [severity_key, check_id]
+		_grouped_issues_by_type[type_key] = by_type[check_id]
+
+	var type_keys := by_type.keys()
+	type_keys.sort_custom(func(a, b): return by_type[a].size() > by_type[b].size())
+
+	var is_first_type := true
+	for check_id in type_keys:
+		var type_issues: Array = by_type[check_id]
+		var type_name: String = ISSUE_TYPES.get(check_id, check_id)
+
+		if not is_first_type:
+			bbcode += "\n"
+		is_first_type = false
+
+		bbcode += "  [color=#aaaaaa]── %s (%d)[/color]" % [type_name, type_issues.size()]
+
+		if _settings_manager.claude_code_enabled:
+			var type_key := "%s|%s" % [severity_key, check_id]
+			bbcode += " [url=claude-type://%s][img=16x16]res://scenes/code-quality-manager/assets/claude.png[/img][/url]" % type_key.uri_encode()
+
+		bbcode += " [color=#aaaaaa]──[/color]\n"
+
+		var shown := 0
+		for issue in type_issues:
+			if shown >= ISSUES_PER_CATEGORY:
+				bbcode += "  [color=#888888]  ... and %d more[/color]\n" % (type_issues.size() - shown)
+				break
+			bbcode += _format_issue(issue, color)
+			shown += 1
+
+	return bbcode
+
+
+func _format_issue(issue, color: String) -> String:
+	var display_path: String = _getDisplayPath(issue.file_path)
+
+	var line := "    [color=%s]%s:%d[/color] %s" % [
+		color, display_path, issue.line, issue.message
+	]
+
+	if _settings_manager.claude_code_enabled:
+		var severity_str: String = "unknown"
+		match issue.severity:
+			QubeIssue.Severity.CRITICAL: severity_str = "critical"
+			QubeIssue.Severity.WARNING: severity_str = "warning"
+			QubeIssue.Severity.INFO: severity_str = "info"
+
+		var claude_data := "%s|%d|%s|%s|%s" % [
+			issue.file_path, issue.line, issue.check_id, severity_str,
+			issue.message.replace("|", "-")
+		]
+		line += " [url=claude://%s][img=20x20]res://scenes/code-quality-manager/assets/claude.png[/img][/url]" % claude_data.uri_encode()
+
+	return line + "\n"
+
+
+func _format_ignored_section() -> String:
+	if not _currentResult or _currentResult.ignored_issues.size() == 0:
+		return ""
+
+	var ignored: Array = _currentResult.ignored_issues.filter(_matches_severity_and_file)
+
+	if ignored.size() == 0:
+		return ""
+
+	var by_type: Dictionary = {}
+	for issue in ignored:
+		var check_id: String = issue.check_id
+		if not by_type.has(check_id):
+			by_type[check_id] = []
+		by_type[check_id].append(issue)
+
+	var bbcode := "\n[color=#666666][b]── Ignored (%d) ──[/b][/color]\n" % ignored.size()
+
+	var type_keys := by_type.keys()
+	type_keys.sort_custom(func(a, b): return by_type[a].size() > by_type[b].size())
+
+	for check_id in type_keys:
+		var type_issues: Array = by_type[check_id]
+		var type_name: String = ISSUE_TYPES.get(check_id, check_id)
+
+		if type_issues.size() <= 3:
+			var refs: Array[String] = []
+			for issue in type_issues:
+				var display_path: String = _getDisplayPath(issue.file_path)
+				refs.append("%s:%d" % [display_path, issue.line])
+			bbcode += "  [color=#555555]%s: %s[/color]\n" % [type_name.to_lower(), ", ".join(refs)]
+		else:
+			bbcode += "  [color=#555555]%s (%d):[/color]\n" % [type_name.to_lower(), type_issues.size()]
+			var shown := 0
+			for issue in type_issues:
+				if shown >= ISSUES_PER_CATEGORY:
+					bbcode += "    [color=#444444]... and %d more[/color]\n" % (type_issues.size() - shown)
+					break
+				var display_path: String = _getDisplayPath(issue.file_path)
+				bbcode += "    [color=#555555]%s:%d[/color] %s\n" % [
+					display_path, issue.line, issue.message
+				]
+				shown += 1
+
+	return bbcode
+
+
+# Get display path respecting show_full_path setting
+func _getDisplayPath(absolute_path: String) -> String:
+	var res_path: String = _toResPath(absolute_path)
+	if _settings_manager.show_full_path:
+		return res_path
+	return res_path.get_file()
+
+
+# === FILTER HELPERS ===
+
+func _matches_severity(issue) -> bool:
+	if _currentSeverityFilter == "all":
+		return true
+	match _currentSeverityFilter:
+		"critical": return issue.severity == QubeIssue.Severity.CRITICAL
+		"warning": return issue.severity == QubeIssue.Severity.WARNING
+		"info": return issue.severity == QubeIssue.Severity.INFO
+	return false
+
+
+func _matches_type(issue) -> bool:
+	return _currentTypeFilter == "all" or issue.check_id == _currentTypeFilter
+
+
+func _matches_file(issue) -> bool:
+	return _currentFileFilter == "" or _currentFileFilter in issue.file_path.to_lower()
+
+
+func _matches_current_filters(issue) -> bool:
+	return _matches_severity(issue) and _matches_type(issue) and _matches_file(issue)
+
+
+func _matches_severity_and_file(issue) -> bool:
+	return _matches_severity(issue) and _matches_file(issue)
+
+
+func _filter_issues(issues: Array) -> Array:
+	return issues.filter(_matches_current_filters)
+
+
+# === LINK HANDLERS ===
+
+func _on_link_clicked(meta: Variant) -> void:
+	var location := str(meta)
+
+	if location.begins_with("claude://"):
+		_handle_claude_single_link(location)
+	elif location.begins_with("claude-type://"):
+		_handle_claude_type_link(location)
+	elif location.begins_with("claude-severity://"):
+		_handle_claude_severity_link(location)
+
+
+func _handle_claude_single_link(location: String) -> void:
+	var encoded_data: String = location.substr(9)
+	var decoded_data: String = encoded_data.uri_decode()
+	var parts := decoded_data.split("|")
+
+	if parts.size() >= 5:
+		var issue_data := {
+			"file_path": parts[0],
+			"line": int(parts[1]),
+			"check_id": parts[2],
+			"severity": parts[3],
+			"message": parts[4]
+		}
+		var use_plan_mode := not Input.is_key_pressed(KEY_SHIFT)
+		_launch_claude_code(issue_data, use_plan_mode)
+	else:
+		push_warning("Invalid Claude link format: %s" % location)
+
+
+func _handle_claude_type_link(location: String) -> void:
+	var type_key: String = location.substr(14).uri_decode()
+	if _grouped_issues_by_type.has(type_key):
+		var issues: Array = _grouped_issues_by_type[type_key]
+		var use_plan_mode := not Input.is_key_pressed(KEY_SHIFT)
+		_launch_claude_code_batch(issues, use_plan_mode)
+	else:
+		push_warning("No issues found for type key: %s" % type_key)
+
+
+func _handle_claude_severity_link(location: String) -> void:
+	var severity_key: String = location.substr(18)
+	if _grouped_issues_by_severity.has(severity_key):
+		var issues: Array = _grouped_issues_by_severity[severity_key]
+		var use_plan_mode := not Input.is_key_pressed(KEY_SHIFT)
+		_launch_claude_code_batch(issues, use_plan_mode)
+	else:
+		push_warning("No issues found for severity: %s" % severity_key)
+
+
+# === CLAUDE LAUNCH FUNCTIONS ===
+
+func _launch_claude_code(issue: Dictionary, use_plan_mode: bool) -> void:
+	var project_path: String = _selectedProjectItem.GetProjectDir()
+
+	var prompt := "Code quality issue to fix:\n\n"
+	prompt += "File: %s\n" % _toResPath(issue.file_path)
+	prompt += "Line: %d\n" % issue.line
+	prompt += "Type: %s\n" % issue.check_id
+	prompt += "Severity: %s\n" % issue.severity
+	prompt += "Message: %s\n\n" % issue.message
+
+	if use_plan_mode:
+		prompt += "Analyze this issue and suggest a fix."
+	else:
+		prompt += "Fix this issue now."
+
+	if not _settings_manager.claude_custom_instructions.strip_edges().is_empty():
+		prompt += "\n\n" + _settings_manager.claude_custom_instructions
+
+	var escaped_prompt := prompt.replace("'", "''")
+
+	var command: String
+	if use_plan_mode:
+		command = _settings_manager.claude_code_command
+	else:
+		command = _settings_manager.claude_code_command.replace("--permission-mode plan", "").strip_edges()
+		if command.is_empty():
+			command = "claude"
+
+	var args: PackedStringArray = [
+		"-d", project_path,
+		"powershell", "-NoProfile", "-NoExit",
+		"-Command", "%s '%s'" % [command, escaped_prompt]
+	]
+	OS.create_process("wt", args)
+
+
+func _launch_claude_code_batch(issues: Array, use_plan_mode: bool) -> void:
+	if issues.is_empty():
+		return
+
+	var project_path: String = _selectedProjectItem.GetProjectDir()
+
+	var prompt := "Code quality issues to fix (%d total):\n\n" % issues.size()
+
+	for i in range(issues.size()):
+		var issue = issues[i]
+		var severity_str: String = "unknown"
+		match issue.severity:
+			QubeIssue.Severity.CRITICAL: severity_str = "critical"
+			QubeIssue.Severity.WARNING: severity_str = "warning"
+			QubeIssue.Severity.INFO: severity_str = "info"
+
+		prompt += "%d. %s:%d\n" % [i + 1, _toResPath(issue.file_path), issue.line]
+		prompt += "   Type: %s | Severity: %s\n" % [issue.check_id, severity_str]
+		prompt += "   %s\n\n" % issue.message
+
+	if use_plan_mode:
+		prompt += "Analyze these issues and suggest fixes for each."
+	else:
+		prompt += "Fix all these issues now."
+
+	if not _settings_manager.claude_custom_instructions.strip_edges().is_empty():
+		prompt += "\n\n" + _settings_manager.claude_custom_instructions
+
+	var escaped_prompt := prompt.replace("'", "''")
+
+	var command: String
+	if use_plan_mode:
+		command = _settings_manager.claude_code_command
+	else:
+		command = _settings_manager.claude_code_command.replace("--permission-mode plan", "").strip_edges()
+		if command.is_empty():
+			command = "claude"
+
+	var args: PackedStringArray = [
+		"-d", project_path,
+		"powershell", "-NoProfile", "-NoExit",
+		"-Command", "%s '%s'" % [command, escaped_prompt]
+	]
+	OS.create_process("wt", args)
+
+
+func _launch_claude_code_custom(issue: Dictionary, custom_command: String, custom_instructions: String) -> void:
+	var project_path: String = _selectedProjectItem.GetProjectDir()
+
+	var prompt := "Code quality issue to fix:\n\n"
+	prompt += "File: %s\n" % _toResPath(issue.file_path)
+	prompt += "Line: %d\n" % issue.line
+	prompt += "Type: %s\n" % issue.check_id
+	prompt += "Severity: %s\n" % issue.severity
+	prompt += "Message: %s\n\n" % issue.message
+	prompt += "Fix this issue."
+
+	if not custom_instructions.strip_edges().is_empty():
+		prompt += "\n\n" + custom_instructions
+
+	var escaped_prompt := prompt.replace("'", "''")
+
+	var command := custom_command if not custom_command.is_empty() else "claude"
+
+	var args: PackedStringArray = [
+		"-d", project_path,
+		"powershell", "-NoProfile", "-NoExit",
+		"-Command", "%s '%s'" % [command, escaped_prompt]
+	]
+	OS.create_process("wt", args)
+
+
+func _launch_claude_code_batch_custom(issues: Array, custom_command: String, custom_instructions: String) -> void:
+	if issues.is_empty():
+		return
+
+	var project_path: String = _selectedProjectItem.GetProjectDir()
+
+	var prompt := "Code quality issues to fix (%d total):\n\n" % issues.size()
+
+	for i in range(issues.size()):
+		var issue = issues[i]
+		var severity_str: String = "unknown"
+		match issue.severity:
+			QubeIssue.Severity.CRITICAL: severity_str = "critical"
+			QubeIssue.Severity.WARNING: severity_str = "warning"
+			QubeIssue.Severity.INFO: severity_str = "info"
+
+		prompt += "%d. %s:%d\n" % [i + 1, _toResPath(issue.file_path), issue.line]
+		prompt += "   Type: %s | Severity: %s\n" % [issue.check_id, severity_str]
+		prompt += "   %s\n\n" % issue.message
+
+	prompt += "Fix all these issues."
+
+	if not custom_instructions.strip_edges().is_empty():
+		prompt += "\n\n" + custom_instructions
+
+	var escaped_prompt := prompt.replace("'", "''")
+
+	var command := custom_command if not custom_command.is_empty() else "claude"
+
+	var args: PackedStringArray = [
+		"-d", project_path,
+		"powershell", "-NoProfile", "-NoExit",
+		"-Command", "%s '%s'" % [command, escaped_prompt]
+	]
+	OS.create_process("wt", args)
+
+
+# === UTILITY FUNCTIONS ===
+
+# Convert absolute path to res:// path relative to project directory
+func _toResPath(absolutePath: String) -> String:
+	if _selectedProjectItem == null:
+		return absolutePath
+	var projectDir = _selectedProjectItem.GetProjectDir()
+	var normalizedPath = absolutePath.replace("\\", "/")
+	var normalizedProject = projectDir.replace("\\", "/")
+	if normalizedPath.begins_with(normalizedProject):
+		var relativePath = normalizedPath.substr(normalizedProject.length())
+		if relativePath.begins_with("/"):
+			relativePath = relativePath.substr(1)
+		return "res://" + relativePath
+	return absolutePath
+
+
+func _loadThumbnail():
+	if _selectedProjectItem == null:
+		return
+	var thumbnailPath = _selectedProjectItem.GetThumbnailPath()
+	if thumbnailPath == "":
+		return
+
+	if thumbnailPath.begins_with("res://"):
+		var texture = load(thumbnailPath)
+		if texture:
+			_thumbTextureRect.texture = texture
+	else:
+		var image = Image.new()
+		var error = image.load(thumbnailPath)
+		if error == OK:
+			var texture = ImageTexture.create_from_image(image)
+			_thumbTextureRect.texture = texture
+
+
+func _loadLastScanned():
+	var projectDir = _selectedProjectItem.GetProjectDir()
+	var configPath = projectDir + "/.gdqube_state.json"
+
+	if FileAccess.file_exists(configPath):
+		var file = FileAccess.open(configPath, FileAccess.READ)
+		if file:
+			var json = JSON.new()
+			var error = json.parse(file.get_as_text())
+			file.close()
+			if error == OK and json.data is Dictionary:
+				_lastScannedTimestamp = json.data.get("last_scanned", "")
+
+	_updateLastScannedLabel()
+
+
+func _saveLastScanned():
+	var projectDir = _selectedProjectItem.GetProjectDir()
+	var configPath = projectDir + "/.gdqube_state.json"
+
+	var data = {
+		"last_scanned": _lastScannedTimestamp
+	}
+
+	var file = FileAccess.open(configPath, FileAccess.WRITE)
+	if file:
+		file.store_string(JSON.stringify(data, "\t"))
+		file.close()
+
+
+func _updateLastScannedLabel():
+	if _lastScannedTimestamp.is_empty():
+		_lastScannedLabel.text = "Last Scanned: Never"
+	else:
+		_lastScannedLabel.text = "Last Scanned: " + _lastScannedTimestamp
+
+
+# === EXPORT FUNCTIONS ===
+
+func _on_export_json_pressed():
+	if _currentResult == null:
+		return
+
+	var projectDir = _selectedProjectItem.GetProjectDir()
+	var exportPath = projectDir + "/code_quality_report.json"
+
+	var data = {
+		"project": _selectedProjectItem.GetProjectName(),
+		"path": projectDir,
+		"timestamp": Time.get_datetime_string_from_system(),
+		"summary": {
+			"total_issues": _currentResult.issues.size(),
+			"critical": _currentResult.issues.filter(func(i): return i.severity == QubeIssue.Severity.CRITICAL).size(),
+			"warning": _currentResult.issues.filter(func(i): return i.severity == QubeIssue.Severity.WARNING).size(),
+			"info": _currentResult.issues.filter(func(i): return i.severity == QubeIssue.Severity.INFO).size()
+		},
+		"issues": []
+	}
+
+	for issue in _currentResult.issues:
+		var severity_str := "unknown"
+		match issue.severity:
+			QubeIssue.Severity.CRITICAL: severity_str = "critical"
+			QubeIssue.Severity.WARNING: severity_str = "warning"
+			QubeIssue.Severity.INFO: severity_str = "info"
+		data["issues"].append({
+			"file": issue.file_path,
+			"line": issue.line,
+			"severity": severity_str,
+			"type": issue.check_id,
+			"message": issue.message
+		})
+
+	var file = FileAccess.open(exportPath, FileAccess.WRITE)
+	if file:
+		file.store_string(JSON.stringify(data, "\t"))
+		file.close()
+		OS.shell_show_in_file_manager(exportPath)
+	else:
+		push_error("Could not write JSON file: " + exportPath)
+
+
+func _on_export_html_pressed():
+	if _currentResult == null:
+		return
+
+	var projectDir = _selectedProjectItem.GetProjectDir()
+	var exportPath = projectDir + "/code_quality_report.html"
+
+	var html = _generateHTMLReport()
+
+	var file = FileAccess.open(exportPath, FileAccess.WRITE)
+	if file:
+		file.store_string(html)
+		file.close()
+		OS.shell_open(exportPath)
+	else:
+		push_error("Could not write HTML file: " + exportPath)
+
+
+func _generateHTMLReport() -> String:
+	var critical: Array = _currentResult.issues.filter(func(i): return i.severity == QubeIssue.Severity.CRITICAL)
+	var warnings: Array = _currentResult.issues.filter(func(i): return i.severity == QubeIssue.Severity.WARNING)
+	var info: Array = _currentResult.issues.filter(func(i): return i.severity == QubeIssue.Severity.INFO)
+
 	var types_by_severity: Dictionary = {
 		"all": {},
 		"critical": {},
@@ -616,7 +1409,6 @@ func _generateHTMLReport() -> String:
 	for issue in info:
 		types_by_severity["info"][issue.check_id] = true
 
-	# Build type name mapping for JS
 	var type_names_json := "{"
 	var first := true
 	for check_id in types_by_severity["all"].keys():
@@ -627,7 +1419,6 @@ func _generateHTMLReport() -> String:
 		type_names_json += "\"%s\":\"%s\"" % [check_id, display_name]
 	type_names_json += "}"
 
-	# Build severity->types mapping for JS
 	var severity_types_json := "{"
 	for sev in ["all", "critical", "warning", "info"]:
 		if sev != "all":
@@ -642,7 +1433,7 @@ func _generateHTMLReport() -> String:
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Godot Qube - Code Quality Report</title>
+<title>Code Quality Report</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a2e; color: #eee; padding: 20px; line-height: 1.6; }
@@ -739,12 +1530,11 @@ h2 { color: #888; font-size: 1.2em; margin: 20px 0 10px; border-bottom: 1px soli
 <div id="noResults" class="no-results" style="display:none;">No issues match the current filters</div>
 
 <div class="footer">
-<p>Generated by <a href="https://github.com/graydwarf/godot-qube">Godot Qube</a> in %dms</p>
+<p>Generated by <a href="https://github.com/graydwarf/godot-gdscript-linter">GDScript Linter</a> in %dms</p>
 </div>
 </div>
 
 <script>
-// Type name mapping and severity->types data for linked filtering
 const TYPE_NAMES = %s;
 const SEVERITY_TYPES = %s;
 
@@ -752,7 +1542,6 @@ function populateTypeFilter(severity) {
 	const typeFilter = document.getElementById('typeFilter');
 	const prevValue = typeFilter.value;
 
-	// Clear and rebuild options
 	typeFilter.innerHTML = '<option value="all">All Types</option>';
 
 	const types = SEVERITY_TYPES[severity] || [];
@@ -763,7 +1552,6 @@ function populateTypeFilter(severity) {
 		typeFilter.appendChild(option);
 	});
 
-	// Try to restore previous selection if it still exists
 	const options = Array.from(typeFilter.options);
 	const found = options.find(opt => opt.value === prevValue);
 	if (found) {
@@ -804,22 +1592,18 @@ function applyFilters() {
 		}
 	});
 
-	// Update section visibility and counts
 	document.querySelectorAll('.issues-section').forEach(section => {
 		const visibleInSection = section.querySelectorAll('.issue:not(.hidden)').length;
 		section.querySelector('.count').textContent = visibleInSection;
 		section.style.display = visibleInSection > 0 ? 'block' : 'none';
 	});
 
-	// Show/hide no results message
 	document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
 
-	// Update filter count
 	const total = issues.length;
 	document.getElementById('filterCount').textContent = visibleCount === total ? '' : visibleCount + ' / ' + total + ' shown';
 }
 
-// Initialize
 populateTypeFilter('all');
 applyFilters();
 </script>
@@ -829,228 +1613,31 @@ applyFilters();
 
 	return html
 
+
 func _formatHTMLIssue(issue, severity: String) -> String:
 	var escaped_message: String = issue.message.replace("<", "&lt;").replace(">", "&gt;")
-	var full_path: String = issue.file_path.replace("\\", "/")
-
-	# Convert full path to res:// path
-	var project_dir: String = _selectedProjectItem.GetProjectDir().replace("\\", "/")
-	if not project_dir.ends_with("/"):
-		project_dir += "/"
-	var res_path: String = full_path
-	if full_path.begins_with(project_dir):
-		res_path = "res://" + full_path.substr(project_dir.length())
+	var res_path: String = _toResPath(issue.file_path)
 
 	return "<div class=\"issue\" data-severity=\"%s\" data-type=\"%s\" data-file=\"%s\"><span class=\"location\">%s:%d</span><span class=\"message\">%s</span><span class=\"check-id\">%s</span></div>\n" % [severity, issue.check_id, res_path, res_path, issue.line, escaped_message, issue.check_id]
 
+
+# === BUTTON HANDLERS ===
+
 func _on_back_button_pressed():
+	# If settings panel is visible, hide it instead of going back
+	if _settingsPanel.visible:
+		_settingsPanel.visible = false
+		_resultsScroll.visible = true
+		# Re-run analysis if checks changed while settings were open
+		if _checks_changed_while_settings_open:
+			_checks_changed_while_settings_open = false
+			if _currentResult:
+				call_deferred("_run_analysis")
+		return
 	queue_free()
+
 
 func _on_folder_button_pressed():
 	if _selectedProjectItem != null:
 		var projectDir = _selectedProjectItem.GetProjectDir()
 		OS.shell_open(projectDir)
-
-func _on_save_button_pressed():
-	_saveSettings()
-
-func _on_help_button_pressed():
-	_resultsScroll.visible = false
-	_helpPanel.visible = true
-
-func _on_close_help_pressed():
-	_closeHelp()
-
-func _closeHelp():
-	_helpPanel.visible = false
-	_resultsScroll.visible = true
-
-func _on_close_help_mouse_entered():
-	_closeHelpButton.modulate = Color(1, 1, 1, 1)
-
-func _on_close_help_mouse_exited():
-	_closeHelpButton.modulate = Color(1, 1, 1, 0.5)
-
-func _loadThumbnail():
-	if _selectedProjectItem == null:
-		return
-	var thumbnailPath = _selectedProjectItem.GetThumbnailPath()
-	if thumbnailPath == "":
-		return
-
-	# Check if this is a Godot resource path (res://)
-	if thumbnailPath.begins_with("res://"):
-		var texture = load(thumbnailPath)
-		if texture:
-			_thumbTextureRect.texture = texture
-	else:
-		# Load from filesystem
-		var image = Image.new()
-		var error = image.load(thumbnailPath)
-		if error == OK:
-			var texture = ImageTexture.create_from_image(image)
-			_thumbTextureRect.texture = texture
-
-func _loadLastScanned():
-	var projectDir = _selectedProjectItem.GetProjectDir()
-	var configPath = projectDir + "/.gdqube_state.json"
-
-	if FileAccess.file_exists(configPath):
-		var file = FileAccess.open(configPath, FileAccess.READ)
-		if file:
-			var json = JSON.new()
-			var error = json.parse(file.get_as_text())
-			file.close()
-			if error == OK and json.data is Dictionary:
-				_lastScannedTimestamp = json.data.get("last_scanned", "")
-
-	_updateLastScannedLabel()
-
-func _saveLastScanned():
-	var projectDir = _selectedProjectItem.GetProjectDir()
-	var configPath = projectDir + "/.gdqube_state.json"
-
-	var data = {
-		"last_scanned": _lastScannedTimestamp
-	}
-
-	var file = FileAccess.open(configPath, FileAccess.WRITE)
-	if file:
-		file.store_string(JSON.stringify(data, "\t"))
-		file.close()
-
-func _updateLastScannedLabel():
-	if _lastScannedTimestamp.is_empty():
-		_lastScannedLabel.text = "Last Scanned: Never"
-	else:
-		_lastScannedLabel.text = "Last Scanned: " + _lastScannedTimestamp
-
-func _saveSettings():
-	if _selectedProjectItem == null or _currentConfig == null:
-		return
-
-	# Force all SpinBoxes to commit any pending text input
-	_applySpinBoxValues()
-	_applyUIToSettings()
-
-	var projectDir = _selectedProjectItem.GetProjectDir()
-	var configPath = projectDir.path_join(".gdqube.cfg")
-
-	var file = FileAccess.open(configPath, FileAccess.WRITE)
-	if file:
-		# Write threshold limits
-		file.store_line("[limits]")
-		file.store_line("file_lines_soft = %d" % _currentConfig.line_limit_soft)
-		file.store_line("file_lines_hard = %d" % _currentConfig.line_limit_hard)
-		file.store_line("function_lines = %d" % _currentConfig.function_line_limit)
-		file.store_line("function_lines_critical = %d" % _currentConfig.function_line_critical)
-		file.store_line("max_parameters = %d" % _currentConfig.max_parameters)
-		file.store_line("max_nesting = %d" % _currentConfig.max_nesting)
-		file.store_line("cyclomatic_warning = %d" % _currentConfig.cyclomatic_warning)
-		file.store_line("cyclomatic_critical = %d" % _currentConfig.cyclomatic_critical)
-		file.store_line("god_class_functions = %d" % _currentConfig.god_class_functions)
-		file.store_line("god_class_signals = %d" % _currentConfig.god_class_signals)
-		file.store_line("")
-
-		# Write enabled checks
-		file.store_line("[checks]")
-		file.store_line("file_length = %s" % str(_currentConfig.check_file_length).to_lower())
-		file.store_line("function_length = %s" % str(_currentConfig.check_function_length).to_lower())
-		file.store_line("cyclomatic_complexity = %s" % str(_currentConfig.check_cyclomatic_complexity).to_lower())
-		file.store_line("god_class = %s" % str(_currentConfig.check_god_class).to_lower())
-		file.store_line("parameters = %s" % str(_currentConfig.check_parameters).to_lower())
-		file.store_line("nesting = %s" % str(_currentConfig.check_nesting).to_lower())
-		file.store_line("todo_comments = %s" % str(_currentConfig.check_todo_comments).to_lower())
-		file.store_line("print_statements = %s" % str(_currentConfig.check_print_statements).to_lower())
-		file.store_line("empty_functions = %s" % str(_currentConfig.check_empty_functions).to_lower())
-		file.store_line("magic_numbers = %s" % str(_currentConfig.check_magic_numbers).to_lower())
-		file.store_line("commented_code = %s" % str(_currentConfig.check_commented_code).to_lower())
-		file.store_line("missing_types = %s" % str(_currentConfig.check_missing_types).to_lower())
-		file.store_line("long_lines = %s" % str(_currentConfig.check_long_lines).to_lower())
-		file.store_line("naming_conventions = %s" % str(_currentConfig.check_naming_conventions).to_lower())
-		file.store_line("include_addons = %s" % str(_currentConfig.include_addons).to_lower())
-		file.store_line("unused_variables = %s" % str(_currentConfig.check_unused_variables).to_lower())
-		file.store_line("unused_parameters = %s" % str(_currentConfig.check_unused_parameters).to_lower())
-		file.store_line("respect_gdignore = %s" % str(_currentConfig.respect_gdignore).to_lower())
-		file.store_line("")
-
-		file.close()
-		print("Settings saved to: ", configPath)
-	else:
-		print("ERROR: Failed to open file for writing: ", configPath)
-
-func _verifySavedFile(path: String):
-	print("=== VERIFY SAVED FILE ===")
-	print("Checking file exists: ", FileAccess.file_exists(path))
-	var file = FileAccess.open(path, FileAccess.READ)
-	if file:
-		print("File contents:")
-		print(file.get_as_text())
-		file.close()
-	else:
-		print("ERROR: Could not open saved file for verification")
-
-func _on_reset_all_pressed():
-	# Reset all settings to defaults
-	_fileLinesWarn.value = 200
-	_fileLinesCrit.value = 300
-	_funcLinesWarn.value = 30
-	_funcLinesCrit.value = 60
-	_complexityWarn.value = 10
-	_complexityCrit.value = 15
-	_godClassWarn.value = 20
-	_godClassSignalsSpin.value = 10
-	_maxParamsSpin.value = 4
-	_maxNestingSpin.value = 3
-
-	# Enable all checks
-	_fileLinesCheck.button_pressed = true
-	_funcLinesCheck.button_pressed = true
-	_complexityCheck.button_pressed = true
-	_godClassCheck.button_pressed = true
-	_godClassSignalsCheck.button_pressed = true
-	_maxParamsCheck.button_pressed = true
-	_maxNestingCheck.button_pressed = true
-	_todoCheck.button_pressed = true
-	_printCheck.button_pressed = true
-	_emptyFuncCheck.button_pressed = true
-	_magicNumCheck.button_pressed = true
-	_commentedCodeCheck.button_pressed = true
-	_typeAnnotationsCheck.button_pressed = true
-	_longLinesCheck.button_pressed = true
-	_namingCheck.button_pressed = true
-	_unusedVarsCheck.button_pressed = true
-	_unusedParamsCheck.button_pressed = true
-	_respectGdignoreCheck.button_pressed = true
-
-# Individual reset handlers
-func _on_file_lines_reset():
-	_fileLinesWarn.value = 200
-	_fileLinesCrit.value = 300
-	_fileLinesCheck.button_pressed = true
-
-func _on_func_lines_reset():
-	_funcLinesWarn.value = 30
-	_funcLinesCrit.value = 60
-	_funcLinesCheck.button_pressed = true
-
-func _on_complexity_reset():
-	_complexityWarn.value = 10
-	_complexityCrit.value = 15
-	_complexityCheck.button_pressed = true
-
-func _on_max_params_reset():
-	_maxParamsSpin.value = 4
-	_maxParamsCheck.button_pressed = true
-
-func _on_max_nesting_reset():
-	_maxNestingSpin.value = 3
-	_maxNestingCheck.button_pressed = true
-
-func _on_god_class_reset():
-	_godClassWarn.value = 20
-	_godClassCheck.button_pressed = true
-
-func _on_god_class_signals_reset():
-	_godClassSignalsSpin.value = 10
-	_godClassSignalsCheck.button_pressed = true

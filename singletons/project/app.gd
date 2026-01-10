@@ -22,6 +22,13 @@ var _claudeApiChatButtonEnabled = false
 var _disclaimerAccepted = false
 var _imagePreviewBackgroundColor = Color(0.15, 0.15, 0.15, 1.0)
 
+# Code Quality Settings (Claude custom instructions - global)
+const DEFAULT_CLAUDE_CODE_INSTRUCTIONS = "When analyzing issues, recommend the best solution - which may be a gdlint:ignore directive instead of refactoring. If code is clean and readable but slightly over a limit, suggest adding an ignore comment rather than restructuring working code. Always explain why you're recommending a refactor vs an ignore directive."
+var _claudeCodeCustomInstructions = DEFAULT_CLAUDE_CODE_INSTRUCTIONS
+
+# Code Quality Collapsible Card States (global)
+var _codeQualityCardStates: Dictionary = {}
+
 func _ready():
 	LoadSavedSolutionSettings()
 	DebugCheck()
@@ -96,6 +103,25 @@ func SetImagePreviewBackgroundColor(value):
 	_imagePreviewBackgroundColor = value
 	SaveSolutionSettings()
 
+# Code Quality Claude Custom Instructions
+func GetClaudeCodeCustomInstructions():
+	return _claudeCodeCustomInstructions
+
+func SetClaudeCodeCustomInstructions(value):
+	_claudeCodeCustomInstructions = value
+	SaveSolutionSettings()
+
+func GetDefaultClaudeCodeInstructions():
+	return DEFAULT_CLAUDE_CODE_INSTRUCTIONS
+
+# Code Quality Collapsible Card State Management
+func GetCodeQualityCardCollapseState(setting_key: String, default_value: bool = true) -> bool:
+	return _codeQualityCardStates.get(setting_key, default_value)
+
+func SetCodeQualityCardCollapseState(setting_key: String, is_collapsed: bool) -> void:
+	_codeQualityCardStates[setting_key] = is_collapsed
+	SaveSolutionSettings()
+
 # Returns true if running as exported binary (not from editor)
 func IsRunningAsBinary() -> bool:
 	return not OS.has_feature("editor")
@@ -160,6 +186,9 @@ func LoadSavedSolutionSettings():
 		_claudeApiChatButtonEnabled = config.get_value("SolutionSettings", "claude_api_chat_button_enabled", false)
 		_disclaimerAccepted = config.get_value("SolutionSettings", "disclaimer_accepted", false)
 		_imagePreviewBackgroundColor = config.get_value("SolutionSettings", "image_preview_background_color", Color(0.15, 0.15, 0.15, 1.0))
+		# Code Quality Settings
+		_claudeCodeCustomInstructions = config.get_value("CodeQuality", "claude_custom_instructions", DEFAULT_CLAUDE_CODE_INSTRUCTIONS)
+		_codeQualityCardStates = config.get_value("CodeQuality", "card_states", {})
 	else:
 		OS.alert("An error occured loading the solution configuration file")
 	
@@ -178,6 +207,9 @@ func SaveSolutionSettings():
 	config.set_value("SolutionSettings", "claude_api_chat_button_enabled", _claudeApiChatButtonEnabled)
 	config.set_value("SolutionSettings", "disclaimer_accepted", _disclaimerAccepted)
 	config.set_value("SolutionSettings", "image_preview_background_color", _imagePreviewBackgroundColor)
+	# Code Quality Settings
+	config.set_value("CodeQuality", "claude_custom_instructions", _claudeCodeCustomInstructions)
+	config.set_value("CodeQuality", "card_states", _codeQualityCardStates)
 
 	# Save the config file.
 	var err = config.save(_solutionConfigFile)

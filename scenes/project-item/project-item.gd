@@ -72,6 +72,8 @@ func LoadThumbnailImage():
 			%ThumbTextureRect.texture = texture
 	else:
 		# Load from filesystem (for user-provided external images)
+		if not FileAccess.file_exists(_thumbnailPath):
+			return
 		var image = Image.new()
 		var error = image.load(_thumbnailPath)
 		if error == OK:

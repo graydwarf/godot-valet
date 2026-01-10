@@ -8,6 +8,7 @@ const IssueClass = preload("res://scripts/code-quality/issue.gd")
 const FileResultClass = preload("res://scripts/code-quality/file-result.gd")
 
 var issues: Array = []
+var ignored_issues: Array = []
 var files_analyzed: int = 0
 var total_lines: int = 0
 var analysis_time_ms: int = 0

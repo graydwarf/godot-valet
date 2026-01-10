@@ -1,28 +1,8 @@
-[gd_scene load_steps=9 format=3 uid="uid://cqm7x8k2p3wrq"]
+[gd_scene load_steps=4 format=3 uid="uid://cqm7x8k2p3wrq"]
 
 [ext_resource type="Script" path="res://scenes/code-quality-manager/code-quality-manager.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://wop6qk8dkl40" path="res://icon.svg" id="2_icon"]
 [ext_resource type="Texture2D" path="res://scenes/code-quality-manager/assets/fluent-icons/folder-open.svg" id="3_folder"]
-[ext_resource type="Texture2D" path="res://scenes/code-quality-manager/assets/fluent-icons/dismiss.svg" id="4_dismiss"]
-[ext_resource type="Texture2D" path="res://scenes/code-quality-manager/assets/arrow-reset.svg" id="5_reset"]
-[ext_resource type="Texture2D" path="res://scenes/code-quality-manager/assets/sparkle.svg" id="6_sparkle"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
-bg_color = Color(0, 0, 0, 0)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.6, 0.6, 0.6, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card_header"]
-bg_color = Color(0, 0, 0, 0)
-border_width_bottom = 1
-border_color = Color(0.6, 0.6, 0.6, 1)
 
 [node name="CodeQualityManager" type="Panel"]
 anchors_preset = 15
@@ -32,25 +12,32 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="OuterMargin" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_right = 10
 
-[node name="ProjectCardMargin" type="MarginContainer" parent="VBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="OuterMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ProjectCardMargin" type="MarginContainer" parent="OuterMargin/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 12
 theme_override_constants/margin_top = 11
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 13
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/ProjectCardMargin"]
+[node name="HBoxContainer" type="HBoxContainer" parent="OuterMargin/VBoxContainer/ProjectCardMargin"]
 layout_mode = 2
 
-[node name="ThumbTextureRect" type="TextureRect" parent="VBoxContainer/ProjectCardMargin/HBoxContainer"]
+[node name="ThumbTextureRect" type="TextureRect" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(107, 105)
 layout_mode = 2
@@ -58,24 +45,24 @@ texture = ExtResource("2_icon")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/ProjectCardMargin/HBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 0
 
-[node name="Spacer" type="Control" parent="VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer"]
+[node name="Spacer" type="Control" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="MarginContainer2" type="MarginContainer" parent="VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer"]
+[node name="MarginContainer2" type="MarginContainer" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer2"]
+[node name="HBoxContainer" type="HBoxContainer" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer2"]
 layout_mode = 2
 
-[node name="ProjectNameLabel" type="Label" parent="VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer"]
+[node name="ProjectNameLabel" type="Label" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -83,16 +70,16 @@ theme_override_font_sizes/font_size = 20
 text = "Project Name"
 clip_text = true
 
-[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_bottom = 5
 
-[node name="HBox" type="HBoxContainer" parent="VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer"]
+[node name="HBox" type="HBoxContainer" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer"]
 layout_mode = 2
 theme_override_constants/separation = 5
 
-[node name="ProjectPathLabel" type="Label" parent="VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer/HBox"]
+[node name="ProjectPathLabel" type="Label" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer/HBox"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -101,7 +88,7 @@ text = "C:/projects/example"
 clip_text = true
 text_overrun_behavior = 3
 
-[node name="FolderButton" type="Button" parent="VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer/HBox"]
+[node name="FolderButton" type="Button" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer/HBox"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(48, 32)
 layout_mode = 2
@@ -110,16 +97,16 @@ flat = true
 icon = ExtResource("3_folder")
 expand_icon = true
 
-[node name="BottomSpacer" type="Control" parent="VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer"]
+[node name="BottomSpacer" type="Control" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="MarginContainer4" type="MarginContainer" parent="VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer"]
+[node name="MarginContainer4" type="MarginContainer" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_bottom = 5
 
-[node name="LastScannedLabel" type="Label" parent="VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer4"]
+[node name="LastScannedLabel" type="Label" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer4"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Last Scanned: Never"
@@ -127,1120 +114,165 @@ vertical_alignment = 1
 clip_text = true
 text_overrun_behavior = 3
 
-[node name="HSeparator" type="HSeparator" parent="VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="OuterMargin/VBoxContainer"]
 layout_mode = 2
 
-[node name="ContentHBox" type="HBoxContainer" parent="VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 0
-
-[node name="SettingsPanel" type="PanelContainer" parent="VBoxContainer/ContentHBox"]
-custom_minimum_size = Vector2(380, 0)
-layout_mode = 2
-
-[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer/ContentHBox/SettingsPanel"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-horizontal_scroll_mode = 0
-
-[node name="SettingsMargin" type="MarginContainer" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 10
-
-[node name="SettingsVBox" type="VBoxContainer" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 10
-
-[node name="ThresholdCard" type="PanelContainer" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox"]
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
-
-[node name="ThresholdCardVBox" type="VBoxContainer" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard"]
-layout_mode = 2
-theme_override_constants/separation = 0
-
-[node name="HeaderPanel" type="PanelContainer" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox"]
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card_header")
-
-[node name="HeaderMargin" type="MarginContainer" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/HeaderPanel"]
-layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 6
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 6
-
-[node name="LimitsLabel" type="Label" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/HeaderPanel/HeaderMargin"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "THRESHOLD SETTINGS"
-
-[node name="ContentMargin" type="MarginContainer" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox"]
-layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 10
-
-[node name="ContentVBox" type="VBoxContainer" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="ThresholdsGrid" type="GridContainer" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox"]
-layout_mode = 2
-size_flags_horizontal = 3
-columns = 5
-
-[node name="HeaderSpacer" type="Control" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid"]
-custom_minimum_size = Vector2(110, 0)
-layout_mode = 2
-
-[node name="WarnHeader" type="Label" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-theme_override_font_sizes/font_size = 11
-text = "Warn"
-horizontal_alignment = 1
-
-[node name="CritHeader" type="Label" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-theme_override_font_sizes/font_size = 11
-text = "Crit"
-horizontal_alignment = 1
-
-[node name="EnableHeader" type="Label" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid"]
-custom_minimum_size = Vector2(30, 0)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-theme_override_font_sizes/font_size = 11
-text = "On"
-horizontal_alignment = 1
-
-[node name="ResetHeader" type="Control" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid"]
-custom_minimum_size = Vector2(24, 0)
-layout_mode = 2
-
-[node name="FileLinesLabel" type="Label" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid"]
-custom_minimum_size = Vector2(110, 0)
-layout_mode = 2
-text = "File Lines:"
-horizontal_alignment = 2
-
-[node name="FileLinesWarn" type="SpinBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-editable = true
-max_value = 999999999.0
-value = 200.0
-
-[node name="FileLinesCrit" type="SpinBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-editable = true
-max_value = 999999999.0
-value = 300.0
-
-[node name="FileLinesCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-button_pressed = true
-
-[node name="FileLinesReset" type="Button" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid"]
-custom_minimum_size = Vector2(24, 24)
-layout_mode = 2
-tooltip_text = "Reset to default"
-focus_mode = 0
-mouse_default_cursor_shape = 2
-icon = ExtResource("5_reset")
-flat = true
-icon_alignment = 1
-
-[node name="FuncLinesLabel" type="Label" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid"]
-custom_minimum_size = Vector2(110, 0)
-layout_mode = 2
-text = "Function Lines:"
-horizontal_alignment = 2
-
-[node name="FuncLinesWarn" type="SpinBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-editable = true
-max_value = 999999999.0
-value = 30.0
-
-[node name="FuncLinesCrit" type="SpinBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-editable = true
-max_value = 999999999.0
-value = 60.0
-
-[node name="FuncLinesCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-button_pressed = true
-
-[node name="FuncLinesReset" type="Button" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid"]
-custom_minimum_size = Vector2(24, 24)
-layout_mode = 2
-tooltip_text = "Reset to default"
-focus_mode = 0
-mouse_default_cursor_shape = 2
-icon = ExtResource("5_reset")
-flat = true
-icon_alignment = 1
-
-[node name="ComplexityLabel" type="Label" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid"]
-custom_minimum_size = Vector2(110, 0)
-layout_mode = 2
-text = "Complexity:"
-horizontal_alignment = 2
-
-[node name="ComplexityWarn" type="SpinBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-editable = true
-max_value = 999999999.0
-value = 10.0
-
-[node name="ComplexityCrit" type="SpinBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-editable = true
-max_value = 999999999.0
-value = 15.0
-
-[node name="ComplexityCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-button_pressed = true
-
-[node name="ComplexityReset" type="Button" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid"]
-custom_minimum_size = Vector2(24, 24)
-layout_mode = 2
-tooltip_text = "Reset to default"
-focus_mode = 0
-mouse_default_cursor_shape = 2
-icon = ExtResource("5_reset")
-flat = true
-icon_alignment = 1
-
-[node name="GridSeparator" type="HSeparator" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox"]
-layout_mode = 2
-
-[node name="LimitsGrid" type="GridContainer" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox"]
-layout_mode = 2
-size_flags_horizontal = 3
-columns = 4
-
-[node name="MaxParamsLabel" type="Label" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid"]
-custom_minimum_size = Vector2(110, 0)
-layout_mode = 2
-text = "Max Parameters:"
-horizontal_alignment = 2
-
-[node name="MaxParamsSpin" type="SpinBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-editable = true
-max_value = 999999999.0
-value = 4.0
-
-[node name="MaxParamsCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-button_pressed = true
-
-[node name="MaxParamsReset" type="Button" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid"]
-custom_minimum_size = Vector2(24, 24)
-layout_mode = 2
-tooltip_text = "Reset to default"
-focus_mode = 0
-mouse_default_cursor_shape = 2
-icon = ExtResource("5_reset")
-flat = true
-icon_alignment = 1
-
-[node name="MaxNestingLabel" type="Label" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid"]
-custom_minimum_size = Vector2(110, 0)
-layout_mode = 2
-text = "Max Nesting:"
-horizontal_alignment = 2
-
-[node name="MaxNestingSpin" type="SpinBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-editable = true
-max_value = 999999999.0
-value = 3.0
-
-[node name="MaxNestingCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-button_pressed = true
-
-[node name="MaxNestingReset" type="Button" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid"]
-custom_minimum_size = Vector2(24, 24)
-layout_mode = 2
-tooltip_text = "Reset to default"
-focus_mode = 0
-mouse_default_cursor_shape = 2
-icon = ExtResource("5_reset")
-flat = true
-icon_alignment = 1
-
-[node name="GodClassLabel" type="Label" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid"]
-custom_minimum_size = Vector2(110, 0)
-layout_mode = 2
-text = "God Class Funcs:"
-horizontal_alignment = 2
-
-[node name="GodClassWarn" type="SpinBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-editable = true
-max_value = 999999999.0
-value = 20.0
-
-[node name="GodClassCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-button_pressed = true
-
-[node name="GodClassReset" type="Button" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid"]
-custom_minimum_size = Vector2(24, 24)
-layout_mode = 2
-tooltip_text = "Reset to default"
-focus_mode = 0
-mouse_default_cursor_shape = 2
-icon = ExtResource("5_reset")
-flat = true
-icon_alignment = 1
-
-[node name="GodClassSignalsLabel" type="Label" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid"]
-custom_minimum_size = Vector2(110, 0)
-layout_mode = 2
-text = "God Class Signals:"
-horizontal_alignment = 2
-
-[node name="GodClassSignalsSpin" type="SpinBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-editable = true
-max_value = 999999999.0
-value = 10.0
-
-[node name="GodClassSignalsCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-button_pressed = true
-
-[node name="GodClassSignalsReset" type="Button" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid"]
-custom_minimum_size = Vector2(24, 24)
-layout_mode = 2
-tooltip_text = "Reset to default"
-focus_mode = 0
-mouse_default_cursor_shape = 2
-icon = ExtResource("5_reset")
-flat = true
-icon_alignment = 1
-
-[node name="CodeChecksCard" type="PanelContainer" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox"]
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
-
-[node name="CodeChecksCardVBox" type="VBoxContainer" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard"]
-layout_mode = 2
-theme_override_constants/separation = 0
-
-[node name="HeaderPanel" type="PanelContainer" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard/CodeChecksCardVBox"]
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card_header")
-
-[node name="HeaderMargin" type="MarginContainer" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard/CodeChecksCardVBox/HeaderPanel"]
-layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 6
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 6
-
-[node name="ChecksLabel" type="Label" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard/CodeChecksCardVBox/HeaderPanel/HeaderMargin"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "CODE CHECKS"
-
-[node name="ContentMargin" type="MarginContainer" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard/CodeChecksCardVBox"]
-layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 10
-
-[node name="ChecksGrid" type="GridContainer" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard/CodeChecksCardVBox/ContentMargin"]
-layout_mode = 2
-size_flags_horizontal = 3
-columns = 2
-
-[node name="IncludeAddonsCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard/CodeChecksCardVBox/ContentMargin/ChecksGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Include Addons"
-
-[node name="TodoCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard/CodeChecksCardVBox/ContentMargin/ChecksGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-button_pressed = true
-text = "TODO Comments"
-
-[node name="PrintCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard/CodeChecksCardVBox/ContentMargin/ChecksGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-button_pressed = true
-text = "Print Statements"
-
-[node name="EmptyFuncCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard/CodeChecksCardVBox/ContentMargin/ChecksGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-button_pressed = true
-text = "Empty Functions"
-
-[node name="MagicNumCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard/CodeChecksCardVBox/ContentMargin/ChecksGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-button_pressed = true
-text = "Magic Numbers"
-
-[node name="CommentedCodeCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard/CodeChecksCardVBox/ContentMargin/ChecksGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-button_pressed = true
-text = "Commented Code"
-
-[node name="TypeAnnotationsCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard/CodeChecksCardVBox/ContentMargin/ChecksGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-button_pressed = true
-text = "Type Annotations"
-
-[node name="LongLinesCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard/CodeChecksCardVBox/ContentMargin/ChecksGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-button_pressed = true
-text = "Long Lines"
-
-[node name="NamingCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard/CodeChecksCardVBox/ContentMargin/ChecksGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-button_pressed = true
-text = "Naming Conventions"
-
-[node name="UnusedVarsCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard/CodeChecksCardVBox/ContentMargin/ChecksGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-button_pressed = true
-text = "Unused Variables"
-
-[node name="UnusedParamsCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard/CodeChecksCardVBox/ContentMargin/ChecksGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-button_pressed = true
-text = "Unused Parameters"
-
-[node name="RespectGdignoreCheck" type="CheckBox" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/CodeChecksCard/CodeChecksCardVBox/ContentMargin/ChecksGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-button_pressed = true
-text = "Respect .gdignore"
-
-[node name="ScanButton" type="Button" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-focus_mode = 0
-mouse_default_cursor_shape = 2
-theme_override_colors/font_color = Color(0.2, 0.9, 0.3, 1)
-theme_override_colors/font_hover_color = Color(0.4, 1.0, 0.5, 1)
-theme_override_font_sizes/font_size = 30
-text = "⚡ Scan Project"
-
-[node name="BottomSpacer" type="Control" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="HSeparator2" type="HSeparator" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox"]
-layout_mode = 2
-
-[node name="PluginDescLabel" type="Label" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "Optionally: Get the plugin version and run directly from Godot. Search \"Godot Qube\" in Godot's AssetLib tab or download from:"
-autowrap_mode = 2
-
-[node name="GitHubUrlLink" type="LinkButton" parent="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.4, 0.7, 1.0, 1)
-theme_override_colors/font_hover_color = Color(0.6, 0.85, 1.0, 1)
-text = "https://github.com/graydwarf/godot-qube"
-underline = 2
-uri = "https://github.com/graydwarf/godot-qube"
-
-[node name="VSeparator" type="VSeparator" parent="VBoxContainer/ContentHBox"]
-layout_mode = 2
-
-[node name="ResultsPanel" type="PanelContainer" parent="VBoxContainer/ContentHBox"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/ContentHBox/ResultsPanel"]
-layout_mode = 2
-
-[node name="StatsCardMargin" type="MarginContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 5
-
-[node name="StatsCard" type="PanelContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin"]
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
-
-[node name="StatsCardVBox" type="VBoxContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard"]
-layout_mode = 2
-theme_override_constants/separation = 0
-
-[node name="HeaderPanel" type="PanelContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox"]
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card_header")
-
-[node name="HeaderMargin" type="MarginContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/HeaderPanel"]
-layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 6
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 6
-
-[node name="StatsHeaderLabel" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/HeaderPanel/HeaderMargin"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "ANALYSIS SUMMARY"
-
-[node name="ContentMargin" type="MarginContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox"]
-layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 8
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 8
-
-[node name="StatsGrid" type="GridContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin"]
-layout_mode = 2
-size_flags_horizontal = 3
-columns = 6
-
-[node name="FilesHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
-theme_override_font_sizes/font_size = 11
-text = "Files"
-horizontal_alignment = 1
-
-[node name="LinesHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
-theme_override_font_sizes/font_size = 11
-text = "Lines"
-horizontal_alignment = 1
-
-[node name="CriticalHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
-theme_override_font_sizes/font_size = 11
-text = "Critical"
-horizontal_alignment = 1
-
-[node name="WarningsHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
-theme_override_font_sizes/font_size = 11
-text = "Warnings"
-horizontal_alignment = 1
-
-[node name="InfoHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
-theme_override_font_sizes/font_size = 11
-text = "Info"
-horizontal_alignment = 1
-
-[node name="DebtHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
-theme_override_font_sizes/font_size = 11
-text = "Debt"
-horizontal_alignment = 1
-
-[node name="FilesValue" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 20
-text = "-"
-horizontal_alignment = 1
-
-[node name="LinesValue" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 20
-text = "-"
-horizontal_alignment = 1
-
-[node name="CriticalValue" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 0.42, 0.42, 1)
-theme_override_font_sizes/font_size = 20
-text = "-"
-horizontal_alignment = 1
-
-[node name="WarningsValue" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 0.85, 0.24, 1)
-theme_override_font_sizes/font_size = 20
-text = "-"
-horizontal_alignment = 1
-
-[node name="InfoValue" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.42, 0.8, 0.47, 1)
-theme_override_font_sizes/font_size = 20
-text = "-"
-horizontal_alignment = 1
-
-[node name="DebtValue" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/StatsCardMargin/StatsCard/StatsCardVBox/ContentMargin/StatsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 20
-text = "-"
-horizontal_alignment = 1
-
-[node name="FilterMargin" type="MarginContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer"]
+[node name="ToolbarMargin" type="MarginContainer" parent="OuterMargin/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 5
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 5
 
-[node name="FilterHBox" type="HBoxContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/FilterMargin"]
+[node name="Toolbar" type="HBoxContainer" parent="OuterMargin/VBoxContainer/ToolbarMargin"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="SeverityLabel" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/FilterMargin/FilterHBox"]
+[node name="ScanButton" type="Button" parent="OuterMargin/VBoxContainer/ToolbarMargin/Toolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 32)
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "Scan"
+
+[node name="SeverityLabel" type="Label" parent="OuterMargin/VBoxContainer/ToolbarMargin/Toolbar"]
 layout_mode = 2
 text = "Severity:"
 
-[node name="SeverityFilter" type="OptionButton" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/FilterMargin/FilterHBox"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 0)
-layout_mode = 2
-mouse_default_cursor_shape = 2
-selected = 0
-item_count = 4
-popup/item_0/text = "All"
-popup/item_0/id = 0
-popup/item_1/text = "Critical"
-popup/item_1/id = 1
-popup/item_2/text = "Warning"
-popup/item_2/id = 2
-popup/item_3/text = "Info"
-popup/item_3/id = 3
-
-[node name="TypeLabel" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/FilterMargin/FilterHBox"]
-layout_mode = 2
-text = "Type:"
-
-[node name="TypeFilter" type="OptionButton" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/FilterMargin/FilterHBox"]
+[node name="SeverityFilter" type="OptionButton" parent="OuterMargin/VBoxContainer/ToolbarMargin/Toolbar"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
 mouse_default_cursor_shape = 2
-selected = 0
-item_count = 6
-popup/item_0/text = "All"
-popup/item_0/id = 0
-popup/item_1/text = "Complexity"
-popup/item_1/id = 1
-popup/item_2/text = "Length"
-popup/item_2/id = 2
-popup/item_3/text = "Parameters"
-popup/item_3/id = 3
-popup/item_4/text = "Nesting"
-popup/item_4/id = 4
-popup/item_5/text = "God Class"
-popup/item_5/id = 5
 
-[node name="FileFilterLabel" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/FilterMargin/FilterHBox"]
+[node name="TypeLabel" type="Label" parent="OuterMargin/VBoxContainer/ToolbarMargin/Toolbar"]
+layout_mode = 2
+text = "Type:"
+
+[node name="TypeFilter" type="OptionButton" parent="OuterMargin/VBoxContainer/ToolbarMargin/Toolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+
+[node name="FileLabel" type="Label" parent="OuterMargin/VBoxContainer/ToolbarMargin/Toolbar"]
 layout_mode = 2
 text = "File:"
 
-[node name="FileFilter" type="LineEdit" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/FilterMargin/FilterHBox"]
+[node name="FileFilter" type="LineEdit" parent="OuterMargin/VBoxContainer/ToolbarMargin/Toolbar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Filter by filename..."
 
-[node name="ResultsCountLabel" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/FilterMargin/FilterHBox"]
+[node name="ExportJSONButton" type="Button" parent="OuterMargin/VBoxContainer/ToolbarMargin/Toolbar"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 32)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "0 issues"
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "Export JSON"
 
-[node name="ColumnHeaderMargin" type="MarginContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_right = 10
-
-[node name="ColumnHeaderHBox" type="HBoxContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/ColumnHeaderMargin"]
+[node name="ExportHTMLButton" type="Button" parent="OuterMargin/VBoxContainer/ToolbarMargin/Toolbar"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 32)
 layout_mode = 2
-theme_override_constants/separation = 0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "Export HTML"
 
-[node name="SeverityHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/ColumnHeaderMargin/ColumnHeaderHBox"]
-custom_minimum_size = Vector2(30, 0)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
-theme_override_font_sizes/font_size = 11
-text = ""
-
-[node name="SeveritySep" type="VSeparator" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/ColumnHeaderMargin/ColumnHeaderHBox"]
+[node name="SettingsButton" type="Button" parent="OuterMargin/VBoxContainer/ToolbarMargin/Toolbar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(8, 0)
+custom_minimum_size = Vector2(100, 32)
 layout_mode = 2
-mouse_default_cursor_shape = 10
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "Settings"
 
-[node name="LocationHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/ColumnHeaderMargin/ColumnHeaderHBox"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(280, 0)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
-theme_override_font_sizes/font_size = 11
-text = "Location"
-
-[node name="LocationSep" type="VSeparator" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/ColumnHeaderMargin/ColumnHeaderHBox"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(8, 0)
-layout_mode = 2
-mouse_default_cursor_shape = 10
-
-[node name="MessageHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/ColumnHeaderMargin/ColumnHeaderHBox"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
-theme_override_font_sizes/font_size = 11
-text = "Message"
-
-[node name="MessageSep" type="VSeparator" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/ColumnHeaderMargin/ColumnHeaderHBox"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(8, 0)
-layout_mode = 2
-mouse_default_cursor_shape = 10
-
-[node name="TypeHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/ColumnHeaderMargin/ColumnHeaderHBox"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 0)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
-theme_override_font_sizes/font_size = 11
-text = "Type"
-horizontal_alignment = 2
-
-[node name="ClaudeSep" type="VSeparator" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/ColumnHeaderMargin/ColumnHeaderHBox"]
-custom_minimum_size = Vector2(8, 0)
+[node name="HSeparator2" type="HSeparator" parent="OuterMargin/VBoxContainer"]
 layout_mode = 2
 
-[node name="ClaudeHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/ColumnHeaderMargin/ColumnHeaderHBox"]
-custom_minimum_size = Vector2(30, 0)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
-theme_override_font_sizes/font_size = 11
-text = "AI"
-horizontal_alignment = 1
-
-[node name="HeaderSeparator" type="HSeparator" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer"]
-layout_mode = 2
-
-[node name="ResultsScroll" type="ScrollContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/h_separation = 12
-
-[node name="ResultsMargin" type="MarginContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/ResultsScroll"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 10
-
-[node name="ResultsVBox" type="VBoxContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/ResultsScroll/ResultsMargin"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/separation = 4
-
-[node name="PlaceholderLabel" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/ResultsScroll/ResultsMargin/ResultsVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
-text = "Click \"Scan Project\" to analyze code quality."
-horizontal_alignment = 1
-
-[node name="HelpPanel" type="Control" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer"]
+[node name="SettingsPanel" type="PanelContainer" parent="OuterMargin/VBoxContainer"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="HelpScroll" type="ScrollContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="ResultsScroll" type="ScrollContainer" parent="OuterMargin/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
 
-[node name="HelpMargin" type="MarginContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll"]
+[node name="ResultsMargin" type="MarginContainer" parent="OuterMargin/VBoxContainer/ResultsScroll"]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/margin_left = 15
+theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 15
+theme_override_constants/margin_right = 16
 theme_override_constants/margin_bottom = 10
 
-[node name="HelpVBox" type="VBoxContainer" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin"]
+[node name="ReportCard" type="PanelContainer" parent="OuterMargin/VBoxContainer/ResultsScroll/ResultsMargin"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 6
 
-[node name="HelpTitle" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
+[node name="CardVBox" type="VBoxContainer" parent="OuterMargin/VBoxContainer/ResultsScroll/ResultsMargin/ReportCard"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "Code Quality Settings Help"
+theme_override_constants/separation = 0
 
-[node name="HelpIntro" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "These settings help identify potential code quality issues. Each threshold can be enabled/disabled independently."
-autowrap_mode = 2
-
-[node name="ResetAllButton" type="Button" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
+[node name="HeaderContainer" type="PanelContainer" parent="OuterMargin/VBoxContainer/ResultsScroll/ResultsMargin/ReportCard/CardVBox"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 4
-focus_mode = 0
-mouse_default_cursor_shape = 2
-theme_override_colors/font_color = Color(1.0, 0.6, 0.4, 1)
-theme_override_colors/font_hover_color = Color(1.0, 0.8, 0.6, 1)
-alignment = 1
-text = "Reset All Settings to Default"
 
-[node name="Spacer1" type="Control" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-custom_minimum_size = Vector2(0, 10)
+[node name="HeaderMargin" type="MarginContainer" parent="OuterMargin/VBoxContainer/ResultsScroll/ResultsMargin/ReportCard/CardVBox/HeaderContainer"]
 layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
 
-[node name="ThresholdsTitle" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.4, 0.7, 1.0, 1)
-theme_override_font_sizes/font_size = 16
-text = "THRESHOLD SETTINGS"
-
-[node name="Sep1" type="HSeparator" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-
-[node name="FileLinesHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "File Lines  —  Default: Warn 200, Critical 300"
-
-[node name="FileLinesDesc" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "Files exceeding these line counts may be candidates for splitting into smaller, more focused modules. Large files are harder to navigate and maintain."
-autowrap_mode = 2
-
-[node name="FileLinesSpacer" type="Control" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-custom_minimum_size = Vector2(0, 8)
-layout_mode = 2
-
-[node name="FuncLinesHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "Function Lines  —  Default: Warn 30, Critical 60"
-
-[node name="FuncLinesDesc" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "Long functions often do too much. Consider extracting helper functions to improve readability and testability."
-autowrap_mode = 2
-
-[node name="FuncLinesSpacer" type="Control" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-custom_minimum_size = Vector2(0, 8)
-layout_mode = 2
-
-[node name="ComplexityHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "Cyclomatic Complexity  —  Default: Warn 10, Critical 15"
-
-[node name="ComplexityDesc" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "Measures the number of independent paths through code. High complexity makes functions harder to test and understand. Reduce by extracting conditions or using early returns."
-autowrap_mode = 2
-
-[node name="ComplexitySpacer" type="Control" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-custom_minimum_size = Vector2(0, 8)
-layout_mode = 2
-
-[node name="GodClassHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "God Class Functions  —  Default: Warn 20"
-
-[node name="GodClassDesc" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "Classes with too many functions may be doing too much. Consider splitting responsibilities into separate classes following the Single Responsibility Principle."
-autowrap_mode = 2
-
-[node name="GodClassSpacer2" type="Control" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-custom_minimum_size = Vector2(0, 8)
-layout_mode = 2
-
-[node name="MaxParamsHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "Max Parameters  —  Default: 4"
-
-[node name="MaxParamsDesc" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "Functions with many parameters are harder to call and understand. Consider grouping related parameters into objects or using builder patterns."
-autowrap_mode = 2
-
-[node name="MaxParamsSpacer" type="Control" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-custom_minimum_size = Vector2(0, 8)
-layout_mode = 2
-
-[node name="MaxNestingHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "Max Nesting  —  Default: 3"
-
-[node name="MaxNestingDesc" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "Deeply nested code (if inside if inside for, etc.) is hard to follow. Use early returns, guard clauses, or extract nested logic into separate functions."
-autowrap_mode = 2
-
-[node name="Spacer2" type="Control" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-custom_minimum_size = Vector2(0, 10)
-layout_mode = 2
-
-[node name="ChecksTitle" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.4, 0.7, 1.0, 1)
-theme_override_font_sizes/font_size = 16
-text = "CODE CHECKS"
-
-[node name="Sep2" type="HSeparator" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-
-[node name="TodoHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "TODO Comments"
-
-[node name="TodoDesc" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "Finds TODO, FIXME, HACK, XXX, BUG, and TEMP comments. These are reminders of incomplete work that should be tracked and resolved."
-autowrap_mode = 2
-
-[node name="TodoSpacer" type="Control" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-custom_minimum_size = Vector2(0, 8)
-layout_mode = 2
-
-[node name="PrintHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "Print Statements"
-
-[node name="PrintDesc" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "Detects print(), print_debug(), prints(), printt(), and printraw() calls. Debug prints should be removed before release or replaced with a proper logging system."
-autowrap_mode = 2
-
-[node name="PrintSpacer" type="Control" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-custom_minimum_size = Vector2(0, 8)
-layout_mode = 2
-
-[node name="EmptyFuncHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "Empty Functions"
-
-[node name="EmptyFuncDesc" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "Functions with only 'pass' or no body may indicate incomplete implementation or dead code that should be removed."
-autowrap_mode = 2
-
-[node name="EmptyFuncSpacer" type="Control" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-custom_minimum_size = Vector2(0, 8)
-layout_mode = 2
-
-[node name="MagicNumHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "Magic Numbers"
-
-[node name="MagicNumDesc" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "Numeric literals in code (except common values like 0, 1, 2) should be replaced with named constants for clarity. Example: Use 'const MAX_HEALTH = 100' instead of the number 100."
-autowrap_mode = 2
-
-[node name="MagicNumSpacer" type="Control" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-custom_minimum_size = Vector2(0, 8)
-layout_mode = 2
-
-[node name="CommentedCodeHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "Commented Code"
-
-[node name="CommentedCodeDesc" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "Detects code that has been commented out (e.g., '#var ', '#func '). Commented code clutters the codebase - use version control instead."
-autowrap_mode = 2
-
-[node name="CommentedCodeSpacer" type="Control" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-custom_minimum_size = Vector2(0, 8)
-layout_mode = 2
-
-[node name="TypeAnnotationsHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "Type Annotations"
-
-[node name="TypeAnnotationsDesc" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "Checks for missing type hints on function parameters and return values. Type annotations improve code readability and enable better IDE support."
-autowrap_mode = 2
-
-[node name="TypeAnnotationsSpacer" type="Control" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-custom_minimum_size = Vector2(0, 8)
-layout_mode = 2
-
-[node name="LongLinesHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "Long Lines  —  Default: 120 characters"
-
-[node name="LongLinesDesc" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "Lines exceeding this length are harder to read without horizontal scrolling. Consider breaking long lines or extracting expressions into variables."
-autowrap_mode = 2
-
-[node name="LongLinesSpacer" type="Control" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-custom_minimum_size = Vector2(0, 8)
-layout_mode = 2
-
-[node name="NamingHeader" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "Naming Conventions  —  GDScript Standards"
-
-[node name="NamingDesc" type="Label" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "Enforces GDScript naming conventions: functions → snake_case, classes → PascalCase, signals → snake_case, constants → SCREAMING_SNAKE_CASE or PascalCase, enums → PascalCase."
-autowrap_mode = 2
-
-[node name="CloseHelpButton" type="Button" parent="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel"]
+[node name="HeaderLabel" type="Label" parent="OuterMargin/VBoxContainer/ResultsScroll/ResultsMargin/ReportCard/CardVBox/HeaderContainer/HeaderMargin"]
 unique_name_in_owner = true
-modulate = Color(1, 1, 1, 0.5)
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -44.0
-offset_right = -9.0
-offset_top = 5.0
-offset_bottom = 40.0
-grow_horizontal = 0
-focus_mode = 0
-mouse_default_cursor_shape = 2
-theme_override_colors/font_color = Color(0.4, 0.7, 1.0, 1)
-theme_override_font_sizes/font_size = 28
-flat = true
-text = "✖"
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Code Quality Report"
+vertical_alignment = 1
 
-[node name="HSeparator3" type="HSeparator" parent="VBoxContainer"]
+[node name="ContentContainer" type="PanelContainer" parent="OuterMargin/VBoxContainer/ResultsScroll/ResultsMargin/ReportCard/CardVBox"]
+unique_name_in_owner = true
 layout_mode = 2
 
-[node name="FooterMargin" type="MarginContainer" parent="VBoxContainer"]
+[node name="ContentMargin" type="MarginContainer" parent="OuterMargin/VBoxContainer/ResultsScroll/ResultsMargin/ReportCard/CardVBox/ContentContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="ResultsLabel" type="RichTextLabel" parent="OuterMargin/VBoxContainer/ResultsScroll/ResultsMargin/ReportCard/CardVBox/ContentContainer/ContentMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+bbcode_enabled = true
+fit_content = true
+text = "[color=#888888]Click \"Scan\" to analyze code quality.[/color]"
+
+[node name="HSeparator3" type="HSeparator" parent="OuterMargin/VBoxContainer"]
+layout_mode = 2
+
+[node name="FooterMargin" type="MarginContainer" parent="OuterMargin/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 15
 theme_override_constants/margin_top = 5
 theme_override_constants/margin_right = 15
 theme_override_constants/margin_bottom = 10
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/FooterMargin"]
+[node name="HBoxContainer" type="HBoxContainer" parent="OuterMargin/VBoxContainer/FooterMargin"]
 layout_mode = 2
 
-[node name="BackButton" type="Button" parent="VBoxContainer/FooterMargin/HBoxContainer"]
+[node name="BackButton" type="Button" parent="OuterMargin/VBoxContainer/FooterMargin/HBoxContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(80, 0)
 layout_mode = 2
@@ -1248,62 +280,9 @@ focus_mode = 0
 mouse_default_cursor_shape = 2
 text = "Back"
 
-[node name="SaveButton" type="Button" parent="VBoxContainer/FooterMargin/HBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(80, 0)
-layout_mode = 2
-focus_mode = 0
-mouse_default_cursor_shape = 2
-text = "Save"
-
-[node name="HelpButton" type="Button" parent="VBoxContainer/FooterMargin/HBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(80, 0)
-layout_mode = 2
-focus_mode = 0
-mouse_default_cursor_shape = 2
-text = "Help"
-
-[node name="FooterSpacer" type="Control" parent="VBoxContainer/FooterMargin/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="ExportJSONButton" type="Button" parent="VBoxContainer/FooterMargin/HBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 0)
-layout_mode = 2
-focus_mode = 0
-mouse_default_cursor_shape = 2
-disabled = true
-text = "Export JSON"
-
-[node name="ExportHTMLButton" type="Button" parent="VBoxContainer/FooterMargin/HBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 0)
-layout_mode = 2
-focus_mode = 0
-mouse_default_cursor_shape = 2
-disabled = true
-text = "Export HTML"
-
-[connection signal="pressed" from="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ScanButton" to="." method="_on_scan_button_pressed"]
-[connection signal="item_selected" from="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/FilterMargin/FilterHBox/SeverityFilter" to="." method="_on_filter_changed"]
-[connection signal="item_selected" from="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/FilterMargin/FilterHBox/TypeFilter" to="." method="_on_filter_changed"]
-[connection signal="text_changed" from="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/FilterMargin/FilterHBox/FileFilter" to="." method="_on_file_filter_changed"]
-[connection signal="pressed" from="VBoxContainer/FooterMargin/HBoxContainer/BackButton" to="." method="_on_back_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/FooterMargin/HBoxContainer/SaveButton" to="." method="_on_save_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/FooterMargin/HBoxContainer/ExportJSONButton" to="." method="_on_export_json_pressed"]
-[connection signal="pressed" from="VBoxContainer/FooterMargin/HBoxContainer/ExportHTMLButton" to="." method="_on_export_html_pressed"]
-[connection signal="pressed" from="VBoxContainer/FooterMargin/HBoxContainer/HelpButton" to="." method="_on_help_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/CloseHelpButton" to="." method="_on_close_help_pressed"]
-[connection signal="mouse_entered" from="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/CloseHelpButton" to="." method="_on_close_help_mouse_entered"]
-[connection signal="mouse_exited" from="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/CloseHelpButton" to="." method="_on_close_help_mouse_exited"]
-[connection signal="pressed" from="VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer/HBox/FolderButton" to="." method="_on_folder_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/ContentHBox/ResultsPanel/VBoxContainer/HelpPanel/HelpScroll/HelpMargin/HelpVBox/ResetAllButton" to="." method="_on_reset_all_pressed"]
-[connection signal="pressed" from="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid/FileLinesReset" to="." method="_on_file_lines_reset"]
-[connection signal="pressed" from="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid/FuncLinesReset" to="." method="_on_func_lines_reset"]
-[connection signal="pressed" from="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/ThresholdsGrid/ComplexityReset" to="." method="_on_complexity_reset"]
-[connection signal="pressed" from="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid/MaxParamsReset" to="." method="_on_max_params_reset"]
-[connection signal="pressed" from="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid/MaxNestingReset" to="." method="_on_max_nesting_reset"]
-[connection signal="pressed" from="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid/GodClassReset" to="." method="_on_god_class_reset"]
-[connection signal="pressed" from="VBoxContainer/ContentHBox/SettingsPanel/ScrollContainer/SettingsMargin/SettingsVBox/ThresholdCard/ThresholdCardVBox/ContentMargin/ContentVBox/LimitsGrid/GodClassSignalsReset" to="." method="_on_god_class_signals_reset"]
+[connection signal="pressed" from="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer/HBox/FolderButton" to="." method="_on_folder_button_pressed"]
+[connection signal="pressed" from="OuterMargin/VBoxContainer/ToolbarMargin/Toolbar/ScanButton" to="." method="_on_scan_button_pressed"]
+[connection signal="pressed" from="OuterMargin/VBoxContainer/ToolbarMargin/Toolbar/ExportJSONButton" to="." method="_on_export_json_pressed"]
+[connection signal="pressed" from="OuterMargin/VBoxContainer/ToolbarMargin/Toolbar/ExportHTMLButton" to="." method="_on_export_html_pressed"]
+[connection signal="pressed" from="OuterMargin/VBoxContainer/ToolbarMargin/Toolbar/SettingsButton" to="." method="_on_settings_button_pressed"]
+[connection signal="pressed" from="OuterMargin/VBoxContainer/FooterMargin/HBoxContainer/BackButton" to="." method="_on_back_button_pressed"]
