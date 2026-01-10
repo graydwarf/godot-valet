@@ -1,5 +1,5 @@
 extends Control
-# gdlint:ignore=file-length
+# gdlint:ignore-file:file-length
 # Note: File exceeds 300 lines (~2800). Core icon and zip utilities extracted to
 # file-tree-icons.gd and zip-file-utils.gd. Remaining systems (favorites, filters,
 # flat list, settings) are tightly coupled with UI and state - further extraction

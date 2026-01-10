@@ -283,6 +283,7 @@ func _createPlatformRows():
 		var card = _createPlatformCard(platform)
 		_platformsContainer.add_child(card)
 
+# gdlint:ignore-function:long-function
 func _createPlatformCard(platform: String) -> PanelContainer:
 	# Outer panel with rounded edges
 	var panelContainer = PanelContainer.new()

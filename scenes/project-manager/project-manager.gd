@@ -488,16 +488,19 @@ func LaunchClaudeCode():
 		OS.alert("No project selected")
 		return
 
-	var projectPath = _selectedProjectItem.GetProjectPathBaseDir()
-	var commandTemplate = App.GetClaudeCodeLaunchCommand()
+	var project_path = _selectedProjectItem.GetProjectPathBaseDir()
+	var command = App.GetClaudeCodeLaunchCommand()
 
-	# Replace {project_path} placeholder with actual project path
-	var command = commandTemplate.replace("{project_path}", projectPath)
-	var args = ["/c", command]
-	var pid = OS.create_process("cmd.exe", args)
+	# Launch via Windows Terminal with PowerShell
+	var args: PackedStringArray = [
+		"-d", project_path,
+		"powershell", "-NoProfile", "-NoExit",
+		"-Command", command
+	]
+	var pid = OS.create_process("wt", args)
 
 	if pid == -1:
-		OS.alert("Failed to launch Claude Code.\n\nMake sure it's installed and check your launch command in Settings.\nCurrent command: %s" % command)
+		OS.alert("Failed to launch Claude Code.\n\nMake sure Windows Terminal is installed.\nCommand: %s" % command)
 
 func OpenFileExplorer():
 	if _fileExplorer == null:
