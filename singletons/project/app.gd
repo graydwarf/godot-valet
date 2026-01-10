@@ -16,7 +16,7 @@ var _isDebuggingWithoutThreads = false
 var _backgroundColor = Color(0.2, 0.2, 0.2)
 var _showHidden = false
 var _sortType = Enums.SortByType.EditedDate
-var _claudeCodeLaunchCommand = 'start cmd /k "cd /d {project_path} && claude"'
+var _claudeCodeLaunchCommand = "claude --permission-mode plan"
 var _claudeCodeButtonEnabled = true
 var _claudeApiChatButtonEnabled = false
 var _disclaimerAccepted = false
@@ -73,7 +73,7 @@ func SetClaudeCodeLaunchCommand(value):
 	SaveSolutionSettings()
 
 func GetDefaultClaudeCodeLaunchCommand():
-	return 'start cmd /k "cd /d {project_path} && claude"'
+	return "claude --permission-mode plan"
 
 func GetClaudeCodeButtonEnabled():
 	return _claudeCodeButtonEnabled
