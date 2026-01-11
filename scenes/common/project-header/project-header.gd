@@ -20,19 +20,19 @@ signal copy_path_pressed(path: String)
 @onready var _projectPathLabel = %ProjectPathLabel
 @onready var _copyPathButton = %CopyPathButton
 @onready var _folderButton = %FolderButton
-@onready var _metadataRow = %MetadataRow
+@onready var _metadataGrid = %MetadataGrid
 @onready var _currentVersionLabel = %CurrentVersionLabel
 @onready var _lastLinterScanLabel = %LastLinterScanLabel
 @onready var _lastPublishedLabel = %LastPublishedLabel
-@onready var _dateLabelsRow = %DateLabelsRow
 @onready var _createdDateLabel = %CreatedDateLabel
 @onready var _editedDateLabel = %EditedDateLabel
+@onready var _gridSpacer = %Spacer
 
 var _selectedProjectItem = null
 
 func _ready():
 	if apply_theme:
-		_applySelectedTheme()
+		_applyDefaultTheme()
 	_setupButtons()
 	_applyConfiguration()
 
@@ -46,11 +46,17 @@ func _applyConfiguration():
 		_lastLinterScanLabel.visible = show_last_linter_scan
 	if _lastPublishedLabel:
 		_lastPublishedLabel.visible = show_last_published
-	if _dateLabelsRow:
-		_dateLabelsRow.visible = show_date_labels
-	# Hide entire metadata row if all fields are hidden
-	if _metadataRow:
-		_metadataRow.visible = show_current_version or show_last_linter_scan or show_last_published
+	# Date labels in row 2 of grid
+	if _createdDateLabel:
+		_createdDateLabel.visible = show_date_labels
+	if _editedDateLabel:
+		_editedDateLabel.visible = show_date_labels
+	if _gridSpacer:
+		_gridSpacer.visible = show_date_labels
+	# Hide entire metadata grid if all fields are hidden
+	var show_any = show_current_version or show_last_linter_scan or show_last_published or show_date_labels
+	if _metadataGrid:
+		_metadataGrid.visible = show_any
 
 func _setupButtons():
 	# Connect copy and folder buttons
@@ -125,12 +131,32 @@ func _updateDisplay():
 		version = "--"
 	set_current_version(version)
 
+	# Set linter scan date
+	var linter_scan_date = _selectedProjectItem.GetLastLinterScanDate()
+	if linter_scan_date.is_empty():
+		set_last_linter_scan("Never")
+	else:
+		set_last_linter_scan(linter_scan_date)
+
 	# Set published date if available
 	var published_date = _selectedProjectItem.GetPublishedDate()
 	if published_date.is_empty():
 		set_last_published("--")
 	else:
 		set_last_published(Date.GetCurrentDateAsString(published_date))
+
+	# Set created/edited dates
+	var created_date = _selectedProjectItem.GetCreatedDate()
+	if created_date.is_empty():
+		set_created_date("--")
+	else:
+		set_created_date(Date.GetCurrentDateAsString(created_date))
+
+	var edited_date = _selectedProjectItem.GetEditedDate()
+	if edited_date.is_empty():
+		set_edited_date("--")
+	else:
+		set_edited_date(Date.GetCurrentDateAsString(edited_date))
 
 	# Load thumbnail
 	set_icon_from_path(_selectedProjectItem.GetThumbnailPath())
@@ -161,18 +187,17 @@ func show_saved_indicator():
 	# Could add a flash effect or label if needed
 	pass
 
-func _applySelectedTheme():
+func _applyDefaultTheme():
 	var customTheme = Theme.new()
 	var styleBox = StyleBoxFlat.new()
 
-	# Match selected project item styling
-	styleBox.bg_color = _adjustBackgroundColor(0.32)
+	# Match default project item styling (not selected)
+	styleBox.bg_color = _adjustBackgroundColor(-0.08)
 	styleBox.border_color = Color(0.6, 0.6, 0.6)
-	styleBox.border_width_left = 3
-	styleBox.border_width_top = 3
-	styleBox.border_width_right = 3
-	styleBox.border_width_bottom = 3
-	styleBox.border_blend = true
+	styleBox.border_width_left = 2
+	styleBox.border_width_top = 2
+	styleBox.border_width_right = 2
+	styleBox.border_width_bottom = 2
 	styleBox.corner_radius_top_left = 6
 	styleBox.corner_radius_top_right = 6
 	styleBox.corner_radius_bottom_right = 6
@@ -182,14 +207,10 @@ func _applySelectedTheme():
 	theme = customTheme
 
 func _adjustBackgroundColor(amount):
-	var colorToSubtract = Color(amount, amount, amount, 0.0)
 	var baseColor = App.GetBackgroundColor()
-
-	var newColor = Color(
-		max(baseColor.r + colorToSubtract.r, 0),
-		max(baseColor.g + colorToSubtract.g, 0),
-		max(baseColor.b + colorToSubtract.b, 0),
-		max(baseColor.a + colorToSubtract.a, 0)
+	return Color(
+		clamp(baseColor.r + amount, 0, 1),
+		clamp(baseColor.g + amount, 0, 1),
+		clamp(baseColor.b + amount, 0, 1),
+		baseColor.a
 	)
-
-	return newColor

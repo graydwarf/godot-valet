@@ -19,6 +19,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 
 [node name="VBoxContainer" type="VBoxContainer" parent="OuterMargin"]
@@ -29,10 +30,11 @@ size_flags_vertical = 3
 [node name="ProjectHeader" parent="OuterMargin/VBoxContainer" instance=ExtResource("2_header")]
 unique_name_in_owner = true
 layout_mode = 2
-show_godot_version = false
+show_godot_version = true
 show_current_version = true
 show_last_linter_scan = true
 show_last_published = true
+show_date_labels = true
 
 [node name="PageTitleMargin" type="MarginContainer" parent="OuterMargin/VBoxContainer"]
 layout_mode = 2

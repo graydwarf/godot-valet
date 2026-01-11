@@ -1,7 +1,7 @@
 [gd_scene load_steps=7 format=3 uid="uid://qk0llxhtqftg"]
 
 [ext_resource type="Script" uid="uid://bfxtx286ai1ql" path="res://scenes/release-manager/release-manager.gd" id="1"]
-[ext_resource type="PackedScene" path="res://scenes/release-manager/pages/common/project-card/project-card.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/common/project-header/project-header.tscn" id="2_header"]
 [ext_resource type="PackedScene" uid="uid://d2ri2mnpmos3i" path="res://scenes/release-manager/pages/common/wizard-breadcrumb/wizard-breadcrumb.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/release-manager/pages/export-page/export-page.tscn" id="4"]
 [ext_resource type="PackedScene" uid="uid://cgfyxcwjy0lrx" path="res://scenes/release-manager/pages/publish-page/publish-page.tscn" id="5"]
@@ -30,9 +30,14 @@ theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 
-[node name="ProjectCard" parent="VBoxContainer/CardMargin" instance=ExtResource("2")]
+[node name="ProjectHeader" parent="VBoxContainer/CardMargin" instance=ExtResource("2_header")]
 unique_name_in_owner = true
 layout_mode = 2
+show_godot_version = true
+show_current_version = true
+show_last_linter_scan = true
+show_last_published = true
+show_date_labels = true
 
 [node name="MarginContainer" type="MarginContainer" parent="VBoxContainer"]
 layout_mode = 2

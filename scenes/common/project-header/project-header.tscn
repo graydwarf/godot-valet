@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" path="res://scenes/common/project-header/assets/copy.svg" id="4_copy"]
 
 [node name="ProjectHeader" type="Panel"]
+custom_minimum_size = Vector2(0, 140)
 mouse_filter = 2
 script = ExtResource("1")
 
@@ -16,6 +17,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 theme_override_constants/margin_left = 12
 theme_override_constants/margin_top = 11
 theme_override_constants/margin_right = 12
@@ -23,11 +25,13 @@ theme_override_constants/margin_bottom = 13
 
 [node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
 layout_mode = 2
+mouse_filter = 2
 
 [node name="ThumbTextureRect" type="TextureRect" parent="MarginContainer/HBoxContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(107, 105)
 layout_mode = 2
+mouse_filter = 2
 texture = ExtResource("2")
 expand_mode = 1
 stretch_mode = 5
@@ -36,15 +40,18 @@ stretch_mode = 5
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+mouse_filter = 2
 theme_override_constants/separation = 0
 alignment = 1
 
 [node name="MarginContainer2" type="MarginContainer" parent="MarginContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_constants/margin_left = 10
 
 [node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2"]
 layout_mode = 2
+mouse_filter = 2
 
 [node name="ProjectNameLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer"]
 unique_name_in_owner = true
@@ -57,6 +64,7 @@ clip_text = true
 [node name="GodotVersionContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+mouse_filter = 2
 size_flags_horizontal = 8
 
 [node name="GodotVersionLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer/GodotVersionContainer"]
@@ -69,11 +77,13 @@ horizontal_alignment = 2
 
 [node name="PathRow" type="MarginContainer" parent="MarginContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_bottom = 5
 
 [node name="HBox" type="HBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/PathRow"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_constants/separation = 5
 
 [node name="ProjectPathLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/PathRow/HBox"]
@@ -105,46 +115,45 @@ flat = true
 icon = ExtResource("3_folder")
 expand_icon = true
 
-[node name="MetadataRow" type="MarginContainer" parent="MarginContainer/HBoxContainer/VBoxContainer"]
+[node name="MetadataGrid" type="MarginContainer" parent="MarginContainer/HBoxContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+mouse_filter = 2
 theme_override_constants/margin_left = 10
 
-[node name="HBox" type="HBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/MetadataRow"]
+[node name="Grid" type="GridContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/MetadataGrid"]
 layout_mode = 2
-theme_override_constants/separation = 10
+mouse_filter = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 20
+theme_override_constants/v_separation = 2
+columns = 3
 
-[node name="CurrentVersionLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MetadataRow/HBox"]
+[node name="CurrentVersionLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MetadataGrid/Grid"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
 text = "Current Version: v0.0.1"
 clip_text = true
 
-[node name="LastLinterScanLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MetadataRow/HBox"]
+[node name="LastLinterScanLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MetadataGrid/Grid"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
 text = "Last Linter Scan: --"
 clip_text = true
 
-[node name="LastPublishedLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MetadataRow/HBox"]
+[node name="LastPublishedLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MetadataGrid/Grid"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
 text = "Last Published: --"
 clip_text = true
 
-[node name="DateLabelsRow" type="MarginContainer" parent="MarginContainer/HBoxContainer/VBoxContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/margin_left = 10
-
-[node name="HBox" type="HBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/DateLabelsRow"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="CreatedDateLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/DateLabelsRow/HBox"]
+[node name="CreatedDateLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MetadataGrid/Grid"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -152,12 +161,16 @@ theme_override_font_sizes/font_size = 14
 text = "Created: --"
 clip_text = true
 
-[node name="EditedDateLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/DateLabelsRow/HBox"]
+[node name="EditedDateLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MetadataGrid/Grid"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
 text = "Edited: --"
-horizontal_alignment = 2
 clip_text = true
+
+[node name="Spacer" type="Control" parent="MarginContainer/HBoxContainer/VBoxContainer/MetadataGrid/Grid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
 

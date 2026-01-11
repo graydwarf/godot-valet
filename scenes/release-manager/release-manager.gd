@@ -2,7 +2,7 @@ extends Panel
 
 # Wizard controller for Release Manager
 
-@onready var _projectCard = %ProjectCard
+@onready var _projectHeader: ProjectHeader = %ProjectHeader
 @onready var _breadcrumb = %WizardBreadcrumb
 @onready var _pagesContainer = %PagesContainer
 @onready var _exitButton = %ExitButton
@@ -59,8 +59,8 @@ func SelectedProjecItemUpdated(selectedProjectItem):
 	for page in _pages:
 		page._selectedProjectItem = selectedProjectItem
 
-	# Update project card with new reference
-	_projectCard._selectedProjectItem = selectedProjectItem
+	# Update project header with new reference
+	_projectHeader.configure(selectedProjectItem)
 
 func LoadBackgroundColor():
 	var style_box = theme.get_stylebox("panel", "Panel") as StyleBoxFlat
@@ -74,7 +74,7 @@ func ConfigureReleaseManagementForm(selectedProjectItem):
 	_selectedProjectItem = selectedProjectItem
 
 	# Configure project card
-	_projectCard.configure(selectedProjectItem)
+	_projectHeader.configure(selectedProjectItem)
 
 	# Configure all pages
 	for page in _pages:
@@ -163,7 +163,7 @@ func _onNextPressed():
 
 	# Save current page
 	_pages[_currentPage].save()
-	_projectCard.show_saved_indicator()
+	_projectHeader.show_saved_indicator()
 	_hasUnsavedChanges = false  # Just saved, new page starts clean
 
 	# If on last page, finish
@@ -181,7 +181,7 @@ func _onFinishPressed():
 func _onSavePressed():
 	# Save current page
 	_pages[_currentPage].save()
-	_projectCard.show_saved_indicator()
+	_projectHeader.show_saved_indicator()
 	_hasUnsavedChanges = false
 
 func _onExitPressed():
@@ -204,7 +204,7 @@ func _onConfirmationDialogChoice(choice: String):
 		"save":
 			# Save current page
 			_pages[_currentPage].save()
-			_projectCard.show_saved_indicator()
+			_projectHeader.show_saved_indicator()
 			_hasUnsavedChanges = false
 			if _isGoingBack:
 				_isGoingBack = false
@@ -232,7 +232,7 @@ func _onBreadcrumbStepClicked(step_index: int):
 	print("_onBreadcrumbStepClicked: step_index=", step_index, " current=", _currentPage, " total pages=", _pages.size())
 	# Save current page before navigating
 	_pages[_currentPage].save()
-	_projectCard.show_saved_indicator()
+	_projectHeader.show_saved_indicator()
 	_hasUnsavedChanges = false  # Just saved, new page starts clean
 	_showPage(step_index)
 

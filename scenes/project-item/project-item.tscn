@@ -24,12 +24,17 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="ProjectHeader" parent="VBoxContainer" instance=ExtResource("3_header")]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
+show_godot_version = true
+show_current_version = true
+show_last_linter_scan = true
+show_last_published = true
 show_date_labels = true
 apply_theme = false
 

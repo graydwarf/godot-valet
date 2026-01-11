@@ -53,6 +53,8 @@ func UpdateProjectItemUi():
 	_projectHeader.set_godot_version(_godotVersion)
 	_projectHeader.set_path(_projectPath)
 	_projectHeader.set_current_version(_projectVersion if !_projectVersion.is_empty() else "--")
+	var linter_scan = GetLastLinterScanDate()
+	_projectHeader.set_last_linter_scan(linter_scan if !linter_scan.is_empty() else "Never")
 	_projectHeader.set_last_published(Date.GetCurrentDateAsString(_publishedDate) if !_publishedDate.is_empty() else "--")
 	_projectHeader.set_created_date(Date.GetCurrentDateAsString(_createdDate))
 	_projectHeader.set_edited_date(Date.GetCurrentDateAsString(_editedDate))
@@ -253,7 +255,22 @@ func GetCreatedDate():
 	
 func GetEditedDate():
 	return _editedDate
-	
+
+# Returns the last linter scan date from .gdlint_state.json
+func GetLastLinterScanDate() -> String:
+	var projectDir = GetProjectDir()
+	var configPath = projectDir + "/.gdlint_state.json"
+
+	if FileAccess.file_exists(configPath):
+		var file = FileAccess.open(configPath, FileAccess.READ)
+		if file:
+			var json = JSON.new()
+			var error = json.parse(file.get_as_text())
+			file.close()
+			if error == OK and json.data is Dictionary:
+				return json.data.get("last_scanned", "")
+	return ""
+
 # Strip off the file name
 # /project.godot
 func GetProjectPathBaseDir():
