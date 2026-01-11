@@ -64,12 +64,22 @@ tooltip_text = "Open project in Godot Editor to configure export settings"
 text = "Edit Project"
 icon = ExtResource("3_code")
 
-[node name="ExportSelectedButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonMargin/HBoxContainer"]
+[node name="ExportAllButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonMargin/HBoxContainer"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(150, 31)
+custom_minimum_size = Vector2(110, 31)
 layout_mode = 2
 mouse_default_cursor_shape = 2
-text = "Export Selected"
+tooltip_text = "Export all selected platforms without prompts"
+text = "Export All"
+icon = ExtResource("4_checkmark")
+
+[node name="ExportSelectedButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonMargin/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(165, 31)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+tooltip_text = "Export all selected platforms with prompts for each"
+text = "Export All w/Prompts"
 icon = ExtResource("4_checkmark")
 
 [node name="SpacerRight" type="Control" parent="MarginContainer/VBoxContainer/ButtonMargin/HBoxContainer"]

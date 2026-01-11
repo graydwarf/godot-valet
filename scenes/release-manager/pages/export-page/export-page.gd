@@ -19,6 +19,7 @@ signal page_modified()  # Emitted when any input is changed
 signal page_saved()  # Emitted after successful save to reset dirty flag
 
 @onready var _platformsContainer = %PlatformsContainer
+@onready var _exportAllButton = %ExportAllButton
 @onready var _exportSelectedButton = %ExportSelectedButton
 @onready var _projectVersionLineEdit = %ProjectVersionLineEdit
 @onready var _projectVersionCard = %ProjectVersionCard
@@ -48,6 +49,7 @@ var _isLoadingData: bool = false  # Suppresses page_modified during _loadPageDat
 var _platformExportOutput: Dictionary = {}  # platform_name -> last export output string
 
 func _ready():
+	_exportAllButton.pressed.connect(_onExportAllPressed)
 	_exportSelectedButton.pressed.connect(_onExportSelectedPressed)
 	_projectVersionLineEdit.text_changed.connect(_onVersionChanged)
 	_refreshButton.pressed.connect(_onRefreshPressed)
@@ -351,6 +353,7 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	checkbox.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	checkbox.name = "Checkbox"
 	checkbox.focus_mode = Control.FOCUS_NONE
+	checkbox.tooltip_text = "Include this platform when using Export All options"
 	checkbox.toggled.connect(_onPlatformToggled.bind(platform))
 	checkbox.toggled.connect(_onInputChanged.unbind(1))
 	mainRow.add_child(checkbox)
@@ -1704,15 +1707,32 @@ func _onSavePressed():
 	# Notify parent to reset dirty flag
 	page_saved.emit()
 
+func _onExportAllPressed():
+	# Export all selected platforms without prompts - auto-clear existing folders
+	for platform in _platformRows.keys():
+		var data = _platformRows[platform]
+		if data["checkbox"].button_pressed:
+			await _exportPlatformNoPrompts(platform)
+
+			# Check if user cancelled
+			if _exportCancelled:
+				break
+
+			# Small delay between platform exports to show progress
+			await get_tree().create_timer(0.3).timeout
+
+	# Re-enable UI after all exports complete
+	_setUIEnabled(true)
+
 func _onExportSelectedPressed():
-	# Export platforms sequentially with status updates
+	# Export platforms sequentially with prompts for each
 	# Note: UI blocker will be shown by _exportPlatform after confirmation dialogs
 	for platform in _platformRows.keys():
 		var data = _platformRows[platform]
 		if data["checkbox"].button_pressed:
 			await _exportPlatform(platform)
 
-			# Check if user cancelled
+			# Check if user cancelled or user chose to skip remaining
 			if _exportCancelled:
 				break
 
@@ -1801,7 +1821,7 @@ func _prepareExportContext(platform: String, runAfterExport: bool, godotPathForR
 		"temp_obfuscated_dir": ""
 	}
 
-# Handles folder existence check, overwrite dialog, and directory creation. Returns false on failure/cancel.
+# Handles folder existence check, overwrite dialog, and directory creation. Returns false on failure/cancel/skip.
 func _setupExportDestination(ctx: Dictionary, data: Dictionary) -> bool:
 	var exportDestPath = ctx["export_dest_path"]
 	var shouldZip = ctx["should_zip"]
@@ -1816,9 +1836,9 @@ func _setupExportDestination(ctx: Dictionary, data: Dictionary) -> bool:
 
 		var buttons: Array[String]
 		if shouldZip:
-			buttons = ["Clear & Export", "Cancel"]
+			buttons = ["Clear & Export", "Skip", "Cancel"]
 		else:
-			buttons = ["Clear & Export", "Overwrite", "Cancel"]
+			buttons = ["Clear & Export", "Overwrite", "Skip", "Cancel"]
 
 		confirmDialog.show_dialog_with_buttons(
 			"Export folder already exists:\n" + exportDestPath + "\n\nHow would you like to proceed?",
@@ -1827,7 +1847,15 @@ func _setupExportDestination(ctx: Dictionary, data: Dictionary) -> bool:
 		var choice = await confirmDialog.confirmed
 
 		if choice == "Cancel":
+			# Cancel stops all remaining platform exports
+			_exportCancelled = true
 			_updateStatus(data, "Export cancelled")
+			await get_tree().create_timer(0.5).timeout
+			return false
+
+		if choice == "Skip":
+			# Skip just skips this platform, continues to next
+			_updateStatus(data, "Skipped")
 			await get_tree().create_timer(0.5).timeout
 			return false
 
@@ -1848,6 +1876,32 @@ func _setupExportDestination(ctx: Dictionary, data: Dictionary) -> bool:
 		_setUIEnabled(false)
 		_updateStatus(data, "Creating version folder...")
 		await get_tree().create_timer(0.5).timeout
+
+		var err = DirAccess.make_dir_recursive_absolute(exportDestPath)
+		if err != OK:
+			_updateStatus(data, "Error: Cannot create export folder")
+			return false
+
+	return true
+
+# Setup export destination without prompts - auto-clears existing folders
+func _setupExportDestinationNoPrompts(ctx: Dictionary, data: Dictionary) -> bool:
+	var exportDestPath = ctx["export_dest_path"]
+
+	_setUIEnabled(false)
+
+	if DirAccess.dir_exists_absolute(exportDestPath):
+		_updateStatus(data, "Clearing export folder...")
+		await get_tree().process_frame
+		if not _clearDirectory(exportDestPath):
+			_updateStatus(data, "Error: Failed to clear folder")
+			_setUIEnabled(true)
+			return false
+		_updateStatus(data, "Preparing export...")
+		await get_tree().create_timer(0.3).timeout
+	else:
+		_updateStatus(data, "Creating version folder...")
+		await get_tree().create_timer(0.3).timeout
 
 		var err = DirAccess.make_dir_recursive_absolute(exportDestPath)
 		if err != OK:
@@ -2065,6 +2119,47 @@ func _exportPlatform(platform: String, runAfterExport: bool = false, godotPathFo
 	# Phase 2: Setup export destination (handles overwrite dialog)
 	if not await _setupExportDestination(ctx, data):
 		_abortExport(ctx, data, "")  # Status already set by _setupExportDestination
+		return
+
+	# Phase 3-4: Run export (source or regular platform)
+	var success: bool
+	if platform == "Source":
+		success = await _exportSourcePlatform(ctx, data)
+	else:
+		success = await _exportRegularPlatform(ctx, data)
+
+	# Phase 5: Post-export steps (rename, run, zip, checksum)
+	success = await _runPostExportSteps(ctx, data, success)
+
+	# Phase 6: Finalize (cleanup and status)
+	await _finalizeExport(ctx, data, success)
+
+# Export platform without prompts - auto-clears existing folders
+func _exportPlatformNoPrompts(platform: String):
+	if platform in _exportingPlatforms:
+		return
+
+	# Phase 1: Prepare context with all needed data (before any awaits)
+	var ctx = _prepareExportContext(platform, false, "")
+	if ctx.has("error"):
+		if ctx["error"] != "Not in scene tree" and ctx["error"] != "Project item invalid":
+			var data = _platformRows[platform]
+			_updateStatus(data, "Error: " + ctx["error"])
+		return
+
+	var data = _platformRows[platform]
+	_exportingPlatforms.append(platform)
+
+	# Initialize UI
+	_updateStatus(data, "")
+	await get_tree().process_frame
+	_updateStatus(data, "Exporting...")
+	_setExportButtonsDisabled(data, true)
+	build_started.emit(platform)
+
+	# Phase 2: Setup export destination (auto-clear without prompts)
+	if not await _setupExportDestinationNoPrompts(ctx, data):
+		_abortExport(ctx, data, "")  # Status already set
 		return
 
 	# Phase 3-4: Run export (source or regular platform)
@@ -2532,9 +2627,11 @@ func _updateStatus(data: Dictionary, status: String):
 	# Safely update status label only if it's still valid
 	if is_instance_valid(data.get("status")):
 		data["status"].text = status
-		# Color error messages red
+		# Color status messages based on type
 		if status.begins_with("Error:") or status.begins_with("✗"):
 			data["status"].add_theme_color_override("font_color", Color.RED)
+		elif status.contains("Complete"):
+			data["status"].add_theme_color_override("font_color", Color.GREEN)
 		else:
 			data["status"].remove_theme_color_override("font_color")
 
@@ -2764,7 +2861,9 @@ func _updateExportSelectedButtonState():
 			anyPlatformSelected = true
 			break
 
-	# Enable button only if at least one platform is selected
+	# Enable buttons only if at least one platform is selected
+	if is_instance_valid(_exportAllButton):
+		_exportAllButton.disabled = not anyPlatformSelected
 	if is_instance_valid(_exportSelectedButton):
 		_exportSelectedButton.disabled = not anyPlatformSelected
 
