@@ -298,7 +298,7 @@ theme_override_constants/separation = 12
 unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 40)
 layout_mode = 2
-text = "Cancel"
+text = "Back"
 
 [node name="Spacer" type="Control" parent="BackgroundPanel/MarginContainer/VBoxContainer/ButtonContainer"]
 layout_mode = 2

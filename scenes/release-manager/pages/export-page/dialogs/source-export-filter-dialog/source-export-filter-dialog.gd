@@ -34,16 +34,30 @@ var _excludePatterns: Array[String] = []
 var _additionalFiles: Array[Dictionary] = []  # [{source: "", target: ""}]
 var _treeExpanded: bool = false
 var _currentTab: int = 0  # 0=Project Files, 1=Exclude Patterns, 2=Additional Files
+var _isDirty: bool = false  # Track unsaved changes
+var _lastSavedConfig: Dictionary = {}  # Track last saved state for comparison
+var _initialExcludePatterns: Array[String] = []  # Original patterns when dialog opened
+var _initialAdditionalFiles: Array[Dictionary] = []  # Original files when dialog opened
+var _initialExcludedPaths: Array[String] = []  # Original excluded paths when dialog opened
 
 # Checkbox icons
 var _iconChecked: Texture2D
 var _iconUnchecked: Texture2D
+
+# Busy overlay
+var _busy_overlay: Control
+var _busy_spinner: Label
+var _busy_animation_timer: Timer
+var _spinner_frames := ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+var _spinner_frame_index: int = 0
 
 const PROJECT_FILES_HELP_TEXT = """Use the checkboxes to include or exclude files and folders from the Source export.
 
 - Click a folder to toggle all its contents
 - Checked items will be included in the export
 - Unchecked items will be excluded
+
+Greyed out items match an Exclude Pattern and cannot be selected. They will always be excluded from the export. To include a pattern-excluded item, remove or modify the pattern in the Exclude Patterns tab.
 
 This tree shows all files in your project. Use it for fine-grained control over exactly which files are exported."""
 
@@ -123,6 +137,79 @@ func _ready():
 		# Use item_mouse_selected to toggle on every click (not just selection change)
 		_tree.item_mouse_selected.connect(_onTreeItemClicked)
 
+	# Setup busy overlay
+	_setup_busy_overlay()
+
+# Setup busy overlay for loading state
+func _setup_busy_overlay() -> void:
+	_busy_overlay = Control.new()
+	_busy_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_busy_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_busy_overlay.visible = false
+	_busy_overlay.z_index = 150
+	add_child(_busy_overlay)
+	move_child(_busy_overlay, -1)
+
+	# Semi-transparent dark background
+	var bg := ColorRect.new()
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.color = Color(0.1, 0.12, 0.15, 0.85)
+	_busy_overlay.add_child(bg)
+
+	# Centered container
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_busy_overlay.add_child(center)
+
+	# Panel with loading content
+	var panel := PanelContainer.new()
+	var panelStyle := StyleBoxFlat.new()
+	panelStyle.bg_color = Color(0.15, 0.17, 0.21, 0.95)
+	panelStyle.set_corner_radius_all(8)
+	panelStyle.set_content_margin_all(24)
+	panel.add_theme_stylebox_override("panel", panelStyle)
+	center.add_child(panel)
+
+	# VBox for spinner and label
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 12)
+	panel.add_child(vbox)
+
+	# Spinner
+	_busy_spinner = Label.new()
+	_busy_spinner.text = _spinner_frames[0]
+	_busy_spinner.add_theme_font_size_override("font_size", 32)
+	_busy_spinner.add_theme_color_override("font_color", Color(0.4, 0.6, 0.9))
+	_busy_spinner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(_busy_spinner)
+
+	# Status label
+	var statusLabel := Label.new()
+	statusLabel.text = "Loading project files..."
+	statusLabel.add_theme_font_size_override("font_size", 14)
+	statusLabel.add_theme_color_override("font_color", Color(0.7, 0.7, 0.75))
+	statusLabel.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(statusLabel)
+
+	# Animation timer
+	_busy_animation_timer = Timer.new()
+	_busy_animation_timer.wait_time = 0.08
+	_busy_animation_timer.timeout.connect(_on_busy_animation_tick)
+	add_child(_busy_animation_timer)
+
+func _show_busy_overlay() -> void:
+	_busy_overlay.visible = true
+	_busy_animation_timer.start()
+
+func _hide_busy_overlay() -> void:
+	_busy_overlay.visible = false
+	_busy_animation_timer.stop()
+
+func _on_busy_animation_tick() -> void:
+	_spinner_frame_index = (_spinner_frame_index + 1) % _spinner_frames.size()
+	_busy_spinner.text = _spinner_frames[_spinner_frame_index]
+
 # Open dialog for a specific platform with current settings
 func openForPlatform(platform: String, projectPath: String, currentConfig: Dictionary):
 	_platform = platform
@@ -167,11 +254,21 @@ func openForPlatform(platform: String, projectPath: String, currentConfig: Dicti
 	if _excludePatterns.is_empty() and currentConfig.is_empty():
 		_excludePatterns = _getDefaultExcludePatterns()
 
+	# Store initial state for discard/reset
+	_initialExcludePatterns = _excludePatterns.duplicate()
+	_initialAdditionalFiles = _additionalFiles.duplicate(true)
+	_initialExcludedPaths = excludedPaths.duplicate()
+	_isDirty = false
+
 	# Show dialog FIRST so layout happens
 	visible = true
 	move_to_front()
 
-	# Wait a frame for layout to update
+	# Show busy overlay while loading
+	_show_busy_overlay()
+
+	# Wait a couple frames for overlay to render before blocking tree build
+	await get_tree().process_frame
 	await get_tree().process_frame
 
 	# NOW build tree after it's properly sized
@@ -185,6 +282,9 @@ func openForPlatform(platform: String, projectPath: String, currentConfig: Dicti
 
 	# Build exclude patterns UI
 	_buildExcludePatternsUI()
+
+	# Hide busy overlay now that loading is complete
+	_hide_busy_overlay()
 
 	# Build additional files UI
 	_buildAdditionalFilesUI()
@@ -239,6 +339,38 @@ func _getDefaultExcludePatterns() -> Array[String]:
 	defaults.append(".idea/")
 	return defaults
 
+# Checks if a relative path matches any exclude pattern
+func _matchesExcludePattern(relativePath: String, isDirectory: bool) -> bool:
+	for pattern in _excludePatterns:
+		if pattern.is_empty():
+			continue
+		if pattern.ends_with("/"):
+			# Directory pattern - check if path starts with or equals pattern (without trailing /)
+			var dirPattern = pattern.trim_suffix("/")
+			if isDirectory:
+				if relativePath == dirPattern or relativePath.begins_with(dirPattern + "/"):
+					return true
+			else:
+				# File inside a directory that matches
+				if relativePath.begins_with(dirPattern + "/"):
+					return true
+		elif pattern.contains("*"):
+			# Wildcard pattern
+			var regexPattern = "^" + pattern.replace(".", "\\.").replace("*", ".*") + "$"
+			var regex = RegEx.new()
+			regex.compile(regexPattern)
+			# Check both the full path and just the filename
+			if regex.search(relativePath):
+				return true
+			var fileName = relativePath.get_file()
+			if regex.search(fileName):
+				return true
+		else:
+			# Exact match
+			if relativePath == pattern:
+				return true
+	return false
+
 func _applyTreeColors():
 	# Apply tree colors - must be called AFTER card styling to avoid being overridden
 	if not _tree:
@@ -273,12 +405,59 @@ func _buildProjectTree():
 	_tree.queue_redraw()
 	_tree.update_minimum_size()
 
-func _addDirectoryToTree(parentItem: TreeItem, dirPath: String, displayName: String) -> TreeItem:
+# Rebuilds tree with current exclude patterns, preserving manual exclusions
+func _rebuildTreeWithPatterns():
+	if not _tree:
+		return
+
+	# Collect manually unchecked paths (NOT pattern-excluded)
+	var manualExclusions: Array[String] = []
+	_collectManualExclusions(_tree.get_root(), manualExclusions)
+
+	# Rebuild tree with current patterns
+	_buildProjectTree()
+
+	# Re-apply manual exclusions
+	_applyExcludedPathsToTree(manualExclusions)
+
+# Collects paths that were manually unchecked (not pattern-excluded)
+func _collectManualExclusions(item: TreeItem, exclusions: Array[String]):
+	if item == null:
+		return
+
+	var metadata = item.get_metadata(0)
+	if metadata != null and metadata is Dictionary:
+		var isChecked = metadata.get("checked", true)
+		var isPatternExcluded = metadata.get("pattern_excluded", false)
+		# Only collect if manually unchecked (not pattern-excluded)
+		if not isChecked and not isPatternExcluded:
+			var path = metadata.get("path", "")
+			var relativePath = path.replace(_projectPath + "/", "").replace(_projectPath + "\\", "")
+			if not exclusions.has(relativePath):
+				exclusions.append(relativePath)
+
+	var child = item.get_first_child()
+	while child:
+		_collectManualExclusions(child, exclusions)
+		child = child.get_next()
+
+func _addDirectoryToTree(parentItem: TreeItem, dirPath: String, displayName: String, parentExcluded: bool = false) -> TreeItem:
 	var item = _tree.create_item(parentItem)
 
+	# Check if this directory matches an exclude pattern
+	var relativePath = dirPath.replace(_projectPath + "/", "").replace(_projectPath + "\\", "")
+	var isPatternExcluded = parentExcluded or _matchesExcludePattern(relativePath, true)
+
 	# Column 0: Checkbox icon + folder name
-	item.set_icon(0, _iconChecked)
-	item.set_metadata(0, {"path": dirPath, "checked": true})
+	if isPatternExcluded:
+		item.set_icon(0, _iconUnchecked)
+		item.set_icon_modulate(0, Color(0.5, 0.5, 0.5, 0.5))
+		item.set_custom_color(0, Color(0.5, 0.5, 0.5))
+		item.set_selectable(0, false)
+		item.set_metadata(0, {"path": dirPath, "checked": false, "pattern_excluded": true})
+	else:
+		item.set_icon(0, _iconChecked)
+		item.set_metadata(0, {"path": dirPath, "checked": true})
 	item.set_text(0, displayName + "/")
 
 	# Column 1: Size
@@ -316,22 +495,33 @@ func _addDirectoryToTree(parentItem: TreeItem, dirPath: String, displayName: Str
 	directories.sort()
 	for dirName in directories:
 		var subDirPath = dirPath.path_join(dirName)
-		_addDirectoryToTree(item, subDirPath, dirName)
+		_addDirectoryToTree(item, subDirPath, dirName, isPatternExcluded)
 
 	# Then add files
 	files.sort()
 	for file in files:
 		var filePath = dirPath.path_join(file)
-		_addFileToTree(item, filePath, file)
+		_addFileToTree(item, filePath, file, isPatternExcluded)
 
 	return item
 
-func _addFileToTree(parentItem: TreeItem, filePath: String, displayName: String):
+func _addFileToTree(parentItem: TreeItem, filePath: String, displayName: String, parentExcluded: bool = false):
 	var item = _tree.create_item(parentItem)
 
+	# Check if this file matches an exclude pattern
+	var relativePath = filePath.replace(_projectPath + "/", "").replace(_projectPath + "\\", "")
+	var isPatternExcluded = parentExcluded or _matchesExcludePattern(relativePath, false)
+
 	# Column 0: Checkbox icon + filename
-	item.set_icon(0, _iconChecked)
-	item.set_metadata(0, {"path": filePath, "checked": true})
+	if isPatternExcluded:
+		item.set_icon(0, _iconUnchecked)
+		item.set_icon_modulate(0, Color(0.5, 0.5, 0.5, 0.5))
+		item.set_custom_color(0, Color(0.5, 0.5, 0.5))
+		item.set_selectable(0, false)
+		item.set_metadata(0, {"path": filePath, "checked": false, "pattern_excluded": true})
+	else:
+		item.set_icon(0, _iconChecked)
+		item.set_metadata(0, {"path": filePath, "checked": true})
 	item.set_text(0, displayName)
 
 	# Column 1: Size
@@ -638,11 +828,20 @@ func _showHelpDialog(titleText: String, content: String):
 	bodyVBox.add_theme_constant_override("separation", 12)
 	bodyMargin.add_child(bodyVBox)
 
+	# Scroll container for help content (in case it's long)
+	var scrollContainer = ScrollContainer.new()
+	scrollContainer.custom_minimum_size = Vector2(420, 100)
+	scrollContainer.custom_maximum_size = Vector2(0, 300)  # Max height to trigger scrolling
+	scrollContainer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scrollContainer.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	bodyVBox.add_child(scrollContainer)
+
 	# Help content label
 	var contentLabel = Label.new()
 	contentLabel.text = content
 	contentLabel.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	bodyVBox.add_child(contentLabel)
+	contentLabel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scrollContainer.add_child(contentLabel)
 
 	# Close button at bottom
 	var buttonContainer = HBoxContainer.new()
@@ -669,6 +868,7 @@ func _onAddPatternPressed():
 	# Add empty pattern that user can edit
 	_excludePatterns.append("")
 	_addPatternRow("")
+	_isDirty = true
 
 func _onPatternTextChanged(newText: String, patternEdit: LineEdit):
 	# Find which row this LineEdit belongs to by finding it in the patterns list
@@ -680,6 +880,7 @@ func _onPatternTextChanged(newText: String, patternEdit: LineEdit):
 	var rowIndex = row.get_index()
 	if rowIndex >= 0 and rowIndex < _excludePatterns.size():
 		_excludePatterns[rowIndex] = newText
+		_isDirty = true
 
 func _onRemovePatternPressed(row: HBoxContainer):
 	# Find which pattern this row represents
@@ -689,12 +890,14 @@ func _onRemovePatternPressed(row: HBoxContainer):
 		_excludePatterns.erase(pattern)
 		row.queue_free()
 		_updateExcludeCount()
+		_isDirty = true
 
 func _onAddFilePressed():
 	# Add a new empty file entry
 	var newEntry = {"source": "", "target": ""}
 	_additionalFiles.append(newEntry)
 	_buildAdditionalFilesUI()
+	_isDirty = true
 
 func _onBrowseAdditionalFilePressed(fileEntry: Dictionary):
 	# TODO: Open file/folder browser dialog
@@ -702,10 +905,12 @@ func _onBrowseAdditionalFilePressed(fileEntry: Dictionary):
 
 func _onTargetPathChanged(newPath: String, fileEntry: Dictionary):
 	fileEntry["target"] = newPath
+	_isDirty = true
 
 func _onRemoveAdditionalFilePressed(fileEntry: Dictionary):
 	_additionalFiles.erase(fileEntry)
 	_buildAdditionalFilesUI()
+	_isDirty = true
 
 func _updateExcludeCount():
 	# No longer showing count in header
@@ -730,8 +935,17 @@ func _onSavePressed():
 	# Emit signal
 	settings_saved.emit(_platform, config)
 
-	# Hide dialog
-	visible = false
+	# Clear dirty state after save
+	_isDirty = false
+	_lastSavedConfig = config.duplicate(true)
+
+	# Update initial state so discard will reset to this saved state
+	_initialExcludePatterns = _excludePatterns.duplicate()
+	_initialAdditionalFiles = _additionalFiles.duplicate(true)
+	_initialExcludedPaths = excludedPaths.duplicate()
+
+	# Rebuild tree to reflect any pattern changes
+	_rebuildTreeWithPatterns()
 
 func _collectUncheckedPaths(item: TreeItem, excludedPaths: Array[String]):
 	if item == null:
@@ -755,8 +969,120 @@ func _collectUncheckedPaths(item: TreeItem, excludedPaths: Array[String]):
 		child = child.get_next()
 
 func _onCancelPressed():
+	# Renamed to Back - warn if there are unsaved changes
+	if _isDirty:
+		_showUnsavedChangesWarning()
+	else:
+		_closeDialog()
+
+func _closeDialog():
+	# Reset state to initial values if there were unsaved changes
+	# (no need to rebuild UI since we're closing - next open will load fresh)
+	if _isDirty:
+		_excludePatterns = _initialExcludePatterns.duplicate()
+		_additionalFiles = _initialAdditionalFiles.duplicate(true)
+
 	cancelled.emit()
 	visible = false
+	_isDirty = false
+
+func _showUnsavedChangesWarning():
+	# Create warning dialog overlay
+	var overlay = Control.new()
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.z_index = 250
+
+	# Semi-transparent background
+	var dimmer = ColorRect.new()
+	dimmer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dimmer.color = Color(0, 0, 0, 0.5)
+	overlay.add_child(dimmer)
+
+	# Center container
+	var centerContainer = CenterContainer.new()
+	centerContainer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(centerContainer)
+
+	# Warning card
+	var card = PanelContainer.new()
+	card.custom_minimum_size = Vector2(400, 0)
+	centerContainer.add_child(card)
+
+	# Card styling
+	var cardTheme = Theme.new()
+	var cardStyleBox = StyleBoxFlat.new()
+	cardStyleBox.bg_color = _getAdjustedBackgroundColor(-0.08)
+	cardStyleBox.border_color = Color(0.8, 0.6, 0.2)  # Warning orange border
+	cardStyleBox.border_width_left = 2
+	cardStyleBox.border_width_top = 2
+	cardStyleBox.border_width_right = 2
+	cardStyleBox.border_width_bottom = 2
+	cardStyleBox.corner_radius_top_left = 6
+	cardStyleBox.corner_radius_top_right = 6
+	cardStyleBox.corner_radius_bottom_right = 6
+	cardStyleBox.corner_radius_bottom_left = 6
+	cardTheme.set_stylebox("panel", "PanelContainer", cardStyleBox)
+	card.theme = cardTheme
+
+	# Card content
+	var cardMargin = MarginContainer.new()
+	cardMargin.add_theme_constant_override("margin_left", 20)
+	cardMargin.add_theme_constant_override("margin_top", 20)
+	cardMargin.add_theme_constant_override("margin_right", 20)
+	cardMargin.add_theme_constant_override("margin_bottom", 20)
+	card.add_child(cardMargin)
+
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 16)
+	cardMargin.add_child(vbox)
+
+	# Warning title
+	var titleLabel = Label.new()
+	titleLabel.text = "Unsaved Changes"
+	titleLabel.add_theme_font_size_override("font_size", 18)
+	titleLabel.add_theme_color_override("font_color", Color(0.9, 0.7, 0.3))
+	vbox.add_child(titleLabel)
+
+	# Warning message
+	var messageLabel = Label.new()
+	messageLabel.text = "You have unsaved changes. Do you want to save before leaving?"
+	messageLabel.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vbox.add_child(messageLabel)
+
+	# Buttons
+	var buttonContainer = HBoxContainer.new()
+	buttonContainer.alignment = BoxContainer.ALIGNMENT_END
+	buttonContainer.add_theme_constant_override("separation", 8)
+	vbox.add_child(buttonContainer)
+
+	var discardButton = Button.new()
+	discardButton.text = "Discard"
+	discardButton.custom_minimum_size = Vector2(90, 32)
+	discardButton.pressed.connect(func():
+		overlay.queue_free()
+		_closeDialog()
+	)
+	buttonContainer.add_child(discardButton)
+
+	var saveButton = Button.new()
+	saveButton.text = "Save"
+	saveButton.custom_minimum_size = Vector2(90, 32)
+	saveButton.pressed.connect(func():
+		overlay.queue_free()
+		_onSavePressed()
+		_closeDialog()
+	)
+	buttonContainer.add_child(saveButton)
+
+	var cancelButton = Button.new()
+	cancelButton.text = "Cancel"
+	cancelButton.custom_minimum_size = Vector2(90, 32)
+	cancelButton.pressed.connect(func():
+		overlay.queue_free()
+	)
+	buttonContainer.add_child(cancelButton)
+
+	add_child(overlay)
 
 func _onTreeItemClicked(_mouse_position: Vector2, mouse_button_index: int):
 	# Toggle checkbox when item is clicked (works on every click, even if already selected)
@@ -767,6 +1093,10 @@ func _onTreeItemClicked(_mouse_position: Vector2, mouse_button_index: int):
 	if item:
 		var metadata = item.get_metadata(0)
 		if metadata != null and metadata is Dictionary:
+			# Ignore clicks on pattern-excluded items
+			if metadata.get("pattern_excluded", false):
+				return
+
 			var isChecked = metadata.get("checked", true)
 			var newState = not isChecked
 			metadata["checked"] = newState
@@ -779,6 +1109,9 @@ func _onTreeItemClicked(_mouse_position: Vector2, mouse_button_index: int):
 
 			# Propagate to all children
 			_propagateCheckState(item, newState)
+
+			# Mark as dirty
+			_isDirty = true
 
 func _onTabPressed(tabIndex: int):
 	_currentTab = tabIndex
