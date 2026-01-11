@@ -1,7 +1,7 @@
 extends Control
 class_name SoundPlayer
 
-# Sound Player component for File Explorer
+# Sound Player component for Asset Finder
 # Provides playback controls for audio files with license management
 
 signal LicenseRequested(soundPath: String)

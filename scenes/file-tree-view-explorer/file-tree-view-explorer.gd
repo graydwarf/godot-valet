@@ -222,7 +222,7 @@ func SaveSettings():
 
 	var err = config.save(_configFilePath)
 	if err != OK:
-		push_error("Failed to save file explorer settings: " + str(err))
+		push_error("Failed to save Asset Finder settings: " + str(err))
 
 # Load favorites and filter state from config file
 func LoadSettings():
@@ -232,7 +232,7 @@ func LoadSettings():
 	var config = ConfigFile.new()
 	var err = config.load(_configFilePath)
 	if err != OK:
-		push_error("Failed to load file explorer settings: " + str(err))
+		push_error("Failed to load Asset Finder settings: " + str(err))
 		return
 
 	# Load favorites

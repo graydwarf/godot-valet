@@ -1,5 +1,5 @@
 extends Panel
-class_name FileExplorer
+class_name AssetFinder
 
 # - Generated with assistance from Claude 4 Sonnet (Anthropic) - December 2024
 
@@ -329,10 +329,10 @@ func _on_copy_left_button_pressed() -> void:
 		OS.alert("No files selected to copy.")
 		return
 
-	# Get destination path from left tree view (file explorer)
+	# Get destination path from left tree view (asset finder)
 	var destinationPath = _fileTreeViewExplorer.GetCurrentPath()
 	if not destinationPath or destinationPath.is_empty():
-		OS.alert("Please select a destination folder in the file explorer.")
+		OS.alert("Please select a destination folder in the Asset Finder.")
 		return
 
 	# Verify destination is a valid directory
@@ -443,12 +443,12 @@ func _on_move_left_button_pressed() -> void:
 		OS.alert("No files selected to move.")
 		return
 
-	# Get destination path from left tree view (file explorer)
+	# Get destination path from left tree view (asset finder)
 	var destinationPath = _fileTreeViewExplorer.GetCurrentPath()
 	print("Destination path: ", destinationPath)
 	if not destinationPath or destinationPath.is_empty():
 		print("No destination selected - exiting")
-		OS.alert("Please select a destination folder in the file explorer.")
+		OS.alert("Please select a destination folder in the Asset Finder.")
 		return
 
 	# Verify destination is a valid directory

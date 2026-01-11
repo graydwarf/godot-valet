@@ -17,7 +17,7 @@ var _selectedProjectItem = null
 var _runProjectThread
 var _editProjectThread
 var _openGodotProjectManagerThread
-var _fileExplorer : FileExplorer
+var _assetFinder : AssetFinder
 
 func _ready():
 	InitSignals()
@@ -349,7 +349,7 @@ func DisableEditButtons():
 	_openProjectFolderButton.disabled = true
 	_changeProjectButton.disabled = true
 	_removeProjectButton.disabled = true
-	#%FileExplorerButton.disabled = false
+	#%AssetFinderButton.disabled = false
 	%ClaudeButton.disabled = true
 	%CodeQualityButton.disabled = true
 
@@ -360,7 +360,7 @@ func EnableEditButtons():
 	_openProjectFolderButton.disabled = false
 	_changeProjectButton.disabled = false
 	_removeProjectButton.disabled = false
-	#%FileExplorerButton.disabled = true
+	#%AssetFinderButton.disabled = true
 	%ClaudeButton.disabled = false
 	%CodeQualityButton.disabled = false
 
@@ -502,13 +502,13 @@ func LaunchClaudeCode():
 	if pid == -1:
 		OS.alert("Failed to launch Claude Code.\n\nMake sure Windows Terminal is installed.\nCommand: %s" % command)
 
-func OpenFileExplorer():
-	if _fileExplorer == null:
-		_fileExplorer = load("res://scenes/file-explorer/file-explorer.tscn").instantiate()
-		add_child(_fileExplorer)
+func OpenAssetFinder():
+	if _assetFinder == null:
+		_assetFinder = load("res://scenes/file-explorer/file-explorer.tscn").instantiate()
+		add_child(_assetFinder)
 
-	_fileExplorer.visible = true
-	_fileExplorer.ConfigureProject(_selectedProjectItem)
+	_assetFinder.visible = true
+	_assetFinder.ConfigureProject(_selectedProjectItem)
 	
 func GetProjectItemFromIndex(indexOfSelectedProjectItem):
 	var index = 0;
@@ -660,5 +660,5 @@ func OpenClaudeApiChat():
 	var claudeChat = load("res://scenes/claude/claude.tscn").instantiate()
 	add_child(claudeChat)
 
-func _on_file_explorer_button_pressed() -> void:
-	OpenFileExplorer()
+func _on_asset_finder_button_pressed() -> void:
+	OpenAssetFinder()
