@@ -2427,6 +2427,11 @@ func _updateStatus(data: Dictionary, status: String):
 	# Safely update status label only if it's still valid
 	if is_instance_valid(data.get("status")):
 		data["status"].text = status
+		# Color error messages red
+		if status.begins_with("Error:") or status.begins_with("✗"):
+			data["status"].add_theme_color_override("font_color", Color.RED)
+		else:
+			data["status"].remove_theme_color_override("font_color")
 
 func _updateObfuscationDisplay(platform: String, config: Dictionary):
 	if platform not in _platformRows:
