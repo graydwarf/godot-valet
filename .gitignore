@@ -23,8 +23,8 @@ local_settings.cfg
 v0.11.md
 
 # Code Quality Manager generated files
-.gdqube.cfg
-.gdqube_state.json
+.gdlint.cfg
+.gdlint_state.json
 code_quality_report.*
 integrate-godot-qube.md
 

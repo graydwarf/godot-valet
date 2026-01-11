@@ -83,9 +83,9 @@ static func get_default():
 	return config
 
 
-# Load settings from .gdqube.cfg if it exists in project root
+# Load settings from .gdlint.cfg if it exists in project root
 func load_project_config(project_path: String = "res://") -> void:
-	var config_path := project_path.path_join(".gdqube.cfg")
+	var config_path := project_path.path_join(".gdlint.cfg")
 	if not FileAccess.file_exists(config_path):
 		return
 

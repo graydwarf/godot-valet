@@ -1,6 +1,6 @@
 # Code Quality Manager - Settings Manager
 # Adapted from GDScript Linter for standalone app usage
-# Uses hybrid persistence: App singleton for global settings, per-project .gdqube.cfg for analysis limits
+# Uses hybrid persistence: App singleton for global settings, per-project .gdlint.cfg for analysis limits
 extends RefCounted
 ## Handles loading and saving settings from App singleton and per-project config
 
@@ -145,7 +145,7 @@ func _load_project_settings() -> void:
 	if project_directory.is_empty():
 		return
 
-	var config_path := project_directory.path_join(".gdqube.cfg")
+	var config_path := project_directory.path_join(".gdlint.cfg")
 	if not FileAccess.file_exists(config_path):
 		return
 
@@ -337,12 +337,12 @@ func connect_controls(export_btn: Button, html_export_btn: Button) -> void:
 		controls.claude_instructions_reset_button.pressed.connect(_on_claude_instructions_reset_pressed)
 
 
-# Save a per-project setting to .gdqube.cfg
+# Save a per-project setting to .gdlint.cfg
 func save_project_setting(key: String, value: Variant) -> void:
 	if project_directory.is_empty():
 		return
 
-	var config_path := project_directory.path_join(".gdqube.cfg")
+	var config_path := project_directory.path_join(".gdlint.cfg")
 	var cfg := ConfigFile.new()
 
 	if FileAccess.file_exists(config_path):

@@ -300,7 +300,7 @@ func Configure(selectedProjectItem):
 func _loadSettings():
 	_currentConfig = GDLintConfig.new()
 	var projectDir = _selectedProjectItem.GetProjectDir()
-	var configPath = projectDir.path_join(".gdqube.cfg")
+	var configPath = projectDir.path_join(".gdlint.cfg")
 	if FileAccess.file_exists(configPath):
 		_currentConfig.load_project_config(projectDir)
 	_settings_manager.config = _currentConfig
@@ -1290,7 +1290,7 @@ func _loadThumbnail():
 
 func _loadLastScanned():
 	var projectDir = _selectedProjectItem.GetProjectDir()
-	var configPath = projectDir + "/.gdqube_state.json"
+	var configPath = projectDir + "/.gdlint_state.json"
 
 	if FileAccess.file_exists(configPath):
 		var file = FileAccess.open(configPath, FileAccess.READ)
@@ -1306,7 +1306,7 @@ func _loadLastScanned():
 
 func _saveLastScanned():
 	var projectDir = _selectedProjectItem.GetProjectDir()
-	var configPath = projectDir + "/.gdqube_state.json"
+	var configPath = projectDir + "/.gdlint_state.json"
 
 	var data = {
 		"last_scanned": _lastScannedTimestamp
