@@ -10,6 +10,7 @@ const ICON_DISMISS = preload("res://scenes/release-manager/assets/fluent-icons/d
 const ICON_ARROW_RIGHT = preload("res://scenes/release-manager/assets/fluent-icons/arrow-right.svg")
 const ICON_CHEVRON_DOWN = preload("res://scenes/release-manager/assets/fluent-icons/chevron-down.svg")
 const ICON_CHEVRON_UP = preload("res://scenes/release-manager/assets/fluent-icons/chevron-up.svg")
+const ICON_BUG = preload("res://scenes/release-manager/assets/fluent-icons/bug.svg")
 
 signal build_started(platform: String)
 signal build_completed(platform: String, success: bool)
@@ -215,6 +216,11 @@ func _loadPlatformSettings():
 			data["exportTypeOption"].selected = exportType
 			data["packageTypeOption"].selected = packageType
 			data["checksumCheckbox"].button_pressed = generateChecksum
+
+			# Show/hide Export & Debug button based on export type
+			var isDebug = (exportType == 1)
+			if is_instance_valid(data["exportAndDebugButton"]):
+				data["exportAndDebugButton"].visible = isDebug
 
 			# Restore rename to index.html setting (Web platform only)
 			if platform == "Web" and data["renameToIndexCheckbox"] != null:
@@ -578,7 +584,7 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	exportTypeOption.add_item("Debug", 1)
 	exportTypeOption.custom_minimum_size = Vector2(90, 0)
 	exportTypeOption.name = "ExportTypeOption"
-	exportTypeOption.item_selected.connect(_onInputChanged.unbind(1))
+	exportTypeOption.item_selected.connect(_onExportTypeChanged.bind(platform))
 	exportTypeContainer.add_child(exportTypeOption)
 
 	exportOptionsRow.add_child(exportTypeContainer)
@@ -672,6 +678,19 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	var exportActionsSpacer = Control.new()
 	exportActionsSpacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	exportActionsRow.add_child(exportActionsSpacer)
+
+	# Export & Debug button (all platforms, only visible when Debug type selected)
+	var exportAndDebugButton = Button.new()
+	exportAndDebugButton.text = "Export & Debug"
+	exportAndDebugButton.icon = ICON_BUG
+	exportAndDebugButton.custom_minimum_size = Vector2(135, 31)
+	exportAndDebugButton.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	exportAndDebugButton.tooltip_text = "Export and then open project in Godot Editor for debugging"
+	exportAndDebugButton.pressed.connect(_onExportAndDebugPressed.bind(platform))
+	exportAndDebugButton.name = "ExportAndDebugButton"
+	exportAndDebugButton.disabled = true
+	exportAndDebugButton.visible = false  # Hidden by default, shown when Debug type selected
+	exportActionsRow.add_child(exportAndDebugButton)
 
 	# Export & Run button (all platforms)
 	var exportAndRunButton = Button.new()
@@ -790,6 +809,7 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 		"checksumCheckbox": checksumCheckbox,
 		"checksumContainer": checksumContainer,
 		"button": exportButton,
+		"exportAndDebugButton": exportAndDebugButton,
 		"exportAndRunButton": exportAndRunButton,
 		"exportAndEditButton": exportAndEditButton,  # Only exists for Source platform
 		"exportAndOpenButton": exportAndOpenButton,
@@ -856,6 +876,14 @@ func _onPackageTypeChanged(index: int, platform: String, checksumCheckbox: Check
 
 	_onInputChanged()
 
+func _onExportTypeChanged(index: int, platform: String):
+	# Show/hide Export & Debug button based on export type
+	var isDebug = (index == 1)  # 0 = Release, 1 = Debug
+	var data = _platformRows.get(platform)
+	if data != null and is_instance_valid(data["exportAndDebugButton"]):
+		data["exportAndDebugButton"].visible = isDebug
+	_onInputChanged()
+
 func _getChecksumTooltip(platform: String, isZip: bool) -> String:
 	if isZip:
 		return "Generate SHA256 checksum file for the .zip archive"
@@ -899,6 +927,8 @@ func _getPlatformExtension(platform: String) -> String:
 func _setExportButtonsDisabled(data: Dictionary, disabled: bool):
 	if is_instance_valid(data["button"]):
 		data["button"].disabled = disabled
+	if is_instance_valid(data["exportAndDebugButton"]):
+		data["exportAndDebugButton"].disabled = disabled
 	if is_instance_valid(data["exportAndRunButton"]):
 		data["exportAndRunButton"].disabled = disabled
 	if is_instance_valid(data["exportAndOpenButton"]):
@@ -1483,6 +1513,56 @@ func _onExportAndRunPressed(platform: String):
 	await _exportPlatform(platform, true, godotPath)
 	_setUIEnabled(true)
 
+# Exports and then runs the exported application's console version for debugging
+func _onExportAndDebugPressed(platform: String):
+	if _selectedProjectItem == null or not is_instance_valid(_selectedProjectItem):
+		print("Error: Cannot export - project item is null or invalid")
+		return
+
+	# CRITICAL: Capture export path BEFORE await, as UI state may become invalid
+	var exportedFilePath = _getExportedFilePath(platform)
+
+	save()
+	await _exportPlatform(platform)
+	_setUIEnabled(true)
+
+	# Check if export was cancelled or failed
+	if _exportCancelled:
+		return
+
+	# Build path to the exported console executable (e.g., myproject.console.exe)
+	# _getExportedFilePath already returns full path with extension (e.g., myproject.exe)
+	var consolePath = exportedFilePath.replace(".exe", ".console.exe")
+
+	# Append debug run info to output
+	var data = _platformRows.get(platform)
+	var existingOutput = _platformExportOutput.get(platform, "")
+	var debugInfo = "\n\n--- Debug Run ---\n"
+	var debugRunFailed = false
+
+	if not FileAccess.file_exists(consolePath):
+		debugInfo += "✗ Console executable not found\n"
+		debugInfo += "Expected: %s\n" % consolePath
+		debugInfo += "\nNote: Console executables are only generated for Windows debug exports."
+		print("Error: Console executable not found: ", consolePath)
+		debugRunFailed = true
+	else:
+		# Use OS.shell_open to properly launch the console exe with its console window visible
+		# OS.create_process doesn't show the console window for console applications
+		var err = OS.shell_open(consolePath)
+		if err != OK:
+			debugInfo += "✗ Failed to launch console executable\n"
+			debugInfo += "Path: %s" % consolePath
+			print("Error: Failed to run console executable: ", consolePath)
+			debugRunFailed = true
+		else:
+			debugInfo += "✓ Launched console executable\n"
+			debugInfo += "Path: %s" % consolePath
+			print("Running console executable: ", consolePath)
+
+	if data != null:
+		_storeExportOutput(platform, existingOutput + debugInfo, debugRunFailed)
+
 # Exports and then opens the export folder (Source only)
 func _onExportAndEditPressed(platform: String):
 	if _selectedProjectItem == null or not is_instance_valid(_selectedProjectItem):
@@ -1920,6 +2000,9 @@ func _finalizeExport(ctx: Dictionary, data: Dictionary, success: bool):
 		_updateStatus(data, "✗ Cancelled")
 	elif success:
 		_updateStatus(data, "✓ Complete")
+		# Store success output with export details
+		var successOutput = _buildSuccessOutput(ctx)
+		_storeExportOutput(ctx["platform"], successOutput)
 	else:
 		_updateStatus(data, "✗ Failed")
 	await get_tree().create_timer(1.0).timeout
@@ -1927,6 +2010,28 @@ func _finalizeExport(ctx: Dictionary, data: Dictionary, success: bool):
 	_setExportButtonsDisabled(data, false)
 	_exportingPlatforms.erase(ctx["platform"])
 	build_completed.emit(ctx["platform"], success)
+
+# Builds a success message with export details
+func _buildSuccessOutput(ctx: Dictionary) -> String:
+	var lines: Array[String] = []
+	lines.append("✓ Export completed successfully!")
+	lines.append("")
+	lines.append("Platform: %s" % ctx["platform"])
+	lines.append("Export Type: %s" % ("Debug" if ctx["is_debug"] else "Release"))
+	lines.append("")
+	lines.append("Output Path: %s" % ctx["export_dest_path"])
+
+	if ctx["platform"] != "Source":
+		var filename = _addPlatformExtension(ctx["export_filename"], ctx["platform"])
+		lines.append("Filename: %s" % filename)
+
+	if ctx["should_zip"]:
+		lines.append("Archive: %s.zip" % ctx["archive_filename"])
+
+	if ctx["should_checksum"]:
+		lines.append("Checksum: Generated")
+
+	return "\n".join(lines)
 
 # Helper to handle early exit with proper cleanup
 func _abortExport(ctx: Dictionary, data: Dictionary, errorMsg: String):
@@ -2101,9 +2206,9 @@ func _runGodotExport(godotPath: String, projectPath: String, presetName: String,
 	if not FileAccess.file_exists(outputPath):
 		print("Export command completed but output file not found: ", outputPath)
 		_updateStatus(data, "Error: Output file not created")
-		# Store output and show toggle on failure
+		# Store output and auto-expand on failure
 		if platform != "":
-			_storeExportOutput(platform, exportOutput)
+			_storeExportOutput(platform, exportOutput, true)
 		return false
 
 	# On success, clear any previous output
@@ -2889,7 +2994,8 @@ func _cleanupTempOutputFile(filePath: String):
 		DirAccess.remove_absolute(filePath)
 
 # Stores export output and populates the output text
-func _storeExportOutput(platform: String, output: String):
+# If autoExpand is true, the output container will be shown automatically
+func _storeExportOutput(platform: String, output: String, autoExpand: bool = false):
 	_platformExportOutput[platform] = output
 	var data = _platformRows.get(platform)
 	if data == null:
@@ -2897,6 +3003,13 @@ func _storeExportOutput(platform: String, output: String):
 	# Populate output text
 	if data.has("outputLogText") and is_instance_valid(data["outputLogText"]):
 		data["outputLogText"].text = output if output != "" else "(No output captured)"
+
+	# Auto-expand output container if requested (e.g., on failure)
+	if autoExpand:
+		if data.has("outputLogContainer") and is_instance_valid(data["outputLogContainer"]):
+			data["outputLogContainer"].visible = true
+		if data.has("outputLogToggle") and is_instance_valid(data["outputLogToggle"]):
+			data["outputLogToggle"].icon = ICON_CHEVRON_UP
 
 # Clears export output and hides the output area
 func _clearExportOutput(platform: String):
