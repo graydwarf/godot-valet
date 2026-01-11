@@ -1,8 +1,7 @@
-[gd_scene load_steps=4 format=3 uid="uid://cqm7x8k2p3wrq"]
+[gd_scene load_steps=3 format=3 uid="uid://cqm7x8k2p3wrq"]
 
 [ext_resource type="Script" path="res://scenes/code-quality-manager/code-quality-manager.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://wop6qk8dkl40" path="res://icon.svg" id="2_icon"]
-[ext_resource type="Texture2D" path="res://scenes/code-quality-manager/assets/fluent-icons/folder-open.svg" id="3_folder"]
+[ext_resource type="PackedScene" path="res://scenes/common/project-header/project-header.tscn" id="2_header"]
 
 [node name="CodeQualityManager" type="Panel"]
 anchors_preset = 15
@@ -27,92 +26,24 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="ProjectCardMargin" type="MarginContainer" parent="OuterMargin/VBoxContainer"]
+[node name="ProjectHeader" parent="OuterMargin/VBoxContainer" instance=ExtResource("2_header")]
+unique_name_in_owner = true
+layout_mode = 2
+show_godot_version = false
+show_current_version = true
+show_last_linter_scan = true
+show_last_published = true
+
+[node name="PageTitleMargin" type="MarginContainer" parent="OuterMargin/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 11
-theme_override_constants/margin_right = 12
-theme_override_constants/margin_bottom = 13
-
-[node name="HBoxContainer" type="HBoxContainer" parent="OuterMargin/VBoxContainer/ProjectCardMargin"]
-layout_mode = 2
-
-[node name="ThumbTextureRect" type="TextureRect" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(107, 105)
-layout_mode = 2
-texture = ExtResource("2_icon")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="VBoxContainer" type="VBoxContainer" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/separation = 0
-
-[node name="Spacer" type="Control" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="MarginContainer2" type="MarginContainer" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/margin_left = 10
-
-[node name="HBoxContainer" type="HBoxContainer" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer2"]
-layout_mode = 2
-
-[node name="ProjectNameLabel" type="Label" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 20
-text = "Project Name"
-clip_text = true
-
-[node name="MarginContainer" type="MarginContainer" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 5
 theme_override_constants/margin_bottom = 5
 
-[node name="HBox" type="HBoxContainer" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer"]
+[node name="PageTitleLabel" type="Label" parent="OuterMargin/VBoxContainer/PageTitleMargin"]
 layout_mode = 2
-theme_override_constants/separation = 5
-
-[node name="ProjectPathLabel" type="Label" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer/HBox"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-text = "C:/projects/example"
-clip_text = true
-text_overrun_behavior = 3
-
-[node name="FolderButton" type="Button" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer/HBox"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(48, 32)
-layout_mode = 2
-mouse_default_cursor_shape = 2
-flat = true
-icon = ExtResource("3_folder")
-expand_icon = true
-
-[node name="BottomSpacer" type="Control" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="MarginContainer4" type="MarginContainer" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_bottom = 5
-
-[node name="LastScannedLabel" type="Label" parent="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer4"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Last Scanned: Never"
-vertical_alignment = 1
-clip_text = true
-text_overrun_behavior = 3
+theme_override_font_sizes/font_size = 18
+text = "Godot GDScript Linter"
 
 [node name="HSeparator" type="HSeparator" parent="OuterMargin/VBoxContainer"]
 layout_mode = 2
@@ -190,9 +121,6 @@ layout_mode = 2
 focus_mode = 0
 mouse_default_cursor_shape = 2
 text = "Settings"
-
-[node name="HSeparator2" type="HSeparator" parent="OuterMargin/VBoxContainer"]
-layout_mode = 2
 
 [node name="SettingsPanel" type="PanelContainer" parent="OuterMargin/VBoxContainer"]
 unique_name_in_owner = true
@@ -280,7 +208,6 @@ focus_mode = 0
 mouse_default_cursor_shape = 2
 text = "Back"
 
-[connection signal="pressed" from="OuterMargin/VBoxContainer/ProjectCardMargin/HBoxContainer/VBoxContainer/MarginContainer/HBox/FolderButton" to="." method="_on_folder_button_pressed"]
 [connection signal="pressed" from="OuterMargin/VBoxContainer/ToolbarMargin/Toolbar/ScanButton" to="." method="_on_scan_button_pressed"]
 [connection signal="pressed" from="OuterMargin/VBoxContainer/ToolbarMargin/Toolbar/ExportJSONButton" to="." method="_on_export_json_pressed"]
 [connection signal="pressed" from="OuterMargin/VBoxContainer/ToolbarMargin/Toolbar/ExportHTMLButton" to="." method="_on_export_html_pressed"]

@@ -1,9 +1,5 @@
 extends Panel
-@onready var _projectNameLabel = $MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer/ProjectNameLabel
-@onready var _godotVersionLabel = $MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer/HBoxContainer/GodotVersionLabel
-@onready var _projectPathLabel = %ProjectPathLabel
-@onready var _hideProjectCheckbox = %HideProjectCheckbox
-@onready var _projectVersionLabel = $MarginContainer/HBoxContainer/VBoxContainer/MarginContainer3/ProjectVersionLabel
+@onready var _projectHeader: ProjectHeader = %ProjectHeader
 
 var _selected := false
 var _windowsChecked := false
@@ -52,34 +48,17 @@ func InitSignals():
 	Signals.connect("BackgroundColorChanged", BackgroundColorChanged)
 
 func UpdateProjectItemUi():
-	_projectNameLabel.text = _projectName
-	_godotVersionLabel.text = _godotVersion
-	_projectPathLabel.text = _projectPath
-	_projectVersionLabel.text = _projectVersion
-	_hideProjectCheckbox.button_pressed = _isHidden
-	%CreatedDateLabel.text = "Created: " + Date.GetCurrentDateAsString(_createdDate)
-	%EditedDateLabel.text = "Edited: " + Date.GetCurrentDateAsString(_editedDate)
-	%PublishedDateLabel.text = "Published: " + Date.GetCurrentDateAsString(_publishedDate)
+	# Update ProjectHeader (handles name, version, path, thumbnail, and all metadata)
+	_projectHeader.set_project_name(_projectName)
+	_projectHeader.set_godot_version(_godotVersion)
+	_projectHeader.set_path(_projectPath)
+	_projectHeader.set_current_version(_projectVersion if !_projectVersion.is_empty() else "--")
+	_projectHeader.set_last_published(Date.GetCurrentDateAsString(_publishedDate) if !_publishedDate.is_empty() else "--")
+	_projectHeader.set_created_date(Date.GetCurrentDateAsString(_createdDate))
+	_projectHeader.set_edited_date(Date.GetCurrentDateAsString(_editedDate))
 	if _thumbnailPath != "":
-		LoadThumbnailImage()
+		_projectHeader.set_icon_from_path(_thumbnailPath)
 
-func LoadThumbnailImage():
-	# Check if this is a Godot resource path (res://)
-	if _thumbnailPath.begins_with("res://"):
-		# Load as a resource (respects Godot's import system)
-		var texture = load(_thumbnailPath)
-		if texture:
-			%ThumbTextureRect.texture = texture
-	else:
-		# Load from filesystem (for user-provided external images)
-		if not FileAccess.file_exists(_thumbnailPath):
-			return
-		var image = Image.new()
-		var error = image.load(_thumbnailPath)
-		if error == OK:
-			var texture = ImageTexture.create_from_image(image)
-			%ThumbTextureRect.texture = texture
-	
 func BackgroundColorChanged(_color = null):
 	RefreshBackground()
 
@@ -203,7 +182,7 @@ func SetAllPlatformExportSettings(settings: Dictionary):
 	_platformExportSettings = settings
 
 func GetProjectVersion():
-	return _projectVersionLabel.text
+	return _projectVersion
 	
 func GetItchProjectName():
 	return _itchProjectName
@@ -278,7 +257,7 @@ func GetEditedDate():
 # Strip off the file name
 # /project.godot
 func GetProjectPathBaseDir():
-	return _projectPathLabel.text.get_base_dir()
+	return _projectPath.get_base_dir()
 
 # Returns the project directory (folder containing project.godot)
 # Handles both formats: with or without project.godot at the end
@@ -322,16 +301,16 @@ func GetAvailableExportPresets() -> Array[String]:
 	return presets
 	
 func GetProjectPathWithProjectFile():
-	return _projectPathLabel.text
-	
+	return _projectPath
+
 func GetGodotVersion():
-	return _godotVersionLabel.text
+	return _godotVersion
 
 func GetGodotVersionId():
 	return _godotVersionId
-	
+
 func GetProjectName():
-	return _projectNameLabel.text
+	return _projectName
 
 func GetExportPath():
 	return _exportPath
@@ -363,7 +342,7 @@ func GetSelectedTheme():
 	return customTheme
 
 func GetIsHidden():
-	return _hideProjectCheckbox.button_pressed
+	return _isHidden
 	
 func AdjustBackgroundColor(amount):
 	var colorToSubtract = Color(amount, amount, amount, 0.0)
@@ -454,7 +433,7 @@ func SaveProjectItem():
 	config.set_value("ProjectSettings", "itch_enabled", _itchEnabled)
 	config.set_value("ProjectSettings", "github_enabled", _githubEnabled)
 	config.set_value("ProjectSettings", "show_tips_for_errors", _showTipsForErrors)
-	config.set_value("ProjectSettings", "is_hidden", _hideProjectCheckbox.button_pressed)
+	config.set_value("ProjectSettings", "is_hidden", _isHidden)
 	config.set_value("ProjectSettings", "published_date", _publishedDate)
 	config.set_value("ProjectSettings", "created_date", _createdDate)
 	config.set_value("ProjectSettings", "edited_date", _editedDate)
@@ -478,80 +457,6 @@ func HideProjectItem():
 func ShowProjectItem():
 	visible = true
 
-func ShowThumbnailSelector():
-	var file_dialog = FileDialog.new()
-	add_child(file_dialog)
-	
-	# Configure the file dialog
-	file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
-	file_dialog.access = FileDialog.ACCESS_FILESYSTEM
-	if _thumbnailPath == "":
-		file_dialog.current_dir = OS.get_system_dir(OS.SYSTEM_DIR_PICTURES)
-	else:
-		# Check if the thumbnail path exists and extract directory
-		if FileAccess.file_exists(_thumbnailPath):
-			file_dialog.current_dir = _thumbnailPath.get_base_dir()
-			file_dialog.current_file = _thumbnailPath.get_file()  # Pre-select the current file
-		else:
-			# File doesn't exist, but try to use the directory if it exists
-			var directory = _thumbnailPath.get_base_dir()
-			if DirAccess.dir_exists_absolute(directory):
-				file_dialog.current_dir = directory
-			else:
-				# Fall back to Pictures folder
-				file_dialog.current_dir = OS.get_system_dir(OS.SYSTEM_DIR_PICTURES)
-			
-	
-	# Set up image file filters
-	file_dialog.add_filter("*.png", "PNG Images")
-	file_dialog.add_filter("*.jpg,*.jpeg", "JPEG Images")
-	file_dialog.add_filter("*.bmp", "BMP Images")
-	file_dialog.add_filter("*.svg", "SVG Images")
-	file_dialog.add_filter("*.webp", "WebP Images")
-	file_dialog.add_filter("*.tga", "TGA Images")
-	file_dialog.add_filter("*.exr", "EXR Images")
-	file_dialog.add_filter("*.hdr", "HDR Images")
-	
-	# Connect the file selected signal
-	file_dialog.file_selected.connect(_on_thumbnail_file_selected)
-	
-	# Show the dialog
-	file_dialog.popup_centered(Vector2i(800, 600))
-
-func _on_thumbnail_file_selected(filePath: String):
-	# Check if file exists and is accessible
-	if not FileAccess.file_exists(filePath):
-		OS.alert("Error: File does not exist: " + filePath)
-		return
-	
-	# Try to open the file first to check permissions
-	var file = FileAccess.open(filePath, FileAccess.READ)
-	if file == null:
-		OS.alert("Error: Cannot access file (permissions?): " + filePath)
-		return
-
-	file.close()
-	
-	# Load the image
-	var image = Image.new()
-	var error = image.load(filePath)
-	
-	if error != OK:
-		OS.alert("Error loading image: " + filePath + " Error code: " + str(error))
-		return
-	
-	# Create texture and assign to TextureRect
-	var texture = ImageTexture.create_from_image(image)
-	%ThumbTextureRect.texture = texture
-	_thumbnailPath = filePath
-	SaveProjectItem()
-	CleanupFileDialog()
-
-func CleanupFileDialog():
-	var fileDialog = get_children().filter(func(child): return child is FileDialog)[0]
-	if fileDialog:
-		fileDialog.queue_free()
-		
 func _on_gui_input(event):
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		Signals.emit_signal("ToggleProjectItemSelection", self, !_selected)
@@ -565,20 +470,8 @@ func _on_mouse_entered():
 func _on_mouse_exited():
 	if _selected:
 		return
-	
+
 	RestoreDefaultColor()
-
-func _on_hide_check_box_pressed():
-	SaveProjectItem()
-	if _hideProjectCheckbox.button_pressed:
-		Signals.emit_signal("HidingProjectItem")
-
-func _on_thumb_texture_rect_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			Signals.emit_signal("ToggleProjectItemSelection", self, !_selected)
-		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			ShowThumbnailSelector()
 
 # Drag and drop functionality for custom ordering
 func _get_drag_data(_at_position):

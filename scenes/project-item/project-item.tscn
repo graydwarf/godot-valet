@@ -2,7 +2,7 @@
 
 [ext_resource type="Theme" uid="uid://bv1p8j0c0jk73" path="res://assets/themes/project-item-theme.tres" id="1_oqnf3"]
 [ext_resource type="Script" uid="uid://7cdqw1irropo" path="res://scenes/project-item/project-item.gd" id="1_r70bs"]
-[ext_resource type="Texture2D" uid="uid://wop6qk8dkl40" path="res://icon.svg" id="3_p8n4q"]
+[ext_resource type="PackedScene" path="res://scenes/common/project-header/project-header.tscn" id="3_header"]
 
 [node name="ProjectItem" type="Panel"]
 clip_contents = true
@@ -17,151 +17,22 @@ mouse_default_cursor_shape = 2
 theme = ExtResource("1_oqnf3")
 script = ExtResource("1_r70bs")
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
-clip_contents = true
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 1
-anchors_preset = 10
+anchors_preset = 15
 anchor_right = 1.0
-offset_bottom = 125.0
+anchor_bottom = 1.0
 grow_horizontal = 2
-theme_override_constants/margin_left = 8
-theme_override_constants/margin_top = 7
-theme_override_constants/margin_right = 8
-theme_override_constants/margin_bottom = 7
+grow_vertical = 2
+theme_override_constants/separation = 0
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
-clip_contents = true
-layout_mode = 2
-
-[node name="ThumbTextureRect" type="TextureRect" parent="MarginContainer/HBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(107, 105)
-layout_mode = 2
-mouse_filter = 0
-texture = ExtResource("3_p8n4q")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
-clip_contents = true
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="MarginContainer2" type="MarginContainer" parent="MarginContainer/HBoxContainer/VBoxContainer"]
-clip_contents = true
-layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 5
-theme_override_constants/margin_right = 0
-theme_override_constants/margin_bottom = 0
-
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2"]
-clip_contents = true
-layout_mode = 2
-
-[node name="ProjectNameLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer"]
-clip_contents = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 20
-text = "godot-valet"
-clip_text = true
-
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 8
-
-[node name="GodotVersionLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 20
-text = "???"
-horizontal_alignment = 2
-
-[node name="MarginContainer3" type="MarginContainer" parent="MarginContainer/HBoxContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/margin_left = 10
-
-[node name="ProjectVersionLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer3"]
-clip_contents = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 20
-text = "[v0.1.0]"
-clip_text = true
-text_overrun_behavior = 3
-
-[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/HBoxContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 0
-theme_override_constants/margin_bottom = 5
-
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer"]
-layout_mode = 2
-
-[node name="ProjectPathLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/HBoxContainer"]
-unique_name_in_owner = true
-clip_contents = true
-layout_mode = 2
-size_flags_horizontal = 3
-text = "C:/dad/projects/godot/godot-4/applications/godot-valet"
-clip_text = true
-text_overrun_behavior = 3
-
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/HBoxContainer"]
-layout_mode = 2
-alignment = 2
-
-[node name="HideProjectCheckbox" type="CheckBox" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/HBoxContainer/HBoxContainer"]
+[node name="ProjectHeader" parent="VBoxContainer" instance=ExtResource("3_header")]
 unique_name_in_owner = true
 layout_mode = 2
-focus_mode = 0
-text = "Hide"
-
-[node name="MarginContainer4" type="MarginContainer" parent="MarginContainer/HBoxContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 0
-theme_override_constants/margin_bottom = 5
-
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer4"]
-layout_mode = 2
-
-[node name="CreatedDateLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer4/HBoxContainer"]
-unique_name_in_owner = true
-clip_contents = true
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Created: 11/7/2023"
-vertical_alignment = 1
-clip_text = true
-text_overrun_behavior = 3
-
-[node name="EditedDateLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer4/HBoxContainer"]
-unique_name_in_owner = true
-clip_contents = true
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Edited: 11/7/2023"
-horizontal_alignment = 1
-vertical_alignment = 1
-clip_text = true
-text_overrun_behavior = 3
-
-[node name="PublishedDateLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer4/HBoxContainer"]
-unique_name_in_owner = true
-clip_contents = true
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Released: 11/7/2023"
-horizontal_alignment = 2
-vertical_alignment = 1
-clip_text = true
-text_overrun_behavior = 3
+size_flags_vertical = 3
+show_date_labels = true
+apply_theme = false
 
 [connection signal="gui_input" from="." to="." method="_on_gui_input"]
 [connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
 [connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]
-[connection signal="gui_input" from="MarginContainer/HBoxContainer/ThumbTextureRect" to="." method="_on_thumb_texture_rect_gui_input"]
-[connection signal="pressed" from="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/HBoxContainer/HBoxContainer/HideProjectCheckbox" to="." method="_on_hide_check_box_pressed"]

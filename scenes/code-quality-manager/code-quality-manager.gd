@@ -37,12 +37,8 @@ const ISSUE_TYPES := {
 	"unused-parameter": "Unused Parameter"
 }
 
-# UI References - Project Card Header
-@onready var _thumbTextureRect: TextureRect = %ThumbTextureRect
-@onready var _projectNameLabel: Label = %ProjectNameLabel
-@onready var _projectPathLabel: Label = %ProjectPathLabel
-@onready var _folderButton: Button = %FolderButton
-@onready var _lastScannedLabel: Label = %LastScannedLabel
+# UI References - Project Header
+@onready var _projectHeader: ProjectHeader = %ProjectHeader
 
 # UI References - Toolbar and main UI
 @onready var _scanButton: Button = %ScanButton
@@ -290,9 +286,8 @@ func _hide_busy_overlay() -> void:
 # Called by ProjectManager to configure with selected project
 func Configure(selectedProjectItem):
 	_selectedProjectItem = selectedProjectItem
-	_projectNameLabel.text = selectedProjectItem.GetProjectName()
-	_projectPathLabel.text = selectedProjectItem.GetProjectDir()
-	_loadThumbnail()
+	_projectHeader.configure(selectedProjectItem)
+	_projectHeader.folder_button_pressed.connect(_on_folder_button_pressed)
 	_loadSettings()
 	_loadLastScanned()
 
@@ -1269,25 +1264,6 @@ func _toResPath(absolutePath: String) -> String:
 	return absolutePath
 
 
-func _loadThumbnail():
-	if _selectedProjectItem == null:
-		return
-	var thumbnailPath = _selectedProjectItem.GetThumbnailPath()
-	if thumbnailPath == "":
-		return
-
-	if thumbnailPath.begins_with("res://"):
-		var texture = load(thumbnailPath)
-		if texture:
-			_thumbTextureRect.texture = texture
-	else:
-		var image = Image.new()
-		var error = image.load(thumbnailPath)
-		if error == OK:
-			var texture = ImageTexture.create_from_image(image)
-			_thumbTextureRect.texture = texture
-
-
 func _loadLastScanned():
 	var projectDir = _selectedProjectItem.GetProjectDir()
 	var configPath = projectDir + "/.gdlint_state.json"
@@ -1320,9 +1296,9 @@ func _saveLastScanned():
 
 func _updateLastScannedLabel():
 	if _lastScannedTimestamp.is_empty():
-		_lastScannedLabel.text = "Last Scanned: Never"
+		_projectHeader.set_last_linter_scan("Never")
 	else:
-		_lastScannedLabel.text = "Last Scanned: " + _lastScannedTimestamp
+		_projectHeader.set_last_linter_scan(_lastScannedTimestamp)
 
 
 # === EXPORT FUNCTIONS ===
@@ -1636,7 +1612,7 @@ func _on_back_button_pressed():
 	queue_free()
 
 
-func _on_folder_button_pressed():
+func _on_folder_button_pressed(_path: String):
 	if _selectedProjectItem != null:
 		var projectDir = _selectedProjectItem.GetProjectDir()
 		OS.shell_open(projectDir)

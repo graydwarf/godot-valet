@@ -238,6 +238,7 @@ func InitSignals():
 	Signals.connect("ReorderProjectItems", ReorderProjectItems)
 	Signals.connect("ClaudeCodeButtonEnabledChanged", ClaudeCodeButtonEnabledChanged)
 	Signals.connect("ClaudeApiChatButtonEnabledChanged", ClaudeApiChatButtonEnabledChanged)
+	Signals.connect("RemoveProject", RemoveProjectById)
 
 func HidingProjectItem():
 	ToggleHiddenProjectVisibility()
@@ -478,6 +479,16 @@ func DeleteSelectedProject():
 	
 func RemoveProject():
 	$DeleteConfirmationDialog.show()
+
+# Remove project by ID (called from edit-project-dialog via signal)
+func RemoveProjectById(project_id: String):
+	# Find and select the project item first
+	for projectItem in _projectItemContainer.get_children():
+		if projectItem.GetProjectId() == project_id:
+			_selectedProjectItem = projectItem
+			# Delete without confirmation (user already confirmed in edit dialog)
+			DeleteSelectedProject()
+			return
 
 func OpenProjectFolder():
 	var projectPath = _selectedProjectItem.GetProjectPathBaseDir()

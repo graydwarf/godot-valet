@@ -8,8 +8,10 @@ class_name AssetFinder
 @onready var _soundPlayerGrid: SoundPlayerGrid = %SoundPlayerGrid
 @onready var _imageToolbar: HBoxContainer = %RightPaneSubToolbar
 @onready var _backgroundColorPicker: ColorPickerButton = %BackgroundColorPicker
+@onready var _projectHeader: ProjectHeader = %ProjectHeader
 
 var _currentProjectConfigured: bool = false
+var _currentProjectPath: String = ""
 var _imageExtensions: Array[String] = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg", ".tga"]
 
 func _ready():
@@ -54,41 +56,37 @@ func InitSignals():
 	%FilterSettings.settings_applied.connect(_on_filter_settings_applied)
 	%FilterSettings.settings_canceled.connect(_on_filter_settings_closed)
 
+	# Connect ProjectHeader folder button
+	_projectHeader.folder_button_pressed.connect(_on_project_header_folder_pressed)
+
 func ConfigureProject(selectedProjectItem):
 	if selectedProjectItem == null:
 		_currentProjectConfigured = false
-		%ProjectContextContainer.visible = false
+		_currentProjectPath = ""
+		_projectHeader.visible = false
 		_fileTreeViewExplorer.SetNavigateToProjectButtonVisible(false)
 		%GodotToggleButton.visible = false
 		return
 
 	_currentProjectConfigured = true
-	%ProjectContextContainer.visible = true
+	_projectHeader.visible = true
 	_fileTreeViewExplorer.SetNavigateToProjectButtonVisible(true)
 	%GodotToggleButton.visible = true
-	LoadThumbnailImage(selectedProjectItem.GetThumbnailPath())
-	%ProjectNameLineEdit.text = selectedProjectItem.GetProjectName()
-	%ProjectPathLineEdit.text = selectedProjectItem.GetProjectPath()
+
+	# Configure project header with project item
+	_projectHeader.configure(selectedProjectItem)
+
+	# Store project path for navigation
+	_currentProjectPath = selectedProjectItem.GetProjectPath()
 
 	# Navigate to and highlight the project folder in the file tree
-	var projectPath = selectedProjectItem.GetProjectPath()
-	if projectPath and not projectPath.is_empty():
-		_fileTreeViewExplorer.NavigateToPath(projectPath)
+	if _currentProjectPath and not _currentProjectPath.is_empty():
+		_fileTreeViewExplorer.NavigateToPath(_currentProjectPath)
 
-func LoadThumbnailImage(thumbnailPath):
-	# Check if this is a Godot resource path (res://)
-	if thumbnailPath.begins_with("res://"):
-		# Load as a resource (respects Godot's import system)
-		var texture = load(thumbnailPath)
-		if texture:
-			%ProjectThumbnailTextureRect.texture = texture
-	else:
-		# Load from filesystem (for user-provided external images)
-		var image = Image.new()
-		var error = image.load(thumbnailPath)
-		if error == OK:
-			var texture = ImageTexture.create_from_image(image)
-			%ProjectThumbnailTextureRect.texture = texture
+func _on_project_header_folder_pressed(_path: String):
+	# Open project folder when folder button is pressed
+	if _currentProjectPath and not _currentProjectPath.is_empty():
+		FileHelper.OpenFilePathInWindowsExplorer(_currentProjectPath)
 
 func CheckForOverwrites(files: Array[String], destinationPath: String) -> int:
 	var overwriteCount = 0
@@ -223,15 +221,11 @@ func ShowFilePreviewer():
 func _on_back_button_pressed() -> void:
 	visible = false
 
-func _on_open_project_path_folder_pressed() -> void:
-	FileHelper.OpenFilePathInWindowsExplorer(%ProjectPathLineEdit.text)
-
 func _on_navigate_to_project_requested() -> void:
 	# Navigate to the project root folder in the file tree view explorer
 	# Reset the tree and expand all folders in the path
-	var projectPath = %ProjectPathLineEdit.text
-	if projectPath and not projectPath.is_empty():
-		var projectRoot = projectPath.get_base_dir()
+	if _currentProjectPath and not _currentProjectPath.is_empty():
+		var projectRoot = _currentProjectPath.get_base_dir()
 		await _fileTreeViewExplorer.NavigateToPath(projectRoot, true)
 
 func _on_project_view_restore_requested() -> void:
@@ -265,8 +259,8 @@ func _on_godot_toggle_button_toggled(toggled_on: bool) -> void:
 		%GodotToggleButton.modulate = Color(1.0, 1.0, 1.0, 1.0)  # White (default)
 
 	# Initialize destination tree with project path when toggled on
-	if toggled_on and %ProjectPathLineEdit.text:
-		await %DestinationTreeView.InitializeProjectTree(%ProjectPathLineEdit.text)
+	if toggled_on and _currentProjectPath:
+		await %DestinationTreeView.InitializeProjectTree(_currentProjectPath)
 
 	# When toggling off (back to normal preview), refresh preview based on current selection
 	if not toggled_on:

@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bnx8iu6s5scut" path="res://scenes/file-explorer/file-explorer.gd" id="1_x3te3"]
 [ext_resource type="Texture2D" uid="uid://wop6qk8dkl40" path="res://icon.svg" id="2_jbjko"]
+[ext_resource type="PackedScene" path="res://scenes/common/project-header/project-header.tscn" id="2_header"]
 [ext_resource type="PackedScene" uid="uid://6ygqegta6dek" path="res://scenes/file-tree-view-explorer/file-tree-view-explorer.tscn" id="2_p38i7"]
 [ext_resource type="PackedScene" uid="uid://dyp0qsqx8o8vx" path="res://scenes/file-tree-view-explorer/file-tree-view-filter-settings.tscn" id="3_filter_settings"]
 [ext_resource type="Texture2D" uid="uid://d10a00q606t7c" path="res://scenes/file-explorer/assets/fluent-icons/clipboard-plus-right.svg" id="3_copy_right"]
@@ -36,8 +37,6 @@ vertical = false
 grow_begin = 8.0
 grow_end = 8.0
 
-[sub_resource type="LabelSettings" id="LabelSettings_jbjko"]
-font_size = 48
 
 [node name="AssetFinder" type="Panel"]
 anchors_preset = 15
@@ -78,69 +77,13 @@ theme_override_constants/margin_bottom = 10
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="ProjectContextContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer2/MainContent"]
+[node name="ProjectHeader" parent="VBoxContainer/MarginContainer2/MainContent" instance=ExtResource("2_header")]
 unique_name_in_owner = true
 layout_mode = 2
-
-[node name="ProjectNameHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/MainContent/ProjectContextContainer"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="ProjectThumbnailTextureRect" type="TextureRect" parent="VBoxContainer/MarginContainer2/MainContent/ProjectContextContainer/ProjectNameHBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(128, 128)
-layout_mode = 2
-texture = ExtResource("2_jbjko")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/MarginContainer2/MainContent/ProjectContextContainer/ProjectNameHBoxContainer"]
-layout_mode = 2
-theme_override_constants/margin_left = 12
-
-[node name="ProjectNameLineEdit" type="Label" parent="VBoxContainer/MarginContainer2/MainContent/ProjectContextContainer/ProjectNameHBoxContainer/MarginContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(500, 128)
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 0
-text = "<project name>"
-label_settings = SubResource("LabelSettings_jbjko")
-vertical_alignment = 1
-
-[node name="ProjectPathHBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/MainContent/ProjectContextContainer"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="ProjectPathLabel" type="Label" parent="VBoxContainer/MarginContainer2/MainContent/ProjectContextContainer/ProjectPathHBoxContainer"]
-custom_minimum_size = Vector2(128, 0)
-layout_mode = 2
-text = "Project Path:"
-horizontal_alignment = 2
-vertical_alignment = 1
-
-[node name="ProjectPathLineEdit" type="LineEdit" parent="VBoxContainer/MarginContainer2/MainContent/ProjectContextContainer/ProjectPathHBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(500, 0)
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 0
-tooltip_text = "Path to the current project"
-editable = false
-caret_blink = true
-caret_blink_interval = 0.5
-
-[node name="OpenProjectPathFolder" type="Button" parent="VBoxContainer/MarginContainer2/MainContent/ProjectContextContainer/ProjectPathHBoxContainer"]
-custom_minimum_size = Vector2(48, 32)
-layout_mode = 2
-size_flags_horizontal = 8
-tooltip_text = "Opens folder to the specified project path."
-focus_mode = 0
-mouse_default_cursor_shape = 2
-flat = true
-icon = ExtResource("15_folder")
-icon_modulate = Color(1, 1, 1, 1)
-expand_icon = true
+show_godot_version = false
+show_current_version = true
+show_last_linter_scan = true
+show_last_published = true
 
 [node name="AssetFinderToolbar" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/MainContent"]
 layout_mode = 2
@@ -502,7 +445,6 @@ unique_name_in_owner = true
 visible = false
 layout_mode = 2
 
-[connection signal="pressed" from="VBoxContainer/MarginContainer2/MainContent/ProjectContextContainer/ProjectPathHBoxContainer/OpenProjectPathFolder" to="." method="_on_open_project_path_folder_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/MainContent/AssetFinderToolbar/FlatListToggleButton" to="." method="_on_flat_list_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/MainContent/AssetFinderToolbar/AddFavoriteButton" to="." method="_on_add_favorite_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/MainContent/AssetFinderToolbar/RefreshButton" to="." method="_on_refresh_button_pressed"]

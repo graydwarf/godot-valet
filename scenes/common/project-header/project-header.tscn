@@ -1,0 +1,163 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scenes/common/project-header/project-header.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://wop6qk8dkl40" path="res://icon.svg" id="2"]
+[ext_resource type="Texture2D" path="res://scenes/release-manager/assets/fluent-icons/folder-open.svg" id="3_folder"]
+[ext_resource type="Texture2D" path="res://scenes/common/project-header/assets/copy.svg" id="4_copy"]
+
+[node name="ProjectHeader" type="Panel"]
+mouse_filter = 2
+script = ExtResource("1")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 11
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 13
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="ThumbTextureRect" type="TextureRect" parent="MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(107, 105)
+layout_mode = 2
+texture = ExtResource("2")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="MarginContainer2" type="MarginContainer" parent="MarginContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2"]
+layout_mode = 2
+
+[node name="ProjectNameLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "Project Name"
+clip_text = true
+
+[node name="GodotVersionContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 8
+
+[node name="GodotVersionLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MarginContainer2/HBoxContainer/GodotVersionContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "v4.5"
+horizontal_alignment = 2
+
+[node name="PathRow" type="MarginContainer" parent="MarginContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_bottom = 5
+
+[node name="HBox" type="HBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/PathRow"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="ProjectPathLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/PathRow/HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+text = "C:/projects/example"
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="CopyPathButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer/PathRow/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+tooltip_text = "Copy path to clipboard"
+mouse_default_cursor_shape = 2
+flat = true
+icon = ExtResource("4_copy")
+expand_icon = true
+
+[node name="FolderButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer/PathRow/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+tooltip_text = "Open folder in explorer"
+mouse_default_cursor_shape = 2
+flat = true
+icon = ExtResource("3_folder")
+expand_icon = true
+
+[node name="MetadataRow" type="MarginContainer" parent="MarginContainer/HBoxContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/margin_left = 10
+
+[node name="HBox" type="HBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/MetadataRow"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="CurrentVersionLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MetadataRow/HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Current Version: v0.0.1"
+clip_text = true
+
+[node name="LastLinterScanLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MetadataRow/HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Last Linter Scan: --"
+clip_text = true
+
+[node name="LastPublishedLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/MetadataRow/HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Last Published: --"
+clip_text = true
+
+[node name="DateLabelsRow" type="MarginContainer" parent="MarginContainer/HBoxContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/margin_left = 10
+
+[node name="HBox" type="HBoxContainer" parent="MarginContainer/HBoxContainer/VBoxContainer/DateLabelsRow"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="CreatedDateLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/DateLabelsRow/HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 14
+text = "Created: --"
+clip_text = true
+
+[node name="EditedDateLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/DateLabelsRow/HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 14
+text = "Edited: --"
+horizontal_alignment = 2
+clip_text = true
+

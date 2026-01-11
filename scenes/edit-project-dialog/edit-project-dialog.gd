@@ -5,6 +5,13 @@ extends Panel
 @onready var _projectPathLineEdit = $VBoxContainer/ProjectPathHBoxContainer/ProjectPathLineEdit
 @onready var _fileDialog = $FileDialog
 @onready var _selectFolderForNewProjectDialog = $SelectFolderForNewProjectDialog
+@onready var _hideProjectCheckbox = %HideProjectCheckbox
+@onready var _removeProjectButton = %RemoveProjectButton
+@onready var _hideProjectRow = $VBoxContainer/HideProjectHBoxContainer
+@onready var _removeProjectRow = $VBoxContainer/RemoveProjectHBoxContainer
+@onready var _customIconLineEdit = %CustomIconLineEdit
+@onready var _iconFileDialog = $IconFileDialog
+@onready var _customIconRow = $VBoxContainer/CustomIconHBoxContainer
 
 var _listOfGodotVersionIds = []
 var _selectedProjectItem = null
@@ -21,11 +28,23 @@ func LoadTheme():
 func ConfigureForSelectedProject(selectedProjectItem):
 	_selectedProjectItem = selectedProjectItem
 	LoadProject()
+	# Show options for existing projects
+	_hideProjectRow.visible = true
+	_removeProjectRow.visible = true
+	_customIconRow.visible = true
+
+func ConfigureForNewProject():
+	# Hide options when creating new project
+	_hideProjectRow.visible = false
+	_removeProjectRow.visible = false
+	_customIconRow.visible = false
 
 func LoadProject():
 	_projectNameLineEdit.text = _selectedProjectItem.GetProjectName()
 	_projectPathLineEdit.text = _selectedProjectItem.GetProjectPath()
 	Common.SelectOptionButtonValueByText(_godotVersionOptionButton, _selectedProjectItem.GetGodotVersion())
+	_hideProjectCheckbox.button_pressed = _selectedProjectItem.GetIsHidden()
+	_customIconLineEdit.text = _selectedProjectItem.GetThumbnailPath()
 
 func GetGodotVersion(godotVersionId):
 	var files = FileHelper.GetFilesFromPath("user://godot-version-items")
@@ -72,6 +91,8 @@ func SaveExistingProjectItem():
 
 	_selectedProjectItem.SetProjectName(projectName)
 	_selectedProjectItem.SetProjectPath(_projectPathLineEdit.text)
+	_selectedProjectItem.SetIsHidden(_hideProjectCheckbox.button_pressed)
+	_selectedProjectItem.SetThumbnailPath(_customIconLineEdit.text)
 
 	var selectedIndex = _godotVersionOptionButton.selected
 	var godotVersionId = null
@@ -80,6 +101,11 @@ func SaveExistingProjectItem():
 
 	_selectedProjectItem.SetGodotVersionId(godotVersionId)
 	_selectedProjectItem.SaveProjectItem()
+
+	# Emit signal if hiding the project
+	if _hideProjectCheckbox.button_pressed:
+		Signals.emit_signal("HidingProjectItem")
+
 	Signals.emit_signal("ProjectSaved", _selectedProjectItem.GetProjectId())
 	queue_free()
 	
@@ -202,3 +228,30 @@ func _on_select_folder_for_new_project_dialog_dir_selected(dir):
 func _on_overwrite_confirmation_dialog_confirmed():
 	# User confirmed overwriting files, proceed with project creation
 	_projectPathLineEdit.text = _selectedDirectoryPath + "/" + "project.godot"
+
+func _on_remove_project_button_pressed():
+	if _selectedProjectItem == null:
+		return
+
+	# Emit signal to remove the project from the project manager
+	Signals.emit_signal("RemoveProject", _selectedProjectItem.GetProjectId())
+	queue_free()
+
+func _on_select_icon_button_pressed():
+	# Set initial directory based on current icon path or Pictures folder
+	var currentPath = _customIconLineEdit.text
+	if currentPath != "" and FileAccess.file_exists(currentPath):
+		_iconFileDialog.current_dir = currentPath.get_base_dir()
+		_iconFileDialog.current_file = currentPath.get_file()
+	else:
+		_iconFileDialog.current_dir = OS.get_system_dir(OS.SYSTEM_DIR_PICTURES)
+	_iconFileDialog.show()
+
+func _on_clear_icon_button_pressed():
+	_customIconLineEdit.text = ""
+
+func _on_icon_file_dialog_file_selected(path: String):
+	if not FileAccess.file_exists(path):
+		OS.alert("Error: File does not exist: " + path)
+		return
+	_customIconLineEdit.text = path

@@ -99,10 +99,6 @@ func _loadPages():
 		if child is WizardPageBase:
 			_pages.append(child)
 
-			# Connect version change signal to card (from Build page)
-			if child.has_signal("version_changed"):
-				child.version_changed.connect(_projectCard.update_version_comparison)
-
 			# Connect page_modified signal to track dirty state
 			if child.has_signal("page_modified"):
 				child.page_modified.connect(_onPageModified)

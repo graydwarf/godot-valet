@@ -10,6 +10,7 @@ signal ProjectSaved(project_id: String)
 signal LoadOpenGodotButtons
 signal HidingProjectItem
 signal ReorderProjectItems
+signal RemoveProject(project_id: String)
 
 # Godot Version Management
 signal NewGodotVersionAdded

@@ -105,6 +105,70 @@ custom_minimum_size = Vector2(500, 32)
 layout_mode = 2
 size_flags_vertical = 4
 
+[node name="CustomIconHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+alignment = 1
+
+[node name="CustomIconLabel" type="Label" parent="VBoxContainer/CustomIconHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Custom Icon:"
+horizontal_alignment = 2
+
+[node name="CustomIconLineEdit" type="LineEdit" parent="VBoxContainer/CustomIconHBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 2
+placeholder_text = "No custom icon selected"
+editable = false
+
+[node name="SelectIconButton" type="Button" parent="VBoxContainer/CustomIconHBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Select Image"
+
+[node name="ClearIconButton" type="Button" parent="VBoxContainer/CustomIconHBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+text = "Clear"
+
+[node name="HideProjectHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+alignment = 1
+
+[node name="HideProjectLabel" type="Label" parent="VBoxContainer/HideProjectHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Visibility:"
+horizontal_alignment = 2
+
+[node name="HideProjectCheckbox" type="CheckBox" parent="VBoxContainer/HideProjectHBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Hide from Project List"
+
+[node name="RemoveProjectHBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+alignment = 1
+
+[node name="RemoveProjectLabel" type="Label" parent="VBoxContainer/RemoveProjectHBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Remove:"
+horizontal_alignment = 2
+
+[node name="RemoveProjectButton" type="Button" parent="VBoxContainer/RemoveProjectHBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+text = "Remove from Godot Valet"
+
 [node name="MarginContainer" type="MarginContainer" parent="VBoxContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 70
@@ -157,9 +221,22 @@ dialog_text = "Files will be overwritten."
 ok_button_text = "Continue"
 cancel_button_text = "Cancel"
 
+[node name="IconFileDialog" type="FileDialog" parent="."]
+title = "Select Custom Icon"
+position = Vector2i(250, 150)
+size = Vector2i(800, 600)
+ok_button_text = "Select"
+file_mode = 0
+access = 2
+filters = PackedStringArray("*.png", "*.jpg", "*.jpeg", "*.bmp", "*.svg", "*.webp")
+
+[connection signal="pressed" from="VBoxContainer/CustomIconHBoxContainer/SelectIconButton" to="." method="_on_select_icon_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/CustomIconHBoxContainer/ClearIconButton" to="." method="_on_clear_icon_button_pressed"]
+[connection signal="file_selected" from="IconFileDialog" to="." method="_on_icon_file_dialog_file_selected"]
 [connection signal="pressed" from="VBoxContainer/ProjectPathHBoxContainer/SelectExistingProjectFolderButton" to="." method="_on_select_project_folder_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/ProjectPathHBoxContainer/CreateNewProjectFolderButton" to="." method="_on_create_new_project_folder_button_pressed"]
 [connection signal="item_selected" from="VBoxContainer/GodotVersionHBoxContainer/GodotVersionOptionButton" to="." method="_on_godot_version_option_button_item_selected"]
+[connection signal="pressed" from="VBoxContainer/RemoveProjectHBoxContainer/RemoveProjectButton" to="." method="_on_remove_project_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer/ButtonHBoxContainer/CancelButton" to="." method="_on_cancel_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer/ButtonHBoxContainer/SaveButton" to="." method="_on_save_button_pressed"]
 [connection signal="file_selected" from="FileDialog" to="." method="_on_file_dialog_file_selected"]
