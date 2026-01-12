@@ -3,10 +3,7 @@ extends Panel
 @onready var _runProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RunProjectButton
 @onready var _editProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/EditProjectButton
 @onready var _releaseProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ReleaseProjectButton
-@onready var _openProjectFolderButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/OpenProjectFolderButton
-
 @onready var _changeProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ChangeProjectButton
-@onready var _removeProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RemoveProjectButton
 @onready var _projectItemContainer = $VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/ProjectItemContainer
 @onready var _customButtonContainer = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/CustomButtonVBoxContainer
 @onready var _scrollContainer = $VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer
@@ -329,6 +326,7 @@ func ResetExistingSelection():
 	_selectedProjectItem = null
 
 func ToggleProjectItemSelection(projectItem, isSelected):
+	print("[ProjectManager] ToggleProjectItemSelection called: project=%s, isSelected=%s" % [projectItem.GetProjectName() if projectItem else "null", isSelected])
 	ResetExistingSelection()
 
 	if isSelected:
@@ -347,9 +345,7 @@ func DisableEditButtons():
 	_runProjectButton.disabled = true
 	_editProjectButton.disabled = true
 	_releaseProjectButton.disabled = true
-	_openProjectFolderButton.disabled = true
 	_changeProjectButton.disabled = true
-	_removeProjectButton.disabled = true
 	#%AssetFinderButton.disabled = false
 	%ClaudeButton.disabled = true
 	%CodeQualityButton.disabled = true
@@ -358,9 +354,7 @@ func EnableEditButtons():
 	_runProjectButton.disabled = false
 	_editProjectButton.disabled = false
 	_releaseProjectButton.disabled = false
-	_openProjectFolderButton.disabled = false
 	_changeProjectButton.disabled = false
-	_removeProjectButton.disabled = false
 	#%AssetFinderButton.disabled = true
 	%ClaudeButton.disabled = false
 	%CodeQualityButton.disabled = false
@@ -589,9 +583,6 @@ func _on_run_project_button_pressed():
 func _on_change_project_button_pressed():
 	ChangeProject()
 
-func _on_remove_project_button_pressed():
-	RemoveProject()
-
 func _on_delete_confirmation_dialog_confirmed():
 	DeleteSelectedProject()
 
@@ -611,9 +602,6 @@ func _on_release_project_button_pressed():
 
 	add_child(releaseManager)
 	releaseManager.ConfigureReleaseManagementForm(_selectedProjectItem)
-	
-func _on_open_project_folder_button_pressed():
-	OpenProjectFolder()
 
 func _on_check_box_pressed():
 	ToggleHiddenProjectVisibility()

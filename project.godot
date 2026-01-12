@@ -21,6 +21,7 @@ config/windows_native_icon="res://assets/icons/godot-valet.ico"
 Signals="*res://singletons/project/signals.gd"
 Common="*res://singletons/common.gd"
 App="*res://singletons/project/app.gd"
+UITestRunner="*res://addons/godot-ui-automation/godot-ui-automation.gd"
 
 [debug]
 
@@ -35,6 +36,10 @@ window/size/viewport_height=932
 
 naming/scene_name_casing=1
 naming/script_name_casing=3
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gdscript-linter/plugin.cfg", "res://addons/godot-ui-automation/plugin.cfg", "res://addons/plugin-sync/plugin.cfg")
 
 [filesystem]
 

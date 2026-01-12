@@ -31,3 +31,8 @@ integrate-godot-qube.md
 # Dev-only tooling (hardcoded local paths)
 scripts/sync-linter.ps1
 addons/linter-sync/
+
+# Test automation isolated data
+test-user-data/
+recover-backup-data-readme.txt
+nul

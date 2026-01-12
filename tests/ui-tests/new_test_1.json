@@ -1,0 +1,65 @@
+{
+	"baseline_path": "",
+	"baseline_region": null,
+	"created": "2026-01-11T19:49:00",
+	"events": [
+		{
+			"pos": {
+				"x": 715.0,
+				"y": 123.0
+			},
+			"time": 2967,
+			"type": "click",
+			"wait_after": 350
+		},
+		{
+			"pos": {
+				"x": 1121.0,
+				"y": 125.0
+			},
+			"time": 4251,
+			"type": "click",
+			"wait_after": 350
+		},
+		{
+			"path": "res://tests/baselines/screenshot_2026-01-11T19-48-59_0.png",
+			"region": {
+				"h": 126.0,
+				"w": 633.0,
+				"x": 281.0,
+				"y": 157.0
+			},
+			"time": 9105,
+			"type": "screenshot_validation",
+			"wait_after": 100
+		}
+	],
+	"name": "new_test_1",
+	"recorded_environment": {
+		"monitor_index": 0,
+		"monitor_resolution": {
+			"h": 1440,
+			"w": 2560
+		},
+		"viewport": {
+			"h": 932.0,
+			"w": 1200.0
+		},
+		"window_mode": 0
+	},
+	"recorded_viewport": {
+		"h": 932.0,
+		"w": 1200.0
+	},
+	"recorded_window": {
+		"h": 932,
+		"mode": 0,
+		"w": 1200,
+		"x": 2600,
+		"y": 230
+	},
+	"screenshots": [],
+	"setup": {
+
+	}
+}

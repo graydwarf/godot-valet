@@ -476,6 +476,7 @@ func ShowProjectItem():
 
 func _on_gui_input(event):
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		print("[ProjectItem] gui_input received: pos=%s, global=%s, project=%s" % [event.position, event.global_position, _projectName])
 		Signals.emit_signal("ToggleProjectItemSelection", self, !_selected)
 
 func _on_mouse_entered():

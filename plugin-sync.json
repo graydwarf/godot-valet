@@ -1,0 +1,24 @@
+{
+  "version": "1.0",
+  "exclude_patterns": [".git", "*.import", "*.uid"],
+  "plugins": [
+    {
+      "name": "gdscript-linter",
+      "source": "C:/dad/projects/godot/godot-4/plugins/godot-gdscript-linter/addons/gdscript-linter",
+      "enabled": true,
+      "description": "GDScript linting and analysis tool"
+    },
+    {
+      "name": "godot-ui-automation",
+      "source": "C:/dad/projects/godot/godot-4/plugins/godot-ui-automation/addons/godot-ui-automation",
+      "enabled": true,
+      "description": "UI automation and testing framework"
+    },
+    {
+      "name": "plugin-sync",
+      "source": "C:/dad/projects/godot/godot-4/plugins/plugin-sync/addons/plugin-sync",
+      "enabled": true,
+      "description": "Plugin synchronization tool (self-update)"
+    }
+  ]
+}
