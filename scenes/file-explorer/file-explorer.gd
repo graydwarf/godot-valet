@@ -10,12 +10,19 @@ class_name AssetFinder
 @onready var _backgroundColorPicker: ColorPickerButton = %BackgroundColorPicker
 @onready var _projectHeader: ProjectHeader = %ProjectHeader
 @onready var _searchLineEdit: LineEdit = %SearchLineEdit
-@onready var _scopeOptionButton: OptionButton = %ScopeOptionButton
 @onready var _regexToggleButton: Button = %RegexToggleButton
 @onready var _searchButton: Button = %SearchButton
 @onready var _tipsDialog: AssetFinderTipsDialog = %TipsDialog
+@onready var _autoPlayCheckBox: CheckBox = %AutoPlayCheckBox
+@onready var _autoPlayAudioPlayer: AudioStreamPlayer = %AutoPlayAudioPlayer
+@onready var _filterOptionButton: OptionButton = %FilterOptionButton
+@onready var _audioToolbar: HBoxContainer = %AudioToolbar
+@onready var _volumeSlider: HSlider = %VolumeSlider
+@onready var _volumeValueLabel: Label = %VolumeValueLabel
 
 var _isSearchInProgress: bool = false
+var _lastAutoPlayedFile: String = ""
+var _audioExtensions: Array[String] = [".ogg", ".mp3", ".wav", ".aac"]
 var _currentProjectConfigured: bool = false
 var _currentProjectPath: String = ""
 var _imageExtensions: Array[String] = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg", ".tga"]
@@ -27,6 +34,8 @@ func _ready():
 	_setImageToolbarVisible(false)
 	# Load saved image background color
 	_loadImageBackgroundColor()
+	# Initialize audio volume to 20%
+	_initAudioVolume()
 
 func RemoveGodotButtonFocusBorder():
 	# Remove focus border from Godot toggle button
@@ -165,15 +174,19 @@ func _on_file_selected(filePath: String):
 	# Check if audio filter is active - if so, always use sound player grid for audio files
 	if _fileTreeViewExplorer.IsAudioFilterActive():
 		var fileExt = "." + filePath.get_extension().to_lower()
-		var audioExtensions = [".ogg", ".mp3", ".wav", ".aac"]
 
-		if fileExt in audioExtensions:
+		if fileExt in _audioExtensions:
 			# Audio file(s) with audio filter active - use sound player grid
 			ShowSoundPlayerGrid(selectedFiles)
 			if selectedFiles.size() > 1:
 				%PathLabel.text = "%d audio files selected" % selectedFiles.size()
 			else:
 				%PathLabel.text = filePath
+
+			# Auto-play if checkbox is checked and single file selected
+			if _autoPlayCheckBox.button_pressed and selectedFiles.size() == 1:
+				_playAudioFile(filePath)
+
 			return
 
 	# Non-audio file or audio filter not active - use normal preview
@@ -221,6 +234,43 @@ func ShowSoundPlayerGrid(soundPaths: Array[String]):
 	%DestinationTreeView.visible = false
 	_setImageToolbarVisible(false)  # Hide image toolbar when showing audio
 	_soundPlayerGrid.LoadSounds(soundPaths)
+
+# Play an audio file using the auto-play audio player
+func _playAudioFile(filePath: String):
+	# Stop any currently playing audio
+	_autoPlayAudioPlayer.stop()
+
+	# Load the audio stream
+	var stream = _loadAudioStream(filePath)
+	if stream:
+		_autoPlayAudioPlayer.stream = stream
+		_autoPlayAudioPlayer.play()
+		_lastAutoPlayedFile = filePath
+
+# Load an audio stream from file path
+func _loadAudioStream(filePath: String) -> AudioStream:
+	var extension = filePath.get_extension().to_lower()
+
+	# For files within the project, use the resource loader
+	if filePath.begins_with("res://"):
+		return load(filePath) as AudioStream
+
+	# For external files, load from filesystem
+	match extension:
+		"wav":
+			return AudioStreamWAV.load_from_file(filePath)
+		"mp3":
+			var file = FileAccess.open(filePath, FileAccess.READ)
+			if file:
+				var data = file.get_buffer(file.get_length())
+				file.close()
+				var stream = AudioStreamMP3.new()
+				stream.data = data
+				return stream
+		"ogg":
+			return AudioStreamOggVorbis.load_from_file(filePath)
+
+	return null
 
 # Show the file previewer and hide other views
 func ShowFilePreviewer():
@@ -524,6 +574,19 @@ func _on_open_file_explorer_button_pressed() -> void:
 
 func _on_filter_option_selected(index: int) -> void:
 	_fileTreeViewExplorer._on_filter_option_selected(index)
+	# Show auto-play checkbox only when Sounds filter is selected (index 2)
+	var isSoundsFilter = (index == 2)
+	_autoPlayCheckBox.visible = isSoundsFilter
+	# Hide spacer when checkbox is visible (checkbox provides enough separation)
+	%FiltersSpacer.visible = not isSoundsFilter
+	# Show audio toolbar only when Sounds filter is selected
+	_audioToolbar.visible = isSoundsFilter
+	# Completely hide image toolbar when sounds filter is active (don't preserve space)
+	_imageToolbar.visible = not isSoundsFilter
+	# Stop any playing audio when switching filters
+	if not isSoundsFilter:
+		_autoPlayAudioPlayer.stop()
+		_lastAutoPlayedFile = ""
 
 func _on_previous_button_pressed() -> void:
 	_fileTreeViewExplorer._on_previous_button_pressed()
@@ -595,6 +658,24 @@ func _loadImageBackgroundColor():
 	_backgroundColorPicker.color = color
 	_filePreviewer.SetImageBackgroundColor(color)
 
+# Initialize audio volume to 20% and connect slider
+func _initAudioVolume():
+	_volumeSlider.value = 20
+	_applyVolume(20)
+	_volumeSlider.value_changed.connect(_on_volume_slider_changed)
+
+func _on_volume_slider_changed(value: float):
+	_applyVolume(value)
+
+func _applyVolume(percent: float):
+	# Convert percent (0-100) to linear volume (0-1) then to dB
+	var linear = percent / 100.0
+	var db = linear_to_db(linear)
+	# Apply to master audio bus (affects all sounds including auto-play and SoundPlayerGrid)
+	var masterBusIdx = AudioServer.get_bus_index("Master")
+	AudioServer.set_bus_volume_db(masterBusIdx, db)
+	_volumeValueLabel.text = "%d%%" % int(percent)
+
 # Search signal handlers
 func _on_search_button_pressed() -> void:
 	_execute_search()
@@ -602,11 +683,6 @@ func _on_search_button_pressed() -> void:
 func _on_search_submitted(_text: String) -> void:
 	# Enter key pressed in search field
 	_execute_search()
-
-func _on_search_scope_changed(_index: int) -> void:
-	# Only search if there's a query
-	if not _searchLineEdit.text.is_empty():
-		_execute_search()
 
 func _on_regex_mode_toggled(_pressed: bool) -> void:
 	# Only search if there's a query
@@ -632,11 +708,10 @@ func _execute_search() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame  # Extra frame for good measure
 
-	# Execute the search
+	# Execute the search (always deep search)
 	var query = _searchLineEdit.text
 	var is_regex = _regexToggleButton.button_pressed
-	var is_deep = _scopeOptionButton.selected == 1  # 0=Folder, 1=Deep
-	await _fileTreeViewExplorer.ApplySearch(query, is_regex, is_deep)
+	await _fileTreeViewExplorer.ApplySearch(query, is_regex, true)
 
 	# Wait 0.4 seconds before re-enabling to prevent rapid re-clicks
 	await get_tree().create_timer(0.4).timeout

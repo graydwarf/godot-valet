@@ -169,7 +169,18 @@ popup/item_7/id = 7
 popup/item_8/text = "Archives"
 popup/item_8/id = 8
 
+[node name="AutoPlayCheckBox" type="CheckBox" parent="VBoxContainer/MarginContainer2/MainContent/AssetFinderToolbar"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+tooltip_text = "Auto-play sounds when selecting files. Uncheck to preview sounds manually on the right panel."
+focus_mode = 0
+mouse_default_cursor_shape = 2
+button_pressed = true
+text = "Auto-Play"
+
 [node name="FiltersSpacer" type="Control" parent="VBoxContainer/MarginContainer2/MainContent/AssetFinderToolbar"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(12, 0)
 layout_mode = 2
 
@@ -190,19 +201,6 @@ layout_mode = 2
 tooltip_text = "Search (Enter)"
 mouse_default_cursor_shape = 2
 text = "Go"
-
-[node name="ScopeOptionButton" type="OptionButton" parent="VBoxContainer/MarginContainer2/MainContent/AssetFinderToolbar"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(70, 0)
-layout_mode = 2
-tooltip_text = "Search scope: current folder or deep recursive search"
-mouse_default_cursor_shape = 2
-selected = 0
-item_count = 2
-popup/item_0/text = "Folder"
-popup/item_0/id = 0
-popup/item_1/text = "Deep"
-popup/item_1/id = 1
 
 [node name="RegexToggleButton" type="Button" parent="VBoxContainer/MarginContainer2/MainContent/AssetFinderToolbar"]
 unique_name_in_owner = true
@@ -449,6 +447,33 @@ mouse_default_cursor_shape = 2
 color = Color(0.15, 0.15, 0.15, 1)
 edit_alpha = false
 
+[node name="AudioToolbar" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/MainContent/HSplitContainer/RightSection/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="VolumeLabel" type="Label" parent="VBoxContainer/MarginContainer2/MainContent/HSplitContainer/RightSection/VBoxContainer/AudioToolbar"]
+layout_mode = 2
+text = "Volume:"
+vertical_alignment = 1
+
+[node name="VolumeSlider" type="HSlider" parent="VBoxContainer/MarginContainer2/MainContent/HSplitContainer/RightSection/VBoxContainer/AudioToolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+size_flags_vertical = 1
+tooltip_text = "Master volume for audio preview"
+max_value = 100.0
+value = 20.0
+
+[node name="VolumeValueLabel" type="Label" parent="VBoxContainer/MarginContainer2/MainContent/HSplitContainer/RightSection/VBoxContainer/AudioToolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(35, 0)
+layout_mode = 2
+text = "20%"
+vertical_alignment = 1
+
 [node name="ContentContainer" type="Control" parent="VBoxContainer/MarginContainer2/MainContent/HSplitContainer/RightSection/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -500,6 +525,9 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="AutoPlayAudioPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/MainContent/AssetFinderToolbar/FlatListToggleButton" to="." method="_on_flat_list_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/MainContent/AssetFinderToolbar/AddFavoriteButton" to="." method="_on_add_favorite_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/MainContent/AssetFinderToolbar/RefreshButton" to="." method="_on_refresh_button_pressed"]
@@ -507,7 +535,6 @@ grow_vertical = 2
 [connection signal="item_selected" from="VBoxContainer/MarginContainer2/MainContent/AssetFinderToolbar/FilterOptionButton" to="." method="_on_filter_option_selected"]
 [connection signal="text_submitted" from="VBoxContainer/MarginContainer2/MainContent/AssetFinderToolbar/SearchLineEdit" to="." method="_on_search_submitted"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/MainContent/AssetFinderToolbar/SearchButton" to="." method="_on_search_button_pressed"]
-[connection signal="item_selected" from="VBoxContainer/MarginContainer2/MainContent/AssetFinderToolbar/ScopeOptionButton" to="." method="_on_search_scope_changed"]
 [connection signal="toggled" from="VBoxContainer/MarginContainer2/MainContent/AssetFinderToolbar/RegexToggleButton" to="." method="_on_regex_mode_toggled"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/MainContent/AssetFinderToolbar/PreviousButton" to="." method="_on_previous_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MarginContainer2/MainContent/AssetFinderToolbar/NextButton" to="." method="_on_next_button_pressed"]

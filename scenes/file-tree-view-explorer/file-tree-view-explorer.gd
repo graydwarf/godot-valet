@@ -40,7 +40,7 @@ var _favoriteButtons: Array[TextureButton] = []  # References to user favorite b
 var _searchQuery: String = ""
 var _searchRegex: RegEx = null
 var _isRegexMode: bool = false
-var _isDeepSearch: bool = false
+var _isDeepSearch: bool = true
 var _deepSearchMaxResults: int = 1000
 var _searchBasePath: String = ""  # Stores the base path for current search
 
@@ -520,16 +520,41 @@ func SelectFirstNode():
 func IsFileSupported(fileName: String) -> bool:
 	var extension = "." + fileName.get_extension().to_lower()
 
-	# If tree view filtering is active, only show filtered extensions
-	if _isTreeViewFiltered and not %FlatListToggleButton.button_pressed:
-		return extension in _treeViewFilters
-
 	# If no filters are active, show ALL files (including unsupported extensions)
 	if _activeFilters.is_empty():
 		return true
 
-	# Otherwise use the full supported list
-	return extension in GetAllSupportedExtensions()
+	# Filters are active - check against filtered extensions only
+	# This applies in both tree view mode and search mode
+	return extension in _getFilteredExtensions()
+
+# Get extensions for currently active filters
+func _getFilteredExtensions() -> Array:
+	var extensions := []
+	for filterName in _activeFilters:
+		match filterName:
+			"images":
+				extensions.append_array(_imageExtensions)
+			"scripts":
+				extensions.append_array(_scriptExtensions)
+			"audio":
+				extensions.append_array(_audioExtensions)
+			"scenes":
+				extensions.append_array(_sceneExtensions)
+			"videos":
+				extensions.append_array(_videoExtensions)
+			"models":
+				extensions.append_array(_3dModelExtensions)
+			"fonts":
+				extensions.append_array(_fontExtensions)
+			"executables":
+				extensions.append_array(_executableExtensions)
+			"zip":
+				extensions.append_array(_zipExtensions)
+			"text":
+				extensions.append_array(_textExtensions)
+				extensions.append_array(_scriptExtensions)
+	return extensions
 
 func GetAllSupportedExtensions():
 	var allExtensions := []
@@ -2165,34 +2190,7 @@ func ApplyActiveFilters():
 		_treeViewFilters.clear()
 		_isTreeViewFiltered = false
 	else:
-		# Combine all active filter extensions
-		var combinedExtensions := []
-
-		for filterName in _activeFilters:
-			match filterName:
-				"images":
-					combinedExtensions.append_array(_imageExtensions)
-				"scripts":
-					combinedExtensions.append_array(_scriptExtensions)
-				"audio":
-					combinedExtensions.append_array(_audioExtensions)
-				"scenes":
-					combinedExtensions.append_array(_sceneExtensions)
-				"videos":
-					combinedExtensions.append_array(_videoExtensions)
-				"models":
-					combinedExtensions.append_array(_3dModelExtensions)
-				"fonts":
-					combinedExtensions.append_array(_fontExtensions)
-				"executables":
-					combinedExtensions.append_array(_executableExtensions)
-				"zip":
-					combinedExtensions.append_array(_zipExtensions)
-				"text":
-					combinedExtensions.append_array(_textExtensions)
-					combinedExtensions.append_array(_scriptExtensions)  # Include script files
-
-		_treeViewFilters = combinedExtensions
+		_treeViewFilters = _getFilteredExtensions()
 		_isTreeViewFiltered = true
 
 	# If there's an active search query, apply search (which respects filters)
@@ -2847,8 +2845,18 @@ func RefreshViewWithPreservation():
 		await get_tree().process_frame
 		%FileTree.scroll_to_item(firstRestoredItem)
 
-# Handle right-click on tree items
+# Handle mouse clicks on tree items
 func _on_file_tree_item_mouse_selected(_mouse_position: Vector2, mouse_button_index: int) -> void:
+	# Handle left-click to support re-clicking already selected items (for audio replay)
+	if mouse_button_index == MOUSE_BUTTON_LEFT:
+		var selected = %FileTree.get_selected()
+		if selected:
+			var path = selected.get_metadata(0)
+			if path != null:
+				# Re-emit file selected signal even for same file (allows replay)
+				SelectedPathChanged(path)
+		return
+
 	if mouse_button_index == MOUSE_BUTTON_RIGHT:
 		var selected = %FileTree.get_selected()
 		if selected:
