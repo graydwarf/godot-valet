@@ -1,0 +1,133 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/file-explorer/asset-finder-tips-dialog.gd" id="1"]
+[ext_resource type="Theme" uid="uid://dwoo5bj1luipm" path="res://assets/themes/global-themes/godot-dark-default.tres" id="2_theme"]
+
+[node name="AssetFinderTipsDialog" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="BackgroundPanel" type="Panel" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+
+[node name="MainMargin" type="MarginContainer" parent="BackgroundPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 24
+
+[node name="MainVBox" type="VBoxContainer" parent="BackgroundPanel/MainMargin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="TitleSection" type="HBoxContainer" parent="BackgroundPanel/MainMargin/MainVBox"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="BackgroundPanel/MainMargin/MainVBox/TitleSection"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "Asset Finder Tips"
+
+[node name="TipsCard" type="PanelContainer" parent="BackgroundPanel/MainMargin/MainVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CardContent" type="VBoxContainer" parent="BackgroundPanel/MainMargin/MainVBox/TipsCard"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="CardHeader" type="PanelContainer" parent="BackgroundPanel/MainMargin/MainVBox/TipsCard/CardContent"]
+layout_mode = 2
+
+[node name="HeaderMargin" type="MarginContainer" parent="BackgroundPanel/MainMargin/MainVBox/TipsCard/CardContent/CardHeader"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="HeaderLabel" type="Label" parent="BackgroundPanel/MainMargin/MainVBox/TipsCard/CardContent/CardHeader/HeaderMargin"]
+layout_mode = 2
+text = "Helpful Tips"
+
+[node name="CardBody" type="MarginContainer" parent="BackgroundPanel/MainMargin/MainVBox/TipsCard/CardContent"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 16
+
+[node name="ScrollContainer" type="ScrollContainer" parent="BackgroundPanel/MainMargin/MainVBox/TipsCard/CardContent/CardBody"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="TipsContent" type="RichTextLabel" parent="BackgroundPanel/MainMargin/MainVBox/TipsCard/CardContent/CardBody/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "[b][color=#6bb8ff]Exclude Folders from Search[/color][/b]
+
+Right-click on any folder and select \"Exclude from Search\" to skip it during deep searches. This can drastically improve search performance for large directories like node_modules, .git, or build folders.
+
+---
+
+[b][color=#6bb8ff]Quick Navigation with Favorites[/color][/b]
+
+Press the star icon to add the current folder to your favorites. Use number keys 1-9 to quickly jump to favorites. Key 1 always navigates to your project folder.
+
+---
+
+[b][color=#6bb8ff]Regex Search[/color][/b]
+
+Click the \".*\" button to enable regex search. Use patterns like \"player.*\\.png\" to find files matching complex naming patterns.
+
+---
+
+[b][color=#6bb8ff]Filter by Type[/color][/b]
+
+Use the Filter dropdown to quickly show only specific file types (Images, Sounds, Videos, etc.). Combined with Deep search, this lets you find all assets of a type across your entire folder structure.
+
+---
+
+[b][color=#6bb8ff]Flat List Mode[/color][/b]
+
+Toggle the tree/list button to switch between tree view and flat list mode. Flat list shows all files in the current folder and subfolders as a single scrollable list - great for browsing large asset collections."
+fit_content = true
+
+[node name="ButtonSection" type="HBoxContainer" parent="BackgroundPanel/MainMargin/MainVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Spacer" type="Control" parent="BackgroundPanel/MainMargin/MainVBox/ButtonSection"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CloseButton" type="Button" parent="BackgroundPanel/MainMargin/MainVBox/ButtonSection"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 35)
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "Close"

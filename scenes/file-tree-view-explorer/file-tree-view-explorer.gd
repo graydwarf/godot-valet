@@ -14,6 +14,7 @@ signal DirectorySelected(dirPath : String)
 signal NavigateToProjectRequested
 signal ProjectViewRestoreRequested
 signal FilterSettingsClosed
+signal TipsRequested
 
 var _rootItem: TreeItem
 var _populationToken: int = 0  # Used to cancel in-progress async operations
@@ -34,6 +35,14 @@ var _preFlatListExpandedPaths: Array[String] = []
 var _preFlatListSelectedPath: String = ""
 var _navigateToProjectButton: TextureButton = null  # Reference to the Navigate to Project button
 var _favoriteButtons: Array[TextureButton] = []  # References to user favorite buttons (slots 2-9)
+
+# Search state
+var _searchQuery: String = ""
+var _searchRegex: RegEx = null
+var _isRegexMode: bool = false
+var _isDeepSearch: bool = false
+var _deepSearchMaxResults: int = 1000
+var _searchBasePath: String = ""  # Stores the base path for current search
 
 # Supported extensions used to filter files (configurable via settings)
 var _zipExtensions := [".zip", ".rar", ".7z", ".tar", ".gz"]
@@ -64,6 +73,9 @@ const DEFAULT_FILTER_EXTENSIONS = {
 var _favorites: Array[String] = []
 var _maxFavorites := 8  # Max user favorites (slot 1 is reserved for Navigate to Project)
 var _configFilePath := "user://file-explorer-settings.cfg"
+
+# Excluded folders (won't be searched)
+var _excludedFolders: Array[String] = []
 
 func _ready():
 	LoadSettings()  # Load favorites and filter state
@@ -127,11 +139,20 @@ func InitSignals():
 	%FilterSettings.settings_applied.connect(_on_filter_settings_applied)
 	%FilterSettings.settings_canceled.connect(_on_filter_settings_canceled)
 
+	# Connect Tips button
+	%TipsButton.pressed.connect(_on_tips_button_pressed)
+
+func _on_tips_button_pressed():
+	TipsRequested.emit()
+
 func SetupContextMenu():
 	# Add menu items (labels will be updated dynamically based on file type)
 	%ContextMenu.add_item("Edit", 0)
 	%ContextMenu.add_item("Open in File Explorer", 1)
 	%ContextMenu.add_item("Copy Path", 2)
+	%ContextMenu.add_separator()
+	%ContextMenu.add_item("Exclude from Search", 4)
+	%ContextMenu.add_item("Include in Search", 5)
 	%ContextMenu.add_separator()
 	%ContextMenu.add_item("Delete", 3)
 
@@ -207,6 +228,7 @@ func SaveSettings():
 	config.set_value("FilterExtensions", "fonts", _fontExtensions)
 	config.set_value("FilterExtensions", "executables", _executableExtensions)
 	config.set_value("FilterExtensions", "zip", _zipExtensions)
+	config.set_value("FilterExtensions", "deep_search_max_results", _deepSearchMaxResults)
 
 	# Save tree view state
 	var expandedPaths = GetExpandedPaths(_rootItem)
@@ -219,6 +241,9 @@ func SaveSettings():
 
 	# Save project view state
 	config.set_value("TreeView", "project_view_active", _isProjectViewActive)
+
+	# Save excluded folders
+	config.set_value("Search", "excluded_folders", _excludedFolders)
 
 	var err = config.save(_configFilePath)
 	if err != OK:
@@ -250,6 +275,10 @@ func LoadSettings():
 	_fontExtensions = config.get_value("FilterExtensions", "fonts", DEFAULT_FILTER_EXTENSIONS.fonts)
 	_executableExtensions = config.get_value("FilterExtensions", "executables", DEFAULT_FILTER_EXTENSIONS.executables)
 	_zipExtensions = config.get_value("FilterExtensions", "zip", DEFAULT_FILTER_EXTENSIONS.zip)
+	_deepSearchMaxResults = config.get_value("FilterExtensions", "deep_search_max_results", 1000)
+
+	# Load excluded folders
+	_excludedFolders = config.get_value("Search", "excluded_folders", [])
 
 	# Load project view state (but don't apply yet - wait for UI to be ready)
 	_isProjectViewActive = config.get_value("TreeView", "project_view_active", false)
@@ -516,6 +545,359 @@ func GetAllSupportedExtensions():
 	allExtensions.append_array(_executableExtensions)
 	return allExtensions
 
+# Check if filename matches current search query
+func _matches_search_query(filename: String) -> bool:
+	if _searchQuery.is_empty():
+		return true
+	if _isRegexMode and _searchRegex:
+		return _searchRegex.search(filename) != null
+	return _searchQuery.to_lower() in filename.to_lower()
+
+# Apply search filter with given parameters
+func ApplySearch(query: String, is_regex: bool, is_deep: bool) -> void:
+	_searchQuery = query
+	_isRegexMode = is_regex
+	_isDeepSearch = is_deep
+
+	# Compile regex if needed
+	if is_regex and not query.is_empty():
+		_searchRegex = RegEx.new()
+		var err = _searchRegex.compile(query)
+		if err != OK:
+			_searchRegex = null  # Invalid regex, fall back to literal search
+	else:
+		_searchRegex = null
+
+	# Apply search based on mode
+	if query.is_empty():
+		# Empty query - clear search state and refresh
+		_searchBasePath = ""
+		await RefreshTreeViewWithFilters()
+	elif is_deep:
+		# Deep search - flat list display
+		# Always capture fresh base path when user initiates search
+		_searchBasePath = GetCurrentBasePath()
+		await _execute_deep_search()
+	else:
+		# Folder mode - tree display with hierarchy
+		# Always capture fresh base path when user initiates search
+		_searchBasePath = GetCurrentBasePath()
+		await _execute_folder_search()
+
+# Execute folder search - recursive scan displayed as tree hierarchy
+func _execute_folder_search() -> void:
+	# Increment token to cancel any in-progress operations
+	_populationToken += 1
+	var myToken = _populationToken
+
+	ShowBusyIndicator()
+	await get_tree().process_frame
+
+	# Scan all drives and collect matching files
+	var matchingFiles: Array[String] = []
+	var drives = GetAvailableDrives()
+
+	for drive in drives:
+		if myToken != _populationToken:
+			HideBusyIndicator()
+			return
+		if matchingFiles.size() >= _deepSearchMaxResults:
+			break
+		await _scan_directory_with_search(drive, matchingFiles, myToken)
+
+	if myToken != _populationToken:
+		HideBusyIndicator()
+		return
+
+	# Build tree showing folder hierarchy to matching files (use first drive as base for display)
+	_display_folder_search_results_all_drives(matchingFiles)
+
+	HideBusyIndicator()
+
+# Display folder search results from all drives as a tree with hierarchy
+func _display_folder_search_results_all_drives(files: Array[String]) -> void:
+	%FileTree.clear()
+	_rootItem = %FileTree.create_item()
+
+	if not is_instance_valid(_rootItem):
+		return
+
+	# Handle empty results
+	if files.is_empty():
+		var noResultsItem = %FileTree.create_item(_rootItem)
+		noResultsItem.set_text(0, "Search Results: 0 Files")
+		noResultsItem.set_selectable(0, false)
+		noResultsItem.set_custom_color(0, Color(0.6, 0.6, 0.6))
+		return
+
+	# Group files by drive
+	var filesByDrive: Dictionary = {}
+	for filePath in files:
+		var drive = filePath.substr(0, 3)  # e.g., "C:/"
+		if not filesByDrive.has(drive):
+			filesByDrive[drive] = []
+		filesByDrive[drive].append(filePath)
+
+	# Build folder structure for each drive
+	var folderItems: Dictionary = {}
+
+	for drive in filesByDrive.keys():
+		# Create drive item
+		var driveItem = %FileTree.create_item(_rootItem)
+		driveItem.set_text(0, drive)
+		driveItem.set_metadata(0, drive)
+		FileTreeIcons.SetTreeItemIcon(driveItem, 0, FileTreeIcons.GetDriveIcon())
+		folderItems[drive] = driveItem
+
+		# Add files under this drive
+		for filePath in filesByDrive[drive]:
+			if not is_instance_valid(_rootItem):
+				return
+
+			var fileDir = filePath.get_base_dir()
+			var parentItem = _ensure_folder_path_exists(drive, fileDir, folderItems)
+
+			var fileItem = %FileTree.create_item(parentItem)
+			var fileName = filePath.get_file()
+			fileItem.set_text(0, fileName)
+			fileItem.set_metadata(0, filePath)
+			FileTreeIcons.SetTreeItemIcon(fileItem, 0, FileTreeIcons.GetIconFromFilePath(filePath, _get_extensions_dict()))
+			fileItem.set_tooltip_text(0, filePath)
+
+		# Expand drive item
+		driveItem.collapsed = false
+
+	# Show result count
+	if files.size() >= _deepSearchMaxResults:
+		print("Folder search: Showing first %d results (limit reached)" % _deepSearchMaxResults)
+
+# Display folder search results as a tree with hierarchy
+func _display_folder_search_results(basePath: String, files: Array[String]) -> void:
+	%FileTree.clear()
+	_rootItem = %FileTree.create_item()
+
+	if not is_instance_valid(_rootItem):
+		return
+
+	# Handle empty results
+	if files.is_empty():
+		var noResultsItem = %FileTree.create_item(_rootItem)
+		noResultsItem.set_text(0, "Search Results: 0 Files")
+		noResultsItem.set_selectable(0, false)
+		noResultsItem.set_custom_color(0, Color(0.6, 0.6, 0.6))
+		return
+
+	# Build folder structure from matching file paths
+	# Key = folder path, Value = TreeItem
+	var folderItems: Dictionary = {}
+
+	# Create root folder item
+	var rootName = basePath.get_file()
+	if rootName.is_empty():
+		rootName = basePath  # For drive roots like "C:/"
+	var rootFolderItem = %FileTree.create_item(_rootItem)
+	rootFolderItem.set_text(0, rootName)
+	rootFolderItem.set_metadata(0, basePath)
+	FileTreeIcons.SetTreeItemIcon(rootFolderItem, 0, FileTreeIcons.GetFolderIcon())
+	folderItems[basePath] = rootFolderItem
+
+	for filePath in files:
+		if not is_instance_valid(_rootItem):
+			return
+
+		# Get the folder containing this file
+		var fileDir = filePath.get_base_dir()
+
+		# Ensure all parent folders exist in tree
+		var parentItem = _ensure_folder_path_exists(basePath, fileDir, folderItems)
+
+		# Create file item
+		var fileItem = %FileTree.create_item(parentItem)
+		var fileName = filePath.get_file()
+		fileItem.set_text(0, fileName)
+		fileItem.set_metadata(0, filePath)
+		FileTreeIcons.SetTreeItemIcon(fileItem, 0, FileTreeIcons.GetIconFromFilePath(filePath, _get_extensions_dict()))
+		fileItem.set_tooltip_text(0, filePath)
+
+	# Expand the root folder
+	if rootFolderItem:
+		rootFolderItem.collapsed = false
+
+	# Show result count
+	if files.size() >= _deepSearchMaxResults:
+		print("Folder search: Showing first %d results (limit reached)" % _deepSearchMaxResults)
+
+# Ensure folder path exists in tree, creating parent folders as needed
+func _ensure_folder_path_exists(basePath: String, folderPath: String, folderItems: Dictionary) -> TreeItem:
+	# If already exists, return it
+	if folderItems.has(folderPath):
+		return folderItems[folderPath]
+
+	# If this is the base path, it should already exist
+	if folderPath == basePath or folderPath.is_empty():
+		return folderItems.get(basePath, _rootItem)
+
+	# Get parent folder
+	var parentPath = folderPath.get_base_dir()
+	var parentItem = _ensure_folder_path_exists(basePath, parentPath, folderItems)
+
+	# Create this folder
+	var folderItem = %FileTree.create_item(parentItem)
+	var folderName = folderPath.get_file()
+	folderItem.set_text(0, folderName)
+	folderItem.set_metadata(0, folderPath)
+	FileTreeIcons.SetTreeItemIcon(folderItem, 0, FileTreeIcons.GetFolderIcon())
+	folderItem.collapsed = false  # Expand to show matches
+
+	folderItems[folderPath] = folderItem
+	return folderItem
+
+# Clear the search filter
+func ClearSearch() -> void:
+	ApplySearch("", false, _isDeepSearch)
+
+# Set the maximum results for deep search
+func SetDeepSearchMaxResults(limit: int) -> void:
+	_deepSearchMaxResults = limit
+
+# Execute deep search - recursively scan and display matching files in flat list
+func _execute_deep_search() -> void:
+	# Increment token to cancel any in-progress operations
+	_populationToken += 1
+	var myToken = _populationToken
+
+	# Show busy indicator
+	ShowBusyIndicator()
+
+	# Use call_deferred to allow UI to update
+	await get_tree().process_frame
+
+	# Scan all drives and collect matching files
+	var matchingFiles: Array[String] = []
+	var drives = GetAvailableDrives()
+
+	for drive in drives:
+		if myToken != _populationToken:
+			HideBusyIndicator()
+			return
+		if matchingFiles.size() >= _deepSearchMaxResults:
+			break
+		await _scan_directory_with_search(drive, matchingFiles, myToken)
+
+	# Check if operation was cancelled
+	if myToken != _populationToken:
+		HideBusyIndicator()
+		return
+
+	# Display results in flat list mode
+	_display_deep_search_results(matchingFiles)
+
+	HideBusyIndicator()
+
+# Recursively scan directory and collect files matching search query
+func _scan_directory_with_search(dirPath: String, results: Array[String], token: int) -> void:
+	# Check for cancellation
+	if token != _populationToken:
+		return
+
+	# Check if we've hit the max results
+	if results.size() >= _deepSearchMaxResults:
+		return
+
+	# Skip excluded folders
+	if _is_path_in_excluded_folder(dirPath):
+		return
+
+	var dir = DirAccess.open(dirPath)
+	if dir == null:
+		return
+
+	dir.list_dir_begin()
+	var fileName = dir.get_next()
+
+	while fileName != "" and results.size() < _deepSearchMaxResults:
+		# Check for cancellation periodically
+		if token != _populationToken:
+			dir.list_dir_end()
+			return
+
+		if dir.current_is_dir():
+			if not fileName.begins_with(".") and fileName != "System Volume Information":
+				var subDirPath = dirPath.path_join(fileName)
+				# Skip excluded subdirectories
+				if not _is_path_in_excluded_folder(subDirPath):
+					await _scan_directory_with_search(subDirPath, results, token)
+		else:
+			if IsFileSupported(fileName) and _matches_search_query(fileName):
+				var fullPath = dirPath.path_join(fileName)
+
+				# Handle zip files - scan their contents
+				if IsZipFile(fullPath):
+					_scan_zip_with_search(fullPath, results, token)
+				else:
+					results.append(fullPath)
+
+		fileName = dir.get_next()
+
+	dir.list_dir_end()
+
+# Scan zip file contents for matching files
+func _scan_zip_with_search(zipPath: String, results: Array[String], token: int) -> void:
+	if token != _populationToken:
+		return
+
+	var zip = ZIPReader.new()
+	var error = zip.open(zipPath)
+	if error != OK:
+		return
+
+	var files = zip.get_files()
+	for file in files:
+		if results.size() >= _deepSearchMaxResults:
+			break
+
+		if not file.ends_with("/"):  # It's a file, not a directory
+			var fileName = file.get_file()
+			if IsFileSupported(fileName) and _matches_search_query(fileName):
+				var fullPath = zipPath + "::" + file
+				results.append(fullPath)
+
+	zip.close()
+
+# Display deep search results in flat list format
+func _display_deep_search_results(files: Array[String]) -> void:
+	%FileTree.clear()
+	_rootItem = %FileTree.create_item()
+
+	if not is_instance_valid(_rootItem):
+		return
+
+	# Handle empty results
+	if files.is_empty():
+		var noResultsItem = %FileTree.create_item(_rootItem)
+		noResultsItem.set_text(0, "Search Results: 0 Files")
+		noResultsItem.set_selectable(0, false)
+		noResultsItem.set_custom_color(0, Color(0.6, 0.6, 0.6))
+		return
+
+	for filePath in files:
+		if not is_instance_valid(_rootItem):
+			return
+
+		var fileItem = %FileTree.create_item(_rootItem)
+		if fileItem == null:
+			continue
+
+		var displayName = GetDisplayNameForFlatList(filePath)
+		fileItem.set_text(0, displayName)
+		fileItem.set_metadata(0, filePath)
+		FileTreeIcons.SetTreeItemIcon(fileItem, 0, FileTreeIcons.GetIconFromFilePath(filePath, _get_extensions_dict()))
+		fileItem.set_tooltip_text(0, filePath)
+
+	# Show result count info
+	if files.size() >= _deepSearchMaxResults:
+		print("Deep search: Showing first %d results (limit reached)" % _deepSearchMaxResults)
+
 # Returns extensions dictionary for icon lookup
 func _get_extensions_dict() -> Dictionary:
 	return {
@@ -568,7 +950,10 @@ func PopulateDrivesInternal(token: int):
 	
 	# Select the first drive
 	SelectFirstNode()
-	
+
+	# Apply excluded folder styling
+	_apply_all_excluded_folder_appearances()
+
 # Find and add all drives A-Z
 func GetAvailableDrives() -> Array[String]:
 	var drives: Array[String] = []
@@ -836,6 +1221,9 @@ func CleanupAndPopulate(item: TreeItem):
 	else:
 		# Regular directory
 		PopulateDirectory(item)
+
+	# Apply excluded folder styling to newly populated items
+	_apply_excluded_appearances_recursive(item)
 
 # Expand the tree to show a specific path
 func ExpandToPath(targetPath: String):
@@ -1124,8 +1512,9 @@ func ToggleFlatList():
 		%PreviousButton.disabled = true
 		%NextButton.disabled = true
 
-		# Hide favorites bar, show flat-list path container
+		# Hide favorites bar and tips button, show flat-list path container
 		%FavoritesBar.visible = false
+		%TipsButton.visible = false
 		if has_node("%FlatListPathContainer"):
 			%FlatListPathContainer.visible = true
 			# Set the path in the LineEdit (not including "Flat List:" prefix)
@@ -1138,8 +1527,9 @@ func ToggleFlatList():
 		%PreviousButton.disabled = false
 		%NextButton.disabled = false
 
-		# Show favorites bar, hide flat-list path container
+		# Show favorites bar and tips button, hide flat-list path container
 		%FavoritesBar.visible = true
+		%TipsButton.visible = true
 		if has_node("%FlatListPathContainer"):
 			%FlatListPathContainer.visible = false
 
@@ -1609,7 +1999,9 @@ func _GetSortedDirectoryEntries(dirPath: String) -> Array[String]:
 			# Always include zip files, filter other files normally
 			var fullPath = dirPath.path_join(entryName)
 			if IsZipFile(fullPath) or IsFileSupported(entryName):
-				files.append(entryName)
+				# Apply search filter if active
+				if _matches_search_query(entryName):
+					files.append(entryName)
 		entryName = dir.get_next()
 	dir.list_dir_end()
 
@@ -1768,45 +2160,53 @@ func RefreshCurrentView():
 		
 # Apply all currently active filters
 func ApplyActiveFilters():
+	# First, update the filter state
 	if _activeFilters.is_empty():
 		_treeViewFilters.clear()
 		_isTreeViewFiltered = false
-		RefreshCurrentView()
-		return
-
-	# Combine all active filter extensions
-	var combinedExtensions := []
-
-	for filterName in _activeFilters:
-		match filterName:
-			"images":
-				combinedExtensions.append_array(_imageExtensions)
-			"scripts":
-				combinedExtensions.append_array(_scriptExtensions)
-			"audio":
-				combinedExtensions.append_array(_audioExtensions)
-			"scenes":
-				combinedExtensions.append_array(_sceneExtensions)
-			"videos":
-				combinedExtensions.append_array(_videoExtensions)
-			"models":
-				combinedExtensions.append_array(_3dModelExtensions)
-			"fonts":
-				combinedExtensions.append_array(_fontExtensions)
-			"executables":
-				combinedExtensions.append_array(_executableExtensions)
-			"zip":
-				combinedExtensions.append_array(_zipExtensions)
-			"text":
-				combinedExtensions.append_array(_textExtensions)
-				combinedExtensions.append_array(_scriptExtensions)  # Include script files
-
-	if %FlatListToggleButton.button_pressed:
-		ShowFilteredFlatListByType(combinedExtensions)
 	else:
-		# Apply filtering to tree view
+		# Combine all active filter extensions
+		var combinedExtensions := []
+
+		for filterName in _activeFilters:
+			match filterName:
+				"images":
+					combinedExtensions.append_array(_imageExtensions)
+				"scripts":
+					combinedExtensions.append_array(_scriptExtensions)
+				"audio":
+					combinedExtensions.append_array(_audioExtensions)
+				"scenes":
+					combinedExtensions.append_array(_sceneExtensions)
+				"videos":
+					combinedExtensions.append_array(_videoExtensions)
+				"models":
+					combinedExtensions.append_array(_3dModelExtensions)
+				"fonts":
+					combinedExtensions.append_array(_fontExtensions)
+				"executables":
+					combinedExtensions.append_array(_executableExtensions)
+				"zip":
+					combinedExtensions.append_array(_zipExtensions)
+				"text":
+					combinedExtensions.append_array(_textExtensions)
+					combinedExtensions.append_array(_scriptExtensions)  # Include script files
+
 		_treeViewFilters = combinedExtensions
 		_isTreeViewFiltered = true
+
+	# If there's an active search query, apply search (which respects filters)
+	if not _searchQuery.is_empty():
+		ApplySearch(_searchQuery, _isRegexMode, _isDeepSearch)
+		return
+
+	# No search query - apply filters only
+	if %FlatListToggleButton.button_pressed:
+		if _isTreeViewFiltered:
+			ShowFilteredFlatListByType(_treeViewFilters)
+		else:
+			RefreshCurrentView()
+	else:
 		RefreshTreeViewWithFilters()
 
 	HideBusyIndicator()
@@ -2294,7 +2694,8 @@ func get_current_filter_extensions() -> Dictionary:
 		"models": _3dModelExtensions,
 		"fonts": _fontExtensions,
 		"executables": _executableExtensions,
-		"zip": _zipExtensions
+		"zip": _zipExtensions,
+		"deep_search_max_results": _deepSearchMaxResults
 	}
 
 func _on_filter_settings_button_pressed() -> void:
@@ -2317,6 +2718,10 @@ func _on_filter_settings_applied(filter_extensions: Dictionary) -> void:
 	_fontExtensions = filter_extensions.get("fonts", DEFAULT_FILTER_EXTENSIONS.fonts)
 	_executableExtensions = filter_extensions.get("executables", DEFAULT_FILTER_EXTENSIONS.executables)
 	_zipExtensions = filter_extensions.get("zip", DEFAULT_FILTER_EXTENSIONS.zip)
+
+	# Apply deep search max results if provided
+	if filter_extensions.has("deep_search_max_results"):
+		_deepSearchMaxResults = filter_extensions.get("deep_search_max_results")
 
 	# Save to config
 	SaveSettings()
@@ -2466,6 +2871,16 @@ func _on_file_tree_item_mouse_selected(_mouse_position: Vector2, mouse_button_in
 					%ContextMenu.set_item_disabled(0, false)
 					%ContextMenu.set_item_text(0, "Edit")
 
+				# Update Exclude/Include menu items based on whether item is a folder
+				var isFolder = _is_path_directory(path)
+				var isExcluded = _is_folder_excluded(path)
+				var excludeIdx = %ContextMenu.get_item_index(4)  # Exclude from Search
+				var includeIdx = %ContextMenu.get_item_index(5)  # Include in Search
+
+				# Show Exclude for non-excluded folders, Include for excluded folders
+				%ContextMenu.set_item_disabled(excludeIdx, not isFolder or isExcluded)
+				%ContextMenu.set_item_disabled(includeIdx, not isFolder or not isExcluded)
+
 				# Show context menu at mouse position
 				var global_pos = get_viewport().get_mouse_position()
 				%ContextMenu.position = Vector2i(global_pos)
@@ -2490,6 +2905,10 @@ func _on_context_menu_item_selected(id: int) -> void:
 			CopyPathToClipboard(path)
 		3:  # Delete
 			await _handle_delete_selected()
+		4:  # Exclude from Search
+			_exclude_folder(path)
+		5:  # Include in Search
+			_include_folder(path)
 
 # Open path in system file explorer
 func OpenPathInFileExplorer(path: String) -> void:
@@ -2507,6 +2926,96 @@ func OpenPathInFileExplorer(path: String) -> void:
 	elif DirAccess.dir_exists_absolute(actualPath):
 		# It's a directory, open it
 		FileHelper.OpenFilePathInWindowsExplorer(actualPath)
+
+# Check if a path is a directory
+func _is_path_directory(path: String) -> bool:
+	if "::" in path:
+		# Zip internal path
+		var parts = path.split("::")
+		return IsZipDirectory(parts[0], parts[1])
+
+	# Check if it's a file first (files have extensions and exist)
+	if FileAccess.file_exists(path):
+		return false
+
+	# Try DirAccess check
+	if DirAccess.dir_exists_absolute(path):
+		return true
+
+	# Fallback: if no file extension and not a file, assume it's a folder
+	# This handles system folders like C:/Windows that may have permission issues
+	var ext = path.get_extension()
+	if ext.is_empty():
+		return true
+
+	return false
+
+# Check if a folder path is in the excluded list
+func _is_folder_excluded(path: String) -> bool:
+	# Normalize path for comparison
+	var normalizedPath = path.replace("\\", "/").trim_suffix("/")
+	for excluded in _excludedFolders:
+		var normalizedExcluded = excluded.replace("\\", "/").trim_suffix("/")
+		if normalizedPath == normalizedExcluded:
+			return true
+	return false
+
+# Check if a path is inside an excluded folder
+func _is_path_in_excluded_folder(path: String) -> bool:
+	var normalizedPath = path.replace("\\", "/")
+	for excluded in _excludedFolders:
+		var normalizedExcluded = excluded.replace("\\", "/").trim_suffix("/")
+		if normalizedPath.begins_with(normalizedExcluded + "/") or normalizedPath == normalizedExcluded:
+			return true
+	return false
+
+# Add a folder to the excluded list
+func _exclude_folder(path: String) -> void:
+	if not _is_folder_excluded(path):
+		_excludedFolders.append(path)
+		SaveSettings()
+		# Update the tree item appearance
+		_update_excluded_folder_appearance(path, true)
+
+# Remove a folder from the excluded list
+func _include_folder(path: String) -> void:
+	var normalizedPath = path.replace("\\", "/").trim_suffix("/")
+	for i in range(_excludedFolders.size() - 1, -1, -1):
+		var normalizedExcluded = _excludedFolders[i].replace("\\", "/").trim_suffix("/")
+		if normalizedPath == normalizedExcluded:
+			_excludedFolders.remove_at(i)
+			break
+	SaveSettings()
+	# Update the tree item appearance
+	_update_excluded_folder_appearance(path, false)
+
+# Update the visual appearance of an excluded/included folder in the tree
+func _update_excluded_folder_appearance(path: String, excluded: bool) -> void:
+	var item = FindTreeItemByPath(_rootItem, path)
+	if item:
+		if excluded:
+			item.set_custom_color(0, Color(0.5, 0.5, 0.5))  # Gray out
+		else:
+			item.clear_custom_color(0)  # Restore default
+
+# Apply excluded folder styling to all items in the tree
+func _apply_all_excluded_folder_appearances() -> void:
+	if _excludedFolders.is_empty():
+		return
+	_apply_excluded_appearances_recursive(_rootItem)
+
+# Recursively check and apply excluded styling
+func _apply_excluded_appearances_recursive(item: TreeItem) -> void:
+	if not item:
+		return
+
+	var child = item.get_first_child()
+	while child:
+		var path = child.get_metadata(0)
+		if path and _is_folder_excluded(path):
+			child.set_custom_color(0, Color(0.5, 0.5, 0.5))
+		_apply_excluded_appearances_recursive(child)
+		child = child.get_next()
 
 # Copy path to clipboard
 func CopyPathToClipboard(path: String) -> void:

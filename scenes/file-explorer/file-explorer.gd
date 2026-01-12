@@ -9,7 +9,13 @@ class_name AssetFinder
 @onready var _imageToolbar: HBoxContainer = %RightPaneSubToolbar
 @onready var _backgroundColorPicker: ColorPickerButton = %BackgroundColorPicker
 @onready var _projectHeader: ProjectHeader = %ProjectHeader
+@onready var _searchLineEdit: LineEdit = %SearchLineEdit
+@onready var _scopeOptionButton: OptionButton = %ScopeOptionButton
+@onready var _regexToggleButton: Button = %RegexToggleButton
+@onready var _searchButton: Button = %SearchButton
+@onready var _tipsDialog: AssetFinderTipsDialog = %TipsDialog
 
+var _isSearchInProgress: bool = false
 var _currentProjectConfigured: bool = false
 var _currentProjectPath: String = ""
 var _imageExtensions: Array[String] = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg", ".tga"]
@@ -51,6 +57,7 @@ func InitSignals():
 	_fileTreeViewExplorer.DirectorySelected.connect(_on_directory_selected)
 	_fileTreeViewExplorer.NavigateToProjectRequested.connect(_on_navigate_to_project_requested)
 	_fileTreeViewExplorer.ProjectViewRestoreRequested.connect(_on_project_view_restore_requested)
+	_fileTreeViewExplorer.TipsRequested.connect(_on_tips_requested)
 
 	# Connect FilterSettings signals
 	%FilterSettings.settings_applied.connect(_on_filter_settings_applied)
@@ -58,6 +65,9 @@ func InitSignals():
 
 	# Connect ProjectHeader folder button
 	_projectHeader.folder_button_pressed.connect(_on_project_header_folder_pressed)
+
+func _on_tips_requested():
+	_tipsDialog.show_dialog()
 
 func ConfigureProject(selectedProjectItem):
 	if selectedProjectItem == null:
@@ -584,3 +594,61 @@ func _loadImageBackgroundColor():
 	var color = App.GetImagePreviewBackgroundColor()
 	_backgroundColorPicker.color = color
 	_filePreviewer.SetImageBackgroundColor(color)
+
+# Search signal handlers
+func _on_search_button_pressed() -> void:
+	_execute_search()
+
+func _on_search_submitted(_text: String) -> void:
+	# Enter key pressed in search field
+	_execute_search()
+
+func _on_search_scope_changed(_index: int) -> void:
+	# Only search if there's a query
+	if not _searchLineEdit.text.is_empty():
+		_execute_search()
+
+func _on_regex_mode_toggled(_pressed: bool) -> void:
+	# Only search if there's a query
+	if not _searchLineEdit.text.is_empty():
+		_execute_search()
+
+# Execute the search with current settings
+func _execute_search() -> void:
+	# Prevent multiple concurrent searches
+	if _isSearchInProgress:
+		return
+
+	_isSearchInProgress = true
+
+	# Disable controls during search
+	_searchButton.disabled = true
+	_searchLineEdit.editable = false
+
+	# Show busy indicator
+	_fileTreeViewExplorer.ShowBusyIndicator()
+
+	# Wait a frame for UI to render the busy indicator
+	await get_tree().process_frame
+	await get_tree().process_frame  # Extra frame for good measure
+
+	# Execute the search
+	var query = _searchLineEdit.text
+	var is_regex = _regexToggleButton.button_pressed
+	var is_deep = _scopeOptionButton.selected == 1  # 0=Folder, 1=Deep
+	await _fileTreeViewExplorer.ApplySearch(query, is_regex, is_deep)
+
+	# Wait 0.4 seconds before re-enabling to prevent rapid re-clicks
+	await get_tree().create_timer(0.4).timeout
+
+	# Re-enable controls
+	_searchButton.disabled = false
+	_searchLineEdit.editable = true
+	_isSearchInProgress = false
+
+	# Hide busy indicator (search functions already hide it, but ensure it's hidden)
+	_fileTreeViewExplorer.HideBusyIndicator()
+
+# Get current search query (used by filter to combine with search)
+func GetCurrentSearchQuery() -> String:
+	return _searchLineEdit.text
