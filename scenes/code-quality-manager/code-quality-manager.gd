@@ -2,10 +2,10 @@
 extends Panel
 
 # Preload analyzer scripts from GDScript Linter addon
-const GDLintAnalyzer = preload("res://addons/gdscript-linter/analyzer/code-analyzer.gd")
-const GDLintConfig = preload("res://addons/gdscript-linter/analyzer/analysis-config.gd")
-const GDLintIssue = preload("res://addons/gdscript-linter/analyzer/issue.gd")
-const GDLintResult = preload("res://addons/gdscript-linter/analyzer/analysis-result.gd")
+const GDLintAnalyzerScript = preload("res://addons/gdscript-linter/analyzer/code-analyzer.gd")
+const GDLintConfigScript = preload("res://addons/gdscript-linter/analyzer/analysis-config.gd")
+const GDLintIssueScript = preload("res://addons/gdscript-linter/analyzer/issue.gd")
+const GDLintResultScript = preload("res://addons/gdscript-linter/analyzer/analysis-result.gd")
 const SettingsCardBuilderScript = preload("res://scenes/code-quality-manager/ui/settings-card-builder.gd")
 const SettingsManagerScript = preload("res://scenes/code-quality-manager/ui/settings-manager.gd")
 
@@ -44,7 +44,6 @@ const ISSUE_TYPES := {
 @onready var _scanButton: Button = %ScanButton
 @onready var _exportJSONButton: Button = %ExportJSONButton
 @onready var _exportHTMLButton: Button = %ExportHTMLButton
-@onready var _settingsButton: Button = %SettingsButton
 @onready var _severityFilter: OptionButton = %SeverityFilter
 @onready var _typeFilter: OptionButton = %TypeFilter
 @onready var _fileFilter: LineEdit = %FileFilter
@@ -113,7 +112,7 @@ func _ready():
 
 
 func _init_config_and_settings_panel() -> void:
-	_currentConfig = GDLintConfig.new()
+	_currentConfig = GDLintConfigScript.new()
 	var reset_icon = load("res://scenes/code-quality-manager/assets/arrow-reset.svg")
 	var card_builder = SettingsCardBuilderScript.new(reset_icon)
 	card_builder.build_settings_panel(_settingsPanel, _settings_controls)
@@ -293,7 +292,7 @@ func Configure(selectedProjectItem):
 
 
 func _loadSettings():
-	_currentConfig = GDLintConfig.new()
+	_currentConfig = GDLintConfigScript.new()
 	var projectDir = _selectedProjectItem.GetProjectDir()
 	var configPath = projectDir.path_join(".gdlint.cfg")
 	if FileAccess.file_exists(configPath):
@@ -371,9 +370,9 @@ func _get_available_types_for_severity(sev_filter: String) -> Dictionary:
 		var matches_severity := false
 		match sev_filter:
 			"all": matches_severity = true
-			"critical": matches_severity = issue.severity == GDLintIssue.Severity.CRITICAL
-			"warning": matches_severity = issue.severity == GDLintIssue.Severity.WARNING
-			"info": matches_severity = issue.severity == GDLintIssue.Severity.INFO
+			"critical": matches_severity = issue.severity == GDLintIssueScript.Severity.CRITICAL
+			"warning": matches_severity = issue.severity == GDLintIssueScript.Severity.WARNING
+			"info": matches_severity = issue.severity == GDLintIssueScript.Severity.INFO
 
 		if matches_severity:
 			available[issue.check_id] = true
@@ -403,14 +402,18 @@ func _on_scan_button_pressed():
 func _run_analysis():
 	var projectDir = _selectedProjectItem.GetProjectDir()
 
-	var analyzer = GDLintAnalyzer.new(_currentConfig)
+	var analyzer = GDLintAnalyzerScript.new(_currentConfig)
 
 	_currentResult = analyzer.analyze_directory(projectDir)
 
 	# Update and save last scanned timestamp
-	_lastScannedTimestamp = Time.get_datetime_string_from_system().replace("T", " ").substr(0, 16)
+	_lastScannedTimestamp = Date.GetCurrentDateAsString(Date.GetCurrentDateAsDictionary())
 	_updateLastScannedLabel()
 	_saveLastScanned()
+
+	# Refresh the project item in Project Manager to show updated scan date
+	if _selectedProjectItem != null:
+		_selectedProjectItem.UpdateProjectItemUi()
 
 	_display_results()
 
@@ -874,9 +877,9 @@ func _group_issues_by_severity(issues: Array) -> Dictionary:
 	var grouped := {"critical": [], "warning": [], "info": []}
 	for issue in issues:
 		match issue.severity:
-			GDLintIssue.Severity.CRITICAL: grouped.critical.append(issue)
-			GDLintIssue.Severity.WARNING: grouped.warning.append(issue)
-			GDLintIssue.Severity.INFO: grouped.info.append(issue)
+			GDLintIssueScript.Severity.CRITICAL: grouped.critical.append(issue)
+			GDLintIssueScript.Severity.WARNING: grouped.warning.append(issue)
+			GDLintIssueScript.Severity.INFO: grouped.info.append(issue)
 	return grouped
 
 
@@ -948,9 +951,9 @@ func _format_issue(issue, color: String) -> String:
 	if _settings_manager.claude_code_enabled:
 		var severity_str: String = "unknown"
 		match issue.severity:
-			GDLintIssue.Severity.CRITICAL: severity_str = "critical"
-			GDLintIssue.Severity.WARNING: severity_str = "warning"
-			GDLintIssue.Severity.INFO: severity_str = "info"
+			GDLintIssueScript.Severity.CRITICAL: severity_str = "critical"
+			GDLintIssueScript.Severity.WARNING: severity_str = "warning"
+			GDLintIssueScript.Severity.INFO: severity_str = "info"
 
 		var claude_data := "%s|%d|%s|%s|%s" % [
 			issue.file_path, issue.line, issue.check_id, severity_str,
@@ -1022,9 +1025,9 @@ func _matches_severity(issue) -> bool:
 	if _currentSeverityFilter == "all":
 		return true
 	match _currentSeverityFilter:
-		"critical": return issue.severity == GDLintIssue.Severity.CRITICAL
-		"warning": return issue.severity == GDLintIssue.Severity.WARNING
-		"info": return issue.severity == GDLintIssue.Severity.INFO
+		"critical": return issue.severity == GDLintIssueScript.Severity.CRITICAL
+		"warning": return issue.severity == GDLintIssueScript.Severity.WARNING
+		"info": return issue.severity == GDLintIssueScript.Severity.INFO
 	return false
 
 
@@ -1150,9 +1153,9 @@ func _launch_claude_code_batch(issues: Array, use_plan_mode: bool) -> void:
 		var issue = issues[i]
 		var severity_str: String = "unknown"
 		match issue.severity:
-			GDLintIssue.Severity.CRITICAL: severity_str = "critical"
-			GDLintIssue.Severity.WARNING: severity_str = "warning"
-			GDLintIssue.Severity.INFO: severity_str = "info"
+			GDLintIssueScript.Severity.CRITICAL: severity_str = "critical"
+			GDLintIssueScript.Severity.WARNING: severity_str = "warning"
+			GDLintIssueScript.Severity.INFO: severity_str = "info"
 
 		prompt += "%d. %s:%d\n" % [i + 1, _toResPath(issue.file_path), issue.line]
 		prompt += "   Type: %s | Severity: %s\n" % [issue.check_id, severity_str]
@@ -1222,9 +1225,9 @@ func _launch_claude_code_batch_custom(issues: Array, custom_command: String, cus
 		var issue = issues[i]
 		var severity_str: String = "unknown"
 		match issue.severity:
-			GDLintIssue.Severity.CRITICAL: severity_str = "critical"
-			GDLintIssue.Severity.WARNING: severity_str = "warning"
-			GDLintIssue.Severity.INFO: severity_str = "info"
+			GDLintIssueScript.Severity.CRITICAL: severity_str = "critical"
+			GDLintIssueScript.Severity.WARNING: severity_str = "warning"
+			GDLintIssueScript.Severity.INFO: severity_str = "info"
 
 		prompt += "%d. %s:%d\n" % [i + 1, _toResPath(issue.file_path), issue.line]
 		prompt += "   Type: %s | Severity: %s\n" % [issue.check_id, severity_str]
@@ -1316,9 +1319,9 @@ func _on_export_json_pressed():
 		"timestamp": Time.get_datetime_string_from_system(),
 		"summary": {
 			"total_issues": _currentResult.issues.size(),
-			"critical": _currentResult.issues.filter(func(i): return i.severity == GDLintIssue.Severity.CRITICAL).size(),
-			"warning": _currentResult.issues.filter(func(i): return i.severity == GDLintIssue.Severity.WARNING).size(),
-			"info": _currentResult.issues.filter(func(i): return i.severity == GDLintIssue.Severity.INFO).size()
+			"critical": _currentResult.issues.filter(func(i): return i.severity == GDLintIssueScript.Severity.CRITICAL).size(),
+			"warning": _currentResult.issues.filter(func(i): return i.severity == GDLintIssueScript.Severity.WARNING).size(),
+			"info": _currentResult.issues.filter(func(i): return i.severity == GDLintIssueScript.Severity.INFO).size()
 		},
 		"issues": []
 	}
@@ -1326,9 +1329,9 @@ func _on_export_json_pressed():
 	for issue in _currentResult.issues:
 		var severity_str := "unknown"
 		match issue.severity:
-			GDLintIssue.Severity.CRITICAL: severity_str = "critical"
-			GDLintIssue.Severity.WARNING: severity_str = "warning"
-			GDLintIssue.Severity.INFO: severity_str = "info"
+			GDLintIssueScript.Severity.CRITICAL: severity_str = "critical"
+			GDLintIssueScript.Severity.WARNING: severity_str = "warning"
+			GDLintIssueScript.Severity.INFO: severity_str = "info"
 		data["issues"].append({
 			"file": issue.file_path,
 			"line": issue.line,
@@ -1365,9 +1368,9 @@ func _on_export_html_pressed():
 
 
 func _generateHTMLReport() -> String:
-	var critical: Array = _currentResult.issues.filter(func(i): return i.severity == GDLintIssue.Severity.CRITICAL)
-	var warnings: Array = _currentResult.issues.filter(func(i): return i.severity == GDLintIssue.Severity.WARNING)
-	var info: Array = _currentResult.issues.filter(func(i): return i.severity == GDLintIssue.Severity.INFO)
+	var critical: Array = _currentResult.issues.filter(func(i): return i.severity == GDLintIssueScript.Severity.CRITICAL)
+	var warnings: Array = _currentResult.issues.filter(func(i): return i.severity == GDLintIssueScript.Severity.WARNING)
+	var info: Array = _currentResult.issues.filter(func(i): return i.severity == GDLintIssueScript.Severity.INFO)
 
 	var types_by_severity: Dictionary = {
 		"all": {},

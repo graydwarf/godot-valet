@@ -566,6 +566,10 @@ func _onPublishPressed():
 	if failCount == 0:
 		_logOutput("[color=green]All %d platform(s) published successfully![/color]" % successCount)
 		_statusLabel.text = "Published successfully!"
+		# Update last published date
+		if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
+			_selectedProjectItem.SetPublishedDate(Date.GetCurrentDateAsDictionary())
+			_selectedProjectItem.SaveProjectItem()
 	elif successCount > 0:
 		_logOutput("[color=yellow]%d succeeded, %d failed.[/color]" % [successCount, failCount])
 		_statusLabel.text = "Partial success (%d/%d)" % [successCount, successCount + failCount]

@@ -180,7 +180,7 @@ func set_created_date(date_str: String):
 
 func set_edited_date(date_str: String):
 	if _editedDateLabel:
-		_editedDateLabel.text = "Edited: " + date_str
+		_editedDateLabel.text = "Last Edited: " + date_str
 
 # Show brief "Saved" indicator
 func show_saved_indicator():

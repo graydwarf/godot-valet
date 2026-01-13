@@ -2100,13 +2100,11 @@ func _exportPlatform(platform: String, runAfterExport: bool = false, godotPathFo
 
 	# Phase 1: Prepare context with all needed data (before any awaits)
 	var ctx = _prepareExportContext(platform, runAfterExport, godotPathForRun)
+	var data = _platformRows[platform]
 	if ctx.has("error"):
 		if ctx["error"] != "Not in scene tree" and ctx["error"] != "Project item invalid":
-			var data = _platformRows[platform]
 			_updateStatus(data, "Error: " + ctx["error"])
 		return
-
-	var data = _platformRows[platform]
 	_exportingPlatforms.append(platform)
 
 	# Initialize UI
@@ -2141,13 +2139,11 @@ func _exportPlatformNoPrompts(platform: String):
 
 	# Phase 1: Prepare context with all needed data (before any awaits)
 	var ctx = _prepareExportContext(platform, false, "")
+	var data = _platformRows[platform]
 	if ctx.has("error"):
 		if ctx["error"] != "Not in scene tree" and ctx["error"] != "Project item invalid":
-			var data = _platformRows[platform]
 			_updateStatus(data, "Error: " + ctx["error"])
 		return
-
-	var data = _platformRows[platform]
 	_exportingPlatforms.append(platform)
 
 	# Initialize UI

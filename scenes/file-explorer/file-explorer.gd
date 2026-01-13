@@ -15,7 +15,6 @@ class_name AssetFinder
 @onready var _tipsDialog: AssetFinderTipsDialog = %TipsDialog
 @onready var _autoPlayCheckBox: CheckBox = %AutoPlayCheckBox
 @onready var _autoPlayAudioPlayer: AudioStreamPlayer = %AutoPlayAudioPlayer
-@onready var _filterOptionButton: OptionButton = %FilterOptionButton
 @onready var _audioToolbar: HBoxContainer = %AudioToolbar
 @onready var _volumeSlider: HSlider = %VolumeSlider
 @onready var _volumeValueLabel: Label = %VolumeValueLabel

@@ -22,6 +22,16 @@ static func GetCurrentDateAsDictionary() -> Dictionary:
 		# You can add seconds or other fields if needed
 	}
 
+# Returns date only in M/D/YYYY format (no time)
+static func GetDateOnlyAsString(dateTimeAsDictionary: Dictionary) -> String:
+	if dateTimeAsDictionary.is_empty():
+		return ""
+	return "%d/%d/%d" % [dateTimeAsDictionary.month, dateTimeAsDictionary.day, dateTimeAsDictionary.year]
+
+# Returns current date as string in M/D/YYYY format (no time)
+static func GetTodayAsString() -> String:
+	return GetDateOnlyAsString(GetCurrentDateAsDictionary())
+
 static func ConvertDateStringToDictionary(date_string : String) -> Variant:
 	if date_string == "":
 		return {}
