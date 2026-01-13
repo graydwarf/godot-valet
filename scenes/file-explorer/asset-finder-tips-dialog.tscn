@@ -93,6 +93,14 @@ Right-click on any folder and select \"Exclude from Search\" to skip it during d
 
 ---
 
+[b][color=#6bb8ff]Flat List Mode[/color][/b]
+
+Toggle the tree/list button to switch between tree view and flat list mode. Flat list shows all files in the current folder and subfolders as a single scrollable list - great for browsing large asset collections.
+
+[color=#ffcc66]Note:[/color] Load times will be longer for folders higher in the directory tree. Selecting a root drive can take a very long time depending on your disk size.
+
+---
+
 [b][color=#6bb8ff]Quick Navigation with Favorites[/color][/b]
 
 Press the star icon to add the current folder to your favorites. Use number keys 1-9 to quickly jump to favorites. Key 1 always navigates to your project folder.
@@ -107,13 +115,7 @@ Click the \".*\" button to enable regex search. Use patterns like \"player.*\\.p
 
 [b][color=#6bb8ff]Filter by Type[/color][/b]
 
-Use the Filter dropdown to quickly show only specific file types (Images, Sounds, Videos, etc.). Combined with Deep search, this lets you find all assets of a type across your entire folder structure.
-
----
-
-[b][color=#6bb8ff]Flat List Mode[/color][/b]
-
-Toggle the tree/list button to switch between tree view and flat list mode. Flat list shows all files in the current folder and subfolders as a single scrollable list - great for browsing large asset collections."
+Use the Filter dropdown to quickly show only specific file types (Images, Sounds, Videos, etc.). Combined with Deep search, this lets you find all assets of a type across your entire folder structure."
 fit_content = true
 
 [node name="ButtonSection" type="HBoxContainer" parent="BackgroundPanel/MainMargin/MainVBox"]

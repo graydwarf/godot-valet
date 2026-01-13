@@ -210,16 +210,12 @@ func _on_directory_selected(dirPath: String):
 	if _fileTreeViewExplorer.IsAudioFilterActive():
 		# Get all audio files from this directory
 		var audioFiles = _fileTreeViewExplorer.GetAudioFilesFromDirectory(dirPath)
+		# Always show sound player grid when audio filter is active (even if empty)
+		ShowSoundPlayerGrid(audioFiles)
 		if audioFiles.size() > 0:
-			# Load audio files in sound player grid
-			ShowSoundPlayerGrid(audioFiles)
 			%PathLabel.text = "%s (%d audio files)" % [dirPath, audioFiles.size()]
 		else:
-			# No audio files in directory
-			ShowFilePreviewer()
-			if _filePreviewer:
-				_filePreviewer.PreviewDirectory(dirPath)
-			%PathLabel.text = dirPath
+			%PathLabel.text = "%s (no audio files)" % dirPath
 	else:
 		# Normal directory preview
 		ShowFilePreviewer()

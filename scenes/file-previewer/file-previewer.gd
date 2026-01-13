@@ -125,7 +125,11 @@ func PreviewImage(filePath: String):
 		error = image.load(filePath)
 	
 	if error != OK:
-		ShowError("Failed to load image: " + filePath)
+		var errorMsg = "Failed to load image: " + filePath
+		# Check if path contains OneDrive - file might not be synced
+		if "OneDrive" in filePath:
+			errorMsg += "\n\nNote: This file is in a OneDrive folder. It may not be available until synced from the cloud."
+		ShowError(errorMsg)
 		return
 	
 	var texture = ImageTexture.create_from_image(image)
