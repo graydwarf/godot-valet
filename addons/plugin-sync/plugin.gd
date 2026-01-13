@@ -9,6 +9,7 @@ var _toolbar_button: MenuButton
 var _sync_menu: PopupMenu
 var _config: PluginSyncConfig
 var _sync_manager: PluginSyncManager
+var _cooldown_timer: Timer
 
 
 func _enter_tree() -> void:
@@ -26,16 +27,37 @@ func _enter_tree() -> void:
 	_sync_menu.sync_plugin_requested.connect(_on_sync_plugin_requested)
 	_sync_menu.open_config_requested.connect(_on_open_config_requested)
 
+	# Create cooldown timer
+	_cooldown_timer = Timer.new()
+	_cooldown_timer.one_shot = true
+	_cooldown_timer.timeout.connect(_on_cooldown_finished)
+	add_child(_cooldown_timer)
+
 	add_control_to_container(EditorPlugin.CONTAINER_TOOLBAR, _toolbar_button)
 
 	_RefreshConfig()
 
 
 func _exit_tree() -> void:
+	if _cooldown_timer:
+		_cooldown_timer.queue_free()
+		_cooldown_timer = null
 	if _toolbar_button:
 		remove_control_from_container(EditorPlugin.CONTAINER_TOOLBAR, _toolbar_button)
 		_toolbar_button.queue_free()
 		_toolbar_button = null
+
+
+func _StartCooldown() -> void:
+	var cooldown_sec := _sync_manager.SYNC_COOLDOWN_MS / 1000.0
+	_toolbar_button.disabled = true
+	_toolbar_button.text = "Sync Plugins (%.0fs)" % cooldown_sec
+	_cooldown_timer.start(cooldown_sec)
+
+
+func _on_cooldown_finished() -> void:
+	_toolbar_button.disabled = false
+	_toolbar_button.text = "Sync Plugins"
 
 
 func _RefreshConfig() -> void:
@@ -63,12 +85,7 @@ func _on_sync_all_requested() -> void:
 
 	var results := _sync_manager.SyncAllEnabled(_config)
 
-	# Reimport resource files to clear stale import cache
-	if results.resource_files.size() > 0:
-		var fs := EditorInterface.get_resource_filesystem()
-		fs.reimport_files(PackedStringArray(results.resource_files))
-
-	# Refresh filesystem
+	# Refresh filesystem - scan() will trigger reimports for modified files
 	EditorInterface.get_resource_filesystem().scan()
 
 	# Show notification
@@ -83,6 +100,8 @@ func _on_sync_all_requested() -> void:
 			print("[Plugin Sync] %s: %s" % [detail.name, detail.message])
 		else:
 			push_error("[Plugin Sync] %s: %s" % [detail.name, detail.message])
+
+	_StartCooldown()
 
 
 func _on_sync_plugin_requested(plugin_name: String) -> void:
@@ -99,17 +118,13 @@ func _on_sync_plugin_requested(plugin_name: String) -> void:
 
 	var result := _sync_manager.SyncPlugin(plugin, _config.exclude_patterns)
 
-	# Reimport resource files to clear stale import cache
-	if result.resource_files.size() > 0:
-		var fs := EditorInterface.get_resource_filesystem()
-		fs.reimport_files(PackedStringArray(result.resource_files))
-
-	# Refresh filesystem
+	# Refresh filesystem - scan() will trigger reimports for modified files
 	EditorInterface.get_resource_filesystem().scan()
 
 	if result.success:
 		_ShowNotification("Synced " + plugin_name, false)
 		print("[Plugin Sync] %s: %s" % [plugin_name, result.message])
+		_StartCooldown()
 	else:
 		_ShowNotification("Failed: " + plugin_name, true)
 		push_error("[Plugin Sync] %s: %s" % [plugin_name, result.message])

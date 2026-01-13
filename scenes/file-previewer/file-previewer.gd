@@ -2,6 +2,9 @@ extends Control
 
 # - Generated with assistance from Claude 4 Sonnet (Anthropic) - December 2024
 
+# SVG scaling: Rasterize at higher resolution for crisp display when zoomed
+const SVG_SCALE: float = 8.0
+
 # Supported file types for special preview modes
 var supportedImageFiles = ["png", "jpg", "jpeg", "bmp", "svg", "webp", "tga", "exr", "hdr"]
 var supportedArchiveFiles = ["zip", "rar", "7z", "tar", "gz"]
@@ -95,34 +98,45 @@ func PreviewImage(filePath: String):
 	ShowImageDisplay()
 	
 	if IsZipPath(filePath):
-		# Extract from zip and save to temporary file
+		# Extract from zip
 		var parts = filePath.split("::")
 		var zipPath = parts[0]
 		var internalPath = parts[1]
-		
+
 		var imageData = ExtractFileFromZip(zipPath, internalPath)
 		if imageData.size() == 0:
 			ShowError("Failed to extract image from zip: " + internalPath)
 			return
-		
-		# Create a temporary file
-		var tempFilePath = "user://temp_image_preview." + internalPath.get_extension()
-		var tempFile = FileAccess.open(tempFilePath, FileAccess.WRITE)
-		if tempFile == null:
-			ShowError("Failed to create temporary file for image preview")
-			return
-		
-		tempFile.store_buffer(imageData)
-		tempFile.close()
-		
-		# Load from temporary file
-		error = image.load(tempFilePath)
-		
-		# Clean up temporary file
-		DirAccess.remove_absolute(tempFilePath)
+
+		# Check if SVG - load from buffer with scaling
+		var tempExtension = internalPath.get_extension().to_lower()
+		if tempExtension == "svg":
+			error = image.load_svg_from_buffer(imageData, SVG_SCALE)
+		else:
+			# Non-SVG: write to temp file and load
+			var tempFilePath = "user://temp_image_preview." + tempExtension
+			var tempFile = FileAccess.open(tempFilePath, FileAccess.WRITE)
+			if tempFile == null:
+				ShowError("Failed to create temporary file for image preview")
+				return
+			tempFile.store_buffer(imageData)
+			tempFile.close()
+			error = image.load(tempFilePath)
+			DirAccess.remove_absolute(tempFilePath)
 	else:
 		# Load from regular file
-		error = image.load(filePath)
+		var extension = filePath.get_extension().to_lower()
+		if extension == "svg":
+			# Load SVG with scaling for crisp display
+			var file = FileAccess.open(filePath, FileAccess.READ)
+			if file:
+				var svg_data = file.get_buffer(file.get_length())
+				file.close()
+				error = image.load_svg_from_buffer(svg_data, SVG_SCALE)
+			else:
+				error = ERR_FILE_CANT_OPEN
+		else:
+			error = image.load(filePath)
 	
 	if error != OK:
 		var errorMsg = "Failed to load image: " + filePath

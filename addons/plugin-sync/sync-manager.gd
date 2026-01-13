@@ -6,11 +6,32 @@ signal sync_completed(plugin_name: String, success: bool, message: String)
 signal all_syncs_completed(success_count: int, fail_count: int)
 
 var _exclude_patterns: Array = []
+var _last_sync_time: int = 0
+const SYNC_COOLDOWN_MS: int = 2000  # Minimum time between syncs to let Godot finish reimporting
 
 
-func SyncPlugin(plugin: Dictionary, exclude_patterns: Array) -> Dictionary:
+# Returns seconds remaining in cooldown, or 0 if ready to sync
+func GetCooldownRemaining() -> float:
+	if _last_sync_time == 0:
+		return 0.0
+	var elapsed := Time.get_ticks_msec() - _last_sync_time
+	var remaining := SYNC_COOLDOWN_MS - elapsed
+	return max(0.0, remaining / 1000.0)
+
+
+func SyncPlugin(plugin: Dictionary, exclude_patterns: Array, skip_cooldown: bool = false) -> Dictionary:
 	_exclude_patterns = exclude_patterns
-	var result := {"success": false, "message": "", "files_copied": 0, "resource_files": []}
+	var result := {"success": false, "message": "", "files_copied": 0, "resource_files": [], "skipped": false}
+
+	# Check cooldown to prevent rapid syncs that confuse Godot's reimport system
+	if not skip_cooldown:
+		var current_time := Time.get_ticks_msec()
+		var time_since_last := current_time - _last_sync_time
+		if _last_sync_time > 0 and time_since_last < SYNC_COOLDOWN_MS:
+			var wait_time := (SYNC_COOLDOWN_MS - time_since_last) / 1000.0
+			result.message = "Cooldown: wait %.1f seconds" % wait_time
+			result.skipped = true
+			return result
 
 	var source_path: String = plugin.source
 	var plugin_name: String = plugin.name
@@ -43,19 +64,33 @@ func SyncPlugin(plugin: Dictionary, exclude_patterns: Array) -> Dictionary:
 
 
 func SyncAllEnabled(config: PluginSyncConfig) -> Dictionary:
-	var results := {"success_count": 0, "fail_count": 0, "details": [], "resource_files": []}
+	var results := {"success_count": 0, "fail_count": 0, "skipped_count": 0, "details": [], "resource_files": []}
+
+	# Check cooldown at batch level
+	var current_time := Time.get_ticks_msec()
+	var time_since_last := current_time - _last_sync_time
+	if _last_sync_time > 0 and time_since_last < SYNC_COOLDOWN_MS:
+		var wait_time := (SYNC_COOLDOWN_MS - time_since_last) / 1000.0
+		results.skipped_count = config.GetEnabledPlugins().size()
+		results.details.append({"name": "all", "success": false, "message": "Cooldown: wait %.1f seconds" % wait_time, "skipped": true})
+		return results
+
 	var enabled_plugins := config.GetEnabledPlugins()
 
 	for plugin in enabled_plugins:
-		var result := SyncPlugin(plugin, config.exclude_patterns)
+		var result := SyncPlugin(plugin, config.exclude_patterns, true)  # Skip per-plugin cooldown
 		var detail := {
 			"name": plugin.name,
 			"success": result.success,
-			"message": result.message
+			"message": result.message,
+			"skipped": result.get("skipped", false)
 		}
 		results.details.append(detail)
 
-		if result.success:
+		if result.get("skipped", false):
+			results.skipped_count += 1
+			sync_completed.emit(plugin.name, false, result.message)
+		elif result.success:
 			results.success_count += 1
 			results.resource_files.append_array(result.resource_files)
 			sync_completed.emit(plugin.name, true, result.message)
@@ -64,6 +99,7 @@ func SyncAllEnabled(config: PluginSyncConfig) -> Dictionary:
 			sync_completed.emit(plugin.name, false, result.message)
 
 	all_syncs_completed.emit(results.success_count, results.fail_count)
+	_last_sync_time = Time.get_ticks_msec()  # Update cooldown after batch completes
 	return results
 
 
@@ -110,10 +146,13 @@ func _RemoveDirectoryRecursive(dir_path: String) -> Dictionary:
 	return result
 
 
-# Resource file extensions that need reimporting
+# Resource file extensions that need reimporting (UIDs stored in .import files, not .uid files)
 const RESOURCE_EXTENSIONS := [".svg", ".png", ".jpg", ".jpeg", ".webp", ".tga", ".bmp",
 	".wav", ".ogg", ".mp3", ".ttf", ".otf", ".woff", ".woff2",
 	".obj", ".gltf", ".glb", ".fbx", ".dae"]
+
+# Scene/resource files that may contain ext_resource UID references
+const SCENE_EXTENSIONS := [".tscn", ".tres"]
 
 func _CopyDirectoryRecursive(source: String, dest: String, res_prefix: String = "") -> Dictionary:
 	var result := {"success": false, "message": "", "files_copied": 0, "resource_files": []}
@@ -147,7 +186,12 @@ func _CopyDirectoryRecursive(source: String, dest: String, res_prefix: String = 
 					result.files_copied += sub_result.files_copied
 					result.resource_files.append_array(sub_result.resource_files)
 				else:
-					var copy_err := dir.copy(source_path, dest_path)
+					# Copy file (with UID stripping for scene files)
+					var copy_err: Error
+					if _IsSceneFile(file_name):
+						copy_err = _CopyAndProcessSceneFile(source_path, dest_path)
+					else:
+						copy_err = dir.copy(source_path, dest_path)
 					if copy_err != OK:
 						result.message = "Failed to copy: " + file_name
 						dir.list_dir_end()
@@ -197,3 +241,90 @@ func _MatchesPattern(file_name: String, pattern: String) -> bool:
 			return true
 
 	return false
+
+
+func _IsSceneFile(file_name: String) -> bool:
+	var lower_name := file_name.to_lower()
+	for ext in SCENE_EXTENSIONS:
+		if lower_name.ends_with(ext):
+			return true
+	return false
+
+
+# Copy a scene/resource file while stripping UIDs for imported assets
+func _CopyAndProcessSceneFile(source_path: String, dest_path: String) -> Error:
+	var file := FileAccess.open(source_path, FileAccess.READ)
+	if not file:
+		return ERR_FILE_CANT_OPEN
+
+	var content := file.get_as_text()
+	file.close()
+	file = null  # Explicitly release
+
+	var processed_content := _StripImportedAssetUIDs(content)
+
+	var out_file := FileAccess.open(dest_path, FileAccess.WRITE)
+	if not out_file:
+		return ERR_FILE_CANT_WRITE
+
+	out_file.store_string(processed_content)
+	out_file.flush()  # Ensure written to disk
+	out_file.close()
+	out_file = null  # Explicitly release
+	return OK
+
+
+# Strip uid="uid://xxx" from ext_resource lines that reference imported assets.
+# Imported assets (.png, .svg, etc.) have UIDs in .import files which aren't synced,
+# so these UID references would cause mismatch warnings in the destination project.
+func _StripImportedAssetUIDs(content: String) -> String:
+	var lines := content.split("\n")
+	var result_lines := PackedStringArray()
+
+	for line in lines:
+		if line.begins_with("[ext_resource") and _LineReferencesImportedAsset(line):
+			line = _RemoveUIDFromLine(line)
+		result_lines.append(line)
+
+	return "\n".join(result_lines)
+
+
+# Check if an ext_resource line references an imported asset type
+func _LineReferencesImportedAsset(line: String) -> bool:
+	var path_start := line.find('path="')
+	if path_start == -1:
+		return false
+
+	var path_content_start := path_start + 6  # len('path="')
+	var path_end := line.find('"', path_content_start)
+	if path_end == -1:
+		return false
+
+	var resource_path := line.substr(path_content_start, path_end - path_content_start)
+	var lower_path := resource_path.to_lower()
+
+	for ext in RESOURCE_EXTENSIONS:
+		if lower_path.ends_with(ext):
+			return true
+	return false
+
+
+# Remove uid="uid://..." from a line
+func _RemoveUIDFromLine(line: String) -> String:
+	var uid_start := line.find('uid="uid://')
+	if uid_start == -1:
+		return line
+
+	var uid_content_start := uid_start + 5  # len('uid="')
+	var uid_end := line.find('"', uid_content_start)
+	if uid_end == -1:
+		return line
+
+	var before := line.substr(0, uid_start)
+	var after := line.substr(uid_end + 1)
+
+	# Clean up extra space
+	if after.begins_with(" "):
+		after = after.substr(1)
+
+	return before + after
