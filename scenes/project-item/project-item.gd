@@ -316,7 +316,66 @@ func GetAvailableExportPresets() -> Array[String]:
 				presets.append(presetName)
 
 	return presets
-	
+
+# Returns include_filter and exclude_filter for a specific export preset
+func GetExportPresetFilters(presetName: String) -> Dictionary:
+	var result = {"include_filter": "", "exclude_filter": ""}
+	var projectDir = _projectPath.get_base_dir()
+	var presetsPath = projectDir.path_join("export_presets.cfg")
+
+	if not FileAccess.file_exists(presetsPath):
+		return result
+
+	var config = ConfigFile.new()
+	var err = config.load(presetsPath)
+	if err != OK:
+		print("Error loading export_presets.cfg: ", err)
+		return result
+
+	# Find the preset section matching the name
+	var sections = config.get_sections()
+	for section in sections:
+		if section.begins_with("preset.") and not section.contains(".options"):
+			var name = config.get_value(section, "name", "")
+			if name == presetName:
+				result["include_filter"] = config.get_value(section, "include_filter", "")
+				result["exclude_filter"] = config.get_value(section, "exclude_filter", "")
+				break
+
+	return result
+
+# Sets include_filter and exclude_filter for a specific export preset
+func SetExportPresetFilters(presetName: String, includeFilter: String, excludeFilter: String) -> bool:
+	var projectDir = _projectPath.get_base_dir()
+	var presetsPath = projectDir.path_join("export_presets.cfg")
+
+	if not FileAccess.file_exists(presetsPath):
+		print("export_presets.cfg not found")
+		return false
+
+	var config = ConfigFile.new()
+	var err = config.load(presetsPath)
+	if err != OK:
+		print("Error loading export_presets.cfg: ", err)
+		return false
+
+	# Find the preset section matching the name
+	var sections = config.get_sections()
+	for section in sections:
+		if section.begins_with("preset.") and not section.contains(".options"):
+			var name = config.get_value(section, "name", "")
+			if name == presetName:
+				config.set_value(section, "include_filter", includeFilter)
+				config.set_value(section, "exclude_filter", excludeFilter)
+				err = config.save(presetsPath)
+				if err != OK:
+					print("Error saving export_presets.cfg: ", err)
+					return false
+				return true
+
+	print("Preset not found: ", presetName)
+	return false
+
 func GetProjectPathWithProjectFile():
 	return _projectPath
 

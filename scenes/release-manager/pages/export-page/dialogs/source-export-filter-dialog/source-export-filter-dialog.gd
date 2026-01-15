@@ -21,24 +21,37 @@ signal cancelled()
 @onready var _projectFilesTab = %ProjectFilesTab
 @onready var _excludePatternsTab = %ExcludePatternsTab
 @onready var _additionalFilesTab = %AdditionalFilesTab
+@onready var _tabButtonsContainer = %TabButtons
 
 # Cards
 @onready var _projectTreeCard = %ProjectTreeCard
 @onready var _excludePatternsCard = %ExcludePatternsCard
 @onready var _additionalFilesCard = %AdditionalFilesCard
+@onready var _cardContainer = %CardContainer
+
+# Dynamic nodes (created for binary platforms)
+var _includePatternsTab: Button = null
+var _includePatternsCard: PanelContainer = null
+var _includePatternsList: VBoxContainer = null
+var _addIncludePatternButton: Button = null
+var _includePatternsHelpButton: Button = null
 
 # State
 var _platform: String = ""
 var _projectPath: String = ""
 var _excludePatterns: Array[String] = []
+var _includePatterns: Array[String] = []  # For binary exports (from export_presets.cfg)
 var _additionalFiles: Array[Dictionary] = []  # [{source: "", target: ""}]
 var _treeExpanded: bool = false
-var _currentTab: int = 0  # 0=Project Files, 1=Exclude Patterns, 2=Additional Files
+var _currentTab: int = 0  # 0=Project Files/Include Patterns, 1=Exclude Patterns, 2=Additional Files
 var _isDirty: bool = false  # Track unsaved changes
 var _lastSavedConfig: Dictionary = {}  # Track last saved state for comparison
 var _initialExcludePatterns: Array[String] = []  # Original patterns when dialog opened
+var _initialIncludePatterns: Array[String] = []  # Original include patterns when dialog opened
 var _initialAdditionalFiles: Array[Dictionary] = []  # Original files when dialog opened
 var _initialExcludedPaths: Array[String] = []  # Original excluded paths when dialog opened
+var _projectItem = null  # Reference to ProjectItem for reading/writing export_presets.cfg
+var _isBinaryPlatform: bool = false  # True for Windows, Linux, etc. False for Source
 
 # Checkbox icons
 var _iconChecked: Texture2D
@@ -83,6 +96,20 @@ Use this to bundle external assets, documentation, or dependencies with your Sou
 - Target: Where to place it in the export (relative to export root)
 
 For example, add a README.txt from your documents folder to appear at the root of your exported source."""
+
+const INCLUDE_PATTERNS_HELP_TEXT = """Add patterns to include non-resource files in the exported binary.
+
+By default, Godot only includes recognized resources (images, scenes, scripts, etc.) in the .pck file. Use this to include additional files like:
+- *.sql - SQL migration files
+- *.json - JSON data files
+- data/* - Entire data folder
+
+Examples:
+- *.sql - Include all .sql files
+- supabase-migrations/* - Include the supabase-migrations folder
+- *.json, *.xml - Multiple patterns
+
+These files will be accessible via res:// at runtime."""
 
 func _ready():
 	visible = false
@@ -211,12 +238,18 @@ func _on_busy_animation_tick() -> void:
 	_busy_spinner.text = _spinner_frames[_spinner_frame_index]
 
 # Open dialog for a specific platform with current settings
-func openForPlatform(platform: String, projectPath: String, currentConfig: Dictionary):
+# projectItem is optional - needed for binary platforms to read/write export_presets.cfg
+func openForPlatform(platform: String, projectPath: String, currentConfig: Dictionary, projectItem = null):
 	_platform = platform
 	_projectPath = projectPath
+	_projectItem = projectItem
+	_isBinaryPlatform = (platform != "Source")
 
 	# Update UI
 	_platformLabel.text = "Platform: " + platform
+
+	# Set up platform-specific UI
+	_setupPlatformUI()
 
 	# Load existing config
 	# WORKAROUND: Create NEW array to avoid GDScript iteration bug with Dictionary.get() arrays
@@ -235,13 +268,14 @@ func openForPlatform(platform: String, projectPath: String, currentConfig: Dicti
 	for pattern in patterns:
 		_excludePatterns.append(pattern)
 
-	# Load excluded paths (same workaround for GDScript bug)
-	var excludedPathsRaw = currentConfig.get("excluded_paths", [])
+	# Load excluded paths (same workaround for GDScript bug) - only for Source
 	var excludedPaths: Array[String] = []
-	for i in range(excludedPathsRaw.size()):
-		var item = excludedPathsRaw[i]
-		if item is String:
-			excludedPaths.append(item)
+	if not _isBinaryPlatform:
+		var excludedPathsRaw = currentConfig.get("excluded_paths", [])
+		for i in range(excludedPathsRaw.size()):
+			var item = excludedPathsRaw[i]
+			if item is String:
+				excludedPaths.append(item)
 
 	var files = currentConfig.get("additional_files", [])
 	_additionalFiles.clear()
@@ -250,12 +284,27 @@ func openForPlatform(platform: String, projectPath: String, currentConfig: Dicti
 		if file is Dictionary:
 			_additionalFiles.append(file)
 
-	# Apply default exclude patterns if this is first time (no config)
+	# For binary platforms, load include patterns from export_presets.cfg
+	# (exclude patterns still come from godot-valet config, same as Source)
+	_includePatterns.clear()
+	if _isBinaryPlatform and _projectItem != null:
+		var presetFilters = _projectItem.GetExportPresetFilters(platform)
+		var includeFilterStr = presetFilters.get("include_filter", "")
+
+		# Parse comma-separated patterns
+		if includeFilterStr != "":
+			for p in includeFilterStr.split(","):
+				var trimmed = p.strip_edges()
+				if trimmed != "":
+					_includePatterns.append(trimmed)
+
+	# Apply default exclude patterns if this is first time (no config) - all platforms
 	if _excludePatterns.is_empty() and currentConfig.is_empty():
 		_excludePatterns = _getDefaultExcludePatterns()
 
 	# Store initial state for discard/reset
 	_initialExcludePatterns = _excludePatterns.duplicate()
+	_initialIncludePatterns = _includePatterns.duplicate()
 	_initialAdditionalFiles = _additionalFiles.duplicate(true)
 	_initialExcludedPaths = excludedPaths.duplicate()
 	_isDirty = false
@@ -271,8 +320,13 @@ func openForPlatform(platform: String, projectPath: String, currentConfig: Dicti
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-	# NOW build tree after it's properly sized
-	_buildProjectTree()
+	# Build appropriate UI based on platform
+	if _isBinaryPlatform:
+		# Build include patterns UI for binary
+		_buildIncludePatternsUI()
+	else:
+		# Build tree for Source
+		_buildProjectTree()
 
 	# Apply tree colors AFTER card styling to ensure they're not overridden
 	_applyTreeColors()
@@ -288,6 +342,227 @@ func openForPlatform(platform: String, projectPath: String, currentConfig: Dicti
 
 	# Build additional files UI
 	_buildAdditionalFilesUI()
+
+	# Switch to first appropriate tab
+	if _isBinaryPlatform:
+		_switchToTab(0)  # Include Patterns tab
+	else:
+		_switchToTab(0)  # Project Files tab
+
+# Set up platform-specific UI elements
+func _setupPlatformUI():
+	print("_setupPlatformUI called")
+	print("  _platform: ", _platform)
+	print("  _isBinaryPlatform: ", _isBinaryPlatform)
+
+	# Reset current tab to ensure clean state
+	_currentTab = 0
+
+	# First, hide ALL cards to start fresh
+	if _projectTreeCard:
+		_projectTreeCard.visible = false
+	if _excludePatternsCard:
+		_excludePatternsCard.visible = false
+	if _additionalFilesCard:
+		_additionalFilesCard.visible = false
+	if _includePatternsCard:
+		_includePatternsCard.visible = false
+
+	if _isBinaryPlatform:
+		# Hide Project Files tab (not relevant for binary exports)
+		if _projectFilesTab:
+			_projectFilesTab.visible = false
+
+		# Create Include Patterns tab if not exists
+		_ensureIncludePatternsUI()
+
+		# Show Include Patterns tab (card will be shown by _switchToTab)
+		if _includePatternsTab:
+			_includePatternsTab.visible = true
+	else:
+		# Source platform - show Project Files tab
+		if _projectFilesTab:
+			_projectFilesTab.visible = true
+
+		# Hide Include Patterns tab if it exists
+		if _includePatternsTab:
+			_includePatternsTab.visible = false
+
+# Create Include Patterns tab and card if they don't exist
+func _ensureIncludePatternsUI():
+	if _includePatternsTab != null:
+		return  # Already created
+
+	print("Creating Include Patterns UI...")
+	print("  _tabButtonsContainer: ", _tabButtonsContainer)
+	print("  _cardContainer: ", _cardContainer)
+
+	# Create tab button
+	_includePatternsTab = Button.new()
+	_includePatternsTab.text = "Include Patterns"
+	_includePatternsTab.custom_minimum_size = Vector2(150, 36)
+	_includePatternsTab.pressed.connect(_onTabPressed.bind(0))
+
+	# Insert at the beginning of tab buttons
+	if _tabButtonsContainer:
+		_tabButtonsContainer.add_child(_includePatternsTab)
+		_tabButtonsContainer.move_child(_includePatternsTab, 0)
+		print("  Added tab to container")
+	else:
+		print("  ERROR: _tabButtonsContainer is null!")
+
+	# Create card (similar to Exclude Patterns card)
+	_includePatternsCard = PanelContainer.new()
+	_includePatternsCard.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_includePatternsCard.visible = false
+
+	var content = VBoxContainer.new()
+	content.add_theme_constant_override("separation", 0)
+	_includePatternsCard.add_child(content)
+
+	# Header
+	var header = PanelContainer.new()
+	content.add_child(header)
+
+	var headerMargin = MarginContainer.new()
+	headerMargin.add_theme_constant_override("margin_left", 10)
+	headerMargin.add_theme_constant_override("margin_top", 10)
+	headerMargin.add_theme_constant_override("margin_right", 10)
+	headerMargin.add_theme_constant_override("margin_bottom", 10)
+	header.add_child(headerMargin)
+
+	var headerRow = HBoxContainer.new()
+	headerRow.add_theme_constant_override("separation", 8)
+	headerMargin.add_child(headerRow)
+
+	var headerLabel = Label.new()
+	headerLabel.text = "Include Patterns"
+	headerLabel.add_theme_font_size_override("font_size", 16)
+	headerLabel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	headerRow.add_child(headerLabel)
+
+	_addIncludePatternButton = Button.new()
+	_addIncludePatternButton.text = "+ Add Pattern"
+	_addIncludePatternButton.custom_minimum_size = Vector2(150, 0)
+	_addIncludePatternButton.pressed.connect(_onAddIncludePatternPressed)
+	headerRow.add_child(_addIncludePatternButton)
+
+	_includePatternsHelpButton = Button.new()
+	_includePatternsHelpButton.text = "?"
+	_includePatternsHelpButton.custom_minimum_size = Vector2(32, 0)
+	_includePatternsHelpButton.focus_mode = Control.FOCUS_NONE
+	_includePatternsHelpButton.pressed.connect(_onIncludePatternsHelpPressed)
+	headerRow.add_child(_includePatternsHelpButton)
+
+	# Content panel
+	var contentPanel = PanelContainer.new()
+	contentPanel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_child(contentPanel)
+
+	var contentMargin = MarginContainer.new()
+	contentMargin.add_theme_constant_override("margin_left", 10)
+	contentMargin.add_theme_constant_override("margin_top", 10)
+	contentMargin.add_theme_constant_override("margin_right", 10)
+	contentMargin.add_theme_constant_override("margin_bottom", 10)
+	contentPanel.add_child(contentMargin)
+
+	var patternsVBox = VBoxContainer.new()
+	patternsVBox.add_theme_constant_override("separation", 8)
+	contentMargin.add_child(patternsVBox)
+
+	var scrollContainer = ScrollContainer.new()
+	scrollContainer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	patternsVBox.add_child(scrollContainer)
+
+	_includePatternsList = VBoxContainer.new()
+	_includePatternsList.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_includePatternsList.add_theme_constant_override("separation", 4)
+	scrollContainer.add_child(_includePatternsList)
+
+	# Add card to container
+	if _cardContainer:
+		_cardContainer.add_child(_includePatternsCard)
+		print("  Added card to container")
+	else:
+		print("  ERROR: _cardContainer is null!")
+
+	# Apply card styling
+	_applyCardStyling()
+	print("  Include Patterns UI created successfully")
+
+# Build the include patterns list UI
+func _buildIncludePatternsUI():
+	if not _includePatternsList:
+		return
+
+	# Clear existing patterns
+	for child in _includePatternsList.get_children():
+		child.queue_free()
+
+	# Add each pattern as a row
+	for pattern in _includePatterns:
+		_addIncludePatternRow(pattern)
+
+	# Update header count
+	_updateIncludeCount()
+
+func _addIncludePatternRow(pattern: String):
+	if not _includePatternsList:
+		return
+
+	var row = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+
+	var patternEdit = LineEdit.new()
+	patternEdit.text = pattern
+	patternEdit.placeholder_text = "e.g., *.sql, data/*, *.json"
+	patternEdit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	patternEdit.editable = true
+	patternEdit.text_changed.connect(_onIncludePatternTextChanged.bind(patternEdit))
+	row.add_child(patternEdit)
+
+	var removeButton = Button.new()
+	removeButton.text = "Remove"
+	removeButton.custom_minimum_size = Vector2(80, 0)
+	removeButton.pressed.connect(_onRemoveIncludePatternPressed.bind(row))
+	row.add_child(removeButton)
+
+	_includePatternsList.add_child(row)
+
+func _updateIncludeCount():
+	# Update the header label with pattern count (if we had a label reference)
+	pass
+
+func _onAddIncludePatternPressed():
+	# Add empty pattern that user can edit
+	_includePatterns.append("")
+	_addIncludePatternRow("")
+	_isDirty = true
+
+func _onIncludePatternTextChanged(newText: String, patternEdit: LineEdit):
+	# Find which row this LineEdit belongs to by finding it in the patterns list
+	var row = patternEdit.get_parent() as HBoxContainer
+	if not row:
+		return
+
+	# Find the index of this row in the patterns list
+	var rowIndex = row.get_index()
+	if rowIndex >= 0 and rowIndex < _includePatterns.size():
+		_includePatterns[rowIndex] = newText
+		_isDirty = true
+
+func _onRemoveIncludePatternPressed(row: HBoxContainer):
+	# Find which pattern this row represents
+	var patternEdit = row.get_child(0) as LineEdit
+	if patternEdit:
+		var pattern = patternEdit.text
+		_includePatterns.erase(pattern)
+		row.queue_free()
+		_updateIncludeCount()
+		_isDirty = true
+
+func _onIncludePatternsHelpPressed():
+	_showHelpDialog("Include Patterns", INCLUDE_PATTERNS_HELP_TEXT)
 
 func _applyExcludedPathsToTree(excludedPaths: Array[String]):
 	if excludedPaths.is_empty():
@@ -921,6 +1196,50 @@ func _updateAdditionalFilesCount():
 	pass
 
 func _onSavePressed():
+	if _isBinaryPlatform:
+		# For binary platforms, save include/exclude patterns to export_presets.cfg
+		_saveBinaryPlatformFilters()
+	else:
+		# For Source platform, use existing behavior
+		_saveSourcePlatformFilters()
+
+func _saveBinaryPlatformFilters():
+	# Convert include patterns array to comma-separated string
+	var includeFilterStr = ", ".join(_includePatterns)
+
+	# Save include patterns to export_presets.cfg (this is what Godot uses for non-resource files)
+	# Note: We don't save exclude patterns to export_presets.cfg - those stay in godot-valet config
+	if _projectItem != null:
+		# Get current exclude_filter from export_presets.cfg (don't overwrite it)
+		var currentFilters = _projectItem.GetExportPresetFilters(_platform)
+		var currentExcludeFilter = currentFilters.get("exclude_filter", "")
+
+		var success = _projectItem.SetExportPresetFilters(_platform, includeFilterStr, currentExcludeFilter)
+		if success:
+			print("Saved include patterns to export_presets.cfg for ", _platform)
+		else:
+			print("Failed to save include patterns for ", _platform)
+
+	# Build config dictionary (exclude patterns saved via signal, same as Source)
+	var config = {
+		"excluded_paths": [],  # Not used for binary (no tree)
+		"exclude_patterns": _excludePatterns,  # Saved to godot-valet config
+		"additional_files": _additionalFiles
+	}
+
+	# Emit signal to save exclude patterns and additional files
+	settings_saved.emit(_platform, config)
+
+	# Clear dirty state after save
+	_isDirty = false
+	_lastSavedConfig = config.duplicate(true)
+
+	# Update initial state so discard will reset to this saved state
+	_initialIncludePatterns = _includePatterns.duplicate()
+	_initialExcludePatterns = _excludePatterns.duplicate()
+	_initialAdditionalFiles = _additionalFiles.duplicate(true)
+
+func _saveSourcePlatformFilters():
 	# Collect all unchecked paths from tree
 	var excludedPaths: Array[String] = []
 	_collectUncheckedPaths(_tree.get_root(), excludedPaths)
@@ -1125,12 +1444,21 @@ func _switchToTab(tabIndex: int):
 		_excludePatternsCard.visible = false
 	if _additionalFilesCard:
 		_additionalFilesCard.visible = false
+	if _includePatternsCard:
+		_includePatternsCard.visible = false
 
-	# Show selected card
+	# Show selected card based on tab index and platform type
+	# Tab 0: Project Files (Source) or Include Patterns (Binary)
+	# Tab 1: Exclude Patterns
+	# Tab 2: Additional Files
 	match tabIndex:
 		0:
-			if _projectTreeCard:
-				_projectTreeCard.visible = true
+			if _isBinaryPlatform:
+				if _includePatternsCard:
+					_includePatternsCard.visible = true
+			else:
+				if _projectTreeCard:
+					_projectTreeCard.visible = true
 			_updateTabButtonStates(0)
 		1:
 			if _excludePatternsCard:
@@ -1143,10 +1471,16 @@ func _switchToTab(tabIndex: int):
 
 func _updateTabButtonStates(activeIndex: int):
 	# Update button appearances to show which tab is active
-	var buttons = [_projectFilesTab, _excludePatternsTab, _additionalFilesTab]
+	# For binary: [Include Patterns, Exclude Patterns, Additional Files]
+	# For source: [Project Files, Exclude Patterns, Additional Files]
+	var buttons: Array = []
+	if _isBinaryPlatform:
+		buttons = [_includePatternsTab, _excludePatternsTab, _additionalFilesTab]
+	else:
+		buttons = [_projectFilesTab, _excludePatternsTab, _additionalFilesTab]
 
 	for i in range(buttons.size()):
-		if buttons[i]:
+		if buttons[i] and buttons[i].visible:
 			if i == activeIndex:
 				# Active tab: white border
 				var activeStyle = StyleBoxFlat.new()

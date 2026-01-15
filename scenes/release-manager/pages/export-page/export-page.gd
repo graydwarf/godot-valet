@@ -205,11 +205,6 @@ func _loadPlatformSettings():
 			# Update export path display with template
 			_updateExportPathDisplay(platform)
 
-			# Restore filter config (include/exclude settings)
-			if settings.has("filterConfig"):
-				_platformFilterConfigs[platform] = settings["filterConfig"]
-				_updateIncludeExcludeDisplay(platform, settings["filterConfig"])
-
 			# Restore export options
 			var exportType = settings.get("exportType", 0)  # Default: Release
 			var packageType = settings.get("packageType", 0)  # Default: No Zip
@@ -1022,8 +1017,8 @@ func _onIncludeExcludeConfigPressed(platform: String):
 		root.add_child(_filterDialog)
 		_filterDialog.z_index = 100  # Ensure it's on top
 
-	# Open dialog
-	_filterDialog.openForPlatform(platform, projectPath, currentConfig)
+	# Open dialog (pass project item for binary platform export_presets.cfg access)
+	_filterDialog.openForPlatform(platform, projectPath, currentConfig, _selectedProjectItem)
 	_filterDialog.move_to_front()
 
 	# Hide loading overlay after dialog is shown
