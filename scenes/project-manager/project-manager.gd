@@ -387,8 +387,13 @@ func StartProjectThread():
 func EditProject():
 	if !is_instance_valid(_selectedProjectItem):
 		return
-		
+
 	var projectFile = _selectedProjectItem.GetProjectPath()
+
+	# Normalize path - ensure it ends with project.godot
+	if projectFile != null and not projectFile.ends_with("project.godot"):
+		projectFile = projectFile.path_join("project.godot")
+
 	if projectFile == null || !FileAccess.file_exists(projectFile):
 		OS.alert("Did not find a project (.godot) file in the specified project path")
 		return
