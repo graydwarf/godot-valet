@@ -19,6 +19,8 @@ var _sortType = Enums.SortByType.EditedDate
 var _claudeCodeLaunchCommand = "claude --permission-mode plan"
 var _claudeCodeButtonEnabled = true
 var _claudeApiChatButtonEnabled = false
+var _claudeMonitorLaunchCommand = "%USERPROFILE%\\AppData\\Roaming\\Python\\Python313\\Scripts\\claude-monitor.exe"
+var _claudeMonitorButtonEnabled = false
 var _disclaimerAccepted = false
 var _imagePreviewBackgroundColor = Color(0.15, 0.15, 0.15, 1.0)
 
@@ -87,6 +89,23 @@ func GetClaudeApiChatButtonEnabled():
 
 func SetClaudeApiChatButtonEnabled(value):
 	_claudeApiChatButtonEnabled = value
+	SaveSolutionSettings()
+
+func GetClaudeMonitorLaunchCommand():
+	return _claudeMonitorLaunchCommand
+
+func SetClaudeMonitorLaunchCommand(value):
+	_claudeMonitorLaunchCommand = value
+	SaveSolutionSettings()
+
+func GetDefaultClaudeMonitorLaunchCommand():
+	return "%USERPROFILE%\\AppData\\Roaming\\Python\\Python313\\Scripts\\claude-monitor.exe"
+
+func GetClaudeMonitorButtonEnabled():
+	return _claudeMonitorButtonEnabled
+
+func SetClaudeMonitorButtonEnabled(value):
+	_claudeMonitorButtonEnabled = value
 	SaveSolutionSettings()
 
 func GetDisclaimerAccepted():
@@ -184,6 +203,8 @@ func LoadSavedSolutionSettings():
 		_claudeCodeLaunchCommand = config.get_value("SolutionSettings", "claude_code_launch_command", GetDefaultClaudeCodeLaunchCommand())
 		_claudeCodeButtonEnabled = config.get_value("SolutionSettings", "claude_code_button_enabled", true)
 		_claudeApiChatButtonEnabled = config.get_value("SolutionSettings", "claude_api_chat_button_enabled", false)
+		_claudeMonitorLaunchCommand = config.get_value("SolutionSettings", "claude_monitor_launch_command", GetDefaultClaudeMonitorLaunchCommand())
+		_claudeMonitorButtonEnabled = config.get_value("SolutionSettings", "claude_monitor_button_enabled", false)
 		_disclaimerAccepted = config.get_value("SolutionSettings", "disclaimer_accepted", false)
 		_imagePreviewBackgroundColor = config.get_value("SolutionSettings", "image_preview_background_color", Color(0.15, 0.15, 0.15, 1.0))
 		# Code Quality Settings
@@ -205,6 +226,8 @@ func SaveSolutionSettings():
 	config.set_value("SolutionSettings", "claude_code_launch_command", _claudeCodeLaunchCommand)
 	config.set_value("SolutionSettings", "claude_code_button_enabled", _claudeCodeButtonEnabled)
 	config.set_value("SolutionSettings", "claude_api_chat_button_enabled", _claudeApiChatButtonEnabled)
+	config.set_value("SolutionSettings", "claude_monitor_launch_command", _claudeMonitorLaunchCommand)
+	config.set_value("SolutionSettings", "claude_monitor_button_enabled", _claudeMonitorButtonEnabled)
 	config.set_value("SolutionSettings", "disclaimer_accepted", _disclaimerAccepted)
 	config.set_value("SolutionSettings", "image_preview_background_color", _imagePreviewBackgroundColor)
 	# Code Quality Settings

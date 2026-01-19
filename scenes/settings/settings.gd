@@ -1,5 +1,7 @@
 extends Panel
 
+const CLAUDE_CONFIG_FILE = "user://claude-settings.cfg"
+
 func _ready():
 	InitSignals()
 	LoadTheme()
@@ -7,6 +9,9 @@ func _ready():
 	LoadClaudeCodeCommand()
 	LoadClaudeCodeButtonEnabled()
 	LoadClaudeApiChatButtonEnabled()
+	LoadClaudeApiChatSettings()
+	LoadClaudeMonitorCommand()
+	LoadClaudeMonitorButtonEnabled()
 
 func InitSignals():
 	Signals.connect("BackgroundColorTemporarilyChanged", BackgroundColorTemporarilyChanged)
@@ -59,8 +64,65 @@ func _on_claude_api_chat_enabled_check_box_toggled(toggled_on: bool):
 	App.SetClaudeApiChatButtonEnabled(toggled_on)
 	Signals.emit_signal("ClaudeApiChatButtonEnabledChanged", toggled_on)
 
+func LoadClaudeApiChatSettings():
+	if not FileAccess.file_exists(CLAUDE_CONFIG_FILE):
+		return
+
+	var config = ConfigFile.new()
+	var err = config.load(CLAUDE_CONFIG_FILE)
+	if err == OK:
+		%ClaudeApiKeyLineEdit.text = config.get_value("ClaudeSettings", "api_key", "")
+		%ClaudeApiSaveLocallyCheckBox.button_pressed = config.get_value("ClaudeSettings", "save_key_locally", false)
+		%ClaudeApiMaxMessagesLineEdit.text = str(config.get_value("ClaudeSettings", "max_message_count", 20))
+
+func SaveClaudeApiChatSettings():
+	var config = ConfigFile.new()
+
+	if FileAccess.file_exists(CLAUDE_CONFIG_FILE):
+		config.load(CLAUDE_CONFIG_FILE)
+
+	var save_locally = %ClaudeApiSaveLocallyCheckBox.button_pressed
+	if save_locally:
+		config.set_value("ClaudeSettings", "api_key", %ClaudeApiKeyLineEdit.text)
+	else:
+		config.set_value("ClaudeSettings", "api_key", "")
+
+	config.set_value("ClaudeSettings", "save_key_locally", save_locally)
+
+	var max_messages = %ClaudeApiMaxMessagesLineEdit.text
+	if max_messages.is_valid_int():
+		var max_val = max_messages.to_int()
+		if max_val >= 1:
+			config.set_value("ClaudeSettings", "max_message_count", max_val)
+
+	config.save(CLAUDE_CONFIG_FILE)
+
+func LoadClaudeMonitorCommand():
+	%ClaudeMonitorLineEdit.text = App.GetClaudeMonitorLaunchCommand()
+
+func LoadClaudeMonitorButtonEnabled():
+	%ClaudeMonitorEnabledCheckBox.button_pressed = App.GetClaudeMonitorButtonEnabled()
+
+func SaveClaudeMonitorCommand():
+	var command = %ClaudeMonitorLineEdit.text.strip_edges()
+	if command.is_empty():
+		command = App.GetDefaultClaudeMonitorLaunchCommand()
+	App.SetClaudeMonitorLaunchCommand(command)
+
+func _on_claude_monitor_reset_button_pressed():
+	%ClaudeMonitorLineEdit.text = App.GetDefaultClaudeMonitorLaunchCommand()
+
+func _on_claude_monitor_enabled_check_box_toggled(toggled_on: bool):
+	App.SetClaudeMonitorButtonEnabled(toggled_on)
+	Signals.emit_signal("ClaudeMonitorButtonEnabledChanged", toggled_on)
+
+func _on_claude_monitor_github_button_pressed():
+	OS.shell_open("https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor")
+
 func _on_close_button_pressed():
 	SaveClaudeCodeCommand()
+	SaveClaudeApiChatSettings()
+	SaveClaudeMonitorCommand()
 	App.SaveSolutionSettings()
 	Signals.emit_signal("BackgroundColorChanged", App.GetBackgroundColor())
 	queue_free()

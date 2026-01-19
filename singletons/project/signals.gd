@@ -24,3 +24,4 @@ signal BackgroundColorChanged
 signal BackgroundColorTemporarilyChanged
 signal ClaudeCodeButtonEnabledChanged
 signal ClaudeApiChatButtonEnabledChanged
+signal ClaudeMonitorButtonEnabledChanged

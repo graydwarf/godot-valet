@@ -134,7 +134,7 @@ autowrap_mode = 3
 layout_mode = 2
 
 [node name="MarginContainer2" type="MarginContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 48)
+custom_minimum_size = Vector2(0, 140)
 layout_mode = 2
 theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 4
@@ -152,7 +152,124 @@ focus_mode = 0
 mouse_default_cursor_shape = 2
 text = "Enable Claude API Chat Button"
 
+[node name="MarginContainer5" type="MarginContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer2/VBoxContainer2"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+
+[node name="VBoxContainer5" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer2/VBoxContainer2/MarginContainer5"]
+layout_mode = 2
+
+[node name="ClaudeApiKeyHBox" type="HBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer2/VBoxContainer2/MarginContainer5/VBoxContainer5"]
+layout_mode = 2
+
+[node name="ClaudeApiKeyLabel" type="Label" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer2/VBoxContainer2/MarginContainer5/VBoxContainer5/ClaudeApiKeyHBox"]
+layout_mode = 2
+text = "API Key: "
+
+[node name="ClaudeApiKeyLineEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer2/VBoxContainer2/MarginContainer5/VBoxContainer5/ClaudeApiKeyHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(400, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "sk-ant-api..."
+secret = true
+
+[node name="ClaudeApiSaveLocallyCheckBox" type="CheckBox" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer2/VBoxContainer2/MarginContainer5/VBoxContainer5"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+tooltip_text = "Not secure for shared/public PC. Value is stored in local config file as-is."
+text = "Save Key Locally"
+
+[node name="ClaudeApiMaxMessagesHBox" type="HBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer2/VBoxContainer2/MarginContainer5/VBoxContainer5"]
+layout_mode = 2
+
+[node name="ClaudeApiMaxMessagesLabel" type="Label" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer2/VBoxContainer2/MarginContainer5/VBoxContainer5/ClaudeApiMaxMessagesHBox"]
+layout_mode = 2
+tooltip_text = "Up to how many messages from the session history to send. Higher values increase API costs."
+mouse_filter = 0
+text = "Max Messages: "
+
+[node name="ClaudeApiMaxMessagesLineEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer2/VBoxContainer2/MarginContainer5/VBoxContainer5/ClaudeApiMaxMessagesHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+text = "20"
+alignment = 1
+
+[node name="ClaudeApiDescriptionLabel" type="Label" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer2/VBoxContainer2/MarginContainer5/VBoxContainer5"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 12
+text = "Demo feature: A standalone Claude chat interface with no project context or local file access. Uses your Anthropic API key from console.anthropic.com"
+autowrap_mode = 3
+
 [node name="HSeparator3" type="HSeparator" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="MarginContainer3" type="MarginContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_bottom = 0
+
+[node name="VBoxContainer3" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer3"]
+layout_mode = 2
+
+[node name="ClaudeMonitorEnabledCheckBox" type="CheckBox" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer3/VBoxContainer3"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "Enable Claude Monitor Button"
+
+[node name="MarginContainer4" type="MarginContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer3/VBoxContainer3"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+
+[node name="VBoxContainer4" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer3/VBoxContainer3/MarginContainer4"]
+layout_mode = 2
+
+[node name="ClaudeMonitorHBox" type="HBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer3/VBoxContainer3/MarginContainer4/VBoxContainer4"]
+layout_mode = 2
+
+[node name="ClaudeMonitorLabel" type="Label" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer3/VBoxContainer3/MarginContainer4/VBoxContainer4/ClaudeMonitorHBox"]
+layout_mode = 2
+text = "Launch Command: "
+
+[node name="ClaudeMonitorLineEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer3/VBoxContainer3/MarginContainer4/VBoxContainer4/ClaudeMonitorHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "%USERPROFILE%\\AppData\\Roaming\\Python\\...\\claude-monitor.exe"
+
+[node name="ClaudeMonitorResetButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer3/VBoxContainer3/MarginContainer4/VBoxContainer4/ClaudeMonitorHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Reset to Default"
+
+[node name="ClaudeMonitorDescriptionLabel" type="Label" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer3/VBoxContainer3/MarginContainer4/VBoxContainer4"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 12
+text = "Claude Monitor tracks your Claude Code usage and costs. Use full path if command not found (run 'where claude-monitor' to find it)."
+autowrap_mode = 3
+
+[node name="ClaudeMonitorGithubButton" type="LinkButton" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer3/VBoxContainer3/MarginContainer4/VBoxContainer4"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.6, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "GitHub: Claude-Code-Usage-Monitor"
+underline = 2
+
+[node name="HSeparator4" type="HSeparator" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
 [node name="MarginContainer2" type="MarginContainer" parent="VBoxContainer/HBoxContainer"]
@@ -180,4 +297,7 @@ text = "Close"
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer/VBoxContainer/MarginContainer/VBoxContainer/ClaudeCodeHBox/ResetButton" to="." method="_on_reset_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/OpenGodotVersionManagerButton" to="." method="_on_open_godot_version_manager_button_pressed"]
 [connection signal="toggled" from="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer2/VBoxContainer2/ClaudeApiChatEnabledCheckBox" to="." method="_on_claude_api_chat_enabled_check_box_toggled"]
+[connection signal="toggled" from="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer3/VBoxContainer3/ClaudeMonitorEnabledCheckBox" to="." method="_on_claude_monitor_enabled_check_box_toggled"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer3/VBoxContainer3/MarginContainer4/VBoxContainer4/ClaudeMonitorHBox/ClaudeMonitorResetButton" to="." method="_on_claude_monitor_reset_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer3/VBoxContainer3/MarginContainer4/VBoxContainer4/ClaudeMonitorGithubButton" to="." method="_on_claude_monitor_github_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/CloseButton" to="." method="_on_close_button_pressed"]

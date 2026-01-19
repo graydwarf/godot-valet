@@ -24,6 +24,7 @@ func _ready():
 	LoadCustomScrollContainerTheme()
 	UpdateClaudeButtonVisibility()
 	UpdateClaudeApiChatButtonVisibility()
+	UpdateClaudeMonitorButtonVisibility()
 	
 func LoadCustomScrollContainerTheme():
 	var customWidth = 20
@@ -235,6 +236,7 @@ func InitSignals():
 	Signals.connect("ReorderProjectItems", ReorderProjectItems)
 	Signals.connect("ClaudeCodeButtonEnabledChanged", ClaudeCodeButtonEnabledChanged)
 	Signals.connect("ClaudeApiChatButtonEnabledChanged", ClaudeApiChatButtonEnabledChanged)
+	Signals.connect("ClaudeMonitorButtonEnabledChanged", ClaudeMonitorButtonEnabledChanged)
 	Signals.connect("RemoveProject", RemoveProjectById)
 
 func HidingProjectItem():
@@ -272,6 +274,12 @@ func UpdateClaudeButtonVisibility():
 
 func UpdateClaudeApiChatButtonVisibility():
 	%ClaudeApiChatButton.visible = App.GetClaudeApiChatButtonEnabled()
+
+func ClaudeMonitorButtonEnabledChanged(_enabled: bool):
+	UpdateClaudeMonitorButtonVisibility()
+
+func UpdateClaudeMonitorButtonVisibility():
+	%ClaudeMonitorButton.visible = App.GetClaudeMonitorButtonEnabled()
 
 func RestoreProjectSelection():
 	if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
@@ -512,6 +520,18 @@ func LaunchClaudeCode():
 	if pid == -1:
 		OS.alert("Failed to launch Claude Code.\n\nMake sure Windows Terminal is installed.\nCommand: %s" % command)
 
+func LaunchClaudeMonitor():
+	var command = App.GetClaudeMonitorLaunchCommand()
+
+	# Launch via Windows Terminal with cmd (cmd inherits PATH better than PowerShell)
+	var args: PackedStringArray = [
+		"cmd", "/k", command
+	]
+	var pid = OS.create_process("wt", args)
+
+	if pid == -1:
+		OS.alert("Failed to launch Claude Monitor.\n\nMake sure Windows Terminal is installed and claude-monitor is in PATH.\nCommand: %s" % command)
+
 func OpenAssetFinder():
 	if _assetFinder == null:
 		_assetFinder = load("res://scenes/file-explorer/file-explorer.tscn").instantiate()
@@ -666,3 +686,6 @@ func OpenClaudeApiChat():
 
 func _on_asset_finder_button_pressed() -> void:
 	OpenAssetFinder()
+
+func _on_claude_monitor_button_pressed() -> void:
+	LaunchClaudeMonitor()
