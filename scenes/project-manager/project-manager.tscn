@@ -167,6 +167,25 @@ tooltip_text = "Opens the selected project in an appropriate Godot IDE based on 
 disabled = true
 text = "Edit"
 
+[node name="RunProjectConsoleButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+tooltip_text = "Runs the selected project with console output visible (uses _console.exe)."
+disabled = true
+text = "Run w/Console"
+
+[node name="EditProjectConsoleButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+tooltip_text = "Opens the editor with console output visible (uses _console.exe). If no project selected, opens Godot Project Manager."
+text = "Edit w/Console"
+
 [node name="ReleaseProjectButton" type="Button" parent="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
 focus_mode = 0
@@ -293,6 +312,8 @@ dialog_autowrap = true
 [connection signal="pressed" from="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer/HBoxContainer3/VBoxContainer2/HBoxContainer/ShowHiddenCheckBox" to="." method="_on_check_box_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RunProjectButton" to="." method="_on_run_project_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/EditProjectButton" to="." method="_on_edit_project_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RunProjectConsoleButton" to="." method="_on_run_project_console_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/EditProjectConsoleButton" to="." method="_on_edit_project_console_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ReleaseProjectButton" to="." method="_on_release_project_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/AssetFinderButton" to="." method="_on_asset_finder_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ClaudeButton" to="." method="_on_claude_button_pressed"]

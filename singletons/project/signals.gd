@@ -25,3 +25,5 @@ signal BackgroundColorTemporarilyChanged
 signal ClaudeCodeButtonEnabledChanged
 signal ClaudeApiChatButtonEnabledChanged
 signal ClaudeMonitorButtonEnabledChanged
+signal ShowRunConsoleButtonChanged
+signal ShowEditConsoleButtonChanged

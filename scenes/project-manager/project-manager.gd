@@ -2,6 +2,8 @@ extends Panel
 
 @onready var _runProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/RunProjectButton
 @onready var _editProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/EditProjectButton
+@onready var _runProjectConsoleButton = %RunProjectConsoleButton
+@onready var _editProjectConsoleButton = %EditProjectConsoleButton
 @onready var _releaseProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ReleaseProjectButton
 @onready var _changeProjectButton = $VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/ChangeProjectButton
 @onready var _projectItemContainer = $VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/ProjectItemContainer
@@ -25,6 +27,8 @@ func _ready():
 	UpdateClaudeButtonVisibility()
 	UpdateClaudeApiChatButtonVisibility()
 	UpdateClaudeMonitorButtonVisibility()
+	UpdateRunConsoleButtonVisibility()
+	UpdateEditConsoleButtonVisibility()
 	
 func LoadCustomScrollContainerTheme():
 	var customWidth = 20
@@ -237,6 +241,8 @@ func InitSignals():
 	Signals.connect("ClaudeCodeButtonEnabledChanged", ClaudeCodeButtonEnabledChanged)
 	Signals.connect("ClaudeApiChatButtonEnabledChanged", ClaudeApiChatButtonEnabledChanged)
 	Signals.connect("ClaudeMonitorButtonEnabledChanged", ClaudeMonitorButtonEnabledChanged)
+	Signals.connect("ShowRunConsoleButtonChanged", _on_show_run_console_button_changed)
+	Signals.connect("ShowEditConsoleButtonChanged", _on_show_edit_console_button_changed)
 	Signals.connect("RemoveProject", RemoveProjectById)
 
 func HidingProjectItem():
@@ -352,6 +358,8 @@ func ToggleProjectItemSelection(projectItem, isSelected):
 func DisableEditButtons():
 	_runProjectButton.disabled = true
 	_editProjectButton.disabled = true
+	_runProjectConsoleButton.disabled = true
+	# Note: _editProjectConsoleButton stays enabled - it can open project manager without selection
 	_releaseProjectButton.disabled = true
 	_changeProjectButton.disabled = true
 	#%AssetFinderButton.disabled = false
@@ -361,39 +369,48 @@ func DisableEditButtons():
 func EnableEditButtons():
 	_runProjectButton.disabled = false
 	_editProjectButton.disabled = false
+	_runProjectConsoleButton.disabled = false
 	_releaseProjectButton.disabled = false
 	_changeProjectButton.disabled = false
 	#%AssetFinderButton.disabled = true
 	%ClaudeButton.disabled = false
 	%CodeQualityButton.disabled = false
 
-func RunProject():
+func RunProject(use_console: bool = false):
 	if !is_instance_valid(_selectedProjectItem):
 		return
 
 	if App.GetIsDebuggingWithoutThreads():
-		StartProjectThread()
+		StartProjectThread(use_console)
 	else:
 		_runProjectThread = Thread.new()
-		_runProjectThread.start(StartProjectThread)
+		_runProjectThread.start(StartProjectThread.bind(use_console))
 
 # When Godot Valet exits, it calls this method.
-# We don't want to wait for threads to exit. 
+# We don't want to wait for threads to exit.
 # Commenting and leaving as a reminder.
 func _exit_tree():
 #	if is_instance_valid(_runProjectThread):
 #		_runProjectThread.wait_to_finish()
 	pass
-	
-func StartProjectThread():
+
+func StartProjectThread(use_console: bool = false):
 	var output = []
 	var godotArguments = ["--path", _selectedProjectItem.GetProjectPathBaseDir()]
 	var versionId = _selectedProjectItem.GetGodotVersionId()
 	var godotPath = _selectedProjectItem.GetGodotPath(versionId)
-	OS.execute(godotPath, godotArguments, output, false, false)
+	if use_console:
+		godotPath = godotPath.replace(".exe", "_console.exe")
+		# Use create_process for console mode - allows real-time output to console window
+		OS.create_process(godotPath, godotArguments, use_console)
+	else:
+		OS.execute(godotPath, godotArguments, output, false, false)
 	
-func EditProject():
+func EditProject(use_console: bool = false):
 	if !is_instance_valid(_selectedProjectItem):
+		if use_console:
+			# No project selected - open Godot project manager with console
+			OpenGodotProjectManager(null, true)
 		return
 
 	var projectFile = _selectedProjectItem.GetProjectPath()
@@ -405,43 +422,69 @@ func EditProject():
 	if projectFile == null || !FileAccess.file_exists(projectFile):
 		OS.alert("Did not find a project (.godot) file in the specified project path")
 		return
-	
+
 	_selectedProjectItem.SetEditedDate(Date.GetCurrentDateAsDictionary())
 	_selectedProjectItem.SaveProjectItem()
-	
+
 	if App.GetIsDebuggingWithoutThreads():
-		EditProjectInGodotEditorThread()
+		EditProjectInGodotEditorThread(use_console)
 	else:
 		_editProjectThread = Thread.new()
-		_editProjectThread.start(EditProjectInGodotEditorThread)
-	
+		_editProjectThread.start(EditProjectInGodotEditorThread.bind(use_console))
+
 	ReloadProjectManager()
-	
-func EditProjectInGodotEditorThread():
+
+func EditProjectInGodotEditorThread(use_console: bool = false):
 	var output = []
 	var projectPath = _selectedProjectItem.GetProjectPathBaseDir()
-	var godotArguments = ["--editor", "--path", projectPath] 
+	var godotArguments = ["--editor", "--path", projectPath]
 	var pathToGodot = _selectedProjectItem.GetGodotPath(_selectedProjectItem.GetGodotVersionId())
 	if pathToGodot == null:
 		OS.alert("Unable to locate godot at the given path. Use settings to review godot configurations.")
 		return
-	OS.execute(pathToGodot, godotArguments, output, false, false)
+	if use_console:
+		pathToGodot = pathToGodot.replace(".exe", "_console.exe")
+		# Use create_process for console mode - allows real-time output to console window
+		OS.create_process(pathToGodot, godotArguments, use_console)
+	else:
+		OS.execute(pathToGodot, godotArguments, output, false, false)
 
-func OpenGodotProjectManager(godotVersionId = null):
+func OpenGodotProjectManager(godotVersionId = null, use_console: bool = false):
 	if godotVersionId == null:
-		godotVersionId = _selectedProjectItem.GetGodotVersionId()
+		if is_instance_valid(_selectedProjectItem):
+			godotVersionId = _selectedProjectItem.GetGodotVersionId()
+		else:
+			# Get first available Godot version
+			godotVersionId = GetFirstAvailableGodotVersionId()
 	var godotPath = GetGodotPathFromVersionId(godotVersionId)
-	
+
+	if godotPath == null:
+		OS.alert("No Godot version configured. Please add a Godot version in Settings.")
+		return
+
 	if App.GetIsDebuggingWithoutThreads():
-		RunGodotProjectManagerThread(godotPath)
+		RunGodotProjectManagerThread(godotPath, use_console)
 	else:
 		_openGodotProjectManagerThread = Thread.new()
-		_openGodotProjectManagerThread.start(RunGodotProjectManagerThread.bind(godotPath))
+		_openGodotProjectManagerThread.start(RunGodotProjectManagerThread.bind(godotPath, use_console))
 
-func RunGodotProjectManagerThread(godotPath):
+func RunGodotProjectManagerThread(godotPath, use_console: bool = false):
 	var output = []
 	var godotArguments = ["--project-manager"]
-	OS.execute(godotPath, godotArguments, output, false, false)
+	if use_console:
+		godotPath = godotPath.replace(".exe", "_console.exe")
+		# Use create_process for console mode - allows real-time output to console window
+		OS.create_process(godotPath, godotArguments, use_console)
+	else:
+		OS.execute(godotPath, godotArguments, output, false, false)
+
+# Returns the first available Godot version ID from the configured versions
+func GetFirstAvailableGodotVersionId():
+	var files = FileHelper.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
+	for file in files:
+		if file.ends_with(".cfg"):
+			return file.trim_suffix(".cfg")
+	return null
 	
 func OpenSetting():
 	var settings = load("res://scenes/settings/settings.tscn").instantiate()
@@ -689,3 +732,21 @@ func _on_asset_finder_button_pressed() -> void:
 
 func _on_claude_monitor_button_pressed() -> void:
 	LaunchClaudeMonitor()
+
+func _on_show_run_console_button_changed(_enabled: bool):
+	UpdateRunConsoleButtonVisibility()
+
+func _on_show_edit_console_button_changed(_enabled: bool):
+	UpdateEditConsoleButtonVisibility()
+
+func UpdateRunConsoleButtonVisibility():
+	_runProjectConsoleButton.visible = App.GetShowRunConsoleButton()
+
+func UpdateEditConsoleButtonVisibility():
+	_editProjectConsoleButton.visible = App.GetShowEditConsoleButton()
+
+func _on_run_project_console_button_pressed():
+	RunProject(true)
+
+func _on_edit_project_console_button_pressed():
+	EditProject(true)

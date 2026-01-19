@@ -12,6 +12,8 @@ func _ready():
 	LoadClaudeApiChatSettings()
 	LoadClaudeMonitorCommand()
 	LoadClaudeMonitorButtonEnabled()
+	LoadShowRunConsoleButtonEnabled()
+	LoadShowEditConsoleButtonEnabled()
 
 func InitSignals():
 	Signals.connect("BackgroundColorTemporarilyChanged", BackgroundColorTemporarilyChanged)
@@ -133,3 +135,17 @@ func _on_change_background_color_button_pressed():
 	add_child(colorPickerDialog)
 	colorPickerDialog.position = Vector2(400, 50)
 	colorPickerDialog.SetDefaultColor(App.GetBackgroundColor())
+
+func LoadShowRunConsoleButtonEnabled():
+	%ShowRunConsoleButtonCheckBox.button_pressed = App.GetShowRunConsoleButton()
+
+func LoadShowEditConsoleButtonEnabled():
+	%ShowEditConsoleButtonCheckBox.button_pressed = App.GetShowEditConsoleButton()
+
+func _on_show_run_console_button_check_box_toggled(toggled_on: bool):
+	App.SetShowRunConsoleButton(toggled_on)
+	Signals.emit_signal("ShowRunConsoleButtonChanged", toggled_on)
+
+func _on_show_edit_console_button_check_box_toggled(toggled_on: bool):
+	App.SetShowEditConsoleButton(toggled_on)
+	Signals.emit_signal("ShowEditConsoleButtonChanged", toggled_on)

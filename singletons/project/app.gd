@@ -21,6 +21,8 @@ var _claudeCodeButtonEnabled = true
 var _claudeApiChatButtonEnabled = false
 var _claudeMonitorLaunchCommand = "%USERPROFILE%\\AppData\\Roaming\\Python\\Python313\\Scripts\\claude-monitor.exe"
 var _claudeMonitorButtonEnabled = false
+var _showRunConsoleButton = false
+var _showEditConsoleButton = false
 var _disclaimerAccepted = false
 var _imagePreviewBackgroundColor = Color(0.15, 0.15, 0.15, 1.0)
 
@@ -106,6 +108,20 @@ func GetClaudeMonitorButtonEnabled():
 
 func SetClaudeMonitorButtonEnabled(value):
 	_claudeMonitorButtonEnabled = value
+	SaveSolutionSettings()
+
+func GetShowRunConsoleButton():
+	return _showRunConsoleButton
+
+func SetShowRunConsoleButton(value):
+	_showRunConsoleButton = value
+	SaveSolutionSettings()
+
+func GetShowEditConsoleButton():
+	return _showEditConsoleButton
+
+func SetShowEditConsoleButton(value):
+	_showEditConsoleButton = value
 	SaveSolutionSettings()
 
 func GetDisclaimerAccepted():
@@ -205,6 +221,8 @@ func LoadSavedSolutionSettings():
 		_claudeApiChatButtonEnabled = config.get_value("SolutionSettings", "claude_api_chat_button_enabled", false)
 		_claudeMonitorLaunchCommand = config.get_value("SolutionSettings", "claude_monitor_launch_command", GetDefaultClaudeMonitorLaunchCommand())
 		_claudeMonitorButtonEnabled = config.get_value("SolutionSettings", "claude_monitor_button_enabled", false)
+		_showRunConsoleButton = config.get_value("SolutionSettings", "show_run_console_button", false)
+		_showEditConsoleButton = config.get_value("SolutionSettings", "show_edit_console_button", false)
 		_disclaimerAccepted = config.get_value("SolutionSettings", "disclaimer_accepted", false)
 		_imagePreviewBackgroundColor = config.get_value("SolutionSettings", "image_preview_background_color", Color(0.15, 0.15, 0.15, 1.0))
 		# Code Quality Settings
@@ -228,6 +246,8 @@ func SaveSolutionSettings():
 	config.set_value("SolutionSettings", "claude_api_chat_button_enabled", _claudeApiChatButtonEnabled)
 	config.set_value("SolutionSettings", "claude_monitor_launch_command", _claudeMonitorLaunchCommand)
 	config.set_value("SolutionSettings", "claude_monitor_button_enabled", _claudeMonitorButtonEnabled)
+	config.set_value("SolutionSettings", "show_run_console_button", _showRunConsoleButton)
+	config.set_value("SolutionSettings", "show_edit_console_button", _showEditConsoleButton)
 	config.set_value("SolutionSettings", "disclaimer_accepted", _disclaimerAccepted)
 	config.set_value("SolutionSettings", "image_preview_background_color", _imagePreviewBackgroundColor)
 	# Code Quality Settings

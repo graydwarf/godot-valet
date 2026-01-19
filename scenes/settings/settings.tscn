@@ -272,6 +272,44 @@ underline = 2
 [node name="HSeparator4" type="HSeparator" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
+[node name="MarginContainer4" type="MarginContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 96)
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_bottom = 0
+
+[node name="VBoxContainer6" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer4"]
+layout_mode = 2
+
+[node name="ShowRunConsoleButtonCheckBox" type="CheckBox" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer4/VBoxContainer6"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "Show 'Run w/Console' Button"
+
+[node name="ShowEditConsoleButtonCheckBox" type="CheckBox" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer4/VBoxContainer6"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "Show 'Edit w/Console' Button"
+
+[node name="ConsoleButtonsDescriptionLabel" type="Label" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer4/VBoxContainer6"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 12
+text = "Console buttons launch Godot using the console version executable (_console.exe) which shows stdout/stderr output in a console window. Useful for debugging print statements."
+autowrap_mode = 3
+
+[node name="HSeparator5" type="HSeparator" parent="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
 [node name="MarginContainer2" type="MarginContainer" parent="VBoxContainer/HBoxContainer"]
 layout_mode = 2
 theme_override_constants/margin_top = 5
@@ -300,4 +338,6 @@ text = "Close"
 [connection signal="toggled" from="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer3/VBoxContainer3/ClaudeMonitorEnabledCheckBox" to="." method="_on_claude_monitor_enabled_check_box_toggled"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer3/VBoxContainer3/MarginContainer4/VBoxContainer4/ClaudeMonitorHBox/ClaudeMonitorResetButton" to="." method="_on_claude_monitor_reset_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer3/VBoxContainer3/MarginContainer4/VBoxContainer4/ClaudeMonitorGithubButton" to="." method="_on_claude_monitor_github_button_pressed"]
+[connection signal="toggled" from="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer4/VBoxContainer6/ShowRunConsoleButtonCheckBox" to="." method="_on_show_run_console_button_check_box_toggled"]
+[connection signal="toggled" from="VBoxContainer/HBoxContainer/MarginContainer/ScrollContainer/MarginContainer/VBoxContainer/MarginContainer4/VBoxContainer6/ShowEditConsoleButtonCheckBox" to="." method="_on_show_edit_console_button_check_box_toggled"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/CloseButton" to="." method="_on_close_button_pressed"]
