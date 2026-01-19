@@ -28,13 +28,14 @@ func MoveVersionItemUp(godotVersionItem):
 func SaveAllGodotVersions():
 	var newGodotVersionAdded = false
 	for godotVersionItem in _godotVersionItemContainer.get_children():
-		SaveGodotVersionSettingsFile(godotVersionItem.GetGodotVersionId(), godotVersionItem.GetGodotVersion(), godotVersionItem.GetGodotPath(), godotVersionItem.get_index(), newGodotVersionAdded)
+		SaveGodotVersionSettingsFile(godotVersionItem.GetGodotVersionId(), godotVersionItem.GetGodotVersion(), godotVersionItem.GetGodotPath(), godotVersionItem.GetConsolePath(), godotVersionItem.get_index(), newGodotVersionAdded)
 
-func SaveGodotVersionSettingsFile(id, godotVersion, filePath, sortOrder = -1, newGodotVersionAdded = false):
+func SaveGodotVersionSettingsFile(id, godotVersion, filePath, consolePath, sortOrder = -1, newGodotVersionAdded = false):
 	var config = ConfigFile.new()
 
 	config.set_value("GodotVersionSettings", "godot_version", godotVersion)
 	config.set_value("GodotVersionSettings", "godot_path", filePath)
+	config.set_value("GodotVersionSettings", "console_path", consolePath)
 	config.set_value("GodotVersionSettings", "sort_order", sortOrder)
 	
 	# New or are we saving?
@@ -99,12 +100,13 @@ func DisplayDeleteProjectConfirmationDialog():
 func EditSelectedGodotVersion():
 	if !is_instance_valid(_selectedGodotVersionItem):
 		return
-		
+
 	var editGodotVersionDialog = load("res://scenes/create-godot-version-dialog/create-godot-version-dialog.tscn").instantiate()
 	add_child(editGodotVersionDialog)
 	editGodotVersionDialog.SetGodotVersionId(_selectedGodotVersionItem.GetGodotVersionId())
 	editGodotVersionDialog.SetGodotVersion(_selectedGodotVersionItem.GetGodotVersion())
 	editGodotVersionDialog.SetGodotPath(_selectedGodotVersionItem.GetGodotPath())
+	editGodotVersionDialog.SetConsolePath(_selectedGodotVersionItem.GetConsolePath())
 	
 func LoadGodotVersionItems():
 	var allResourceFiles = FileHelper.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
@@ -122,6 +124,7 @@ func LoadGodotVersionItems():
 		if err == OK:
 			godotVersionItem.SetGodotVersion(config.get_value("GodotVersionSettings", "godot_version", ""))
 			godotVersionItem.SetGodotPath(config.get_value("GodotVersionSettings", "godot_path", ""))
+			godotVersionItem.SetConsolePath(config.get_value("GodotVersionSettings", "console_path", ""))
 			var sortOrder = config.get_value("GodotVersionSettings", "sort_order", -1)
 			godotVersionItem.SetSortOrder(sortOrder)
 			godotVersionItem.SetGodotVersionId(fileName)

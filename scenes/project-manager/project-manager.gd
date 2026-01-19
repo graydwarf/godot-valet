@@ -225,11 +225,34 @@ func GetGodotPathFromVersionId(godotVersionId):
 		var fileName = file.trim_suffix(".cfg")
 		if fileName != godotVersionId:
 			continue
-		
+
 		var config = ConfigFile.new()
 		var err = config.load("user://" + App.GetGodotVersionItemFolder() + "/" + fileName + ".cfg")
 		if err == OK:
 			return config.get_value("GodotVersionSettings", "godot_path", "")
+	return null
+
+func GetConsolePathFromVersionId(godotVersionId):
+	var files = FileHelper.GetFilesFromPath("user://" + App.GetGodotVersionItemFolder())
+	for file in files:
+		if !file.ends_with(".cfg"):
+			continue
+
+		var fileName = file.trim_suffix(".cfg")
+		if fileName != godotVersionId:
+			continue
+
+		var config = ConfigFile.new()
+		var err = config.load("user://" + App.GetGodotVersionItemFolder() + "/" + fileName + ".cfg")
+		if err == OK:
+			var consolePath = config.get_value("GodotVersionSettings", "console_path", "")
+			# Fall back to auto-generated path if console path not set
+			if consolePath.is_empty():
+				var godotPath = config.get_value("GodotVersionSettings", "godot_path", "")
+				if not godotPath.is_empty():
+					consolePath = godotPath.replace(".exe", "_console.exe")
+			return consolePath
+	return null
 			
 func InitSignals():
 	Signals.connect("ToggleProjectItemSelection", ToggleProjectItemSelection)
@@ -398,12 +421,12 @@ func StartProjectThread(use_console: bool = false):
 	var output = []
 	var godotArguments = ["--path", _selectedProjectItem.GetProjectPathBaseDir()]
 	var versionId = _selectedProjectItem.GetGodotVersionId()
-	var godotPath = _selectedProjectItem.GetGodotPath(versionId)
 	if use_console:
-		godotPath = godotPath.replace(".exe", "_console.exe")
+		var consolePath = GetConsolePathFromVersionId(versionId)
 		# Use create_process for console mode - allows real-time output to console window
-		OS.create_process(godotPath, godotArguments, use_console)
+		OS.create_process(consolePath, godotArguments, use_console)
 	else:
+		var godotPath = _selectedProjectItem.GetGodotPath(versionId)
 		OS.execute(godotPath, godotArguments, output, false, false)
 	
 func EditProject(use_console: bool = false):
@@ -438,15 +461,19 @@ func EditProjectInGodotEditorThread(use_console: bool = false):
 	var output = []
 	var projectPath = _selectedProjectItem.GetProjectPathBaseDir()
 	var godotArguments = ["--editor", "--path", projectPath]
-	var pathToGodot = _selectedProjectItem.GetGodotPath(_selectedProjectItem.GetGodotVersionId())
-	if pathToGodot == null:
-		OS.alert("Unable to locate godot at the given path. Use settings to review godot configurations.")
-		return
+	var versionId = _selectedProjectItem.GetGodotVersionId()
 	if use_console:
-		pathToGodot = pathToGodot.replace(".exe", "_console.exe")
+		var consolePath = GetConsolePathFromVersionId(versionId)
+		if consolePath == null or consolePath.is_empty():
+			OS.alert("Unable to locate console executable. Use settings to review godot configurations.")
+			return
 		# Use create_process for console mode - allows real-time output to console window
-		OS.create_process(pathToGodot, godotArguments, use_console)
+		OS.create_process(consolePath, godotArguments, use_console)
 	else:
+		var pathToGodot = _selectedProjectItem.GetGodotPath(versionId)
+		if pathToGodot == null:
+			OS.alert("Unable to locate godot at the given path. Use settings to review godot configurations.")
+			return
 		OS.execute(pathToGodot, godotArguments, output, false, false)
 
 func OpenGodotProjectManager(godotVersionId = null, use_console: bool = false):
@@ -456,26 +483,26 @@ func OpenGodotProjectManager(godotVersionId = null, use_console: bool = false):
 		else:
 			# Get first available Godot version
 			godotVersionId = GetFirstAvailableGodotVersionId()
-	var godotPath = GetGodotPathFromVersionId(godotVersionId)
 
-	if godotPath == null:
+	if godotVersionId == null:
 		OS.alert("No Godot version configured. Please add a Godot version in Settings.")
 		return
 
 	if App.GetIsDebuggingWithoutThreads():
-		RunGodotProjectManagerThread(godotPath, use_console)
+		RunGodotProjectManagerThread(godotVersionId, use_console)
 	else:
 		_openGodotProjectManagerThread = Thread.new()
-		_openGodotProjectManagerThread.start(RunGodotProjectManagerThread.bind(godotPath, use_console))
+		_openGodotProjectManagerThread.start(RunGodotProjectManagerThread.bind(godotVersionId, use_console))
 
-func RunGodotProjectManagerThread(godotPath, use_console: bool = false):
+func RunGodotProjectManagerThread(godotVersionId, use_console: bool = false):
 	var output = []
 	var godotArguments = ["--project-manager"]
 	if use_console:
-		godotPath = godotPath.replace(".exe", "_console.exe")
+		var consolePath = GetConsolePathFromVersionId(godotVersionId)
 		# Use create_process for console mode - allows real-time output to console window
-		OS.create_process(godotPath, godotArguments, use_console)
+		OS.create_process(consolePath, godotArguments, use_console)
 	else:
+		var godotPath = GetGodotPathFromVersionId(godotVersionId)
 		OS.execute(godotPath, godotArguments, output, false, false)
 
 # Returns the first available Godot version ID from the configured versions

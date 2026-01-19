@@ -12,7 +12,7 @@ color = Color(0, 0, 0, 0.882353)
 script = ExtResource("1_c7nj4")
 
 [node name="NewProjectDialog" type="ColorRect" parent="."]
-custom_minimum_size = Vector2(860, 160)
+custom_minimum_size = Vector2(860, 200)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -62,6 +62,30 @@ caret_blink = true
 caret_blink_interval = 0.5
 
 [node name="SelectGodotPathButton" type="Button" parent="NewProjectDialog/MarginContainer/VBoxContainer/ProjectPathHBoxContainer2"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Select Path"
+
+[node name="ConsolePathHBoxContainer" type="HBoxContainer" parent="NewProjectDialog/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ConsolePathLabel" type="Label" parent="NewProjectDialog/MarginContainer/VBoxContainer/ConsolePathHBoxContainer"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+text = "Console Path:"
+horizontal_alignment = 2
+
+[node name="ConsolePathLineEdit" type="LineEdit" parent="NewProjectDialog/MarginContainer/VBoxContainer/ConsolePathHBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+tooltip_text = "Path to the Godot console executable (_console.exe). Auto-filled when selecting Godot Path."
+caret_blink = true
+caret_blink_interval = 0.5
+
+[node name="SelectConsolePathButton" type="Button" parent="NewProjectDialog/MarginContainer/VBoxContainer/ConsolePathHBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "Select Path"
@@ -124,6 +148,15 @@ file_mode = 0
 access = 2
 filters = PackedStringArray("*.exe")
 
+[node name="SelectConsoleExeFileDialog" type="FileDialog" parent="."]
+title = "Select Console Executable"
+position = Vector2i(200, 200)
+size = Vector2i(600, 500)
+ok_button_text = "Open"
+file_mode = 0
+access = 2
+filters = PackedStringArray("*.exe")
+
 [node name="ConfirmationDialog" type="ConfirmationDialog" parent="."]
 position = Vector2i(300, 150)
 size = Vector2i(500, 200)
@@ -131,7 +164,9 @@ dialog_text = "The path to your godot binary doesn't appear to be a stable versi
 dialog_autowrap = true
 
 [connection signal="pressed" from="NewProjectDialog/MarginContainer/VBoxContainer/ProjectPathHBoxContainer2/SelectGodotPathButton" to="." method="_on_select_godot_path_button_pressed"]
+[connection signal="pressed" from="NewProjectDialog/MarginContainer/VBoxContainer/ConsolePathHBoxContainer/SelectConsolePathButton" to="." method="_on_select_console_path_button_pressed"]
 [connection signal="pressed" from="NewProjectDialog/MarginContainer/VBoxContainer/UseFileVersionCheckBox" to="." method="_on_use_file_version_check_box_pressed"]
 [connection signal="pressed" from="NewProjectDialog/MarginContainer/VBoxContainer/MarginContainer/ButtonHBoxContainer/CancelButton" to="." method="_on_cancel_button_pressed"]
 [connection signal="pressed" from="NewProjectDialog/MarginContainer/VBoxContainer/MarginContainer/ButtonHBoxContainer/SaveButton" to="." method="_on_save_button_pressed"]
 [connection signal="file_selected" from="SelectGodotExeFileDialog" to="." method="_on_file_dialog_file_selected"]
+[connection signal="file_selected" from="SelectConsoleExeFileDialog" to="." method="_on_console_file_dialog_file_selected"]

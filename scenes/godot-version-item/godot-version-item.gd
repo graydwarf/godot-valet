@@ -4,6 +4,7 @@ extends ColorRect
 @onready var _godotPathLabel = $MarginContainer/HBoxContainer/VBoxContainer/MarginContainer/GodotPathLabel
 var _godotVersion = ""
 var _godotPath = ""
+var _consolePath = ""
 var _selected = false
 var _godotVersionId = ""
 var _sortOrder = -1
@@ -29,6 +30,9 @@ func GetGodotVersion():
 func GetGodotPath():
 	return _godotPath
 
+func GetConsolePath():
+	return _consolePath
+
 func SetGodotVersion(value):
 	_godotVersion = value
 	_godotVersionNameLabel.text = value
@@ -36,6 +40,9 @@ func SetGodotVersion(value):
 func SetGodotPath(value):
 	_godotPath = value
 	_godotPathLabel.text = value
+
+func SetConsolePath(value):
+	_consolePath = value
 
 func GodotVersionItemClicked(godorVersionItem):
 	if godorVersionItem == self:
