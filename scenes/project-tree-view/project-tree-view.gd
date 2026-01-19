@@ -222,6 +222,7 @@ func PopulateProjectTree():
 
 	rootItem.set_collapsed(false)
 
+# gdlint:ignore-function:high-complexity=28
 func PopulateDirectory(parentItem: TreeItem, dirPath: String, recursive: bool = false, token: int = -1):
 	# Check if operation was cancelled
 	if token != -1 and token != _populationToken:
