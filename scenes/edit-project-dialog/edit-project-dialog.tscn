@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://chfs468nnvicn"]
 
 [ext_resource type="Script" uid="uid://dpt5jpqag1hef" path="res://scenes/edit-project-dialog/edit-project-dialog.gd" id="1_xd7bt"]
-[ext_resource type="Texture2D" uid="uid://c4np8ldj8yxjy" path="res://scenes/release-manager/assets/fluent-icons/folder-open.svg" id="2_folder"]
+[ext_resource type="Texture2D" path="res://scenes/release-manager/assets/fluent-icons/folder-search.svg" id="2_folder"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_tr27p"]
 font_size = 14

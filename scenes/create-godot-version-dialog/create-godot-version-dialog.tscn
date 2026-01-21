@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://bs3cejai31h0v"]
 
 [ext_resource type="Script" uid="uid://dlbkg4qgnbbug" path="res://scenes/create-godot-version-dialog/create-godot-version-dialog.gd" id="1_c7nj4"]
-[ext_resource type="Texture2D" uid="uid://c4np8ldj8yxjy" path="res://scenes/release-manager/assets/fluent-icons/folder-open.svg" id="2_folder"]
+[ext_resource type="Texture2D" path="res://scenes/release-manager/assets/fluent-icons/folder-search.svg" id="2_folder"]
 
 [node name="CreateGodotVersionDialog" type="ColorRect"]
 anchors_preset = 15
