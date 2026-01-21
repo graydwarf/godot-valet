@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://bs3cejai31h0v"]
+[gd_scene load_steps=3 format=3 uid="uid://bs3cejai31h0v"]
 
 [ext_resource type="Script" uid="uid://dlbkg4qgnbbug" path="res://scenes/create-godot-version-dialog/create-godot-version-dialog.gd" id="1_c7nj4"]
+[ext_resource type="Texture2D" uid="uid://c3fofjlxij46y" path="res://scenes/release-manager/assets/fluent-icons/folder-search.svg" id="2_folder"]
 
 [node name="CreateGodotVersionDialog" type="ColorRect"]
 anchors_preset = 15
@@ -62,9 +63,10 @@ caret_blink = true
 caret_blink_interval = 0.5
 
 [node name="SelectGodotPathButton" type="Button" parent="NewProjectDialog/MarginContainer/VBoxContainer/ProjectPathHBoxContainer2"]
-custom_minimum_size = Vector2(140, 0)
+custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
-text = "Select Path"
+icon = ExtResource("2_folder")
+icon_alignment = 1
 
 [node name="ConsolePathHBoxContainer" type="HBoxContainer" parent="NewProjectDialog/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -86,9 +88,10 @@ caret_blink = true
 caret_blink_interval = 0.5
 
 [node name="SelectConsolePathButton" type="Button" parent="NewProjectDialog/MarginContainer/VBoxContainer/ConsolePathHBoxContainer"]
-custom_minimum_size = Vector2(140, 0)
+custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
-text = "Select Path"
+icon = ExtResource("2_folder")
+icon_alignment = 1
 
 [node name="HBoxContainer" type="HBoxContainer" parent="NewProjectDialog/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -111,9 +114,10 @@ caret_blink_interval = 0.5
 
 [node name="SelectGodotPathButton" type="Button" parent="NewProjectDialog/MarginContainer/VBoxContainer/HBoxContainer"]
 self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(140, 0)
+custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
-text = "Select Path"
+icon = ExtResource("2_folder")
+icon_alignment = 1
 
 [node name="UseFileVersionCheckBox" type="CheckBox" parent="NewProjectDialog/MarginContainer/VBoxContainer"]
 layout_mode = 2

@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://chfs468nnvicn"]
+[gd_scene load_steps=4 format=3 uid="uid://chfs468nnvicn"]
 
 [ext_resource type="Script" uid="uid://dpt5jpqag1hef" path="res://scenes/edit-project-dialog/edit-project-dialog.gd" id="1_xd7bt"]
+[ext_resource type="Texture2D" uid="uid://c3fofjlxij46y" path="res://scenes/release-manager/assets/fluent-icons/folder-search.svg" id="2_folder"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_tr27p"]
 font_size = 14
@@ -61,9 +62,10 @@ caret_blink = true
 caret_blink_interval = 0.5
 
 [node name="SelectExistingProjectFolderButton" type="Button" parent="VBoxContainer/ProjectPathHBoxContainer"]
-custom_minimum_size = Vector2(140, 0)
+custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
-text = "Select Existing"
+icon = ExtResource("2_folder")
+icon_alignment = 1
 
 [node name="CreateNewProjectFolderButton" type="Button" parent="VBoxContainer/ProjectPathHBoxContainer"]
 custom_minimum_size = Vector2(140, 0)
@@ -126,9 +128,10 @@ editable = false
 
 [node name="SelectIconButton" type="Button" parent="VBoxContainer/CustomIconHBoxContainer"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(140, 0)
+custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
-text = "Select Image"
+icon = ExtResource("2_folder")
+icon_alignment = 1
 
 [node name="ClearIconButton" type="Button" parent="VBoxContainer/CustomIconHBoxContainer"]
 unique_name_in_owner = true
