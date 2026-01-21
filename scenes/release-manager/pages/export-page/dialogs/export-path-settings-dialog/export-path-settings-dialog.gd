@@ -16,6 +16,7 @@ signal cancelled()
 @onready var _rootPathCard = %RootPathCard
 @onready var _previewCard = %PreviewCard
 @onready var _pathSegmentsCard = %PathSegmentsCard
+@onready var _addProjectPathButton = %AddProjectPathButton
 @onready var _rootPathHeaderContainer = $BackgroundPanel/MarginContainer/VBoxContainer/RootPathCard/VBoxContainer/HeaderContainer
 @onready var _rootPathContentContainer = $BackgroundPanel/MarginContainer/VBoxContainer/RootPathCard/VBoxContainer/ContentContainer
 @onready var _previewHeaderContainer = $BackgroundPanel/MarginContainer/VBoxContainer/PreviewCard/VBoxContainer/HeaderContainer
@@ -28,6 +29,8 @@ var _currentPlatform: String = ""
 var _projectDir: String = ""  # Project directory (read-only display)
 var _projectVersion: String = ""  # Stored for preview only, not editable here
 var _pathSegments: Array = []  # Array of {type: "project-path|version|platform|date|custom", value: ""}
+var _originalPathSegments: Array = []  # Store original for dirty checking
+var _yesNoDialog: YesNoDialog = null
 
 const SEGMENT_HEIGHT = 40
 const DEFAULT_DATE_FORMAT = "{year}-{month}-{day}"
@@ -96,6 +99,7 @@ func openForPlatform(platform: String, projectDir: String, currentTemplate: Arra
 	_currentPlatform = platform
 	_projectDir = projectDir
 	_pathSegments = currentTemplate.duplicate(true)
+	_originalPathSegments = currentTemplate.duplicate(true)  # Store original for dirty checking
 	_projectVersion = projectVersion  # Store for preview
 
 	# Update platform display
@@ -118,6 +122,21 @@ func _rebuildSegmentsList():
 	for i in range(_pathSegments.size()):
 		var segment = _pathSegments[i]
 		_createSegmentRow(i, segment)
+
+	# Update Add Project Path button state (only one allowed)
+	_updateAddProjectPathButtonState()
+
+# Checks if a project-path segment already exists
+func _hasProjectPathSegment() -> bool:
+	for segment in _pathSegments:
+		if segment.get("type", "") == "project-path":
+			return true
+	return false
+
+# Updates the Add Project Path button enabled/disabled state
+func _updateAddProjectPathButtonState():
+	if _addProjectPathButton != null:
+		_addProjectPathButton.disabled = _hasProjectPathSegment()
 
 func _createSegmentRow(index: int, segment: Dictionary):
 	var row = HBoxContainer.new()
@@ -165,22 +184,28 @@ func _createSegmentRow(index: int, segment: Dictionary):
 
 	row.add_child(contentControl)
 
-	# Up button
+	var isProjectPath = segment.get("type", "") == "project-path"
+	var hasProjectPathAtZero = _pathSegments.size() > 0 and _pathSegments[0].get("type", "") == "project-path"
+
+	# Up button (hidden for project-path since it must stay at index 0)
+	# Also disabled for index 1 if project-path is at index 0 (can't swap with it)
 	var upButton = Button.new()
 	upButton.icon = ICON_ARROW_UP
 	upButton.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	upButton.custom_minimum_size.x = 32
-	upButton.disabled = (index == 0)
+	upButton.disabled = (index == 0) or (index == 1 and hasProjectPathAtZero)
 	upButton.pressed.connect(_onMoveUpPressed.bind(index))
+	upButton.visible = not isProjectPath
 	row.add_child(upButton)
 
-	# Down button
+	# Down button (hidden for project-path since it must stay at index 0)
 	var downButton = Button.new()
 	downButton.icon = ICON_ARROW_DOWN
 	downButton.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	downButton.custom_minimum_size.x = 32
 	downButton.disabled = (index == _pathSegments.size() - 1)
 	downButton.pressed.connect(_onMoveDownPressed.bind(index))
+	downButton.visible = not isProjectPath
 	row.add_child(downButton)
 
 	# Delete button
@@ -195,6 +220,9 @@ func _createSegmentRow(index: int, segment: Dictionary):
 
 func _onMoveUpPressed(index: int):
 	if index > 0:
+		# Don't allow moving into position 0 if there's a project-path there
+		if index == 1 and _pathSegments[0].get("type", "") == "project-path":
+			return
 		var temp = _pathSegments[index]
 		_pathSegments[index] = _pathSegments[index - 1]
 		_pathSegments[index - 1] = temp
@@ -203,6 +231,9 @@ func _onMoveUpPressed(index: int):
 
 func _onMoveDownPressed(index: int):
 	if index < _pathSegments.size() - 1:
+		# Don't allow moving project-path down from position 0
+		if index == 0 and _pathSegments[0].get("type", "") == "project-path":
+			return
 		var temp = _pathSegments[index]
 		_pathSegments[index] = _pathSegments[index + 1]
 		_pathSegments[index + 1] = temp
@@ -215,7 +246,8 @@ func _onDeletePressed(index: int):
 	_updatePreview()
 
 func _onAddProjectPathPressed():
-	_pathSegments.append({"type": "project-path"})
+	# Project-path must always be first, so insert at index 0
+	_pathSegments.insert(0, {"type": "project-path"})
 	_rebuildSegmentsList()
 	_updatePreview()
 
@@ -377,12 +409,58 @@ func _flashPreviewRed():
 func _onSavePressed():
 	# Emit signal with project dir and path template (stay on page)
 	settings_saved.emit(_currentPlatform, _projectDir, _pathSegments)
+	# Update original to match saved state (so _hasUnsavedChanges() returns false)
+	_originalPathSegments = _pathSegments.duplicate(true)
 
 func _onSaveClosePressed():
 	# Emit signal with project dir and path template, then close
 	settings_saved.emit(_currentPlatform, _projectDir, _pathSegments)
+	# No need to update _originalPathSegments since we're closing
 	visible = false
 
 func _onBackPressed():
-	cancelled.emit()
-	visible = false
+	if _hasUnsavedChanges():
+		_showUnsavedChangesDialog()
+	else:
+		cancelled.emit()
+		visible = false
+
+# Checks if the path segments have been modified
+func _hasUnsavedChanges() -> bool:
+	if _pathSegments.size() != _originalPathSegments.size():
+		return true
+
+	for i in range(_pathSegments.size()):
+		var current = _pathSegments[i]
+		var original = _originalPathSegments[i]
+
+		if current.get("type", "") != original.get("type", ""):
+			return true
+		if current.get("value", "") != original.get("value", ""):
+			return true
+
+	return false
+
+# Shows the unsaved changes confirmation dialog
+func _showUnsavedChangesDialog():
+	if _yesNoDialog == null:
+		_yesNoDialog = load("res://scenes/common/yes-no-dialog.tscn").instantiate()
+		add_child(_yesNoDialog)
+
+	_yesNoDialog.confirmed.connect(_onUnsavedChangesChoice, CONNECT_ONE_SHOT)
+	_yesNoDialog.show_dialog_with_buttons(
+		"You have unsaved changes.\n\nDo you want to save before leaving?",
+		["Save", "Don't Save", "Cancel"]
+	)
+
+# Handles the user's choice in the unsaved changes dialog
+func _onUnsavedChangesChoice(choice: String):
+	match choice:
+		"Save":
+			settings_saved.emit(_currentPlatform, _projectDir, _pathSegments)
+			visible = false
+		"Don't Save":
+			cancelled.emit()
+			visible = false
+		"Cancel":
+			pass  # Do nothing, stay on the dialog

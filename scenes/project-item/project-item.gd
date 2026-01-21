@@ -343,8 +343,8 @@ func GetExportPresetFilters(presetName: String) -> Dictionary:
 	var sections = config.get_sections()
 	for section in sections:
 		if section.begins_with("preset.") and not section.contains(".options"):
-			var name = config.get_value(section, "name", "")
-			if name == presetName:
+			var sectionName = config.get_value(section, "name", "")
+			if sectionName == presetName:
 				result["include_filter"] = config.get_value(section, "include_filter", "")
 				result["exclude_filter"] = config.get_value(section, "exclude_filter", "")
 				break
@@ -370,8 +370,8 @@ func SetExportPresetFilters(presetName: String, includeFilter: String, excludeFi
 	var sections = config.get_sections()
 	for section in sections:
 		if section.begins_with("preset.") and not section.contains(".options"):
-			var name = config.get_value(section, "name", "")
-			if name == presetName:
+			var sectionName = config.get_value(section, "name", "")
+			if sectionName == presetName:
 				config.set_value(section, "include_filter", includeFilter)
 				config.set_value(section, "exclude_filter", excludeFilter)
 				err = config.save(presetsPath)

@@ -1453,6 +1453,42 @@ func _updateExportPathDisplay(platform: String):
 
 # Build the actual export path from template for export operations
 # projectDir is used for {project-path} segment resolution
+# Calculates the "export root" - the static part of the path before variable segments
+# This is used for validation to ensure we're not exporting directly to project directory
+func _getExportRootFromTemplate(platform: String, projectDir: String) -> String:
+	var rootPath = ""
+	var template = _platformPathTemplates.get(platform, [
+		{"type": "project-path"},
+		{"type": "custom", "value": "exports"},
+		{"type": "version"},
+		{"type": "platform"}
+	])
+
+	# Build path from static segments only (stop at first variable segment)
+	for segment in template:
+		var segmentType = segment.get("type", "")
+
+		# Stop at variable segments (these change per export)
+		if segmentType in ["version", "platform", "date"]:
+			break
+
+		match segmentType:
+			"project-path":
+				var projectPath = projectDir if projectDir != "" else "C:/project"
+				if rootPath.is_empty():
+					rootPath = projectPath
+				else:
+					rootPath = rootPath.path_join(projectPath)
+			"custom":
+				var customValue = segment.get("value", "custom")
+				customValue = customValue.replace("\\", "/")
+				if rootPath.is_empty():
+					rootPath = customValue
+				else:
+					rootPath = rootPath.path_join(customValue)
+
+	return rootPath
+
 func _buildExportPathFromTemplate(platform: String, projectDir: String, version: String) -> String:
 	var fullPath = ""
 	var template = _platformPathTemplates.get(platform, [
@@ -1832,8 +1868,10 @@ func _prepareExportContext(platform: String, runAfterExport: bool, godotPathForR
 		version = "v1.0.0"
 
 	# Build and validate export destination path
-	var exportDestPath = _buildExportPathFromTemplate(platform, exportPath, version)
-	var validation = _validateExportPath(projectDir, exportPath, exportDestPath)
+	var exportDestPath = _buildExportPathFromTemplate(platform, projectDir, version)
+	# Calculate the export root from template (static segments before {version}/{platform}/{date})
+	var exportRoot = _getExportRootFromTemplate(platform, projectDir)
+	var validation = _validateExportPath(projectDir, exportRoot, exportDestPath)
 	if not validation["valid"]:
 		return {"error": validation["error"]}
 
@@ -2133,9 +2171,14 @@ func _exportPlatform(platform: String, runAfterExport: bool = false, godotPathFo
 	if platform in _exportingPlatforms:
 		return
 
+	var data = _platformRows[platform]
+
+	# Clear previous status and show brief delay so user sees a fresh attempt
+	_updateStatus(data, "")
+	await get_tree().create_timer(0.4).timeout
+
 	# Phase 1: Prepare context with all needed data (before any awaits)
 	var ctx = _prepareExportContext(platform, runAfterExport, godotPathForRun)
-	var data = _platformRows[platform]
 	if ctx.has("error"):
 		if ctx["error"] != "Not in scene tree" and ctx["error"] != "Project item invalid":
 			_updateStatus(data, "Error: " + ctx["error"])
@@ -2143,8 +2186,6 @@ func _exportPlatform(platform: String, runAfterExport: bool = false, godotPathFo
 	_exportingPlatforms.append(platform)
 
 	# Initialize UI
-	_updateStatus(data, "")
-	await get_tree().process_frame
 	_updateStatus(data, "Exporting...")
 	_setExportButtonsDisabled(data, true)
 	build_started.emit(platform)
@@ -2172,9 +2213,14 @@ func _exportPlatformNoPrompts(platform: String):
 	if platform in _exportingPlatforms:
 		return
 
+	var data = _platformRows[platform]
+
+	# Clear previous status and show brief delay so user sees a fresh attempt
+	_updateStatus(data, "")
+	await get_tree().create_timer(0.4).timeout
+
 	# Phase 1: Prepare context with all needed data (before any awaits)
 	var ctx = _prepareExportContext(platform, false, "")
-	var data = _platformRows[platform]
 	if ctx.has("error"):
 		if ctx["error"] != "Not in scene tree" and ctx["error"] != "Project item invalid":
 			_updateStatus(data, "Error: " + ctx["error"])
@@ -2182,8 +2228,6 @@ func _exportPlatformNoPrompts(platform: String):
 	_exportingPlatforms.append(platform)
 
 	# Initialize UI
-	_updateStatus(data, "")
-	await get_tree().process_frame
 	_updateStatus(data, "Exporting...")
 	_setExportButtonsDisabled(data, true)
 	build_started.emit(platform)
@@ -3485,18 +3529,26 @@ func _createMigrationDialog():
 
 # Shows the migration prompt dialog
 func _showMigrationPrompt():
+	# Safety check - clean up any existing overlay first
+	if _migrationOverlay != null:
+		print("[Migration] WARNING: Overlay already exists, cleaning up first")
+		_closeMigrationDialog()
+
 	_createMigrationDialog()
 
-	# Add overlay to root (release-manager panel)
-	var root = owner
-	if root:
-		root.add_child(_migrationOverlay)
-		_migrationOverlay.move_to_front()
+	# Add overlay to self (this export-page node)
+	print("[Migration] _showMigrationPrompt - adding overlay to self: %s" % str(self))
+	add_child(_migrationOverlay)
+	_migrationOverlay.move_to_front()
+	print("[Migration] Overlay added, parent is: %s" % str(_migrationOverlay.get_parent()))
 
 # Shows the success dialog after migration
 func _showMigrationSuccess(platformCount: int):
+	print("[Migration] _showMigrationSuccess called with count: %d" % platformCount)
+	print("[Migration] _migrationOverlay before close: %s" % str(_migrationOverlay))
 	# Close the current migration dialog first
 	_closeMigrationDialog()
+	print("[Migration] _migrationOverlay after close: %s" % str(_migrationOverlay))
 
 	# Create new overlay for success dialog
 	_migrationOverlay = Control.new()
@@ -3603,15 +3655,16 @@ func _showMigrationSuccess(platformCount: int):
 
 	mainVBox.add_child(buttonMargin)
 
-	# Add overlay to root
-	var root = owner
-	if root:
-		root.add_child(_migrationOverlay)
-		_migrationOverlay.move_to_front()
+	# Add overlay to self
+	print("[Migration] Success dialog - adding overlay to self")
+	add_child(_migrationOverlay)
+	_migrationOverlay.move_to_front()
 
 # Handles user accepting the migration
 func _onMigrationAccepted():
+	print("[Migration] _onMigrationAccepted called")
 	if _selectedProjectItem == null:
+		print("[Migration] No selected project, closing dialog")
 		_closeMigrationDialog()
 		return
 
@@ -3649,6 +3702,7 @@ func _onMigrationAccepted():
 		for platform in _platformRows.keys():
 			_updateExportPathDisplay(platform)
 
+	print("[Migration] Upgraded %d platforms, calling _showMigrationSuccess" % upgradedCount)
 	# Close migration dialog and show success dialog
 	_showMigrationSuccess(upgradedCount)
 
@@ -3663,9 +3717,22 @@ func _onMigrationDeclined():
 
 # Closes and cleans up the migration dialog
 func _closeMigrationDialog():
+	print("[Migration] _closeMigrationDialog called")
+	print("[Migration] _migrationOverlay: %s" % str(_migrationOverlay))
 	if _migrationOverlay != null:
+		print("[Migration] _migrationOverlay parent: %s" % str(_migrationOverlay.get_parent()))
+		# Hide immediately to ensure visual feedback
+		_migrationOverlay.visible = false
+		# Remove from parent immediately, then queue for deletion
+		var parent = _migrationOverlay.get_parent()
+		if parent != null:
+			print("[Migration] Removing from parent: %s" % str(parent))
+			parent.remove_child(_migrationOverlay)
 		_migrationOverlay.queue_free()
 		_migrationOverlay = null
+		print("[Migration] _migrationOverlay set to null")
+	else:
+		print("[Migration] _migrationOverlay was already null!")
 	_migrationDialog = null
 
 # Checks and triggers migration if needed (called after loading platform settings)
