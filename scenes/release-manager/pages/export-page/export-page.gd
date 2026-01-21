@@ -193,11 +193,13 @@ func _loadPlatformSettings():
 				_platformFilterConfigs[platform] = settings["filterConfig"]
 				_updateIncludeExcludeDisplay(platform, settings["filterConfig"])
 
-			# Restore path template (default: version then platform)
+			# Restore path template (default: project-path, exports, version, platform)
 			if settings.has("pathTemplate"):
 				_platformPathTemplates[platform] = settings["pathTemplate"]
 			else:
 				_platformPathTemplates[platform] = [
+					{"type": "project-path"},
+					{"type": "custom", "value": "exports"},
 					{"type": "version"},
 					{"type": "platform"}
 				]
@@ -265,14 +267,19 @@ func _loadPlatformSettings():
 				_updateExportFilenameDisplay(platform)
 				_updateArchiveFilenameDisplay(platform)
 
-				# Set default path template: version, platform
+				# Set default path template: project-path, exports, version, platform
 				_platformPathTemplates[platform] = [
+					{"type": "project-path"},
+					{"type": "custom", "value": "exports"},
 					{"type": "version"},
 					{"type": "platform"}
 				]
 
 				# Update display to show full path with defaults
 				_updateExportPathDisplay(platform)
+
+	# Check if any existing platforms need path template migration
+	_checkPathTemplateMigration()
 
 func _createPlatformRows():
 	# Get configured export presets from the project
@@ -1102,22 +1109,21 @@ func _onBuildConfigSaved(platform: String, config: Dictionary):
 	# page_modified.emit()
 
 func _onPathSettingsPressed(platform: String):
-	# Get current path template for this platform (default: version then platform)
+	# Get current path template for this platform (default: project-path, exports, version, platform)
 	var currentTemplate = _platformPathTemplates.get(platform, [
+		{"type": "project-path"},
+		{"type": "custom", "value": "exports"},
 		{"type": "version"},
 		{"type": "platform"}
 	])
 
-	# Get root export path from stored dictionary
-	var rootPath = _platformRootPaths.get(platform, "")
-	if rootPath.is_empty():
-		# Default to project directory + exports subfolder
-		if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
-			# GetProjectDir() handles both path formats (with or without project.godot)
-			var projectDir = _selectedProjectItem.GetProjectDir()
-			rootPath = projectDir.path_join("exports")
-		else:
-			rootPath = "C:/exports"  # Fallback if no project selected
+	# Get project directory (used for {project-path} segment and display)
+	var projectDir = ""
+	if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
+		# GetProjectDir() handles both path formats (with or without project.godot)
+		projectDir = _selectedProjectItem.GetProjectDir()
+	else:
+		projectDir = "C:/project"  # Fallback if no project selected
 
 	# Add to root if not already added
 	if _pathSettingsDialog.get_parent() == null:
@@ -1132,7 +1138,7 @@ func _onPathSettingsPressed(platform: String):
 	# Open dialog (will cover entire wizard)
 	var projectVersion = _projectVersionLineEdit.text if _projectVersionLineEdit.text != "" else "v1.0.0"
 
-	_pathSettingsDialog.openForPlatform(platform, rootPath, currentTemplate, projectVersion)
+	_pathSettingsDialog.openForPlatform(platform, projectDir, currentTemplate, projectVersion)
 	_pathSettingsDialog.move_to_front()  # Ensure it's rendered on top
 
 func _onPathSettingsSaved(platform: String, rootPath: String, pathTemplate: Array):
@@ -1391,13 +1397,10 @@ func _getProjectNameForFilename() -> String:
 func _updateExportPathDisplay(platform: String):
 	# Update the export path LineEdit to show the full path with template
 	var data = _platformRows[platform]
-	var rootPath = _platformRootPaths.get(platform, "")
-
-	if rootPath.is_empty():
-		return
+	var projectDir = _platformRootPaths.get(platform, "")
 
 	# Build preview path based on template
-	var fullPath = rootPath
+	var fullPath = ""
 	var template = _platformPathTemplates.get(platform, [])
 
 	# Get current version for display
@@ -1407,22 +1410,39 @@ func _updateExportPathDisplay(platform: String):
 
 	for segment in template:
 		match segment["type"]:
+			"project-path":
+				var projectPath = projectDir if projectDir != "" else "C:/project"
+				if fullPath.is_empty():
+					fullPath = projectPath
+				else:
+					fullPath = fullPath.path_join(projectPath)
 			"version":
-				fullPath = fullPath.path_join(version)
+				if fullPath.is_empty():
+					fullPath = version
+				else:
+					fullPath = fullPath.path_join(version)
 			"platform":
-				fullPath = fullPath.path_join(platform)
+				if fullPath.is_empty():
+					fullPath = platform
+				else:
+					fullPath = fullPath.path_join(platform)
 			"date":
 				var dateFormat = segment.get("value", "{year}-{month}-{day}")
 				var processedDate = _processDatetimeTokens(dateFormat)
-				fullPath = fullPath.path_join(processedDate)
+				if fullPath.is_empty():
+					fullPath = processedDate
+				else:
+					fullPath = fullPath.path_join(processedDate)
 			"custom":
 				var customValue = segment.get("value", "custom")
 				var processedCustom = _processDatetimeTokens(customValue)
 				# Custom paths can contain slashes for nested folders
 				# Normalize to forward slashes first
 				processedCustom = processedCustom.replace("\\", "/")
-				# If it contains slashes, append directly; otherwise use path_join
-				if "/" in processedCustom:
+				if fullPath.is_empty():
+					fullPath = processedCustom
+				elif "/" in processedCustom:
+					# If it contains slashes, append directly
 					fullPath = fullPath + "/" + processedCustom
 				else:
 					fullPath = fullPath.path_join(processedCustom)
@@ -1432,31 +1452,51 @@ func _updateExportPathDisplay(platform: String):
 	data["exportPath"].tooltip_text = fullPath
 
 # Build the actual export path from template for export operations
-func _buildExportPathFromTemplate(platform: String, rootPath: String, version: String) -> String:
-	var fullPath = rootPath
+# projectDir is used for {project-path} segment resolution
+func _buildExportPathFromTemplate(platform: String, projectDir: String, version: String) -> String:
+	var fullPath = ""
 	var template = _platformPathTemplates.get(platform, [
+		{"type": "project-path"},
+		{"type": "custom", "value": "exports"},
 		{"type": "version"},
 		{"type": "platform"}
 	])
 
 	for segment in template:
 		match segment["type"]:
+			"project-path":
+				var projectPath = projectDir if projectDir != "" else "C:/project"
+				if fullPath.is_empty():
+					fullPath = projectPath
+				else:
+					fullPath = fullPath.path_join(projectPath)
 			"version":
-				fullPath = fullPath.path_join(version)
+				if fullPath.is_empty():
+					fullPath = version
+				else:
+					fullPath = fullPath.path_join(version)
 			"platform":
-				fullPath = fullPath.path_join(platform)
+				if fullPath.is_empty():
+					fullPath = platform
+				else:
+					fullPath = fullPath.path_join(platform)
 			"date":
 				var dateFormat = segment.get("value", "{year}-{month}-{day}")
 				var processedDate = _processDatetimeTokens(dateFormat)
-				fullPath = fullPath.path_join(processedDate)
+				if fullPath.is_empty():
+					fullPath = processedDate
+				else:
+					fullPath = fullPath.path_join(processedDate)
 			"custom":
 				var customValue = segment.get("value", "custom")
 				var processedCustom = _processDatetimeTokens(customValue)
 				# Custom paths can contain slashes for nested folders
 				# Normalize to forward slashes first, then join
 				processedCustom = processedCustom.replace("\\", "/")
-				# If it contains slashes, append directly; otherwise use path_join
-				if "/" in processedCustom:
+				if fullPath.is_empty():
+					fullPath = processedCustom
+				elif "/" in processedCustom:
+					# If it contains slashes, append directly
 					fullPath = fullPath + "/" + processedCustom
 				else:
 					fullPath = fullPath.path_join(processedCustom)
@@ -3134,3 +3174,502 @@ func _onOutputLogTogglePressed(platform: String):
 	else:
 		toggle.icon = ICON_CHEVRON_DOWN
 		toggle.tooltip_text = "Show export output"
+
+# ============================================================================
+# Path Template Migration
+# ============================================================================
+
+var _migrationDialog: Control = null
+var _migrationOverlay: Control = null
+
+# Checks if any platform has an old format path template that needs migration
+func _needsPathTemplateMigration() -> bool:
+	if _selectedProjectItem == null:
+		return false
+
+	# Check migration status - if already processed, don't show dialog again
+	var migrationStatus = _selectedProjectItem.GetPathTemplateMigrationStatus()
+	if migrationStatus == "upgraded" or migrationStatus == "skipped":
+		return false
+
+	# Check if any platform has saved settings with old format template
+	var allSettings = _selectedProjectItem.GetAllPlatformExportSettings()
+	for platform in allSettings.keys():
+		var settings = allSettings[platform]
+		if settings.has("pathTemplate"):
+			var template = settings["pathTemplate"]
+			if _isOldFormatTemplate(template):
+				return true
+
+	return false
+
+# Checks if a template is in the old format (doesn't start with project-path)
+func _isOldFormatTemplate(template: Array) -> bool:
+	if template.is_empty():
+		return false
+
+	# Old format doesn't have project-path as first segment
+	var firstSegment = template[0]
+	if firstSegment is Dictionary:
+		return firstSegment.get("type", "") != "project-path"
+
+	return false
+
+# Checks if template already has an "exports" custom segment at any position
+func _templateHasExportsSegment(template: Array) -> bool:
+	for segment in template:
+		if segment is Dictionary:
+			if segment.get("type", "") == "custom" and segment.get("value", "") == "exports":
+				return true
+	return false
+
+# Gets example paths for migration dialog (token format and actual paths)
+func _getMigrationExamplePaths() -> Dictionary:
+	var result = {
+		"token_before": "{hard-coded path}/exports/{version}/{platform}",
+		"token_after": "{project-path}/{\"exports\"}/{version}/{platform}",
+		"actual_before": "",
+		"actual_after": "",
+		"platform": ""
+	}
+
+	if _selectedProjectItem == null:
+		return result
+
+	var projectDir = _selectedProjectItem.GetProjectDir()
+	var version = _selectedProjectItem.GetProjectVersion()
+	if version.is_empty():
+		version = "v1.0.0"
+
+	var allSettings = _selectedProjectItem.GetAllPlatformExportSettings()
+
+	# Find first platform with old format template
+	for platform in allSettings.keys():
+		var settings = allSettings[platform]
+		if settings.has("pathTemplate"):
+			var template = settings["pathTemplate"]
+			if _isOldFormatTemplate(template):
+				result["platform"] = platform
+
+				# Build token string from old template (with hard-coded path prefix)
+				var tokenParts: Array[String] = ["{hard-coded path}", "exports"]
+				for segment in template:
+					if segment is Dictionary:
+						match segment.get("type", ""):
+							"version":
+								tokenParts.append("{version}")
+							"platform":
+								tokenParts.append("{platform}")
+							"date":
+								tokenParts.append("{date}")
+							"custom":
+								tokenParts.append(segment.get("value", "custom"))
+				result["token_before"] = "/".join(tokenParts)
+
+				# Build token string for after (with project-path and {"exports"})
+				var afterTokenParts: Array[String] = ["{project-path}"]
+				if not _templateHasExportsSegment(template):
+					afterTokenParts.append("{\"exports\"}")
+				for segment in template:
+					if segment is Dictionary:
+						match segment.get("type", ""):
+							"version":
+								afterTokenParts.append("{version}")
+							"platform":
+								afterTokenParts.append("{platform}")
+							"date":
+								afterTokenParts.append("{date}")
+							"custom":
+								afterTokenParts.append("{\"" + segment.get("value", "custom") + "\"}")
+				result["token_after"] = "/".join(afterTokenParts)
+
+				# Build actual path from old template (include project dir + exports prefix)
+				var oldActualPath = projectDir.path_join("exports")
+				var templatePath = _buildExportPathFromTemplate(platform, projectDir, version)
+				# The old path was: projectDir/exports/[template segments]
+				# But _buildExportPathFromTemplate uses _platformPathTemplates which doesn't have project-path
+				# So we need to prepend projectDir/exports to the template result
+				result["actual_before"] = oldActualPath.path_join(templatePath)
+
+				# Build actual path with new template (simulated)
+				var newTemplate: Array = []
+				newTemplate.append({"type": "project-path"})
+				if not _templateHasExportsSegment(template):
+					newTemplate.append({"type": "custom", "value": "exports"})
+				newTemplate.append_array(template)
+
+				# Temporarily swap template to calculate new path
+				var oldTemplate = _platformPathTemplates.get(platform, [])
+				_platformPathTemplates[platform] = newTemplate
+				result["actual_after"] = _buildExportPathFromTemplate(platform, projectDir, version)
+				_platformPathTemplates[platform] = oldTemplate
+
+				break
+
+	return result
+
+# Creates the migration dialog overlay and card
+func _createMigrationDialog():
+	# Get example paths for display
+	var examples = _getMigrationExamplePaths()
+
+	# Create full-screen overlay to block input
+	_migrationOverlay = Control.new()
+	_migrationOverlay.name = "MigrationOverlay"
+	_migrationOverlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_migrationOverlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_migrationOverlay.z_index = 1000
+
+	# Semi-transparent background
+	var background = ColorRect.new()
+	background.color = Color(0, 0, 0, 0.7)
+	background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_migrationOverlay.add_child(background)
+
+	# Center container for the card
+	var centerContainer = CenterContainer.new()
+	centerContainer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_migrationOverlay.add_child(centerContainer)
+
+	# Card container (styled like platform cards)
+	_migrationDialog = PanelContainer.new()
+	_migrationDialog.custom_minimum_size = Vector2(600, 0)
+
+	# Apply card theme (same as platform cards)
+	var panelTheme = Theme.new()
+	var styleBox = StyleBoxFlat.new()
+	styleBox.bg_color = _getAdjustedBackgroundColor(-0.08)
+	styleBox.border_color = Color(0.6, 0.6, 0.6)
+	styleBox.border_width_left = 1
+	styleBox.border_width_top = 1
+	styleBox.border_width_right = 1
+	styleBox.border_width_bottom = 1
+	styleBox.corner_radius_top_left = 6
+	styleBox.corner_radius_top_right = 6
+	styleBox.corner_radius_bottom_right = 6
+	styleBox.corner_radius_bottom_left = 6
+	panelTheme.set_stylebox("panel", "PanelContainer", styleBox)
+	_migrationDialog.theme = panelTheme
+
+	centerContainer.add_child(_migrationDialog)
+
+	# Main vertical layout
+	var mainVBox = VBoxContainer.new()
+	mainVBox.add_theme_constant_override("separation", 0)
+	_migrationDialog.add_child(mainVBox)
+
+	# === Header (with bottom border) ===
+	var headerContainer = PanelContainer.new()
+	headerContainer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var headerTheme = Theme.new()
+	var headerStyleBox = StyleBoxFlat.new()
+	headerStyleBox.bg_color = Color(0, 0, 0, 0)
+	headerStyleBox.border_color = Color(0.6, 0.6, 0.6)
+	headerStyleBox.border_width_bottom = 1
+	headerTheme.set_stylebox("panel", "PanelContainer", headerStyleBox)
+	headerContainer.theme = headerTheme
+
+	var headerMargin = MarginContainer.new()
+	headerMargin.add_theme_constant_override("margin_left", 15)
+	headerMargin.add_theme_constant_override("margin_top", 12)
+	headerMargin.add_theme_constant_override("margin_right", 15)
+	headerMargin.add_theme_constant_override("margin_bottom", 12)
+	headerContainer.add_child(headerMargin)
+
+	var titleLabel = Label.new()
+	titleLabel.name = "TitleLabel"
+	titleLabel.text = "Export Path Update Available"
+	titleLabel.add_theme_font_size_override("font_size", 16)
+	headerMargin.add_child(titleLabel)
+
+	mainVBox.add_child(headerContainer)
+
+	# === Body ===
+	var bodyMargin = MarginContainer.new()
+	bodyMargin.add_theme_constant_override("margin_left", 15)
+	bodyMargin.add_theme_constant_override("margin_top", 15)
+	bodyMargin.add_theme_constant_override("margin_right", 15)
+	bodyMargin.add_theme_constant_override("margin_bottom", 15)
+
+	var bodyVBox = VBoxContainer.new()
+	bodyVBox.name = "BodyVBox"
+	bodyVBox.add_theme_constant_override("separation", 12)
+	bodyMargin.add_child(bodyVBox)
+
+	var messageLabel = Label.new()
+	messageLabel.name = "MessageLabel"
+	messageLabel.text = "A new export path format is available!\n\nUpgrading to the new format will keep your current export path while supporting greater customizations."
+	messageLabel.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	bodyVBox.add_child(messageLabel)
+
+	# Example box style (reused for both boxes)
+	var exampleStyle = StyleBoxFlat.new()
+	exampleStyle.bg_color = Color(0.15, 0.15, 0.15, 0.5)
+	exampleStyle.corner_radius_top_left = 4
+	exampleStyle.corner_radius_top_right = 4
+	exampleStyle.corner_radius_bottom_left = 4
+	exampleStyle.corner_radius_bottom_right = 4
+
+	# Token format example box
+	var tokenPanel = PanelContainer.new()
+	var tokenTheme = Theme.new()
+	tokenTheme.set_stylebox("panel", "PanelContainer", exampleStyle)
+	tokenPanel.theme = tokenTheme
+
+	var tokenMargin = MarginContainer.new()
+	tokenMargin.add_theme_constant_override("margin_left", 10)
+	tokenMargin.add_theme_constant_override("margin_top", 8)
+	tokenMargin.add_theme_constant_override("margin_right", 10)
+	tokenMargin.add_theme_constant_override("margin_bottom", 8)
+	tokenPanel.add_child(tokenMargin)
+
+	var tokenLabel = Label.new()
+	tokenLabel.text = "Template format:\n  Before:  %s\n  After:   %s" % [examples["token_before"], examples["token_after"]]
+	tokenLabel.add_theme_font_size_override("font_size", 13)
+	tokenMargin.add_child(tokenLabel)
+
+	bodyVBox.add_child(tokenPanel)
+
+	# Actual path example box (only if we have actual paths)
+	if not examples["actual_before"].is_empty() and not examples["actual_after"].is_empty():
+		var actualPanel = PanelContainer.new()
+		var actualTheme = Theme.new()
+		var actualStyle = exampleStyle.duplicate()
+		actualTheme.set_stylebox("panel", "PanelContainer", actualStyle)
+		actualPanel.theme = actualTheme
+
+		var actualMargin = MarginContainer.new()
+		actualMargin.add_theme_constant_override("margin_left", 10)
+		actualMargin.add_theme_constant_override("margin_top", 8)
+		actualMargin.add_theme_constant_override("margin_right", 10)
+		actualMargin.add_theme_constant_override("margin_bottom", 8)
+		actualPanel.add_child(actualMargin)
+
+		var actualLabel = Label.new()
+		var platformNote = " (%s)" % examples["platform"] if not examples["platform"].is_empty() else ""
+		actualLabel.text = "Updated Path Example%s:\n  Before:  %s\n  After:   %s" % [platformNote, examples["actual_before"], examples["actual_after"]]
+		actualLabel.add_theme_font_size_override("font_size", 13)
+		actualMargin.add_child(actualLabel)
+
+		bodyVBox.add_child(actualPanel)
+
+	mainVBox.add_child(bodyMargin)
+
+	# === Button row ===
+	var buttonMargin = MarginContainer.new()
+	buttonMargin.add_theme_constant_override("margin_left", 15)
+	buttonMargin.add_theme_constant_override("margin_top", 0)
+	buttonMargin.add_theme_constant_override("margin_right", 15)
+	buttonMargin.add_theme_constant_override("margin_bottom", 15)
+
+	var buttonRow = HBoxContainer.new()
+	buttonRow.name = "ButtonRow"
+	buttonRow.add_theme_constant_override("separation", 10)
+	buttonRow.alignment = BoxContainer.ALIGNMENT_END
+	buttonMargin.add_child(buttonRow)
+
+	var keepButton = Button.new()
+	keepButton.name = "KeepButton"
+	keepButton.text = "Keep Current"
+	keepButton.pressed.connect(_onMigrationDeclined)
+	buttonRow.add_child(keepButton)
+
+	var upgradeButton = Button.new()
+	upgradeButton.name = "UpgradeButton"
+	upgradeButton.text = "Upgrade Now"
+	upgradeButton.pressed.connect(_onMigrationAccepted)
+	buttonRow.add_child(upgradeButton)
+
+	mainVBox.add_child(buttonMargin)
+
+# Shows the migration prompt dialog
+func _showMigrationPrompt():
+	_createMigrationDialog()
+
+	# Add overlay to root (release-manager panel)
+	var root = owner
+	if root:
+		root.add_child(_migrationOverlay)
+		_migrationOverlay.move_to_front()
+
+# Shows the success dialog after migration
+func _showMigrationSuccess(platformCount: int):
+	# Close the current migration dialog first
+	_closeMigrationDialog()
+
+	# Create new overlay for success dialog
+	_migrationOverlay = Control.new()
+	_migrationOverlay.name = "MigrationSuccessOverlay"
+	_migrationOverlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_migrationOverlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_migrationOverlay.z_index = 1000
+
+	# Semi-transparent background
+	var background = ColorRect.new()
+	background.color = Color(0, 0, 0, 0.7)
+	background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_migrationOverlay.add_child(background)
+
+	# Center container for the card
+	var centerContainer = CenterContainer.new()
+	centerContainer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_migrationOverlay.add_child(centerContainer)
+
+	# Card container
+	_migrationDialog = PanelContainer.new()
+	_migrationDialog.custom_minimum_size = Vector2(450, 0)
+
+	# Apply card theme
+	var panelTheme = Theme.new()
+	var styleBox = StyleBoxFlat.new()
+	styleBox.bg_color = _getAdjustedBackgroundColor(-0.08)
+	styleBox.border_color = Color(0.6, 0.6, 0.6)
+	styleBox.border_width_left = 1
+	styleBox.border_width_top = 1
+	styleBox.border_width_right = 1
+	styleBox.border_width_bottom = 1
+	styleBox.corner_radius_top_left = 6
+	styleBox.corner_radius_top_right = 6
+	styleBox.corner_radius_bottom_right = 6
+	styleBox.corner_radius_bottom_left = 6
+	panelTheme.set_stylebox("panel", "PanelContainer", styleBox)
+	_migrationDialog.theme = panelTheme
+
+	centerContainer.add_child(_migrationDialog)
+
+	# Main vertical layout
+	var mainVBox = VBoxContainer.new()
+	mainVBox.add_theme_constant_override("separation", 0)
+	_migrationDialog.add_child(mainVBox)
+
+	# === Header ===
+	var headerContainer = PanelContainer.new()
+	headerContainer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var headerTheme = Theme.new()
+	var headerStyleBox = StyleBoxFlat.new()
+	headerStyleBox.bg_color = Color(0, 0, 0, 0)
+	headerStyleBox.border_color = Color(0.6, 0.6, 0.6)
+	headerStyleBox.border_width_bottom = 1
+	headerTheme.set_stylebox("panel", "PanelContainer", headerStyleBox)
+	headerContainer.theme = headerTheme
+
+	var headerMargin = MarginContainer.new()
+	headerMargin.add_theme_constant_override("margin_left", 15)
+	headerMargin.add_theme_constant_override("margin_top", 12)
+	headerMargin.add_theme_constant_override("margin_right", 15)
+	headerMargin.add_theme_constant_override("margin_bottom", 12)
+	headerContainer.add_child(headerMargin)
+
+	var titleLabel = Label.new()
+	titleLabel.text = "Migration Complete"
+	titleLabel.add_theme_font_size_override("font_size", 16)
+	headerMargin.add_child(titleLabel)
+
+	mainVBox.add_child(headerContainer)
+
+	# === Body ===
+	var bodyMargin = MarginContainer.new()
+	bodyMargin.add_theme_constant_override("margin_left", 15)
+	bodyMargin.add_theme_constant_override("margin_top", 15)
+	bodyMargin.add_theme_constant_override("margin_right", 15)
+	bodyMargin.add_theme_constant_override("margin_bottom", 15)
+
+	var messageLabel = Label.new()
+	messageLabel.text = "Successfully upgraded %d platform(s) to the new path format.\n\nYour export paths now include {project-path} at the beginning." % platformCount
+	messageLabel.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	bodyMargin.add_child(messageLabel)
+
+	mainVBox.add_child(bodyMargin)
+
+	# === Button row ===
+	var buttonMargin = MarginContainer.new()
+	buttonMargin.add_theme_constant_override("margin_left", 15)
+	buttonMargin.add_theme_constant_override("margin_top", 0)
+	buttonMargin.add_theme_constant_override("margin_right", 15)
+	buttonMargin.add_theme_constant_override("margin_bottom", 15)
+
+	var buttonRow = HBoxContainer.new()
+	buttonRow.add_theme_constant_override("separation", 10)
+	buttonRow.alignment = BoxContainer.ALIGNMENT_END
+	buttonMargin.add_child(buttonRow)
+
+	var okButton = Button.new()
+	okButton.text = "OK"
+	okButton.custom_minimum_size.x = 80
+	okButton.pressed.connect(_closeMigrationDialog)
+	buttonRow.add_child(okButton)
+
+	mainVBox.add_child(buttonMargin)
+
+	# Add overlay to root
+	var root = owner
+	if root:
+		root.add_child(_migrationOverlay)
+		_migrationOverlay.move_to_front()
+
+# Handles user accepting the migration
+func _onMigrationAccepted():
+	if _selectedProjectItem == null:
+		_closeMigrationDialog()
+		return
+
+	var allSettings = _selectedProjectItem.GetAllPlatformExportSettings()
+	var upgradedCount = 0
+
+	for platform in allSettings.keys():
+		var settings = allSettings[platform]
+		if settings.has("pathTemplate"):
+			var template = settings["pathTemplate"]
+			if _isOldFormatTemplate(template):
+				# Build new template
+				var newTemplate: Array = []
+				newTemplate.append({"type": "project-path"})
+
+				# Only add exports if not already present in template
+				if not _templateHasExportsSegment(template):
+					newTemplate.append({"type": "custom", "value": "exports"})
+
+				newTemplate.append_array(template)
+
+				settings["pathTemplate"] = newTemplate
+				_selectedProjectItem.SetPlatformExportSettings(platform, settings)
+
+				# Update local cache
+				_platformPathTemplates[platform] = newTemplate
+				upgradedCount += 1
+
+	# Mark migration as completed
+	_selectedProjectItem.SetPathTemplateMigrationStatus("upgraded")
+	_selectedProjectItem.SaveProjectItem()
+
+	# Refresh displays
+	if upgradedCount > 0:
+		for platform in _platformRows.keys():
+			_updateExportPathDisplay(platform)
+
+	# Close migration dialog and show success dialog
+	_showMigrationSuccess(upgradedCount)
+
+# Handles user declining the migration
+func _onMigrationDeclined():
+	if _selectedProjectItem != null:
+		# Mark migration as skipped so we don't prompt again
+		_selectedProjectItem.SetPathTemplateMigrationStatus("skipped")
+		_selectedProjectItem.SaveProjectItem()
+
+	_closeMigrationDialog()
+
+# Closes and cleans up the migration dialog
+func _closeMigrationDialog():
+	if _migrationOverlay != null:
+		_migrationOverlay.queue_free()
+		_migrationOverlay = null
+	_migrationDialog = null
+
+# Checks and triggers migration if needed (called after loading platform settings)
+func _checkPathTemplateMigration():
+	if _needsPathTemplateMigration():
+		# Defer to next frame to ensure UI is fully loaded
+		call_deferred("_showMigrationPrompt")

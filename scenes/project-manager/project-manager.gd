@@ -162,6 +162,7 @@ func LoadProjectsIntoProjectContainer():
 			projectItem.SetCustomOrder(config.get_value("ProjectSettings", "custom_order", 999999))
 			projectItem.SetAllPlatformExportSettings(config.get_value("ProjectSettings", "platform_export_settings", {}))
 			projectItem.SetPublishPlatformSelections(config.get_value("ProjectSettings", "publish_platform_selections", {}))
+			projectItem.SetPathTemplateMigrationStatus(config.get_value("ProjectSettings", "path_template_migration_status", ""))
 
 			if isHidden:
 				hiddenProjectCount += 1

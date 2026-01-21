@@ -38,6 +38,7 @@ var _sourceFilters := []
 var _customOrder := 999999  # Default high value for unordered items
 var _platformExportSettings := {}  # Per-platform export settings: {platform_name: {exportPath, exportFilename, obfuscation}}
 var _publishPlatformSelections := {}  # Per-platform publish checkbox state: {platform_name: bool}
+var _pathTemplateMigrationStatus := ""  # "", "upgraded", "skipped" - tracks path template migration
 
 func _ready():
 	InitSignals()
@@ -182,6 +183,12 @@ func GetAllPlatformExportSettings() -> Dictionary:
 
 func SetAllPlatformExportSettings(settings: Dictionary):
 	_platformExportSettings = settings
+
+func GetPathTemplateMigrationStatus() -> String:
+	return _pathTemplateMigrationStatus
+
+func SetPathTemplateMigrationStatus(status: String):
+	_pathTemplateMigrationStatus = status
 
 func GetProjectVersion():
 	return _projectVersion
@@ -518,6 +525,7 @@ func SaveProjectItem():
 	config.set_value("ProjectSettings", "custom_order", _customOrder)
 	config.set_value("ProjectSettings", "platform_export_settings", _platformExportSettings)
 	config.set_value("ProjectSettings", "publish_platform_selections", _publishPlatformSelections)
+	config.set_value("ProjectSettings", "path_template_migration_status", _pathTemplateMigrationStatus)
 
 	# Save the config file.
 	var err = config.save("user://" + App.GetProjectItemFolder() + "/" + _projectId + ".cfg")

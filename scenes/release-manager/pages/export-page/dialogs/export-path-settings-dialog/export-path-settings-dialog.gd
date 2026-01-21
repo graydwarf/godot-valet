@@ -4,6 +4,7 @@ extends Control
 const ICON_ARROW_UP = preload("res://scenes/release-manager/assets/fluent-icons/arrow-up.svg")
 const ICON_ARROW_DOWN = preload("res://scenes/release-manager/assets/fluent-icons/arrow-down.svg")
 const ICON_DELETE = preload("res://scenes/release-manager/assets/fluent-icons/delete.svg")
+const ICON_FOLDER_OPEN = preload("res://scenes/release-manager/assets/fluent-icons/folder-open.svg")
 
 signal settings_saved(platform: String, root_path: String, path_template: Array)
 signal cancelled()
@@ -24,22 +25,14 @@ signal cancelled()
 
 
 var _currentPlatform: String = ""
-var _rootExportPath: String = ""
+var _projectDir: String = ""  # Project directory (read-only display)
 var _projectVersion: String = ""  # Stored for preview only, not editable here
-var _pathSegments: Array = []  # Array of {type: "version|platform|date|custom", value: ""}
-var _folderDialog: FileDialog = null
+var _pathSegments: Array = []  # Array of {type: "project-path|version|platform|date|custom", value: ""}
 
 const SEGMENT_HEIGHT = 40
 const DEFAULT_DATE_FORMAT = "{year}-{month}-{day}"
 
 func _ready():
-	# Create folder selection dialog
-	_folderDialog = FileDialog.new()
-	_folderDialog.file_mode = FileDialog.FILE_MODE_OPEN_DIR
-	_folderDialog.access = FileDialog.ACCESS_FILESYSTEM
-	_folderDialog.dir_selected.connect(_onFolderSelected)
-	add_child(_folderDialog)
-
 	# Apply card styles (wait until nodes are ready)
 	if _rootPathCard != null and _rootPathHeaderContainer != null and _rootPathContentContainer != null:
 		_applyCardStyle(_rootPathCard, _rootPathHeaderContainer, _rootPathContentContainer)
@@ -99,15 +92,15 @@ func _getAdjustedBackgroundColor(amount: float) -> Color:
 	)
 
 # Opens the page for a specific platform
-func openForPlatform(platform: String, rootPath: String, currentTemplate: Array, projectVersion: String = "v1.0.0"):
+func openForPlatform(platform: String, projectDir: String, currentTemplate: Array, projectVersion: String = "v1.0.0"):
 	_currentPlatform = platform
-	_rootExportPath = rootPath
+	_projectDir = projectDir
 	_pathSegments = currentTemplate.duplicate(true)
 	_projectVersion = projectVersion  # Store for preview
 
 	# Update platform display
 	_platformLabel.text = "Platform: " + platform
-	_rootPathLabel.text = rootPath
+	_rootPathLabel.text = projectDir
 
 	# Load current template
 	_rebuildSegmentsList()
@@ -140,6 +133,11 @@ func _createSegmentRow(index: int, segment: Dictionary):
 	var contentControl: Control
 
 	match segment["type"]:
+		"project-path":
+			var label = Label.new()
+			label.text = "{project-path}"
+			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			contentControl = label
 		"version":
 			var label = Label.new()
 			label.text = "{version}"
@@ -216,6 +214,11 @@ func _onDeletePressed(index: int):
 	_rebuildSegmentsList()
 	_updatePreview()
 
+func _onAddProjectPathPressed():
+	_pathSegments.append({"type": "project-path"})
+	_rebuildSegmentsList()
+	_updatePreview()
+
 func _onAddVersionPressed():
 	_pathSegments.append({"type": "version"})
 	_rebuildSegmentsList()
@@ -264,30 +267,51 @@ func _onCustomSegmentChanged(newText: String, index: int):
 		_updatePreview()
 
 func _updatePreview():
-	var previewPath = _rootExportPath
+	var previewPath = ""
 
 	for segment in _pathSegments:
 		match segment["type"]:
+			"project-path":
+				var projectPath = _projectDir if _projectDir != "" else "C:/project"
+				if previewPath.is_empty():
+					previewPath = projectPath
+				else:
+					previewPath = previewPath.path_join(projectPath)
 			"version":
 				var version = _projectVersion if _projectVersion != "" else "v1.0.0"
-				previewPath = previewPath.path_join(version)
+				if previewPath.is_empty():
+					previewPath = version
+				else:
+					previewPath = previewPath.path_join(version)
 			"platform":
-				previewPath = previewPath.path_join(_currentPlatform)
+				if previewPath.is_empty():
+					previewPath = _currentPlatform
+				else:
+					previewPath = previewPath.path_join(_currentPlatform)
 			"date":
 				var dateFormat = segment.get("value", DEFAULT_DATE_FORMAT)
 				var processedDate = _processDatetimeTokens(dateFormat)
-				previewPath = previewPath.path_join(processedDate)
+				if previewPath.is_empty():
+					previewPath = processedDate
+				else:
+					previewPath = previewPath.path_join(processedDate)
 			"custom":
 				var customValue = segment.get("value", "custom")
 				var processedCustom = _processDatetimeTokens(customValue)
 				# Custom paths can contain slashes for nested folders
 				# Normalize to forward slashes first, then join
 				processedCustom = processedCustom.replace("\\", "/")
-				# If it contains slashes, append directly; otherwise use path_join
-				if "/" in processedCustom:
+				if previewPath.is_empty():
+					previewPath = processedCustom
+				elif "/" in processedCustom:
+					# If it contains slashes, append directly
 					previewPath = previewPath + "/" + processedCustom
 				else:
 					previewPath = previewPath.path_join(processedCustom)
+
+	# Fallback if no segments
+	if previewPath.is_empty():
+		previewPath = "No path segments defined"
 
 	# Use forward slashes (cross-platform compatible)
 	if _previewLabel != null:
@@ -307,25 +331,56 @@ func _processDatetimeTokens(text: String) -> String:
 
 	return result
 
-func _onSelectFolderPressed():
-	if _folderDialog:
-		# Set initial path to current root path if it exists
-		if _rootExportPath != "" and DirAccess.dir_exists_absolute(_rootExportPath):
-			_folderDialog.current_dir = _rootExportPath
-		_folderDialog.popup_centered_ratio(0.6)
+func _onCopyProjectPathPressed():
+	if _projectDir.is_empty():
+		return
+	DisplayServer.clipboard_set(_projectDir)
 
-func _onFolderSelected(dir: String):
-	_rootExportPath = dir
-	_rootPathLabel.text = dir
-	_updatePreview()
+func _onOpenProjectFolderPressed():
+	if _projectDir.is_empty():
+		return
+
+	if DirAccess.dir_exists_absolute(_projectDir):
+		OS.shell_open(_projectDir)
+
+func _onCopyPathPressed():
+	var previewPath = _previewLabel.text if _previewLabel != null else ""
+	if previewPath.is_empty() or previewPath == "No path segments defined":
+		return
+
+	DisplayServer.clipboard_set(previewPath)
+
+func _onOpenPreviewFolderPressed():
+	var previewPath = _previewLabel.text if _previewLabel != null else ""
+	if previewPath.is_empty() or previewPath == "No path segments defined":
+		_flashPreviewRed()
+		return
+
+	if DirAccess.dir_exists_absolute(previewPath):
+		OS.shell_open(previewPath)
+	else:
+		_flashPreviewRed()
+
+func _flashPreviewRed():
+	if _previewLabel == null:
+		return
+
+	# Flash the preview label red briefly
+	var originalColor = _previewLabel.get_theme_color("default_color", "RichTextLabel")
+	_previewLabel.add_theme_color_override("default_color", Color(1.0, 0.3, 0.3))
+
+	await get_tree().create_timer(0.3).timeout
+
+	# Restore original color
+	_previewLabel.remove_theme_color_override("default_color")
 
 func _onSavePressed():
-	# Emit signal with root path and path template (stay on page)
-	settings_saved.emit(_currentPlatform, _rootExportPath, _pathSegments)
+	# Emit signal with project dir and path template (stay on page)
+	settings_saved.emit(_currentPlatform, _projectDir, _pathSegments)
 
 func _onSaveClosePressed():
-	# Emit signal with root path and path template, then close
-	settings_saved.emit(_currentPlatform, _rootExportPath, _pathSegments)
+	# Emit signal with project dir and path template, then close
+	settings_saved.emit(_currentPlatform, _projectDir, _pathSegments)
 	visible = false
 
 func _onBackPressed():
