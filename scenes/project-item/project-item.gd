@@ -39,6 +39,10 @@ var _customOrder := 999999  # Default high value for unordered items
 var _platformExportSettings := {}  # Per-platform export settings: {platform_name: {exportPath, exportFilename, obfuscation}}
 var _publishPlatformSelections := {}  # Per-platform publish checkbox state: {platform_name: bool}
 var _pathTemplateMigrationStatus := ""  # "", "upgraded", "skipped" - tracks path template migration
+static var _is_dragging := false
+static var _drop_bar: ColorRect = null
+static var _drop_bar_owner: Panel = null
+var _suppress_save_signal := false
 
 func _ready():
 	InitSignals()
@@ -533,7 +537,14 @@ func SaveProjectItem():
 	if err != OK:
 		OS.alert("An error occurred while saving the config file.")
 
-	Signals.emit_signal("ProjectSaved", _projectId)
+	if not _suppress_save_signal:
+		Signals.emit_signal("ProjectSaved", _projectId)
+
+# Saves without emitting ProjectSaved (avoids full reload cascades during batch operations)
+func SaveProjectItemSilent():
+	_suppress_save_signal = true
+	SaveProjectItem()
+	_suppress_save_signal = false
 
 func HideProjectItem():
 	visible = false
@@ -543,25 +554,29 @@ func ShowProjectItem():
 
 func _on_gui_input(event):
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		if _is_dragging:
+			return
 		print("[ProjectItem] gui_input received: pos=%s, global=%s, project=%s" % [event.position, event.global_position, _projectName])
 		Signals.emit_signal("ToggleProjectItemSelection", self, !_selected)
 
 func _on_mouse_entered():
-	if _selected:
+	if _selected or _is_dragging:
 		return
-	
+	print("[ProjectItem] mouse_entered HOVER: %s (dragging=%s)" % [_projectName, _is_dragging])
 	ShowHoverColor()
 
 func _on_mouse_exited():
-	if _selected:
+	if _selected or _is_dragging:
 		return
-
 	RestoreDefaultColor()
 
 # Drag and drop functionality for custom ordering
 func _get_drag_data(_at_position):
 	if not _is_custom_sort_enabled():
 		return null
+
+	_is_dragging = true
+	RestoreDefaultColor()
 
 	var preview = Panel.new()
 	var label = Label.new()
@@ -573,13 +588,69 @@ func _get_drag_data(_at_position):
 
 	return self
 
+func _notification(what):
+	if what == NOTIFICATION_DRAG_END:
+		_hide_drop_bar()
+		_is_dragging = false
+
 # Only allow dropping project items when Custom sort is enabled
 func _can_drop_data(_at_position, data) -> bool:
-	return _is_custom_sort_enabled() and data is Panel and data.has_method("GetProjectId") and data != self
+	var can_drop = _is_custom_sort_enabled() and data is Panel and data.has_method("GetProjectId") and data != self
+	if can_drop:
+		_show_drop_bar(_at_position)
+	return can_drop
 
 func _drop_data(_at_position, data) -> void:
+	_hide_drop_bar()
 	if data is Panel and data.has_method("GetProjectId"):
 		Signals.emit_signal("ReorderProjectItems", data, self)
+
+# Returns the y position of the gap edge: top of this card or bottom of this card
+func _get_drop_edge_y(drop_above: bool) -> float:
+	if drop_above:
+		# Find the previous sibling's bottom edge to center in the gap
+		var siblings = get_parent().get_children()
+		var idx = siblings.find(self)
+		if idx > 0:
+			var prev = siblings[idx - 1]
+			var gap_top = prev.global_position.y + prev.size.y
+			return (gap_top + global_position.y) * 0.5
+		return global_position.y
+	else:
+		# Find the next sibling's top edge to center in the gap
+		var siblings = get_parent().get_children()
+		var idx = siblings.find(self)
+		if idx < siblings.size() - 1:
+			var next_sibling = siblings[idx + 1]
+			var gap_bottom = next_sibling.global_position.y
+			return (global_position.y + size.y + gap_bottom) * 0.5
+		return global_position.y + size.y
+
+# Shows a horizontal bar between cards to indicate drop position
+func _show_drop_bar(at_position: Vector2) -> void:
+	var bar := _get_or_create_drop_bar()
+	bar.size = Vector2(size.x, 3)
+	var drop_above := at_position.y < size.y * 0.5
+	var edge_y := _get_drop_edge_y(drop_above)
+	bar.global_position = Vector2(global_position.x, edge_y - 1)
+	bar.visible = true
+
+static func _hide_drop_bar() -> void:
+	_drop_bar_owner = null
+	if _drop_bar != null and is_instance_valid(_drop_bar):
+		_drop_bar.visible = false
+
+# Creates the shared drop bar indicator once, parented to the root viewport
+func _get_or_create_drop_bar() -> ColorRect:
+	if _drop_bar != null and is_instance_valid(_drop_bar):
+		return _drop_bar
+	_drop_bar = ColorRect.new()
+	_drop_bar.color = Color(0.4, 0.6, 1.0, 0.9)
+	_drop_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_drop_bar.z_index = 100
+	_drop_bar.visible = false
+	get_tree().root.add_child(_drop_bar)
+	return _drop_bar
 
 # Check if the current sort mode is Custom
 func _is_custom_sort_enabled() -> bool:

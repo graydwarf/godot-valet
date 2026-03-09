@@ -68,6 +68,11 @@ func _register_test_suites():
 	obfuscator_phase2_tests.framework = test_framework
 	test_suites.append(obfuscator_phase2_tests)
 
+	# Obfuscator CLI Tests (15 tests)
+	var obfuscator_cli_tests = preload("res://tests/unit/test-obfuscator-cli.gd").new()
+	obfuscator_cli_tests.framework = test_framework
+	test_suites.append(obfuscator_cli_tests)
+
 func _run_all_tests():
 	var total_results = {}
 

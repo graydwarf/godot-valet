@@ -284,11 +284,11 @@ static func ObfuscateScripts(inputDir: String, outputDir: String, isObfuscatingF
 	_isObfuscatingComments = isObfuscatingComments
 
 	if inputDir == "":
-		OS.alert("Invalid input directory for obfuscation. Please specify a valid directory containing a Godot project.")
+		printerr("Invalid input directory for obfuscation. Please specify a valid directory containing a Godot project.")
 		return -1
 
 	if outputDir == "":
-		OS.alert("Invalid output directory for obfuscation. Please specify a directory outside of your project.")
+		printerr("Invalid output directory for obfuscation. Please specify a directory outside of your project.")
 		return -1
 
 	if not DirAccess.dir_exists_absolute(_inputDir):
@@ -729,9 +729,9 @@ static func ObfuscateSignals(_contentPayload: ContentPayload, _autoloads : Array
 static func GetAutoloadGlobalNames() -> Array:
 	var globals := []
 	var config := ConfigFile.new()
-	var err := config.load(_inputDir + "\\project.godot")
+	var err := config.load(_inputDir + "/project.godot")
 	if err != OK:
-		OS.alert("Failed to load globals from project.godot. Did you rename it?")
+		printerr("Failed to load globals from project.godot. Did you rename it?")
 		return []
 	
 	if config.has_section("autoload"):

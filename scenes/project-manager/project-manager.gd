@@ -285,7 +285,7 @@ func ReorderProjectItems(dragged_item, target_item):
 	all_items = _projectItemContainer.get_children()
 	for i in range(all_items.size()):
 		all_items[i].SetCustomOrder(i)
-		all_items[i].SaveProjectItem()
+		all_items[i].SaveProjectItemSilent()
 
 func BackgroundColorChanged(color = null):
 	LoadBackgroundColor(color)
