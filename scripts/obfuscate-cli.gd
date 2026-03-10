@@ -20,7 +20,7 @@ func _init():
 
 	if args.get("help", false):
 		_print_usage()
-		quit(0)
+		call_deferred("quit", 0)
 		return
 
 	var config_path: String = args.get("config", "")
@@ -31,11 +31,11 @@ func _init():
 
 	if project_dir.is_empty():
 		printerr("Error: --project-dir is required (or set project_dir in config [paths] section)")
-		quit(1)
+		call_deferred("quit", 1)
 		return
 	if output_dir.is_empty():
 		printerr("Error: --output is required (or set output_dir in config [paths] section)")
-		quit(1)
+		call_deferred("quit", 1)
 		return
 
 	project_dir = project_dir.replace("\\", "/")
@@ -57,16 +57,16 @@ func _init():
 	print("  Functions: %s | Variables: %s | Comments: %s" % [
 		obfuscate_functions, obfuscate_variables, obfuscate_comments])
 
-	var result := ObfuscateHelper.ObfuscateScripts(
+	var result: int = ObfuscateHelper.ObfuscateScripts(
 		project_dir, output_dir,
 		obfuscate_functions, obfuscate_variables, obfuscate_comments)
 
 	if result == OK:
 		print("Obfuscation completed successfully.")
-		quit(0)
+		call_deferred("quit", 0)
 	else:
 		printerr("Obfuscation failed with error code: %d" % result)
-		quit(1)
+		call_deferred("quit", 1)
 
 # Resolves a --flag / --no-flag pair, falling back to config default
 static func _resolve_flag(args: Dictionary, flag_name: String, config_default: bool) -> bool:

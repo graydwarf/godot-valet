@@ -728,17 +728,41 @@ static func ObfuscateSignals(_contentPayload: ContentPayload, _autoloads : Array
 
 static func GetAutoloadGlobalNames() -> Array:
 	var globals := []
-	var config := ConfigFile.new()
-	var err := config.load(_inputDir + "/project.godot")
-	if err != OK:
-		printerr("Failed to load globals from project.godot. Did you rename it?")
+	var project_path := _findProjectGodot(_inputDir)
+	if project_path.is_empty():
 		return []
-	
+
+	var config := ConfigFile.new()
+	var err := config.load(project_path)
+	if err != OK:
+		printerr("Failed to load project.godot at: " + project_path)
+		return []
+
 	if config.has_section("autoload"):
 		for global_name in config.get_section_keys("autoload"):
 			globals.append(global_name)
-	
+
 	return globals
+
+# Finds project.godot at the given path or in immediate subdirectories
+static func _findProjectGodot(dir_path: String) -> String:
+	var root_path := dir_path + "/project.godot"
+	if FileAccess.file_exists(root_path):
+		return root_path
+
+	var dir := DirAccess.open(dir_path)
+	if dir == null:
+		return ""
+	dir.list_dir_begin()
+	var entry := dir.get_next()
+	while entry != "":
+		if dir.current_is_dir() and not entry.begins_with("."):
+			var sub_path := dir_path + "/" + entry + "/project.godot"
+			if FileAccess.file_exists(sub_path):
+				return sub_path
+		entry = dir.get_next()
+	dir.list_dir_end()
+	return ""
 
 # TODO: This one is a challenge. So many things require preserving
 # white-space. I think it will be insanely busy.
