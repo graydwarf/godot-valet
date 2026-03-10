@@ -72,6 +72,9 @@ static var _enumValueExcludeList : Array[String] = []
 static var _signalExcludeList : Array[String] = []  # Auto-detected signal names
 static var _classNameExcludeList : Array[String] = []  # Auto-detected class_name declarations
 static var _externalPluginClasses : Array[String] = []  # User-configured external plugin class names
+static var _isInliningConstants := false
+static var _constantMap : Dictionary = {}  # original_name -> literal_value
+static var _constantExcludeList : Array[String] = []
 
 # Godot lifecycle methods (virtual methods that must not be obfuscated)
 const _godotLifecycleMethods := [
@@ -276,12 +279,13 @@ const _godotBuiltInClasses := [
 	"RandomNumberGenerator", "Marshalls", "ClassDB", "ResourceLoader", "ResourceSaver"
 ]
 
-static func ObfuscateScripts(inputDir: String, outputDir: String, isObfuscatingFunctions : bool, isObfuscatingVariables : bool, isObfuscatingComments : bool):
+static func ObfuscateScripts(inputDir: String, outputDir: String, isObfuscatingFunctions : bool, isObfuscatingVariables : bool, isObfuscatingComments : bool, isInliningConstants := false):
 	_inputDir = inputDir
 	_outputDir = outputDir
 	_isObfuscatingFunctions = isObfuscatingFunctions
 	_isObfuscatingVariables = isObfuscatingVariables
 	_isObfuscatingComments = isObfuscatingComments
+	_isInliningConstants = isInliningConstants
 
 	if inputDir == "":
 		printerr("Invalid input directory for obfuscation. Please specify a valid directory containing a Godot project.")
@@ -313,6 +317,9 @@ static func SetVariableExcludeList(excludeList: Array[String]) -> void:
 
 static func SetExternalPluginClasses(classList: Array[String]) -> void:
 	_externalPluginClasses = classList
+
+static func SetConstantExcludeList(excludeList: Array[String]) -> void:
+	_constantExcludeList = excludeList
 
 # Extracts enum type names and values from code and adds them to exclusion list
 # Enum type names and values should never be obfuscated as they're runtime constants
@@ -474,6 +481,204 @@ static func FindFunctionSymbol(before, prevChar, nextChar, content: String, end:
 	regex.compile('.*\\.(?:has_method|call(?:_deferred|_thread_safe|v)?)\\s*\\(\\s*\\"')
 	return !!regex.search(before)
 	
+# Extracts const declarations with literal values (numbers, booleans) from code
+# Skips string consts, preload/load consts, and expression consts (e.g. MAX * 2)
+static func ExtractConstantsFromContent(content: String) -> Dictionary:
+	var constants := {}
+	var regex := RegEx.new()
+	# Match: const NAME = value  or  const NAME: Type = value  or  const NAME := value
+	regex.compile(r"const\s+(\w+)\s*(?::\s*\w+)?\s*:?=\s*(.+)")
+
+	for match in regex.search_all(content):
+		var const_name := match.get_string(1)
+		var const_value := match.get_string(2).strip_edges()
+
+		# Skip if in exclude list
+		if const_name in _constantExcludeList:
+			continue
+
+		# Only inline literal values: integers, floats, booleans
+		# Skip strings, preload(), load(), expressions with operators
+		if const_value.begins_with('"') or const_value.begins_with("'"):
+			continue
+		if const_value.begins_with("preload(") or const_value.begins_with("load("):
+			continue
+		# Skip expressions (contain operators or function calls beyond simple literals)
+		if "+" in const_value or "-" in const_value or "*" in const_value or "/" in const_value:
+			# Allow negative numbers like -1, -3.14
+			var is_negative_number := const_value.begins_with("-") and not " " in const_value
+			if not is_negative_number:
+				continue
+		if "(" in const_value:
+			continue
+
+		# Validate it's a literal: int, float, or bool
+		if const_value == "true" or const_value == "false":
+			constants[const_name] = const_value
+		elif const_value.is_valid_int() or const_value.is_valid_float():
+			constants[const_name] = const_value
+		elif const_value.begins_with("-"):
+			var positive := const_value.substr(1)
+			if positive.is_valid_int() or positive.is_valid_float():
+				constants[const_name] = const_value
+
+	return constants
+
+# Extracts enum values with their computed ordinal indices
+# Returns dictionary: { "EnumName.VALUE": "ordinal", "VALUE": "ordinal" }
+static func ExtractEnumValuesWithIndices(content: String) -> Dictionary:
+	var result := {}
+	var regex := RegEx.new()
+	regex.compile(r"enum\s+(\w+)?\s*\{([^}]+)\}")
+
+	for match in regex.search_all(content):
+		var enum_name := match.get_string(1)  # May be empty for anonymous enums
+		var enum_body := match.get_string(2)
+
+		var value_regex := RegEx.new()
+		value_regex.compile(r"\b(\w+)(?:\s*=\s*([^,}]+))?")
+
+		var current_ordinal := 0
+		for value_match in value_regex.search_all(enum_body):
+			var val_name := value_match.get_string(1)
+			var explicit_val := value_match.get_string(2).strip_edges()
+
+			# Skip if in exclude list
+			if val_name in _constantExcludeList:
+				current_ordinal += 1
+				continue
+
+			if explicit_val != "" and explicit_val.is_valid_int():
+				current_ordinal = explicit_val.to_int()
+
+			var ordinal_str := str(current_ordinal)
+
+			# Add qualified reference: EnumName.VALUE -> ordinal
+			if enum_name != "":
+				result[enum_name + "." + val_name] = ordinal_str
+			else:
+				# Only add bare references for anonymous enums (no qualified form available)
+				# Named enum values are too likely to collide with unrelated identifiers
+				# (class names, signal params, keywords) when replaced globally
+				result[val_name] = ordinal_str
+
+			current_ordinal += 1
+
+	return result
+
+# Replaces constant and enum references with their literal values
+# Processes qualified references (State.IDLE) before bare references (IDLE) to avoid State.0
+static func InlineConstants(contentPayload: ContentPayload) -> void:
+	var content := contentPayload.GetContent()
+
+	# Sort keys: qualified (containing ".") first, then bare names
+	var qualified_keys := []
+	var bare_keys := []
+	for key in _constantMap.keys():
+		if "." in key:
+			qualified_keys.append(key)
+		else:
+			bare_keys.append(key)
+
+	# Replace qualified references first (e.g. State.IDLE -> 0)
+	for key in qualified_keys:
+		var parts = key.split(".")
+		var pattern := RegEx.new()
+		# Match EnumName.VALUE as whole word boundary on both sides
+		pattern.compile("\\b" + parts[0] + "\\." + parts[1] + "\\b")
+		content = pattern.sub(content, _constantMap[key], true)
+
+	# Replace bare references (e.g. MAX_SPEED -> 100, IDLE -> 0)
+	for key in bare_keys:
+		var pattern := RegEx.new()
+		pattern.compile("\\b" + key + "\\b")
+
+		var matches := pattern.search_all(content)
+		if matches.is_empty():
+			continue
+
+		# Process matches in reverse to preserve indices
+		var content_array := content.split("")
+		var result_parts := []
+		var last_end := content.length()
+
+		# Collect matches and filter out declaration-site references
+		var valid_replacements := []
+		for m in matches:
+			var start := m.get_start()
+			# Skip if this is part of a const declaration or enum definition
+			var line_start := content.rfind("\n", start)
+			if line_start == -1:
+				line_start = 0
+			else:
+				line_start += 1
+			var line := content.substr(line_start, start - line_start)
+
+			# Skip const declaration lines and enum body lines
+			# Use lstrip to preserve trailing content (strip_edges removes trailing space before name)
+			var trimmed_line := line.lstrip(" \t")
+			if trimmed_line.begins_with("const ") or trimmed_line == "const":
+				continue
+			if trimmed_line.begins_with("enum ") or trimmed_line == "enum":
+				continue
+			# Skip signal declarations (parameter names must not be replaced)
+			if trimmed_line.begins_with("signal "):
+				continue
+			# Skip function signatures (parameter names must not be replaced)
+			if trimmed_line.begins_with("func ") or trimmed_line.begins_with("static func "):
+				continue
+			# Skip if preceded by dot (qualified reference - already handled)
+			if start > 0 and content[start - 1] == ".":
+				continue
+
+			valid_replacements.append(m)
+
+		# Apply replacements in reverse order
+		var result := content
+		for i in range(valid_replacements.size() - 1, -1, -1):
+			var m = valid_replacements[i]
+			result = result.substr(0, m.get_start()) + _constantMap[key] + result.substr(m.get_end())
+
+		content = result
+
+	contentPayload.SetContent(content)
+
+# Removes const declaration lines and enum blocks from code
+static func RemoveConstantDeclarations(contentPayload: ContentPayload) -> void:
+	var content := contentPayload.GetContent()
+	var lines := content.split("\n")
+	var result_lines := []
+	var in_enum_block := false
+	var brace_count := 0
+
+	for line in lines:
+		var stripped := line.strip_edges()
+
+		# Track enum blocks to remove them entirely
+		if stripped.begins_with("enum ") or stripped == "enum{" or stripped.begins_with("enum{"):
+			in_enum_block = true
+			brace_count = 0
+
+		if in_enum_block:
+			brace_count += line.count("{") - line.count("}")
+			if brace_count <= 0:
+				in_enum_block = false
+			continue
+
+		# Remove const lines with literal values (only those we inlined)
+		if stripped.begins_with("const "):
+			var const_regex := RegEx.new()
+			const_regex.compile(r"const\s+(\w+)")
+			var match := const_regex.search(stripped)
+			if match:
+				var const_name := match.get_string(1)
+				if _constantMap.has(const_name):
+					continue  # Skip this line (remove it)
+
+		result_lines.append(line)
+
+	contentPayload.SetContent("\n".join(result_lines))
+
 static func ObfuscateDirectory(path: String, autoloads : Array) -> void:
 	var fileFilters := ["gd"]
 	var filteredFiles := FileHelper.GetFilesRecursive(path, fileFilters)
@@ -515,6 +720,7 @@ static func BuildGlobalObfuscationMap(allFiles) -> Dictionary:
 	_enumValueExcludeList.clear()
 	_signalExcludeList.clear()
 	_classNameExcludeList.clear()
+	_constantMap.clear()
 
 	# First pass: Extract ALL special symbols from ALL files before building symbol map
 	# This ensures enum values, signals, and class names are in exclude lists before processing
@@ -523,6 +729,15 @@ static func BuildGlobalObfuscationMap(allFiles) -> Dictionary:
 		AddEnumValuesToExcludeList(content)
 		AddSignalNamesToExcludeList(content)
 		AddClassNamesToExcludeList(content)
+
+	# Constant extraction pass: Build global constant map from all files
+	if _isInliningConstants:
+		for fullPath in allFiles:
+			var content := FileAccess.get_file_as_string(fullPath)
+			var file_constants := ExtractConstantsFromContent(content)
+			_constantMap.merge(file_constants)
+			var enum_constants := ExtractEnumValuesWithIndices(content)
+			_constantMap.merge(enum_constants)
 
 	# Second pass: Build symbol map (functions and variables)
 	for fullPath in allFiles:
@@ -537,6 +752,12 @@ static func BuildGlobalObfuscationMap(allFiles) -> Dictionary:
 				"kind": kind,
 				"replacement": replacement
 			}
+
+	# Prune inlined constant/enum names from symbol map so they aren't renamed
+	if _isInliningConstants:
+		for const_name in _constantMap.keys():
+			if obfuscationMap.has(const_name):
+				obfuscationMap.erase(const_name)
 
 	return obfuscationMap
 				
@@ -599,11 +820,17 @@ static func ObfuscateAllFiles(allFiles : Array, globalObfuscationMap : Dictionar
 		# We need these strings to be replaced as function names
 		RestoreSpecialStrings(contentPayload)
 
+		# Constant inlining runs BEFORE symbol obfuscation
+		# so the obfuscator doesn't try to rename inlined-away names
+		if _isInliningConstants:
+			InlineConstants(contentPayload)
+			RemoveConstantDeclarations(contentPayload)
+
 		# Reset export var tracking per file. Anytime
 		# we come across and @export var, we need to ignore
 		# all other matches in the same file.
 		_exportVariableNames.clear()
-		
+
 		# Obfuscate Functions and Variables
 		ApplyBasicObfuscation(contentPayload, globalObfuscationMap)
 		

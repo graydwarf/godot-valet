@@ -73,6 +73,11 @@ func _register_test_suites():
 	obfuscator_cli_tests.framework = test_framework
 	test_suites.append(obfuscator_cli_tests)
 
+	# Obfuscator Constant/Enum Inlining Tests (18 tests)
+	var obfuscator_constant_tests = preload("res://tests/unit/test-obfuscator-constants.gd").new()
+	obfuscator_constant_tests.framework = test_framework
+	test_suites.append(obfuscator_constant_tests)
+
 func _run_all_tests():
 	var total_results = {}
 

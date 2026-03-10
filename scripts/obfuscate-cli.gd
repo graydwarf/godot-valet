@@ -13,6 +13,8 @@ extends SceneTree
 #   --no-variables         Disable variable obfuscation
 #   --comments             Enable comment removal (default: true)
 #   --no-comments          Disable comment removal
+#   --constants            Enable constant/enum value inlining (default: false)
+#   --no-constants         Disable constant/enum value inlining
 #   --help                 Show usage info
 
 func _init():
@@ -44,22 +46,25 @@ func _init():
 	var obfuscate_functions: bool = _resolve_flag(args, "functions", config.get("functions", true))
 	var obfuscate_variables: bool = _resolve_flag(args, "variables", config.get("variables", true))
 	var obfuscate_comments: bool = _resolve_flag(args, "comments", config.get("comments", true))
+	var inline_constants: bool = _resolve_flag(args, "constants", config.get("constants", false))
 
 	var func_excludes: Array[String] = config.get("function_excludes", [] as Array[String])
 	var var_excludes: Array[String] = config.get("variable_excludes", [] as Array[String])
 	var ext_classes: Array[String] = config.get("external_classes", [] as Array[String])
+	var const_excludes: Array[String] = config.get("constant_excludes", [] as Array[String])
 
 	ObfuscateHelper.SetFunctionExcludeList(func_excludes)
 	ObfuscateHelper.SetVariableExcludeList(var_excludes)
 	ObfuscateHelper.SetExternalPluginClasses(ext_classes)
+	ObfuscateHelper.SetConstantExcludeList(const_excludes)
 
 	print("Obfuscating: %s -> %s" % [project_dir, output_dir])
-	print("  Functions: %s | Variables: %s | Comments: %s" % [
-		obfuscate_functions, obfuscate_variables, obfuscate_comments])
+	print("  Functions: %s | Variables: %s | Comments: %s | Constants: %s" % [
+		obfuscate_functions, obfuscate_variables, obfuscate_comments, inline_constants])
 
 	var result: int = ObfuscateHelper.ObfuscateScripts(
 		project_dir, output_dir,
-		obfuscate_functions, obfuscate_variables, obfuscate_comments)
+		obfuscate_functions, obfuscate_variables, obfuscate_comments, inline_constants)
 
 	if result == OK:
 		print("Obfuscation completed successfully.")
@@ -102,7 +107,7 @@ static func _parse_args(raw_args: PackedStringArray) -> Dictionary:
 			continue
 
 		# Known boolean flags without values
-		if key in ["functions", "variables", "comments"]:
+		if key in ["functions", "variables", "comments", "constants"]:
 			if i + 1 < raw_args.size() and not raw_args[i + 1].begins_with("--"):
 				result[key] = raw_args[i + 1].to_lower() == "true"
 				i += 2
@@ -139,10 +144,12 @@ static func _load_config(config_path: String) -> Dictionary:
 	result["functions"] = config.get_value("obfuscation", "functions", true)
 	result["variables"] = config.get_value("obfuscation", "variables", true)
 	result["comments"] = config.get_value("obfuscation", "comments", true)
+	result["constants"] = config.get_value("obfuscation", "constants", false)
 
 	result["function_excludes"] = _parse_csv(str(config.get_value("exclude", "function_names", "")))
 	result["variable_excludes"] = _parse_csv(str(config.get_value("exclude", "variable_names", "")))
 	result["external_classes"] = _parse_csv(str(config.get_value("exclude", "external_classes", "")))
+	result["constant_excludes"] = _parse_csv(str(config.get_value("exclude", "constant_names", "")))
 
 	return result
 
@@ -173,6 +180,8 @@ func _print_usage() -> void:
 	print("  --no-variables         Disable variable name obfuscation")
 	print("  --comments             Enable comment removal (default)")
 	print("  --no-comments          Disable comment removal")
+	print("  --constants            Enable constant/enum inlining")
+	print("  --no-constants         Disable constant/enum inlining (default)")
 	print("  --help                 Show this help message")
 	print("")
 	print("Config file format (INI):")
@@ -184,8 +193,10 @@ func _print_usage() -> void:
 	print("  functions = true")
 	print("  variables = true")
 	print("  comments = true")
+	print("  constants = false")
 	print("")
 	print("  [exclude]")
 	print("  function_names = func1,func2")
 	print("  variable_names = var1,var2")
 	print("  external_classes = SQLite,SupabaseClient")
+	print("  constant_names = MY_CONST,SOME_VALUE")
