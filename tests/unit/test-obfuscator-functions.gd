@@ -194,3 +194,16 @@ func _update_state():
 	framework.assert_false(symbol_map.has("_process"), "Godot _process should be protected")
 
 	framework.assert_equal(symbol_map.size(), 3, "Should have exactly 3 user private functions")
+
+func test_skip_short_function_names():
+	# Arrange
+	var code = "func a():\n\tpass\n\nfunc go():\n\tpass"
+	var symbol_map = {}
+
+	# Act
+	ObfuscateHelper.AddFunctionsToSymbolMap(code, symbol_map)
+
+	# Assert
+	framework.assert_false(symbol_map.has("a"), "Single-letter function 'a' should be skipped")
+	framework.assert_false(symbol_map.has("go"), "Two-letter function 'go' should be skipped")
+	framework.assert_equal(symbol_map.size(), 0, "No short function names should be in map")

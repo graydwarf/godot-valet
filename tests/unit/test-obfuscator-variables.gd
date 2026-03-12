@@ -29,14 +29,14 @@ func test_add_variables_identifies_typed_variable():
 
 func test_add_variables_identifies_inferred_type():
 	# Arrange
-	var code = "var position := Vector2.ZERO"
+	var code = "var player_pos := Vector2.ZERO"
 	var symbol_map = {}
 
 	# Act
 	ObfuscateHelper.AddVariablesToSymbolMap(code, symbol_map)
 
 	# Assert
-	framework.assert_true(symbol_map.has("position"), "Should identify variable with inferred type")
+	framework.assert_true(symbol_map.has("player_pos"), "Should identify variable with inferred type")
 
 func test_add_variables_handles_multiple_variables():
 	# Arrange
@@ -147,3 +147,44 @@ func test_add_variables_array_type():
 
 	# Assert
 	framework.assert_true(symbol_map.has("items"), "Should handle array type annotation")
+
+func test_skip_single_letter_variables():
+	# Arrange
+	var code = "var i = 0\nvar n = 5\nvar x = 10"
+	var symbol_map = {}
+
+	# Act
+	ObfuscateHelper.AddVariablesToSymbolMap(code, symbol_map)
+
+	# Assert
+	framework.assert_false(symbol_map.has("i"), "Single-letter var 'i' should be skipped")
+	framework.assert_false(symbol_map.has("n"), "Single-letter var 'n' should be skipped")
+	framework.assert_false(symbol_map.has("x"), "Single-letter var 'x' should be skipped")
+	framework.assert_equal(symbol_map.size(), 0, "No short variables should be in map")
+
+func test_skip_two_letter_variables():
+	# Arrange
+	var code = "var id = 1\nvar hp = 100\nvar ok = true"
+	var symbol_map = {}
+
+	# Act
+	ObfuscateHelper.AddVariablesToSymbolMap(code, symbol_map)
+
+	# Assert
+	framework.assert_false(symbol_map.has("id"), "Two-letter var 'id' should be skipped")
+	framework.assert_false(symbol_map.has("hp"), "Two-letter var 'hp' should be skipped")
+	framework.assert_equal(symbol_map.size(), 0, "No short variables should be in map")
+
+func test_include_three_letter_plus_variables():
+	# Arrange
+	var code = "var idx = 0\nvar pos = Vector2.ZERO\nvar health = 100"
+	var symbol_map = {}
+
+	# Act
+	ObfuscateHelper.AddVariablesToSymbolMap(code, symbol_map)
+
+	# Assert
+	framework.assert_true(symbol_map.has("idx"), "Three-letter var 'idx' should be included")
+	framework.assert_true(symbol_map.has("pos"), "Three-letter var 'pos' should be included")
+	framework.assert_true(symbol_map.has("health"), "Longer var 'health' should be included")
+	framework.assert_equal(symbol_map.size(), 3, "All 3+ char variables should be in map")

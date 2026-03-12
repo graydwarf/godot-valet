@@ -15,6 +15,8 @@ extends SceneTree
 #   --no-comments          Disable comment removal
 #   --constants            Enable constant/enum value inlining (default: false)
 #   --no-constants         Disable constant/enum value inlining
+#   --skip-addons          Skip addons/ directory during obfuscation (default: true)
+#   --no-skip-addons       Include addons/ directory in obfuscation
 #   --help                 Show usage info
 
 func _init():
@@ -47,6 +49,10 @@ func _init():
 	var obfuscate_variables: bool = _resolve_flag(args, "variables", config.get("variables", true))
 	var obfuscate_comments: bool = _resolve_flag(args, "comments", config.get("comments", true))
 	var inline_constants: bool = _resolve_flag(args, "constants", config.get("constants", false))
+	var skip_addons: bool = _resolve_flag(args, "skip-addons", config.get("skip_addons", true))
+
+	if skip_addons:
+		ObfuscateHelper.SetSkipDirectories(["addons", ".godot", ".import"] as Array[String])
 
 	var func_excludes: Array[String] = config.get("function_excludes", [] as Array[String])
 	var var_excludes: Array[String] = config.get("variable_excludes", [] as Array[String])
@@ -59,8 +65,8 @@ func _init():
 	ObfuscateHelper.SetConstantExcludeList(const_excludes)
 
 	print("Obfuscating: %s -> %s" % [project_dir, output_dir])
-	print("  Functions: %s | Variables: %s | Comments: %s | Constants: %s" % [
-		obfuscate_functions, obfuscate_variables, obfuscate_comments, inline_constants])
+	print("  Functions: %s | Variables: %s | Comments: %s | Constants: %s | Skip Addons: %s" % [
+		obfuscate_functions, obfuscate_variables, obfuscate_comments, inline_constants, skip_addons])
 
 	var result: int = ObfuscateHelper.ObfuscateScripts(
 		project_dir, output_dir,
@@ -107,7 +113,7 @@ static func _parse_args(raw_args: PackedStringArray) -> Dictionary:
 			continue
 
 		# Known boolean flags without values
-		if key in ["functions", "variables", "comments", "constants"]:
+		if key in ["functions", "variables", "comments", "constants", "skip-addons"]:
 			if i + 1 < raw_args.size() and not raw_args[i + 1].begins_with("--"):
 				result[key] = raw_args[i + 1].to_lower() == "true"
 				i += 2
@@ -145,6 +151,7 @@ static func _load_config(config_path: String) -> Dictionary:
 	result["variables"] = config.get_value("obfuscation", "variables", true)
 	result["comments"] = config.get_value("obfuscation", "comments", true)
 	result["constants"] = config.get_value("obfuscation", "constants", false)
+	result["skip_addons"] = config.get_value("obfuscation", "skip_addons", true)
 
 	result["function_excludes"] = _parse_csv(str(config.get_value("exclude", "function_names", "")))
 	result["variable_excludes"] = _parse_csv(str(config.get_value("exclude", "variable_names", "")))
@@ -182,6 +189,8 @@ func _print_usage() -> void:
 	print("  --no-comments          Disable comment removal")
 	print("  --constants            Enable constant/enum inlining")
 	print("  --no-constants         Disable constant/enum inlining (default)")
+	print("  --skip-addons          Skip addons/ directory (default)")
+	print("  --no-skip-addons       Include addons/ directory in obfuscation")
 	print("  --help                 Show this help message")
 	print("")
 	print("Config file format (INI):")

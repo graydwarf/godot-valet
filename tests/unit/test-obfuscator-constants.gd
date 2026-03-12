@@ -221,8 +221,8 @@ func test_remove_const_declarations():
 	framework.assert_true("var speed" in result, "Other code should remain")
 	framework.assert_true("func go():" in result, "Functions should remain")
 
-func test_remove_enum_blocks():
-	# Arrange
+func test_enum_blocks_kept_intact():
+	# Arrange - enum blocks must be kept for cross-file type references
 	var code = "enum State { Idle, Running }\nvar current = 0\nfunc go():\n\tpass"
 	var payload = ContentPayload.new()
 	payload.SetContent(code)
@@ -234,7 +234,7 @@ func test_remove_enum_blocks():
 
 	# Assert
 	var result = payload.GetContent()
-	framework.assert_false("enum State" in result, "Enum block should be removed")
+	framework.assert_true("enum State" in result, "Enum block should be KEPT for cross-file type references")
 	framework.assert_true("var current = 0" in result, "Other code should remain")
 
 func test_const_removed_from_symbol_map():
@@ -290,8 +290,8 @@ var x = MAX_SPEED + KEEP_ME"""
 	# Cleanup
 	ObfuscateHelper._constantExcludeList.clear()
 
-func test_multiline_enum_removal():
-	# Arrange
+func test_multiline_enum_kept_intact():
+	# Arrange - multiline enum blocks must be kept for cross-file type references
 	var code = "enum LongEnum {\n\tVALUE_ONE,\n\tVALUE_TWO,\n\tVALUE_THREE\n}\nvar x = 0\nfunc go():\n\tpass"
 	var payload = ContentPayload.new()
 	payload.SetContent(code)
@@ -303,8 +303,8 @@ func test_multiline_enum_removal():
 
 	# Assert
 	var result = payload.GetContent()
-	framework.assert_false("enum LongEnum" in result, "Multiline enum block should be removed")
-	framework.assert_false("VALUE_ONE" in result, "Enum values should be removed with block")
+	framework.assert_true("enum LongEnum" in result, "Multiline enum block should be KEPT")
+	framework.assert_true("VALUE_ONE" in result, "Enum values should remain in declaration")
 	framework.assert_true("var x = 0" in result, "Code after enum should remain")
 
 func test_skip_signal_param_replacement():
@@ -356,3 +356,50 @@ func test_named_enum_no_bare_keys():
 	framework.assert_false(constants.has("TEXT"), "Named enum should NOT have bare TEXT key")
 	framework.assert_false(constants.has("JSON"), "Named enum should NOT have bare JSON key")
 	framework.assert_false(constants.has("CSV"), "Named enum should NOT have bare CSV key")
+
+# --- Reserved keyword protection tests ---
+
+func test_const_still_removed_after_enum_fix():
+	# Arrange - const lines should still be removed even though enum blocks are kept
+	var code = "const MAX = 100\nenum State { Idle }\nvar x = MAX\nfunc go():\n\tpass"
+	var payload = ContentPayload.new()
+	payload.SetContent(code)
+
+	ObfuscateHelper._constantMap = {"MAX": "100"}
+
+	# Act
+	ObfuscateHelper.RemoveConstantDeclarations(payload)
+
+	# Assert
+	var result = payload.GetContent()
+	framework.assert_false("const MAX" in result, "Const declaration should still be removed")
+	framework.assert_true("enum State" in result, "Enum block should be kept")
+	framework.assert_true("var x = MAX" in result, "Other code should remain")
+
+func test_keyword_not_extracted_as_enum_value():
+	# Arrange - anonymous enum with keyword-like values
+	var code = "enum { and, or, not }"
+
+	# Act
+	ObfuscateHelper._constantExcludeList.clear()
+	var constants = ObfuscateHelper.ExtractEnumValuesWithIndices(code)
+
+	# Assert
+	framework.assert_false(constants.has("and"), "Keyword 'and' should not be extracted as enum value")
+	framework.assert_false(constants.has("or"), "Keyword 'or' should not be extracted as enum value")
+	framework.assert_false(constants.has("not"), "Keyword 'not' should not be extracted as enum value")
+
+func test_keyword_not_inlined():
+	# Arrange - keyword 'in' somehow in constant map
+	var code = "for x in range(10):\n\tpass"
+	var payload = ContentPayload.new()
+	payload.SetContent(code)
+
+	ObfuscateHelper._constantMap = {"in": "5"}
+
+	# Act
+	ObfuscateHelper.InlineConstants(payload)
+
+	# Assert
+	var result = payload.GetContent()
+	framework.assert_true("for x in range(10):" in result, "Keyword 'in' should NOT be replaced with '5'")

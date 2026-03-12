@@ -211,5 +211,5 @@ func remove_item(item):
 	framework.assert_false(symbol_map.has("item_added"), "item_added signal should NOT be obfuscated")
 	framework.assert_false(symbol_map.has("item_removed"), "item_removed signal should NOT be obfuscated")
 	framework.assert_true(symbol_map.has("items"), "items variable should be obfuscated")
-	framework.assert_true(symbol_map.has("add_item"), "add_item function should be obfuscated")
+	framework.assert_false(symbol_map.has("add_item"), "add_item is a built-in method (PopupMenu) and should NOT be obfuscated")
 	framework.assert_true(symbol_map.has("remove_item"), "remove_item function should be obfuscated")

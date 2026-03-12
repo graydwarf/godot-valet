@@ -246,7 +246,7 @@ static func CreateChecksum(filePath):
 
 # Passing in empty allowedExtensions returns all files.
 # allowedExtensions example: = ["gd", "tscn"]
-static func GetFilesRecursive(path: String, allowedExtensions : Array) -> Array:
+static func GetFilesRecursive(path: String, allowedExtensions : Array, skipDirs: Array = []) -> Array:
 	var results := []
 	var dir := DirAccess.open(path)
 	if dir == null:
@@ -257,8 +257,8 @@ static func GetFilesRecursive(path: String, allowedExtensions : Array) -> Array:
 	while filename != "":
 		var fullPath := path + "/" + filename
 		if dir.current_is_dir():
-			if filename != "." and filename != "..":
-				results += GetFilesRecursive(fullPath, allowedExtensions)
+			if filename != "." and filename != ".." and filename not in skipDirs:
+				results += GetFilesRecursive(fullPath, allowedExtensions, skipDirs)
 		elif allowedExtensions == null || allowedExtensions.size() == 0:
 			# No filter used, add any/all files.
 			results.append(fullPath)

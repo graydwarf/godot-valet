@@ -75,6 +75,17 @@ static var _externalPluginClasses : Array[String] = []  # User-configured extern
 static var _isInliningConstants := false
 static var _constantMap : Dictionary = {}  # original_name -> literal_value
 static var _constantExcludeList : Array[String] = []
+static var _skipDirectories : Array[String] = []
+
+# GDScript reserved keywords — must NEVER be obfuscated or inlined
+const _gdscriptReservedKeywords := [
+	"if", "elif", "else", "for", "while", "match", "break", "continue",
+	"pass", "return", "class", "class_name", "extends", "is", "in", "as",
+	"self", "signal", "func", "static", "const", "enum", "var", "breakpoint",
+	"preload", "await", "yield", "assert", "void", "PI", "TAU", "INF", "NAN",
+	"and", "or", "not", "true", "false", "null", "super", "when",
+	"int", "float", "bool", "String",
+]
 
 # Godot lifecycle methods (virtual methods that must not be obfuscated)
 const _godotLifecycleMethods := [
@@ -197,7 +208,51 @@ const _godotBuiltInMethods := [
 	"copy", "current_is_dir", "dir_exists", "get_current_dir", "get_current_drive", "get_directories",
 	"get_directories_at", "get_drive_count", "get_drive_name", "get_files", "get_files_at", "get_space_left",
 	"list_dir_begin", "list_dir_end", "make_dir", "make_dir_absolute", "make_dir_recursive",
-	"open", "remove", "remove_absolute", "rename", "rename_absolute"
+	"open", "remove", "remove_absolute", "rename", "rename_absolute",
+
+	# JSON methods
+	"parse", "stringify", "get_data", "get_error_line", "get_error_message", "get_parsed_text",
+
+	# PopupMenu / ItemList / Tree methods
+	"add_item", "add_icon_item", "add_check_item", "add_radio_check_item", "add_submenu_item",
+	"add_separator", "get_item_count", "get_item_text", "get_item_id", "set_item_text",
+	"set_item_checked", "set_item_disabled", "set_item_icon", "set_item_metadata",
+	"get_item_metadata", "is_item_checked", "is_item_disabled", "clear_items",
+	"get_selected_items", "select", "deselect", "deselect_all", "is_selected",
+
+	# HTTPRequest methods
+	"request", "cancel_request", "get_body_size", "get_downloaded_bytes",
+	"set_download_file", "set_use_threads",
+
+	# Tween methods
+	"tween_property", "tween_method", "tween_callback", "tween_interval",
+	"set_ease", "set_trans", "set_parallel", "set_loops", "set_speed_scale",
+	"chain", "parallel", "finished",
+
+	# Timer methods
+	"start", "stop", "is_stopped", "get_time_left",
+
+	# Crypto/Hash methods
+	"update", "finish", "hmac_digest",
+
+	# GDScript global functions
+	"range", "preload", "load", "assert", "type_string", "typeof",
+
+	# Common Node/Control properties used as assignments (e.g. name = "X")
+	"name", "visible", "modulate", "position", "rotation", "scale", "offset",
+	"text", "icon", "tooltip_text", "placeholder_text", "theme",
+	"title", "color", "size_flags_horizontal", "size_flags_vertical",
+	"custom_minimum_size", "anchors_preset", "mouse_filter",
+
+	# OS / Engine methods
+	"execute", "kill", "shell_open", "get_executable_path", "get_environment",
+	"get_user_data_dir", "get_data_dir", "get_config_dir", "get_cache_dir",
+
+	# TLSOptions / network factory methods
+	"client", "server", "client_unsafe",
+
+	# Common patterns: singleton/factory
+	"get_instance", "instance", "new",
 ]
 
 # Comprehensive list of built-in Godot class names
@@ -320,6 +375,9 @@ static func SetExternalPluginClasses(classList: Array[String]) -> void:
 
 static func SetConstantExcludeList(excludeList: Array[String]) -> void:
 	_constantExcludeList = excludeList
+
+static func SetSkipDirectories(dirs: Array[String]) -> void:
+	_skipDirectories = dirs
 
 # Extracts enum type names and values from code and adds them to exclusion list
 # Enum type names and values should never be obfuscated as they're runtime constants
@@ -497,6 +555,10 @@ static func ExtractConstantsFromContent(content: String) -> Dictionary:
 		if const_name in _constantExcludeList:
 			continue
 
+		# Skip GDScript reserved keywords
+		if const_name in _gdscriptReservedKeywords:
+			continue
+
 		# Only inline literal values: integers, floats, booleans
 		# Skip strings, preload(), load(), expressions with operators
 		if const_value.begins_with('"') or const_value.begins_with("'"):
@@ -548,6 +610,11 @@ static func ExtractEnumValuesWithIndices(content: String) -> Dictionary:
 				current_ordinal += 1
 				continue
 
+			# Skip GDScript reserved keywords
+			if val_name in _gdscriptReservedKeywords:
+				current_ordinal += 1
+				continue
+
 			if explicit_val != "" and explicit_val.is_valid_int():
 				current_ordinal = explicit_val.to_int()
 
@@ -586,10 +653,25 @@ static func InlineConstants(contentPayload: ContentPayload) -> void:
 		var pattern := RegEx.new()
 		# Match EnumName.VALUE as whole word boundary on both sides
 		pattern.compile("\\b" + parts[0] + "\\." + parts[1] + "\\b")
-		content = pattern.sub(content, _constantMap[key], true)
+		# Process matches individually to skip deeper qualified refs (e.g. ClassName.EnumName.VALUE)
+		var q_matches := pattern.search_all(content)
+		if q_matches.is_empty():
+			continue
+		var q_result := content
+		for qi in range(q_matches.size() - 1, -1, -1):
+			var qm = q_matches[qi]
+			# Skip if preceded by "." (deeper qualified reference like ClassName.EnumName.VALUE)
+			if qm.get_start() > 0 and content[qm.get_start() - 1] == ".":
+				continue
+			q_result = q_result.substr(0, qm.get_start()) + _constantMap[key] + q_result.substr(qm.get_end())
+		content = q_result
 
 	# Replace bare references (e.g. MAX_SPEED -> 100, IDLE -> 0)
 	for key in bare_keys:
+		# Skip reserved keywords that may have entered the constant map
+		if key in _gdscriptReservedKeywords:
+			continue
+
 		var pattern := RegEx.new()
 		pattern.compile("\\b" + key + "\\b")
 
@@ -643,27 +725,23 @@ static func InlineConstants(contentPayload: ContentPayload) -> void:
 
 	contentPayload.SetContent(content)
 
-# Removes const declaration lines and enum blocks from code
+# Removes const declaration lines from code
+# Enum blocks are kept intact — they define types that may be referenced cross-file
 static func RemoveConstantDeclarations(contentPayload: ContentPayload) -> void:
 	var content := contentPayload.GetContent()
+
+	# Don't remove constants from files with class_name — they may be referenced
+	# cross-file as ClassName.CONSTANT and removing them would break those references
+	var class_name_regex := RegEx.new()
+	class_name_regex.compile(r"(?m)^\s*class_name\s+\w+")
+	if class_name_regex.search(content):
+		return
+
 	var lines := content.split("\n")
 	var result_lines := []
-	var in_enum_block := false
-	var brace_count := 0
 
 	for line in lines:
 		var stripped := line.strip_edges()
-
-		# Track enum blocks to remove them entirely
-		if stripped.begins_with("enum ") or stripped == "enum{" or stripped.begins_with("enum{"):
-			in_enum_block = true
-			brace_count = 0
-
-		if in_enum_block:
-			brace_count += line.count("{") - line.count("}")
-			if brace_count <= 0:
-				in_enum_block = false
-			continue
 
 		# Remove const lines with literal values (only those we inlined)
 		if stripped.begins_with("const "):
@@ -681,14 +759,14 @@ static func RemoveConstantDeclarations(contentPayload: ContentPayload) -> void:
 
 static func ObfuscateDirectory(path: String, autoloads : Array) -> void:
 	var fileFilters := ["gd"]
-	var filteredFiles := FileHelper.GetFilesRecursive(path, fileFilters)
+	var filteredFiles := FileHelper.GetFilesRecursive(path, fileFilters, _skipDirectories)
 	var globalObfuscationMap := BuildGlobalObfuscationMap(filteredFiles)
 	ObfuscateAllFiles(filteredFiles, globalObfuscationMap, autoloads)
 
 	# Also process .tscn files to update signal connection method references
 	# ONLY if function obfuscation is enabled (otherwise scene files call non-existent obfuscated methods)
 	var sceneFilters := ["tscn"]
-	var sceneFiles := FileHelper.GetFilesRecursive(path, sceneFilters)
+	var sceneFiles := FileHelper.GetFilesRecursive(path, sceneFilters, _skipDirectories)
 
 	if _isObfuscatingFunctions:
 		# Function obfuscation enabled: Update scene file method references to match obfuscated names
@@ -763,19 +841,27 @@ static func BuildGlobalObfuscationMap(allFiles) -> Dictionary:
 				
 static func PreserveStringLiterals(contentPayload : ContentPayload) -> void:
 	var stringRegex := RegEx.new()
-	stringRegex.compile(r'"([^"\\]|\\.)*"')
+	# Match triple-quoted strings first (""" and '''), then regular strings (" and ')
+	# Order matters: triple-quoted must be tried before regular to avoid partial matches
+	var triple_dq := "\"\"\"[\\s\\S]*?\"\"\""
+	var triple_sq := "'''[\\s\\S]*?'''"
+	var regular_dq := "\"([^\"\\\\\\n]|\\\\.)*\""
+	var regular_sq := "'([^'\\\\\\n]|\\\\.)*'"
+	stringRegex.compile(triple_dq + "|" + triple_sq + "|" + regular_dq + "|" + regular_sq)
 	var stringMatches := stringRegex.search_all(contentPayload.GetContent())
 
 	var preservedStrings := {}
 
-	# IMPORTANT NOTE: This replaces all string literals with
-	# a temporary token so we don't obfuscate them.
-	var index := 0
-	for match in stringMatches:
-		var key = "__STRING_TOKEN_" + str(index) + "__"
-		preservedStrings[key] = match.get_string()
-		contentPayload.SetContent(contentPayload.GetContent().replace(match.get_string(), key))
-		index += 1
+	# Replace string literals with tokens using position-based replacement (last to first).
+	# CRITICAL: Cannot use .replace() here because it does global substring matching,
+	# which corrupts triple-quoted strings when "" (empty string) is replaced first.
+	var content := contentPayload.GetContent()
+	for i in range(stringMatches.size() - 1, -1, -1):
+		var m = stringMatches[i]
+		var key = "__STRING_TOKEN_" + str(i) + "__"
+		preservedStrings[key] = m.get_string()
+		content = content.substr(0, m.get_start()) + key + content.substr(m.get_end())
+	contentPayload.SetContent(content)
 
 	contentPayload.SetPreservedStrings(preservedStrings)
 	
@@ -797,15 +883,15 @@ static func PreserveSpecialStrings(contentPayload : ContentPayload) -> void:
 
 	var preservedStrings := {}
 
-	# IMPORTANT NOTE: This replaces all string literals with
-	# a temporary token so we don't obfuscate them.
-	var index := 0
-	for match in stringMatches:
-		var key = "__SPECIAL_STRING_TOKEN_" + str(index) + "__"
-		preservedStrings[key] = match.get_string()
-		contentPayload.SetContent(contentPayload.GetContent().replace(match.get_string(), key))
-		index += 1
-	
+	# Position-based replacement (last to first) to avoid .replace() substring issues
+	var content := contentPayload.GetContent()
+	for i in range(stringMatches.size() - 1, -1, -1):
+		var m = stringMatches[i]
+		var key = "__SPECIAL_STRING_TOKEN_" + str(i) + "__"
+		preservedStrings[key] = m.get_string()
+		content = content.substr(0, m.get_start()) + key + content.substr(m.get_end())
+	contentPayload.SetContent(content)
+
 	contentPayload.SetPreservedSpecialStrings(preservedStrings)
 	
 # Pass #2: Obfuscate all files with global map
@@ -1085,6 +1171,10 @@ static func AddFunctionsToSymbolMap(content: String, symbolMap) -> void:
 	for match in regex.search_all(content):
 		var symbolName = match.get_string(1)
 
+		# Skip short function names (1-2 chars) — too common, high collision risk
+		if symbolName.length() <= 2:
+			continue
+
 		# Don't add dupe symbolNames
 		if symbolMap.has(symbolName):
 			continue
@@ -1113,6 +1203,10 @@ static func AddFunctionsToSymbolMap(content: String, symbolMap) -> void:
 		if symbolName in _classNameExcludeList:
 			continue
 
+		# Skip GDScript reserved keywords
+		if symbolName in _gdscriptReservedKeywords:
+			continue
+
 		# Add to symbol map - will be obfuscated (including user-defined private functions)
 		symbolMap[symbolName] = { "kind": "function" }
 
@@ -1136,6 +1230,11 @@ static func AddVariablesToSymbolMap(content : String, symbolMap : Dictionary):
 		var match = regex.search(line)
 		if match:
 			var symbolName = match.get_string(1)
+
+			# Skip short variable names (1-2 chars) — too common, high collision risk
+			if symbolName.length() <= 2:
+				continue
+
 			if symbolMap.has(symbolName):
 				continue
 
@@ -1165,6 +1264,10 @@ static func AddVariablesToSymbolMap(content : String, symbolMap : Dictionary):
 
 			# Skip class names (in case a class name is used as a variable name)
 			if symbolName in _classNameExcludeList:
+				continue
+
+			# Skip GDScript reserved keywords
+			if symbolName in _gdscriptReservedKeywords:
 				continue
 
 			symbolMap[symbolName] = { "kind": "variable" }

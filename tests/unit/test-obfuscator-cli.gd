@@ -90,3 +90,20 @@ func test_load_config_empty_path():
 func test_load_config_missing_file():
 	var result = Cli._load_config("/nonexistent/path/obfuscation.cfg")
 	framework.assert_equal(result.size(), 0, "Missing file should return empty dictionary")
+
+# --- skip-addons flag tests ---
+
+func test_parse_args_skip_addons_flag():
+	var args = PackedStringArray(["--skip-addons"])
+	var result = Cli._parse_args(args)
+	framework.assert_true(result.get("skip-addons", false), "Should parse --skip-addons as true")
+
+func test_parse_args_no_skip_addons_flag():
+	var args = PackedStringArray(["--no-skip-addons"])
+	var result = Cli._parse_args(args)
+	framework.assert_true(result.get("no-skip-addons", false), "Should parse --no-skip-addons as true")
+
+func test_resolve_skip_addons_defaults_true():
+	var args = {}
+	var result = Cli._resolve_flag(args, "skip-addons", true)
+	framework.assert_true(result, "skip-addons should default to true")
