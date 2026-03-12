@@ -17,6 +17,7 @@ extends SceneTree
 #   --no-constants         Disable constant/enum value inlining
 #   --skip-addons          Skip addons/ directory during obfuscation (default: true)
 #   --no-skip-addons       Include addons/ directory in obfuscation
+#   --validate             Run headless validation after obfuscation to count errors
 #   --help                 Show usage info
 
 func _init():
@@ -74,6 +75,12 @@ func _init():
 
 	if result == OK:
 		print("Obfuscation completed successfully.")
+		if args.get("validate", false):
+			var error_count = _validate_obfuscation(project_dir, output_dir)
+			if error_count == 0:
+				print("Validation PASSED: No obfuscation errors detected.")
+			else:
+				print("Validation: %d SCRIPT ERROR(s) detected." % error_count)
 		call_deferred("quit", 0)
 	else:
 		printerr("Obfuscation failed with error code: %d" % result)
@@ -113,7 +120,7 @@ static func _parse_args(raw_args: PackedStringArray) -> Dictionary:
 			continue
 
 		# Known boolean flags without values
-		if key in ["functions", "variables", "comments", "constants", "skip-addons"]:
+		if key in ["functions", "variables", "comments", "constants", "skip-addons", "validate"]:
 			if i + 1 < raw_args.size() and not raw_args[i + 1].begins_with("--"):
 				result[key] = raw_args[i + 1].to_lower() == "true"
 				i += 2
@@ -171,6 +178,54 @@ static func _parse_csv(text: String) -> Array[String]:
 			result.append(trimmed)
 	return result
 
+# Validates obfuscated output by overlaying onto a copy of the source project
+# and launching Godot headlessly to count SCRIPT ERRORs
+func _validate_obfuscation(project_dir: String, output_dir: String) -> int:
+	print("Validating obfuscated output...")
+
+	# Create a temp validation directory
+	var validate_dir := output_dir.rstrip("/") + "-validate"
+
+	# Copy source project to validation directory
+	var copy_output: Array = []
+	if OS.get_name() == "Windows":
+		OS.execute("cmd", ["/c", "xcopy", "/E", "/I", "/Y", "/Q",
+			project_dir.replace("/", "\\"), validate_dir.replace("/", "\\")], copy_output, true)
+	else:
+		OS.execute("cp", ["-r", project_dir, validate_dir], copy_output, true)
+
+	# Overlay obfuscated files
+	if OS.get_name() == "Windows":
+		OS.execute("cmd", ["/c", "xcopy", "/E", "/Y", "/Q",
+			output_dir.replace("/", "\\"), validate_dir.replace("/", "\\")], copy_output, true)
+	else:
+		OS.execute("cp", ["-r", output_dir + "/.", validate_dir], copy_output, true)
+
+	# Launch Godot headlessly on the validation copy
+	var godot_path := OS.get_executable_path()
+	var run_output: Array = []
+	OS.execute(godot_path, ["--headless", "--path", validate_dir, "--quit-after", "5"], run_output, true)
+
+	# Count SCRIPT ERRORs in output
+	var error_count := 0
+	for line in run_output:
+		for output_line in str(line).split("\n"):
+			if "SCRIPT ERROR" in output_line:
+				error_count += 1
+				if error_count <= 20:
+					print("  ", output_line.strip_edges())
+
+	if error_count > 20:
+		print("  ... and %d more errors" % (error_count - 20))
+
+	# Clean up validation directory
+	if OS.get_name() == "Windows":
+		OS.execute("cmd", ["/c", "rmdir", "/S", "/Q", validate_dir.replace("/", "\\")], [], true)
+	else:
+		OS.execute("rm", ["-rf", validate_dir], [], true)
+
+	return error_count
+
 func _print_usage() -> void:
 	print("Godot Valet Obfuscator CLI")
 	print("")
@@ -191,6 +246,7 @@ func _print_usage() -> void:
 	print("  --no-constants         Disable constant/enum inlining (default)")
 	print("  --skip-addons          Skip addons/ directory (default)")
 	print("  --no-skip-addons       Include addons/ directory in obfuscation")
+	print("  --validate             After obfuscation, run headless validation to count errors")
 	print("  --help                 Show this help message")
 	print("")
 	print("Config file format (INI):")

@@ -334,6 +334,41 @@ const _godotBuiltInClasses := [
 	"RandomNumberGenerator", "Marshalls", "ClassDB", "ResourceLoader", "ResourceSaver"
 ]
 
+static var _runtimeBuiltInMethods: Dictionary = {}
+static var _runtimeBuiltInClasses: Dictionary = {}
+static var _runtimeBuiltInProperties: Dictionary = {}
+
+# Build comprehensive built-in name sets from ClassDB at runtime
+# This supplements the manual lists with every method/property/class the engine knows about
+static func BuildBuiltInSetsFromClassDB() -> void:
+	if not _runtimeBuiltInMethods.is_empty():
+		return  # Already built
+
+	for class_name_str in ClassDB.get_class_list():
+		_runtimeBuiltInClasses[class_name_str] = true
+
+		for method_info in ClassDB.class_get_method_list(class_name_str, true):
+			var method_name = method_info["name"]
+			if method_name.length() > 2:
+				_runtimeBuiltInMethods[method_name] = true
+
+		for prop_info in ClassDB.class_get_property_list(class_name_str, true):
+			var prop_name = prop_info["name"]
+			if prop_name.length() > 2 and not "/" in prop_name:
+				_runtimeBuiltInProperties[prop_name] = true
+
+	for signal_info_class in ClassDB.get_class_list():
+		for signal_info in ClassDB.class_get_signal_list(signal_info_class, true):
+			var signal_name = signal_info["name"]
+			if signal_name.length() > 2:
+				_runtimeBuiltInMethods[signal_name] = true
+
+static func IsBuiltInMethod(name: String) -> bool:
+	return name in _godotBuiltInMethods or _runtimeBuiltInMethods.has(name) or _runtimeBuiltInProperties.has(name)
+
+static func IsBuiltInClass(name: String) -> bool:
+	return name in _godotBuiltInClasses or _runtimeBuiltInClasses.has(name)
+
 static func ObfuscateScripts(inputDir: String, outputDir: String, isObfuscatingFunctions : bool, isObfuscatingVariables : bool, isObfuscatingComments : bool, isInliningConstants := false):
 	_inputDir = inputDir
 	_outputDir = outputDir
@@ -341,6 +376,9 @@ static func ObfuscateScripts(inputDir: String, outputDir: String, isObfuscatingF
 	_isObfuscatingVariables = isObfuscatingVariables
 	_isObfuscatingComments = isObfuscatingComments
 	_isInliningConstants = isInliningConstants
+
+	# Build runtime built-in sets from ClassDB (first call only)
+	BuildBuiltInSetsFromClassDB()
 
 	if inputDir == "":
 		printerr("Invalid input directory for obfuscation. Please specify a valid directory containing a Godot project.")
@@ -444,8 +482,54 @@ static func GenerateObfuscatedName()  -> String:
 	
 	return ""
 
+static var _currentFileLocalNames: Array[String] = []
+
+# Extract function parameter names and local variable names from inside function bodies
+# These should not be replaced by the global map when they collide with function names
+static func ExtractLocalNames(content: String) -> Array[String]:
+	var local_names: Array[String] = []
+	var in_func := false
+	var func_param_regex := RegEx.new()
+	func_param_regex.compile(r"(?:static\s+)?func\s+\w+\s*\(([^)]*)\)")
+	var local_var_regex := RegEx.new()
+	local_var_regex.compile(r"^\t+var\s+(\w+)")
+
+	for line in content.split("\n"):
+		var stripped := line.strip_edges()
+
+		# Detect function start — extract parameter names
+		var func_match = func_param_regex.search(line)
+		if func_match:
+			in_func = true
+			var params_str = func_match.get_string(1)
+			for param in params_str.split(","):
+				param = param.strip_edges()
+				# Extract name before : or = or end
+				var name_regex := RegEx.new()
+				name_regex.compile(r"^(\w+)")
+				var name_match = name_regex.search(param)
+				if name_match:
+					local_names.append(name_match.get_string(1))
+
+		# Detect local variables (indented var declarations inside functions)
+		if in_func:
+			var local_match = local_var_regex.search(line)
+			if local_match:
+				local_names.append(local_match.get_string(1))
+
+		# Detect function end (next top-level line that isn't blank/comment)
+		if in_func and not line.begins_with("\t") and not line.begins_with(" ") and stripped != "" and not stripped.begins_with("#"):
+			if not func_match:  # Don't end on the func line itself
+				in_func = false
+
+	return local_names
+
 static func ApplyBasicObfuscation(contentPayload : ContentPayload , globalObfuscationMap: Dictionary) -> void:
 	for obfuscationKey in globalObfuscationMap.keys():
+		# Skip replacement if this name is a local variable/parameter in the current file
+		# AND the global map has it as a function (name collision between func and local var)
+		if obfuscationKey in _currentFileLocalNames and globalObfuscationMap[obfuscationKey].get("kind") == "function":
+			continue
 		contentPayload.SetContent(ReplacePattern(contentPayload.GetContent(), obfuscationKey, globalObfuscationMap[obfuscationKey]))
 
 static func ReplacePattern(content: String, obfuscationKey: String, globalObfuscationMap: Dictionary) -> String:
@@ -491,7 +575,7 @@ static func GetObfuscationReplacement(content: String, symbol: String, globalObf
 			#return symbol  # Unknown context, skip for safety
 			
 	if _isObfuscatingFunctions && globalObfuscationMap.kind == "function":
-		if FindFunctionSymbol(before, prevChar, nextChar, content, end):
+		if FindFunctionSymbol(before, prevChar, nextChar, content, start, end):
 			return globalObfuscationMap.replacement
 		else:
 			return symbol
@@ -510,7 +594,7 @@ static func GetObfuscationReplacement(content: String, symbol: String, globalObf
 
 	return symbol
 
-static func FindFunctionSymbol(before, prevChar, nextChar, content: String, end: int):
+static func FindFunctionSymbol(before, prevChar, nextChar, content: String, start: int, end: int):
 	var regex := RegEx.new()
 
 	# Match function declaration: "func MyFunction("
@@ -522,10 +606,35 @@ static func FindFunctionSymbol(before, prevChar, nextChar, content: String, end:
 	if nextChar == "(" or (prevChar == "." and nextChar == "("):
 		return true
 
-	# Match callable reference passed as argument: "function)" or "obj.function)" or "Class.StaticMethod)"
+	# Match callable reference passed as argument: "function)" or "obj.function)"
 	# Examples: sort_custom(my_sort), signal.connect(my_function), sort_custom(CommonHelper.SortAscending)
+	# Only match if preceded by ( or , inside a function call — NOT inside [] arrays or % format args
 	if nextChar == ")" or nextChar == ",":
-		return true
+		# Check if we're inside a function call context (preceded by "(" or "word(")
+		# vs an array literal [...], dictionary {...}, or format string % [...]
+		var context_before := content.substr(max(start - 100, 0), start - max(start - 100, 0))
+		# Find the most recent unmatched ( or [ to determine context
+		var paren_depth := 0
+		var bracket_depth := 0
+		var in_func_call := false
+		for ci in range(context_before.length() - 1, -1, -1):
+			var ch = context_before[ci]
+			if ch == ")": paren_depth += 1
+			elif ch == "(":
+				if paren_depth > 0:
+					paren_depth -= 1
+				else:
+					in_func_call = true
+					break
+			elif ch == "]": bracket_depth += 1
+			elif ch == "[":
+				if bracket_depth > 0:
+					bracket_depth -= 1
+				else:
+					in_func_call = false  # Inside array literal
+					break
+		if in_func_call:
+			return true
 
 	# Match Callable methods: "MyFunction.bind(", "MyFunction.unbind(", etc.
 	if nextChar == ".":
@@ -900,9 +1009,15 @@ static func ObfuscateAllFiles(allFiles : Array, globalObfuscationMap : Dictionar
 		var fileContents := FileAccess.get_file_as_string(fullPath)
 		var contentPayload := ContentPayload.new()
 		contentPayload.SetContent(fileContents)
+
+		# Strip comments FIRST — prevents apostrophes in comments (e.g. "doesn't")
+		# from being matched by single-quote string regex and consuming code blocks
+		if _isObfuscatingComments:
+			RemoveCommentsFromCode(contentPayload)
+
 		PreserveSpecialStrings(contentPayload)
 		PreserveStringLiterals(contentPayload)
-		
+
 		# We need these strings to be replaced as function names
 		RestoreSpecialStrings(contentPayload)
 
@@ -917,14 +1032,14 @@ static func ObfuscateAllFiles(allFiles : Array, globalObfuscationMap : Dictionar
 		# all other matches in the same file.
 		_exportVariableNames.clear()
 
+		# Extract local names (function params + local vars) to prevent
+		# collision with global function names of the same name
+		_currentFileLocalNames = ExtractLocalNames(fileContents)
+
 		# Obfuscate Functions and Variables
 		ApplyBasicObfuscation(contentPayload, globalObfuscationMap)
-		
+
 		RestoreStringLiterals(contentPayload)
-		
-		# Removes all comments from the project
-		if _isObfuscatingComments:
-			RemoveCommentsFromCode(contentPayload)
 		
 		# Future obfuscations that are in development:
 		# ObfuscateSignals(contentPayload, autoloads)
@@ -1184,7 +1299,7 @@ static func AddFunctionsToSymbolMap(content: String, symbolMap) -> void:
 			continue
 
 		# CRITICAL: Skip built-in Godot methods (Array.size(), String.split(), etc.)
-		if symbolName in _godotBuiltInMethods:
+		if IsBuiltInMethod(symbolName):
 			continue
 
 		# Skip user-excluded functions
@@ -1239,11 +1354,11 @@ static func AddVariablesToSymbolMap(content : String, symbolMap : Dictionary):
 				continue
 
 			# CRITICAL: Skip built-in Godot class names (Array, Node, Control, etc.)
-			if symbolName in _godotBuiltInClasses:
+			if IsBuiltInClass(symbolName):
 				continue
 
-			# CRITICAL: Skip built-in Godot methods (size, append, has, etc.)
-			if symbolName in _godotBuiltInMethods:
+			# CRITICAL: Skip built-in Godot methods/properties (size, append, name, etc.)
+			if IsBuiltInMethod(symbolName):
 				continue
 
 			# CRITICAL: Skip external plugin classes (SQLite, SupabaseAPI, etc.)
