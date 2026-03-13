@@ -194,6 +194,85 @@ func _unhandled_input(event):
 	framework.assert_false(symbol_map.has("_unhandled_input"), "_unhandled_input should be protected")
 	framework.assert_equal(symbol_map.size(), 0, "Should not add any protected functions")
 
+func test_dot_call_replaced_when_local_shadows_function():
+	# Arrange - "query" is both a global function and a local variable
+	var code = """func query():
+	pass
+
+func do_work():
+	var query = "SELECT *"
+	database.query()
+	print(query)
+"""
+	var symbol_map = { "query": { "kind": "function", "replacement": "zz_query" } }
+
+	var payload = ContentPayload.new()
+	payload.SetContent(code)
+
+	# Act - simulate local name shadowing
+	ObfuscateHelper._isObfuscatingFunctions = true
+	ObfuscateHelper._currentFileLocalNames = ["query"]
+	ObfuscateHelper.ApplyBasicObfuscation(payload, symbol_map)
+	ObfuscateHelper._currentFileLocalNames = []
+
+	# Assert
+	var result = payload.GetContent()
+	framework.assert_true("database.zz_query()" in result, "Dot-call .query() should be renamed")
+	framework.assert_true('var query = "SELECT *"' in result, "Local var query should NOT be renamed")
+
+func test_local_var_not_renamed_when_shadows_function():
+	# Arrange - "is_dragging" is both a global function and a local variable
+	var code = """func is_dragging():
+	pass
+
+func handle_input():
+	var is_dragging = false
+	manager.is_dragging()
+	if is_dragging:
+		pass
+"""
+	var symbol_map = { "is_dragging": { "kind": "function", "replacement": "zz_is_dragging" } }
+
+	var payload = ContentPayload.new()
+	payload.SetContent(code)
+
+	# Act
+	ObfuscateHelper._isObfuscatingFunctions = true
+	ObfuscateHelper._currentFileLocalNames = ["is_dragging"]
+	ObfuscateHelper.ApplyBasicObfuscation(payload, symbol_map)
+	ObfuscateHelper._currentFileLocalNames = []
+
+	# Assert
+	var result = payload.GetContent()
+	framework.assert_true("manager.zz_is_dragging()" in result, "Dot-call .is_dragging() should be renamed")
+	framework.assert_true("var is_dragging = false" in result, "Local var is_dragging should NOT be renamed")
+	framework.assert_true("if is_dragging:" in result, "Local usage of is_dragging should NOT be renamed")
+
+func test_callable_bind_replaced_when_local_shadows_function():
+	# Arrange - "query" shadows a global function, but callable .bind() should still work
+	var code = """func query():
+	pass
+
+func setup():
+	var query = "test"
+	signal.connect(obj.query.bind(1))
+"""
+	var symbol_map = { "query": { "kind": "function", "replacement": "zz_query" } }
+
+	var payload = ContentPayload.new()
+	payload.SetContent(code)
+
+	# Act
+	ObfuscateHelper._isObfuscatingFunctions = true
+	ObfuscateHelper._currentFileLocalNames = ["query"]
+	ObfuscateHelper.ApplyBasicObfuscation(payload, symbol_map)
+	ObfuscateHelper._currentFileLocalNames = []
+
+	# Assert
+	var result = payload.GetContent()
+	framework.assert_true("obj.zz_query.bind(1)" in result, "Dot-prefixed callable .query.bind() should be renamed")
+	framework.assert_true('var query = "test"' in result, "Local var query should NOT be renamed")
+
 func test_comment_removal_integration():
 	# Arrange
 	var code = """# This is a comment

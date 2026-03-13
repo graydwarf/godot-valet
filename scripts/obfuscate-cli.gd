@@ -17,6 +17,7 @@ extends SceneTree
 #   --no-constants         Disable constant/enum value inlining
 #   --skip-addons          Skip addons/ directory during obfuscation (default: true)
 #   --no-skip-addons       Include addons/ directory in obfuscation
+#   --skip-dirs <dirs>     Comma-separated list of additional directories to skip
 #   --validate             Run headless validation after obfuscation to count errors
 #   --help                 Show usage info
 
@@ -52,8 +53,14 @@ func _init():
 	var inline_constants: bool = _resolve_flag(args, "constants", config.get("constants", false))
 	var skip_addons: bool = _resolve_flag(args, "skip-addons", config.get("skip_addons", true))
 
+	var skip_dirs: Array[String] = [".godot", ".import"]
 	if skip_addons:
-		ObfuscateHelper.SetSkipDirectories(["addons", ".godot", ".import"] as Array[String])
+		skip_dirs.append("addons")
+	var extra_skip: Array[String] = _parse_csv(args.get("skip-dirs", config.get("skip_dirs", "")))
+	for dir in extra_skip:
+		if dir not in skip_dirs:
+			skip_dirs.append(dir)
+	ObfuscateHelper.SetSkipDirectories(skip_dirs)
 
 	var func_excludes: Array[String] = config.get("function_excludes", [] as Array[String])
 	var var_excludes: Array[String] = config.get("variable_excludes", [] as Array[String])
@@ -66,8 +73,9 @@ func _init():
 	ObfuscateHelper.SetConstantExcludeList(const_excludes)
 
 	print("Obfuscating: %s -> %s" % [project_dir, output_dir])
-	print("  Functions: %s | Variables: %s | Comments: %s | Constants: %s | Skip Addons: %s" % [
-		obfuscate_functions, obfuscate_variables, obfuscate_comments, inline_constants, skip_addons])
+	print("  Functions: %s | Variables: %s | Comments: %s | Constants: %s" % [
+		obfuscate_functions, obfuscate_variables, obfuscate_comments, inline_constants])
+	print("  Skip dirs: %s" % [", ".join(skip_dirs)])
 
 	var result: int = ObfuscateHelper.ObfuscateScripts(
 		project_dir, output_dir,
@@ -160,6 +168,8 @@ static func _load_config(config_path: String) -> Dictionary:
 	result["constants"] = config.get_value("obfuscation", "constants", false)
 	result["skip_addons"] = config.get_value("obfuscation", "skip_addons", true)
 
+	result["skip_dirs"] = str(config.get_value("obfuscation", "skip_dirs", ""))
+
 	result["function_excludes"] = _parse_csv(str(config.get_value("exclude", "function_names", "")))
 	result["variable_excludes"] = _parse_csv(str(config.get_value("exclude", "variable_names", "")))
 	result["external_classes"] = _parse_csv(str(config.get_value("exclude", "external_classes", "")))
@@ -206,17 +216,36 @@ func _validate_obfuscation(project_dir: String, output_dir: String) -> int:
 	var run_output: Array = []
 	OS.execute(godot_path, ["--headless", "--path", validate_dir, "--quit-after", "5"], run_output, true)
 
-	# Count SCRIPT ERRORs in output
+	# Count SCRIPT ERRORs in output, tracking which come from skipped directories
+	var skip_dirs := ObfuscateHelper._skipDirectories
 	var error_count := 0
+	var skip_dir_errors := 0
+	var skip_dir_names: Dictionary = {}
 	for line in run_output:
 		for output_line in str(line).split("\n"):
 			if "SCRIPT ERROR" in output_line:
-				error_count += 1
-				if error_count <= 20:
-					print("  ", output_line.strip_edges())
+				var from_skip_dir := false
+				for skip_dir in skip_dirs:
+					if ("res://" + skip_dir + "/") in output_line:
+						from_skip_dir = true
+						skip_dir_errors += 1
+						skip_dir_names[skip_dir] = skip_dir_names.get(skip_dir, 0) + 1
+						break
+				if not from_skip_dir:
+					error_count += 1
+					if error_count <= 20:
+						print("  ", output_line.strip_edges())
 
 	if error_count > 20:
 		print("  ... and %d more errors" % (error_count - 20))
+
+	if skip_dir_errors > 0:
+		print("")
+		print("  Note: %d error(s) from skipped directories (not counted above):" % skip_dir_errors)
+		for dir_name in skip_dir_names:
+			print("    %s/ — %d error(s)" % [dir_name, skip_dir_names[dir_name]])
+		print("  These directories were not obfuscated but reference renamed symbols.")
+		print("  Consider excluding them from your export or adding them to your obfuscation scope.")
 
 	# Clean up validation directory
 	if OS.get_name() == "Windows":
@@ -246,6 +275,7 @@ func _print_usage() -> void:
 	print("  --no-constants         Disable constant/enum inlining (default)")
 	print("  --skip-addons          Skip addons/ directory (default)")
 	print("  --no-skip-addons       Include addons/ directory in obfuscation")
+	print("  --skip-dirs <dirs>     Comma-separated additional directories to skip (e.g. tests,build)")
 	print("  --validate             After obfuscation, run headless validation to count errors")
 	print("  --help                 Show this help message")
 	print("")
@@ -259,6 +289,7 @@ func _print_usage() -> void:
 	print("  variables = true")
 	print("  comments = true")
 	print("  constants = false")
+	print("  skip_dirs = tests,build")
 	print("")
 	print("  [exclude]")
 	print("  function_names = func1,func2")

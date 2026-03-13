@@ -76,6 +76,7 @@ static var _isInliningConstants := false
 static var _constantMap : Dictionary = {}  # original_name -> literal_value
 static var _constantExcludeList : Array[String] = []
 static var _skipDirectories : Array[String] = []
+static var _dotAccessedProperties : Dictionary = {}  # Properties accessed via obj.property across files
 
 # GDScript reserved keywords — must NEVER be obfuscated or inlined
 const _gdscriptReservedKeywords := [
@@ -493,9 +494,17 @@ static func ExtractLocalNames(content: String) -> Array[String]:
 	func_param_regex.compile(r"(?:static\s+)?func\s+\w+\s*\(([^)]*)\)")
 	var local_var_regex := RegEx.new()
 	local_var_regex.compile(r"^\t+var\s+(\w+)")
+	var class_var_regex := RegEx.new()
+	class_var_regex.compile(r"^var\s+(\w+)")
 
 	for line in content.split("\n"):
 		var stripped := line.strip_edges()
+
+		# Detect class-level variable declarations (no indent)
+		# These prevent function-name collisions from replacing class vars
+		var class_var_match = class_var_regex.search(line)
+		if class_var_match and not in_func:
+			local_names.append(class_var_match.get_string(1))
 
 		# Detect function start — extract parameter names
 		var func_match = func_param_regex.search(line)
@@ -529,10 +538,13 @@ static func ApplyBasicObfuscation(contentPayload : ContentPayload , globalObfusc
 		# Skip replacement if this name is a local variable/parameter in the current file
 		# AND the global map has it as a function (name collision between func and local var)
 		if obfuscationKey in _currentFileLocalNames and globalObfuscationMap[obfuscationKey].get("kind") == "function":
+			# Local variable shadows a global function name — only replace dot-prefixed method calls
+			# e.g. .query() is replaced but "var query =" is not
+			contentPayload.SetContent(ReplacePattern(contentPayload.GetContent(), obfuscationKey, globalObfuscationMap[obfuscationKey], true))
 			continue
 		contentPayload.SetContent(ReplacePattern(contentPayload.GetContent(), obfuscationKey, globalObfuscationMap[obfuscationKey]))
 
-static func ReplacePattern(content: String, obfuscationKey: String, globalObfuscationMap: Dictionary) -> String:
+static func ReplacePattern(content: String, obfuscationKey: String, globalObfuscationMap: Dictionary, dotCallOnly: bool = false) -> String:
 	var pattern := RegEx.new()
 	pattern.compile("\\b" + obfuscationKey + "\\b")
 
@@ -549,7 +561,7 @@ static func ReplacePattern(content: String, obfuscationKey: String, globalObfusc
 			
 		var start := match.get_start()
 		var end := match.get_end()
-		var replacement = GetObfuscationReplacement(content, obfuscationKey, globalObfuscationMap, start, end)
+		var replacement = GetObfuscationReplacement(content, obfuscationKey, globalObfuscationMap, start, end, dotCallOnly)
 		result += content.substr(lastIndex, start - lastIndex)
 		result += replacement
 		lastIndex = end
@@ -557,7 +569,7 @@ static func ReplacePattern(content: String, obfuscationKey: String, globalObfusc
 	result += content.substr(lastIndex)
 	return result
 
-static func GetObfuscationReplacement(content: String, symbol: String, globalObfuscationMap: Dictionary, start: int, end: int) -> String:
+static func GetObfuscationReplacement(content: String, symbol: String, globalObfuscationMap: Dictionary, start: int, end: int, dotCallOnly: bool = false) -> String:
 	var before := content.substr(max(start - 20, 0), start - max(start - 20, 0))
 	# var after := content.substr(end, 10)
 
@@ -575,6 +587,10 @@ static func GetObfuscationReplacement(content: String, symbol: String, globalObf
 			#return symbol  # Unknown context, skip for safety
 			
 	if _isObfuscatingFunctions && globalObfuscationMap.kind == "function":
+		# In dot-call-only mode, skip replacements where the symbol is NOT preceded by "."
+		# This prevents renaming local variables that shadow a global function name
+		if dotCallOnly and prevChar != ".":
+			return symbol
 		if FindFunctionSymbol(before, prevChar, nextChar, content, start, end):
 			return globalObfuscationMap.replacement
 		else:
@@ -636,16 +652,25 @@ static func FindFunctionSymbol(before, prevChar, nextChar, content: String, star
 		if in_func_call:
 			return true
 
-	# Match Callable methods: "MyFunction.bind(", "MyFunction.unbind(", etc.
+	# Match Callable methods: "MyFunction.bind(", "MyFunction.call_deferred(", etc.
 	if nextChar == ".":
 		# Look ahead to see what comes after the dot
-		var after_dot = content.substr(end + 1, 10)
+		var after_dot = content.substr(end + 1, 20)
 		if after_dot.begins_with("bind(") or after_dot.begins_with("unbind(") or \
-		   after_dot.begins_with("call(") or after_dot.begins_with("callv("):
+		   after_dot.begins_with("call(") or after_dot.begins_with("callv(") or \
+		   after_dot.begins_with("call_deferred(") or after_dot.begins_with("call_thread_safe("):
 			return true
 
-	# Detect has_method() and all call() variants (string-based reflection - should NOT obfuscate)
-	regex.compile('.*\\.(?:has_method|call(?:_deferred|_thread_safe|v)?)\\s*\\(\\s*\\"')
+	# Match callable assignment: "callback = my_function" where next is }, \n, or ,
+	# This handles dictionary callable values like {callback = my_func}
+	if nextChar == "}" or nextChar == "\n" or nextChar == "\r" or nextChar == "":
+		regex.compile('=\\s*$')
+		if regex.search(before):
+			return true
+
+	# Detect has_method() and all call() variants — obfuscate method name inside string
+	# Supports both obj.call_deferred("method") and bare call_deferred("method")
+	regex.compile('\\.?(?:has_method|call(?:_deferred|_thread_safe|v)?)\\s*\\(\\s*\\"')
 	return !!regex.search(before)
 	
 # Extracts const declarations with literal values (numbers, booleans) from code
@@ -666,6 +691,10 @@ static func ExtractConstantsFromContent(content: String) -> Dictionary:
 
 		# Skip GDScript reserved keywords
 		if const_name in _gdscriptReservedKeywords:
+			continue
+
+		# Skip built-in Godot class names (e.g. const Vector2 = 0 in test files)
+		if IsBuiltInClass(const_name):
 			continue
 
 		# Only inline literal values: integers, floats, booleans
@@ -721,6 +750,11 @@ static func ExtractEnumValuesWithIndices(content: String) -> Dictionary:
 
 			# Skip GDScript reserved keywords
 			if val_name in _gdscriptReservedKeywords:
+				current_ordinal += 1
+				continue
+
+			# Skip built-in Godot class names used as enum values
+			if IsBuiltInClass(val_name):
 				current_ordinal += 1
 				continue
 
@@ -908,6 +942,7 @@ static func BuildGlobalObfuscationMap(allFiles) -> Dictionary:
 	_signalExcludeList.clear()
 	_classNameExcludeList.clear()
 	_constantMap.clear()
+	_dotAccessedProperties.clear()
 
 	# First pass: Extract ALL special symbols from ALL files before building symbol map
 	# This ensures enum values, signals, and class names are in exclude lists before processing
@@ -916,6 +951,7 @@ static func BuildGlobalObfuscationMap(allFiles) -> Dictionary:
 		AddEnumValuesToExcludeList(content)
 		AddSignalNamesToExcludeList(content)
 		AddClassNamesToExcludeList(content)
+		_extract_dot_accessed_properties(content)
 
 	# Constant extraction pass: Build global constant map from all files
 	if _isInliningConstants:
@@ -1385,7 +1421,24 @@ static func AddVariablesToSymbolMap(content : String, symbolMap : Dictionary):
 			if symbolName in _gdscriptReservedKeywords:
 				continue
 
+			# Skip variables accessed via dot notation across files (obj.property)
+			# Renaming the declaration would break cross-file property access
+			if _dotAccessedProperties.has(symbolName):
+				continue
+
 			symbolMap[symbolName] = { "kind": "variable" }
+
+# Extracts property names accessed via dot notation (obj.property_name)
+# These must not be obfuscated to avoid breaking cross-file property access
+# Only captures property access patterns, NOT method calls (.name( is excluded)
+static func _extract_dot_accessed_properties(content: String) -> void:
+	var regex := RegEx.new()
+	# Match .property_name where NOT followed by ( (which would be a method call)
+	# Property name must be 3+ chars and start with lowercase/underscore
+	regex.compile(r"\.([a-z_]\w{2,})\b(?!\s*\()")
+	for m in regex.search_all(content):
+		var prop_name := m.get_string(1)
+		_dotAccessedProperties[prop_name] = true
 
 # Example of how you might test locally if needed.
 static func GetTestContent() -> String:
