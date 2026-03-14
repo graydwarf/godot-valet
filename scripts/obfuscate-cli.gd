@@ -1,25 +1,30 @@
 extends SceneTree
 
-# CLI entry point for headless obfuscation
+# CLI entry point for headless obfuscation and export pipeline
 # Usage: Godot --headless --path /path/to/godot-valet --script res://scripts/obfuscate-cli.gd -- [options]
 #
 # Options:
-#   --config <path>        Path to obfuscation.cfg config file
-#   --project-dir <path>   Source project directory (overrides config)
-#   --output <path>        Output directory (overrides config)
-#   --functions            Enable function obfuscation (default: true)
-#   --no-functions         Disable function obfuscation
-#   --variables            Enable variable obfuscation (default: true)
-#   --no-variables         Disable variable obfuscation
-#   --comments             Enable comment removal (default: true)
-#   --no-comments          Disable comment removal
-#   --constants            Enable constant/enum value inlining (default: false)
-#   --no-constants         Disable constant/enum value inlining
-#   --skip-addons          Skip addons/ directory during obfuscation (default: true)
-#   --no-skip-addons       Include addons/ directory in obfuscation
-#   --skip-dirs <dirs>     Comma-separated list of additional directories to skip
-#   --validate             Run headless validation after obfuscation to count errors
-#   --help                 Show usage info
+#   --config <path>           Path to obfuscation.cfg config file
+#   --project-dir <path>      Source project directory (overrides config)
+#   --output <path>           Output directory (overrides config)
+#   --functions               Enable function obfuscation (default: true)
+#   --no-functions            Disable function obfuscation
+#   --variables               Enable variable obfuscation (default: true)
+#   --no-variables            Disable variable obfuscation
+#   --comments                Enable comment removal (default: true)
+#   --no-comments             Disable comment removal
+#   --constants               Enable constant/enum value inlining (default: false)
+#   --no-constants            Disable constant/enum value inlining
+#   --skip-addons             Skip addons/ directory during obfuscation (default: true)
+#   --no-skip-addons          Include addons/ directory in obfuscation
+#   --skip-dirs <dirs>        Comma-separated list of additional directories to skip
+#   --validate                Run headless validation after obfuscation to count errors
+#   --export <preset>         Export after obfuscation using this preset name
+#   --godot-path <path>       Custom Godot binary for export (required with --export)
+#   --encryption-key <path>   Path to file containing hex encryption key
+#   --export-output <path>    Copy final build artifacts to this location
+#   --debug                   Use --export-debug instead of --export-release
+#   --help                    Show usage info
 
 func _init():
 	var args := _parse_args(OS.get_cmdline_user_args())
@@ -72,27 +77,63 @@ func _init():
 	ObfuscateHelper.SetExternalPluginClasses(ext_classes)
 	ObfuscateHelper.SetConstantExcludeList(const_excludes)
 
+	# Export pipeline flags
+	var export_preset: String = args.get("export", config.get("export_preset", ""))
+	var godot_path: String = args.get("godot-path", config.get("export_godot_path", ""))
+	var encryption_key_path: String = args.get("encryption-key", config.get("export_encryption_key", ""))
+	var export_output: String = args.get("export-output", config.get("export_output", ""))
+	var is_debug: bool = _resolve_flag(args, "debug", config.get("export_debug", false))
+
+	if not export_preset.is_empty():
+		godot_path = godot_path.replace("\\", "/")
+		encryption_key_path = encryption_key_path.replace("\\", "/")
+		export_output = export_output.replace("\\", "/")
+		if godot_path.is_empty():
+			printerr("Error: --godot-path is required when using --export")
+			call_deferred("quit", 1)
+			return
+		if not FileAccess.file_exists(godot_path):
+			printerr("Error: Godot binary not found: %s" % godot_path)
+			call_deferred("quit", 1)
+			return
+		if not encryption_key_path.is_empty() and not FileAccess.file_exists(encryption_key_path):
+			printerr("Error: Encryption key file not found: %s" % encryption_key_path)
+			call_deferred("quit", 1)
+			return
+
 	print("Obfuscating: %s -> %s" % [project_dir, output_dir])
 	print("  Functions: %s | Variables: %s | Comments: %s | Constants: %s" % [
 		obfuscate_functions, obfuscate_variables, obfuscate_comments, inline_constants])
 	print("  Skip dirs: %s" % [", ".join(skip_dirs)])
+	if not export_preset.is_empty():
+		print("  Export: preset=%s, debug=%s" % [export_preset, is_debug])
 
 	var result: int = ObfuscateHelper.ObfuscateScripts(
 		project_dir, output_dir,
 		obfuscate_functions, obfuscate_variables, obfuscate_comments, inline_constants)
 
-	if result == OK:
-		print("Obfuscation completed successfully.")
-		if args.get("validate", false):
-			var error_count = _validate_obfuscation(project_dir, output_dir)
-			if error_count == 0:
-				print("Validation PASSED: No obfuscation errors detected.")
-			else:
-				print("Validation: %d SCRIPT ERROR(s) detected." % error_count)
-		call_deferred("quit", 0)
-	else:
+	if result != OK:
 		printerr("Obfuscation failed with error code: %d" % result)
 		call_deferred("quit", 1)
+		return
+
+	print("Obfuscation completed successfully.")
+
+	if args.get("validate", false):
+		var error_count = _validate_obfuscation(project_dir, output_dir)
+		if error_count == 0:
+			print("Validation PASSED: No obfuscation errors detected.")
+		else:
+			print("Validation: %d SCRIPT ERROR(s) detected." % error_count)
+
+	if not export_preset.is_empty():
+		var export_result := _run_export_pipeline(
+			project_dir, output_dir, export_preset,
+			godot_path, encryption_key_path, export_output, is_debug)
+		call_deferred("quit", export_result)
+		return
+
+	call_deferred("quit", 0)
 
 # Resolves a --flag / --no-flag pair, falling back to config default
 static func _resolve_flag(args: Dictionary, flag_name: String, config_default: bool) -> bool:
@@ -128,7 +169,7 @@ static func _parse_args(raw_args: PackedStringArray) -> Dictionary:
 			continue
 
 		# Known boolean flags without values
-		if key in ["functions", "variables", "comments", "constants", "skip-addons", "validate"]:
+		if key in ["functions", "variables", "comments", "constants", "skip-addons", "validate", "debug"]:
 			if i + 1 < raw_args.size() and not raw_args[i + 1].begins_with("--"):
 				result[key] = raw_args[i + 1].to_lower() == "true"
 				i += 2
@@ -169,6 +210,13 @@ static func _load_config(config_path: String) -> Dictionary:
 	result["skip_addons"] = config.get_value("obfuscation", "skip_addons", true)
 
 	result["skip_dirs"] = str(config.get_value("obfuscation", "skip_dirs", ""))
+
+	# Export section
+	result["export_preset"] = str(config.get_value("export", "preset", ""))
+	result["export_godot_path"] = str(config.get_value("export", "godot_path", ""))
+	result["export_encryption_key"] = str(config.get_value("export", "encryption_key", ""))
+	result["export_output"] = str(config.get_value("export", "export_output", ""))
+	result["export_debug"] = config.get_value("export", "debug", false)
 
 	result["function_excludes"] = _parse_csv(str(config.get_value("exclude", "function_names", "")))
 	result["variable_excludes"] = _parse_csv(str(config.get_value("exclude", "variable_names", "")))
@@ -248,12 +296,203 @@ func _validate_obfuscation(project_dir: String, output_dir: String) -> int:
 		print("  Consider excluding them from your export or adding them to your obfuscation scope.")
 
 	# Clean up validation directory
-	if OS.get_name() == "Windows":
-		OS.execute("cmd", ["/c", "rmdir", "/S", "/Q", validate_dir.replace("/", "\\")], [], true)
-	else:
-		OS.execute("rm", ["-rf", validate_dir], [], true)
+	_cleanup_dir(validate_dir)
 
 	return error_count
+
+# Runs the full export pipeline: copy project → overlay obfuscated files → export
+# Returns 0 on success, 2 on export error
+func _run_export_pipeline(project_dir: String, output_dir: String, preset: String,
+		godot_path: String, encryption_key_path: String, export_output: String, is_debug: bool) -> int:
+	var build_dir := output_dir.rstrip("/") + "-build"
+	print("")
+	print("=== Export Pipeline ===")
+	print("  Build dir: %s" % build_dir)
+
+	# Step 1: Copy full source project to build dir
+	print("  Copying project to build directory...")
+	var copy_output: Array = []
+	if OS.get_name() == "Windows":
+		OS.execute("cmd", ["/c", "xcopy", "/E", "/I", "/Y", "/Q",
+			project_dir.replace("/", "\\"), build_dir.replace("/", "\\")], copy_output, true)
+	else:
+		OS.execute("cp", ["-r", project_dir, build_dir], copy_output, true)
+
+	if not DirAccess.dir_exists_absolute(build_dir):
+		printerr("Error: Failed to copy project to build directory")
+		return 2
+
+	# Step 2: Overlay obfuscated files on top
+	print("  Overlaying obfuscated files...")
+	copy_output.clear()
+	if OS.get_name() == "Windows":
+		OS.execute("cmd", ["/c", "xcopy", "/E", "/Y", "/Q",
+			output_dir.replace("/", "\\"), build_dir.replace("/", "\\")], copy_output, true)
+	else:
+		OS.execute("cp", ["-r", output_dir + "/.", build_dir], copy_output, true)
+
+	# Step 3: Read encryption key if provided
+	var encryption_key := ""
+	if not encryption_key_path.is_empty():
+		var key_file := FileAccess.open(encryption_key_path, FileAccess.READ)
+		if key_file == null:
+			printerr("Error: Cannot read encryption key file: %s" % encryption_key_path)
+			_cleanup_dir(build_dir)
+			return 2
+		encryption_key = key_file.get_as_text().strip_edges()
+		key_file.close()
+		if encryption_key.is_empty():
+			printerr("Error: Encryption key file is empty")
+			_cleanup_dir(build_dir)
+			return 2
+		print("  Encryption key loaded (%d chars)" % encryption_key.length())
+
+	# Step 4: Determine expected output path from export_presets.cfg
+	var preset_export_path := _get_preset_export_path(build_dir, preset)
+	var export_flag := "--export-debug" if is_debug else "--export-release"
+
+	# Build the absolute export output path
+	var export_target_path := ""
+	if not preset_export_path.is_empty():
+		# preset_export_path is relative like "exports/Suganote.exe"
+		export_target_path = build_dir.path_join(preset_export_path)
+		# Ensure exports subdirectory exists
+		var export_subdir := export_target_path.get_base_dir()
+		DirAccess.make_dir_recursive_absolute(export_subdir)
+		print("  Export target: %s" % export_target_path)
+	else:
+		print("  Warning: Could not determine export path from preset config")
+		# Fall back to a default path
+		export_target_path = build_dir.path_join("exports/export.exe")
+		DirAccess.make_dir_recursive_absolute(export_target_path.get_base_dir())
+
+	# Step 5: Run Godot export
+	print("  Running Godot export (%s)..." % export_flag)
+	var run_output: Array = []
+	var export_args: PackedStringArray = ["--headless", "--path", build_dir, export_flag, preset, export_target_path]
+
+	var exit_code: int
+	if not encryption_key.is_empty() and OS.get_name() == "Windows":
+		# Pass encryption key via environment variable using cmd wrapper
+		var cmd_parts := "set GODOT_SCRIPT_ENCRYPTION_KEY=%s&& \"%s\"" % [encryption_key, godot_path]
+		for arg in export_args:
+			cmd_parts += " \"%s\"" % arg
+		exit_code = OS.execute("cmd", ["/c", cmd_parts], run_output, true)
+	elif not encryption_key.is_empty():
+		# Unix: use env command
+		var env_args: PackedStringArray = ["GODOT_SCRIPT_ENCRYPTION_KEY=" + encryption_key, godot_path]
+		env_args.append_array(export_args)
+		exit_code = OS.execute("env", env_args, run_output, true)
+	else:
+		exit_code = OS.execute(godot_path, export_args, run_output, true)
+
+	# Print export output for diagnostics
+	for line in run_output:
+		for output_line in str(line).split("\n"):
+			var trimmed := output_line.strip_edges()
+			if not trimmed.is_empty():
+				print("    [export] %s" % trimmed)
+
+	# Step 6: Verify export succeeded
+	if not FileAccess.file_exists(export_target_path):
+		printerr("Error: Export completed but output file not found: %s" % export_target_path)
+		printerr("  Godot exit code: %d" % exit_code)
+		_cleanup_dir(build_dir)
+		return 2
+
+	var file_size := FileAccess.get_file_as_bytes(export_target_path).size()
+	print("  Export succeeded: %s (%s)" % [export_target_path.get_file(), _format_size(file_size)])
+
+	# Step 7: Check for .pck file alongside the exe
+	var pck_path := export_target_path.get_basename() + ".pck"
+	if FileAccess.file_exists(pck_path):
+		var pck_size := FileAccess.get_file_as_bytes(pck_path).size()
+		print("  PCK file: %s (%s)" % [pck_path.get_file(), _format_size(pck_size)])
+
+	# Step 8: Copy all artifacts from export directory to export-output location
+	if not export_output.is_empty():
+		var output_base_dir := export_output.get_base_dir()
+		var export_source_dir := export_target_path.get_base_dir()
+		print("  Copying all artifacts from: %s" % export_source_dir)
+		print("  To: %s" % output_base_dir)
+		DirAccess.make_dir_recursive_absolute(output_base_dir)
+
+		# Copy all files from the export directory (exe, pck, dlls, etc.)
+		var source_dir := DirAccess.open(export_source_dir)
+		if source_dir == null:
+			printerr("Error: Cannot open export source directory: %s" % export_source_dir)
+			_cleanup_dir(build_dir)
+			return 2
+
+		source_dir.list_dir_begin()
+		var file_name := source_dir.get_next()
+		var copied_count := 0
+		while file_name != "":
+			if not source_dir.current_is_dir():
+				var src := export_source_dir.path_join(file_name)
+				var dest := output_base_dir.path_join(file_name)
+				var copy_err := DirAccess.copy_absolute(src, dest)
+				if copy_err != OK:
+					printerr("Error: Failed to copy %s (error %d)" % [file_name, copy_err])
+				else:
+					var size := FileAccess.get_file_as_bytes(src).size()
+					print("  Copied: %s (%s)" % [file_name, _format_size(size)])
+					copied_count += 1
+			file_name = source_dir.get_next()
+		source_dir.list_dir_end()
+
+		print("  %d artifact(s) copied successfully." % copied_count)
+
+	# Step 9: Clean up build directory
+	_cleanup_dir(build_dir)
+	print("  Build directory cleaned up.")
+	print("=== Export Pipeline Complete ===")
+	return 0
+
+# Parses export_presets.cfg to find the export_path for a given preset name
+static func _get_preset_export_path(project_dir: String, preset_name: String) -> String:
+	var presets_path := project_dir.path_join("export_presets.cfg")
+	if not FileAccess.file_exists(presets_path):
+		printerr("Warning: export_presets.cfg not found in: %s" % project_dir)
+		return ""
+
+	var config := ConfigFile.new()
+	var err := config.load(presets_path)
+	if err != OK:
+		printerr("Warning: Failed to load export_presets.cfg (error %d)" % err)
+		return ""
+
+	# Iterate through preset sections to find matching name
+	var i := 0
+	while true:
+		var section := "preset.%d" % i
+		if not config.has_section(section):
+			break
+		var name: String = config.get_value(section, "name", "")
+		if name == preset_name:
+			return config.get_value(section, "export_path", "")
+		i += 1
+
+	printerr("Warning: Preset '%s' not found in export_presets.cfg" % preset_name)
+	return ""
+
+# Removes a directory recursively
+func _cleanup_dir(dir_path: String) -> void:
+	if OS.get_name() == "Windows":
+		OS.execute("cmd", ["/c", "rmdir", "/S", "/Q", dir_path.replace("/", "\\")], [], true)
+	else:
+		OS.execute("rm", ["-rf", dir_path], [], true)
+
+# Formats byte size into human-readable string
+static func _format_size(bytes: int) -> String:
+	if bytes < 1024:
+		return "%d B" % bytes
+	elif bytes < 1024 * 1024:
+		return "%.1f KB" % (bytes / 1024.0)
+	elif bytes < 1024 * 1024 * 1024:
+		return "%.1f MB" % (bytes / (1024.0 * 1024.0))
+	else:
+		return "%.2f GB" % (bytes / (1024.0 * 1024.0 * 1024.0))
 
 func _print_usage() -> void:
 	print("Godot Valet Obfuscator CLI")
@@ -277,6 +516,14 @@ func _print_usage() -> void:
 	print("  --no-skip-addons       Include addons/ directory in obfuscation")
 	print("  --skip-dirs <dirs>     Comma-separated additional directories to skip (e.g. tests,build)")
 	print("  --validate             After obfuscation, run headless validation to count errors")
+	print("")
+	print("Export pipeline (triggers full build after obfuscation):")
+	print("  --export <preset>         Export preset name (e.g. 'Windows Desktop')")
+	print("  --godot-path <path>       Path to Godot binary for export (required with --export)")
+	print("  --encryption-key <path>   Path to file containing hex encryption key")
+	print("  --export-output <path>    Copy final artifacts (exe+pck) to this path")
+	print("  --debug                   Use --export-debug instead of --export-release")
+	print("")
 	print("  --help                 Show this help message")
 	print("")
 	print("Config file format (INI):")
@@ -296,3 +543,10 @@ func _print_usage() -> void:
 	print("  variable_names = var1,var2")
 	print("  external_classes = SQLite,SupabaseClient")
 	print("  constant_names = MY_CONST,SOME_VALUE")
+	print("")
+	print("  [export]")
+	print("  preset = Windows Desktop")
+	print("  godot_path = C:/path/to/custom/godot.exe")
+	print("  encryption_key = C:/path/to/encryption.key")
+	print("  export_output = C:/path/to/final/output.exe")
+	print("  debug = false")
