@@ -236,14 +236,6 @@ external_classes = SQLite,SupabaseClient
 - Exit codes: 0 = success, 1 = error (with message to stderr)
 - **Validate**: Run CLI on suganote, export result, verify app functions
 
-## Bug Fixes
-
-### Bug: Project Manager Drag-and-Drop Highlighting All Cards
-**Issue**: When dropping a project card in the Project Manager, all cards get highlighted instead of just the drop target.
-**Likely cause**: Drop highlight logic isn't clearing/resetting on other cards, or the drag state is being broadcast to all cards instead of just the one under the cursor.
-**Fix**: Investigate the drag-and-drop signal handling in the Project Manager scene. Ensure only the card under the cursor receives the highlight state, and all other cards reset their highlight on drag events.
-**Priority**: Fix before obfuscation work (it's a UX regression).
-
 ## Implementation Phases
 
 ### Phase 1: CLI Mode + Pipeline (do first — enables testing everything else)

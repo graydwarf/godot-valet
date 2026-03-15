@@ -232,6 +232,73 @@ func test_restore_call_patterns():
 	framework.assert_true('call("jump")' in content, "call() pattern should be restored")
 	framework.assert_false("__SPECIAL_STRING_TOKEN_" in content, "Tokens should be removed")
 
+# tween_property / tween_method preservation tests
+
+func test_preserve_tween_property_pattern():
+	# Arrange
+	var payload = ContentPayload.new()
+	payload.SetContent('tween.tween_property(sprite, "modulate", Color.RED, 0.5)')
+
+	# Act
+	ObfuscateHelper.PreserveSpecialStrings(payload)
+
+	# Assert
+	var content = payload.GetContent()
+	framework.assert_false('tween_property(sprite, "modulate"' in content, "tween_property pattern should be replaced with token")
+	framework.assert_true("__SPECIAL_STRING_TOKEN_" in content, "Should contain special token")
+
+func test_preserve_tween_method_pattern():
+	# Arrange
+	var payload = ContentPayload.new()
+	payload.SetContent('tween.tween_method(self, "update_progress", 0.0, 1.0, 2.0)')
+
+	# Act
+	ObfuscateHelper.PreserveSpecialStrings(payload)
+
+	# Assert
+	var content = payload.GetContent()
+	framework.assert_false('tween_method(self, "update_progress"' in content, "tween_method pattern should be replaced with token")
+	framework.assert_true("__SPECIAL_STRING_TOKEN_" in content, "Should contain special token")
+
+func test_restore_tween_property_roundtrip():
+	# Arrange
+	var original = 'tween.tween_property(node, "position", Vector2(100, 200), 1.0)'
+	var payload = ContentPayload.new()
+	payload.SetContent(original)
+	ObfuscateHelper.PreserveSpecialStrings(payload)
+
+	# Act
+	ObfuscateHelper.RestoreSpecialStrings(payload)
+
+	# Assert
+	framework.assert_equal(payload.GetContent(), original, "tween_property should be fully restored after roundtrip")
+
+func test_restore_tween_method_roundtrip():
+	# Arrange
+	var original = 'tween.tween_method(self, "lerp_value", 0.0, 1.0, 0.5)'
+	var payload = ContentPayload.new()
+	payload.SetContent(original)
+	ObfuscateHelper.PreserveSpecialStrings(payload)
+
+	# Act
+	ObfuscateHelper.RestoreSpecialStrings(payload)
+
+	# Assert
+	framework.assert_equal(payload.GetContent(), original, "tween_method should be fully restored after roundtrip")
+
+func test_preserve_tween_and_call_together():
+	# Arrange
+	var payload = ContentPayload.new()
+	var code = 'tween.tween_property(node, "scale", Vector2.ONE, 0.3)\nobj.call("reset")\nobj.has_method("update")'
+	payload.SetContent(code)
+
+	# Act
+	ObfuscateHelper.PreserveSpecialStrings(payload)
+
+	# Assert
+	var preserved = payload.GetPreservedSpecialStrings()
+	framework.assert_equal(preserved.size(), 3, "Should preserve tween_property, call, and has_method patterns")
+
 func test_call_and_has_method_together():
 	# Arrange
 	var payload = ContentPayload.new()

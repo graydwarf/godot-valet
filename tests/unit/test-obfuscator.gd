@@ -100,6 +100,95 @@ var x = 1
 	framework.assert_false("Full line comment" in result, "Full line comments should be removed")
 	framework.assert_false("Another full line comment" in result, "Full line comments should be removed")
 
+# Triple-quote comment stripping tests
+
+func test_remove_comments_preserves_triple_quoted_string():
+	# Arrange
+	var content_payload = ContentPayload.new()
+	var code = 'var text = """\nThis has a # hash inside\nand more text\n"""'
+	content_payload.SetContent(code)
+
+	# Act
+	ObfuscateHelper.RemoveCommentsFromCode(content_payload)
+
+	# Assert
+	var result = content_payload.GetContent()
+	framework.assert_true("# hash inside" in result, "Hash inside triple-quoted string should be preserved")
+	framework.assert_true('"""' in result, "Triple quotes should be preserved")
+
+func test_remove_comments_after_triple_quoted_string():
+	# Arrange
+	var content_payload = ContentPayload.new()
+	var code = 'var text = """\nMultiline\n"""\nvar x = 1 # Real comment'
+	content_payload.SetContent(code)
+
+	# Act
+	ObfuscateHelper.RemoveCommentsFromCode(content_payload)
+
+	# Assert
+	var result = content_payload.GetContent()
+	framework.assert_true("Multiline" in result, "Triple-quoted content should be preserved")
+	framework.assert_true("var x = 1" in result, "Code after triple-quote should remain")
+	framework.assert_false("Real comment" in result, "Comment after triple-quote block should be removed")
+
+func test_remove_comments_single_quote_triple():
+	# Arrange
+	var content_payload = ContentPayload.new()
+	var code = "var text = '''\nHas a # hash\n'''\nvar y = 2 # Comment"
+	content_payload.SetContent(code)
+
+	# Act
+	ObfuscateHelper.RemoveCommentsFromCode(content_payload)
+
+	# Assert
+	var result = content_payload.GetContent()
+	framework.assert_true("# hash" in result, "Hash inside single-quote triple string should be preserved")
+	framework.assert_false("# Comment" in result, "Comment after triple-quote block should be removed")
+
+func test_remove_comments_triple_quote_does_not_corrupt_state():
+	# Arrange — This was the original bug: """ toggled in_string 3x, leaving parser in wrong state
+	var content_payload = ContentPayload.new()
+	var code = 'var a = """\nblock\n"""\nvar b = "normal" # comment1\nvar c = 3 # comment2'
+	content_payload.SetContent(code)
+
+	# Act
+	ObfuscateHelper.RemoveCommentsFromCode(content_payload)
+
+	# Assert — Both comments after the triple-quote block should be stripped
+	var result = content_payload.GetContent()
+	framework.assert_true('"normal"' in result, "Regular string after triple-quote should be preserved")
+	framework.assert_false("comment1" in result, "Comment 1 after triple-quote should be removed")
+	framework.assert_false("comment2" in result, "Comment 2 after triple-quote should be removed")
+
+func test_remove_comments_escaped_quote_before_hash():
+	# Arrange
+	var content_payload = ContentPayload.new()
+	content_payload.SetContent('var text = "She said \\"hi\\"" # comment')
+
+	# Act
+	ObfuscateHelper.RemoveCommentsFromCode(content_payload)
+
+	# Assert
+	var result = content_payload.GetContent()
+	framework.assert_true('She said' in result, "String with escaped quotes should be preserved")
+	framework.assert_false("# comment" in result, "Comment after string with escaped quotes should be removed")
+
+func test_remove_comments_multiple_triple_quote_blocks():
+	# Arrange
+	var content_payload = ContentPayload.new()
+	var code = 'var a = """\nblock1 # hash1\n"""\nvar x = 1 # real1\nvar b = """\nblock2 # hash2\n"""\nvar y = 2 # real2'
+	content_payload.SetContent(code)
+
+	# Act
+	ObfuscateHelper.RemoveCommentsFromCode(content_payload)
+
+	# Assert
+	var result = content_payload.GetContent()
+	framework.assert_true("# hash1" in result, "Hash in first triple-quote block preserved")
+	framework.assert_true("# hash2" in result, "Hash in second triple-quote block preserved")
+	framework.assert_false("# real1" in result, "Comment between blocks should be removed")
+	framework.assert_false("# real2" in result, "Comment after second block should be removed")
+
 func test_godot_reserved_keywords_preserved():
 	# Arrange
 	var lifecycle_methods = ObfuscateHelper._godotLifecycleMethods

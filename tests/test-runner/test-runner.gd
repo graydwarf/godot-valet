@@ -13,7 +13,7 @@ func run_tests_async(silent: bool = false):
 	return await _run_all_tests()
 
 func _register_test_suites():
-	# Obfuscator Core Tests (8 tests)
+	# Obfuscator Core Tests (14 tests)
 	var obfuscator_tests = preload("res://tests/unit/test-obfuscator.gd").new()
 	obfuscator_tests.framework = test_framework
 	test_suites.append(obfuscator_tests)
@@ -28,7 +28,7 @@ func _register_test_suites():
 	obfuscator_variable_tests.framework = test_framework
 	test_suites.append(obfuscator_variable_tests)
 
-	# Obfuscator String Tests (12 tests)
+	# Obfuscator String Tests (23 tests)
 	var obfuscator_string_tests = preload("res://tests/unit/test-obfuscator-strings.gd").new()
 	obfuscator_string_tests.framework = test_framework
 	test_suites.append(obfuscator_string_tests)

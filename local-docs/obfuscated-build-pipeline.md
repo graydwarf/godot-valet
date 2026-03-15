@@ -95,17 +95,6 @@ The exported build runs from `C:/tmp/`, so worktree detection returns empty — 
 6. **Comment escape sequences** — `\"` before `#` no longer breaks comment detection (commit `747f8fb`)
 7. **`script` + `tween_property` built-in handling** — added to exclusion/preservation lists (commit `747f8fb`)
 
-### Known Issues
-
-#### `godot-ui-automation` autoload missing in exports
-- **Status**: Minor — logs `Failed to instantiate an autoload` for `res://addons/godot-ui-automation/godot-ui-automation.gd`
-- **Cause**: Autoload registered in suganote's `project.godot` but the addon script isn't included in the export. Non-blocking — app still runs.
-- **Fix**: Suganote-side fix — remove the autoload from `project.godot` or conditionally exclude it in export presets. Not a godot-valet/obfuscator concern.
-
-#### Build dir cleanup sometimes partial on Windows
-- **Status**: Minor — `rmdir /S /Q` occasionally leaves remnants
-- **Workaround**: Pipeline still works; leftover dirs don't affect subsequent runs
-
 ---
 
 ## Uber-Phase Roadmap
@@ -221,13 +210,12 @@ All 5 fixes are **general-purpose** — they affect any Godot project using the 
 ## Next Session Checklist
 
 ### Testing
-- **Run godot-valet unit tests** — confirm 181 tests still pass after comment stripping rewrite and SQLite built-in changes
-- **Add unit tests** for triple-quote comment stripping (new `RemoveCommentsFromCode` logic)
-- **Add unit tests** for `tween_property`/`tween_method` PreserveSpecialStrings patterns
+- ✅ **Unit tests confirmed** — 192 tests passing (was 181)
+- ✅ **Triple-quote comment stripping tests added** — 6 tests in `test-obfuscator.gd`
+- ✅ **`tween_property`/`tween_method` tests added** — 5 tests in `test-obfuscator-strings.gd`
 
 ### Pipeline Improvements
 - **GDExtension method discovery** — Currently SQLite methods are hardcoded in `_godotBuiltInMethods`. Consider scanning target project's `.gdextension` files or adding a `--builtin-methods` CLI flag for project-specific additions
-- **`godot-ui-automation` autoload warning** — Suganote-side fix: remove dev-only autoload from `project.godot` or exclude in export presets
 
 ### Next Major Milestones
 - **Uber-Phase 2** — GitHub Actions workflow using the CLI
