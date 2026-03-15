@@ -1203,36 +1203,59 @@ static func ObfuscateSceneContent(sceneContent: String, globalObfuscationMap: Di
 	return result.trim_suffix("\n")
 
 static func RemoveCommentsFromCode(contentPayload: ContentPayload) -> void:
+	var content := contentPayload.GetContent()
 	var result := ""
+	var i := 0
 	var in_string := false
-	var current_string_char := ""
-	var lines := contentPayload.GetContent().split("\n")
+	var string_char := ""
+	var in_triple := false
 
-	for line in lines:
-		var new_line := ""
-		var i := 0
-		while i < line.length():
-			var current_char := line[i]
+	while i < content.length():
+		var ch := content[i]
 
-			# Handle escape sequences inside strings — skip the next character
-			if in_string and current_char == "\\" and i + 1 < line.length():
-				new_line += current_char + line[i + 1]
-				i += 2
+		# Handle triple-quoted strings (""" or ''')
+		if not in_string and i + 2 < content.length():
+			var triple := content.substr(i, 3)
+			if triple == '"""' or triple == "'''":
+				in_string = true
+				in_triple = true
+				string_char = ch
+				result += triple
+				i += 3
 				continue
 
-			if not in_string and (current_char == '"' or current_char == "'"):
-				in_string = true
-				current_string_char = current_char
-			elif in_string and current_char == current_string_char:
+		# Close triple-quoted string
+		if in_triple and i + 2 < content.length():
+			var triple := content.substr(i, 3)
+			if triple == string_char + string_char + string_char:
 				in_string = false
+				in_triple = false
+				result += triple
+				i += 3
+				continue
 
-			if not in_string and current_char == "#":
-				break  # Stop at comment start if not in string
+		# Handle escape sequences inside strings
+		if in_string and ch == "\\" and i + 1 < content.length():
+			result += ch + content[i + 1]
+			i += 2
+			continue
 
-			new_line += current_char
-			i += 1
+		# Handle regular string open/close
+		if not in_string and not in_triple and (ch == '"' or ch == "'"):
+			in_string = true
+			string_char = ch
+		elif in_string and not in_triple and ch == string_char:
+			in_string = false
 
-		result += new_line.rstrip("") + "\n"
+		# Strip comments (# to end of line) when not in a string
+		if not in_string and ch == "#":
+			# Skip to end of line
+			while i < content.length() and content[i] != "\n":
+				i += 1
+			continue
+
+		result += ch
+		i += 1
 
 	contentPayload.SetContent(result)
 

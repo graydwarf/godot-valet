@@ -80,13 +80,14 @@ The exported build runs from `C:/tmp/`, so worktree detection returns empty — 
 
 ### Recently Fixed
 - **`query` function error** — SQLite GDExtension methods (`query`, `query_with_bindings`, etc.) aren't in ClassDB when obfuscator runs in godot-valet's context. Added to manual built-in list. Event sync now works correctly.
+- **Comment stripping triple-quote bug** — `RemoveCommentsFromCode()` didn't handle `"""` triple-quoted strings. Each `"` toggled in_string state independently, leaving the parser in wrong state after `"""`. Rewrote as character-level scanner with explicit triple-quote detection. Comment strip rate: 100% (was 99.3%).
 
 ### Known Issues
 
 #### `godot-ui-automation` autoload missing in exports
 - **Status**: Minor — logs `Failed to instantiate an autoload` for `res://addons/godot-ui-automation/godot-ui-automation.gd`
-- **Cause**: Autoload registered in `project.godot` but the addon script isn't included in the export (or is excluded). Non-blocking — app still runs.
-- **Fix**: Either exclude the autoload from `project.godot` in the build copy, or ensure the addon is included in exports.
+- **Cause**: Autoload registered in suganote's `project.godot` but the addon script isn't included in the export. Non-blocking — app still runs.
+- **Fix**: Suganote-side fix — remove the autoload from `project.godot` or conditionally exclude it in export presets. Not a godot-valet/obfuscator concern.
 
 #### Build dir cleanup sometimes partial on Windows
 - **Status**: Minor — `rmdir /S /Q` occasionally leaves remnants
