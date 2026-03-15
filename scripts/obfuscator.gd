@@ -254,6 +254,11 @@ const _godotBuiltInMethods := [
 
 	# Common patterns: singleton/factory
 	"get_instance", "instance", "new",
+
+	# SQLite GDExtension methods (not visible in ClassDB when obfuscator runs in a different project)
+	"query", "query_with_bindings", "query_result", "open_db", "close_db",
+	"create_table", "drop_table", "insert_row", "insert_rows", "delete_rows",
+	"select_rows", "update_rows", "import_from_json", "export_to_json",
 ]
 
 # Comprehensive list of built-in Godot class names

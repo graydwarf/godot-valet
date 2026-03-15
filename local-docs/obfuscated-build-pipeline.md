@@ -78,6 +78,9 @@ The exported build runs from `C:/tmp/`, so worktree detection returns empty — 
 - **Debug DB isolation** — `--debug` flag confirmed working. Exported build logs: `[WorkspaceManager] DEBUG MODE - Worktree: unknown - Using: user://debug_workspaces/`
 - **Middle-dev worktree as test source** — Pipeline builds successfully from middle-dev (same commit as main)
 
+### Recently Fixed
+- **`query` function error** — SQLite GDExtension methods (`query`, `query_with_bindings`, etc.) aren't in ClassDB when obfuscator runs in godot-valet's context. Added to manual built-in list. Event sync now works correctly.
+
 ### Known Issues
 
 #### `godot-ui-automation` autoload missing in exports
@@ -204,7 +207,8 @@ All 5 fixes are **general-purpose** — they affect any Godot project using the 
 ## Next Session Checklist
 
 1. ~~**Set up DB isolation**~~ — DONE. Use `--debug` flag + middle-dev worktree
-2. **Investigate content not loading** — Card text/content doesn't render in obfuscated build
-3. **Investigate drag position bug** — Cards drop at top-left instead of mouse position
-4. **Run full E2E test pass** — Once above fixed: create card, edit text, navigate boards, settings, undo/redo, drag & drop
-5. **Consider adding tests for new PreserveSpecialStrings patterns** — tween_property string preservation
+2. ~~**Investigate content not loading**~~ — RESOLVED. Was working after prior .tscn property fixes
+3. ~~**Investigate drag position bug**~~ — RESOLVED. Was working after prior fixes
+4. ~~**Fix `query` function error**~~ — RESOLVED. Added SQLite GDExtension methods to built-in list
+5. **Run full E2E test pass** — create card, edit text, navigate boards, settings, undo/redo, drag & drop
+6. **Consider adding tests for new PreserveSpecialStrings patterns** — tween_property string preservation
