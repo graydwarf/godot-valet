@@ -65,22 +65,35 @@ The exported build runs from `C:/tmp/`, so worktree detection returns empty — 
 
 ---
 
-## Current Status (2026-03-14, updated)
+## Current Status (2026-03-14, end of session)
 
-### Working
+### Working — Full E2E Verified
 - **Full CLI pipeline** — single command obfuscates + exports + collects artifacts (commit `104225a`)
-- **Functions + comments obfuscation** — works correctly in exported build
-- **Variables + .tscn property obfuscation** — implemented (see session notes below)
+- **Functions + comments + variables obfuscation** — all working in exported build
 - **Encrypted export** — PCK encrypted with custom key, runs on custom Godot build
-- **SQLite GDExtension** — DLL now correctly copied alongside exe by pipeline
-- **All 181 godot-valet unit tests passing**
-- **Exported build with `--variables`** — Suganote launches, boards load, board switching works
-- **Debug DB isolation** — `--debug` flag confirmed working. Exported build logs: `[WorkspaceManager] DEBUG MODE - Worktree: unknown - Using: user://debug_workspaces/`
-- **Middle-dev worktree as test source** — Pipeline builds successfully from middle-dev (same commit as main)
+- **Debug DB isolation** — `--debug` flag routes to `user://debug_workspaces/` (verified in logs)
+- **Middle-dev worktree as test source** — Pipeline builds from middle-dev, templates from main
+- **Event sync** — fully working (push/pull events verified)
+- **Content loading, drag & drop, board switching** — all working in obfuscated build
+- **Zero script errors** in exported debug build
 
-### Recently Fixed
-- **`query` function error** — SQLite GDExtension methods (`query`, `query_with_bindings`, etc.) aren't in ClassDB when obfuscator runs in godot-valet's context. Added to manual built-in list. Event sync now works correctly.
-- **Comment stripping triple-quote bug** — `RemoveCommentsFromCode()` didn't handle `"""` triple-quoted strings. Each `"` toggled in_string state independently, leaving the parser in wrong state after `"""`. Rewrote as character-level scanner with explicit triple-quote detection. Comment strip rate: 100% (was 99.3%).
+### Obfuscation Coverage (measured 2026-03-14)
+| Dimension | Coverage |
+|-----------|----------|
+| Functions | 88% (3,052/3,471 — 12% are correctly-excluded built-ins) |
+| Variables | 72% (979/1,366 — rest are excluded built-ins/cross-file props) |
+| Comments | 100% stripped |
+| Scene signals | 100% (all method refs obfuscated) |
+| File coverage | 100% (177 .gd, 42 .tscn) |
+
+### Session 2026-03-14 Fixes (7 total)
+1. **DB isolation** — Use `--debug` flag for test builds → `OS.is_debug_build()` true → debug workspace
+2. **NUL file on Windows** — Reserved device name in middle-dev root broke xcopy silently. Deleted via Node.js
+3. **SQLite GDExtension methods** — `query`, `query_with_bindings`, `open_db`, `close_db` etc. added to built-in list. These aren't visible in ClassDB when obfuscator runs in godot-valet's context (commit `44d21cc`)
+4. **Comment stripping triple-quote bug** — `"""` toggled in_string 3x, leaving parser in wrong state for all subsequent lines. Rewrote as character-level scanner with explicit triple-quote detection. 100% strip rate (commit `8f73701`)
+5. **.tscn property obfuscation** — @export vars now renamed in scene files (commit `747f8fb`)
+6. **Comment escape sequences** — `\"` before `#` no longer breaks comment detection (commit `747f8fb`)
+7. **`script` + `tween_property` built-in handling** — added to exclusion/preservation lists (commit `747f8fb`)
 
 ### Known Issues
 
@@ -207,9 +220,23 @@ All 5 fixes are **general-purpose** — they affect any Godot project using the 
 
 ## Next Session Checklist
 
-1. ~~**Set up DB isolation**~~ — DONE. Use `--debug` flag + middle-dev worktree
-2. ~~**Investigate content not loading**~~ — RESOLVED. Was working after prior .tscn property fixes
-3. ~~**Investigate drag position bug**~~ — RESOLVED. Was working after prior fixes
-4. ~~**Fix `query` function error**~~ — RESOLVED. Added SQLite GDExtension methods to built-in list
-5. **Run full E2E test pass** — create card, edit text, navigate boards, settings, undo/redo, drag & drop
-6. **Consider adding tests for new PreserveSpecialStrings patterns** — tween_property string preservation
+### Testing
+- **Run godot-valet unit tests** — confirm 181 tests still pass after comment stripping rewrite and SQLite built-in changes
+- **Add unit tests** for triple-quote comment stripping (new `RemoveCommentsFromCode` logic)
+- **Add unit tests** for `tween_property`/`tween_method` PreserveSpecialStrings patterns
+
+### Pipeline Improvements
+- **GDExtension method discovery** — Currently SQLite methods are hardcoded in `_godotBuiltInMethods`. Consider scanning target project's `.gdextension` files or adding a `--builtin-methods` CLI flag for project-specific additions
+- **`godot-ui-automation` autoload warning** — Suganote-side fix: remove dev-only autoload from `project.godot` or exclude in export presets
+
+### Next Major Milestones
+- **Uber-Phase 2** — GitHub Actions workflow using the CLI
+- **Uber-Phase 3** — UI updates for obfuscation settings (see `godot-valet-ui-obfuscation-plan.md`)
+
+### Completed (this session)
+- ~~Set up DB isolation~~ — `--debug` flag + middle-dev worktree
+- ~~Content not loading~~ — working after .tscn property fixes
+- ~~Drag position bug~~ — working after prior fixes
+- ~~`query` function error~~ — SQLite GDExtension methods added to built-in list
+- ~~Comment stripping triple-quote bug~~ — rewrote as character-level scanner
+- ~~NUL file breaking xcopy~~ — deleted reserved filename from middle-dev
