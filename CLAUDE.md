@@ -25,11 +25,13 @@ The obfuscator processes both `.gd` script files and `.tscn` scene files:
 - Replaces function/variable names with obfuscated versions
 - Writes obfuscated scripts to output directory
 
-**Pass 4 - Scene File Obfuscation** (`ObfuscateSceneFiles` lines 379-438):
-- Processes all .tscn files to update signal connection method references
-- Finds `[connection signal="..." method="method_name"]` lines
-- Replaces method names with obfuscated versions from global map
-- Preserves scene files without connections (copied as-is)
+**Pass 4 - Scene File Obfuscation** (`ObfuscateSceneFiles`):
+- Processes all .tscn files to update signal connections AND property assignments
+- Finds `[connection signal="..." method="method_name"]` lines — replaces method names
+- Finds `property_name = value` lines in [node]/[sub_resource] sections — replaces variable names
+- Skips path-based properties (`theme_override_*`, `metadata/*`)
+- Built-in Godot properties never appear in the map (excluded by ClassDB)
+- Preserves scene files without changes (copied as-is)
 
 ### Supported Patterns
 
@@ -59,7 +61,7 @@ The obfuscator processes both `.gd` script files and `.tscn` scene files:
 - Godot built-in types/methods automatically preserved
 
 ### Testing
-- **99 tests total** - All passing
+- **181 tests total** - All passing
 - Test suites in `tests/unit/`:
   - `test-obfuscator.gd` - Core obfuscation (8 tests)
   - `test-obfuscator-functions.gd` - Function detection (13 tests)
@@ -69,7 +71,7 @@ The obfuscator processes both `.gd` script files and `.tscn` scene files:
   - `test-obfuscator-excludes.gd` - Exclude lists (10 tests)
   - `test-obfuscator-callables.gd` - Callable patterns (12 tests)
   - `test-obfuscator-enums.gd` - Enum preservation (8 tests)
-  - `test-obfuscator-scenes.gd` - Scene file obfuscation (9 tests)
+  - `test-obfuscator-scenes.gd` - Scene file obfuscation (18 tests: 9 signal + 9 property)
 
 ### UI Features
 - Help dialog accessible via "?" button in Release Manager
@@ -83,6 +85,7 @@ The obfuscator processes both `.gd` script files and `.tscn` scene files:
 4. ✅ **Cross-file enum handling** - Enum in one file won't conflict with variable in another
 5. ✅ **Scene file signal connections** - Method references in .tscn signal connections now updated to obfuscated names
 6. ✅ **CRITICAL: Comment-only obfuscation bug** - Scene files now only processed when function obfuscation enabled, preventing mismatch where scenes call obfuscated methods that don't exist in scripts (broke all signal connections when only comment obfuscation was enabled)
+7. ✅ **CRITICAL: .tscn property obfuscation** - @export variable properties in scene files now renamed to match obfuscated .gd names. Removed @export skip logic so variables are obfuscated in both .gd and .tscn. Fixes crash when `--variables` enabled.
 
 ### Git Commits
 - `0ecd011` - Add callable pattern detection for .bind(), .unbind(), .call(), .callv()

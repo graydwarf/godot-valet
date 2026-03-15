@@ -62,7 +62,6 @@ class_name ObfuscateHelper
 static var _inputDir : String = ""
 static var _outputDir : String = ""
 static var _usedNames : Dictionary = {}
-static var _exportVariableNames := []
 static var _isObfuscatingFunctions := false
 static var _isObfuscatingVariables := false
 static var _isObfuscatingComments := false
@@ -141,7 +140,8 @@ const _godotBuiltInMethods := [
 	"set_process_mode", "set_scene_instance_load_placeholder", "update_configuration_warnings",
 	"get_multiplayer_authority", "set_multiplayer_authority", "rpc", "rpc_id", "is_multiplayer_authority",
 
-	# Object methods (base class - VERY common)
+	# Object methods and properties (base class - VERY common)
+	"script",  # Object.script — not always in ClassDB but used in every .tscn file
 	"get", "set", "get_class", "get_instance_id", "get_meta", "get_meta_list", "get_method_list",
 	"get_property_list", "get_script", "get_signal_connection_list", "get_signal_list", "has_meta",
 	"has_method", "has_signal", "has_user_signal", "is_class", "is_connected", "is_queued_for_deletion",
@@ -556,9 +556,6 @@ static func ReplacePattern(content: String, obfuscationKey: String, globalObfusc
 	var lastIndex := 0
 
 	for match in matches:
-		if _exportVariableNames.find(obfuscationKey) > -1:
-			continue
-			
 		var start := match.get_start()
 		var end := match.get_end()
 		var replacement = GetObfuscationReplacement(content, obfuscationKey, globalObfuscationMap, start, end, dotCallOnly)
@@ -596,11 +593,6 @@ static func GetObfuscationReplacement(content: String, symbol: String, globalObf
 		else:
 			return symbol
 	elif _isObfuscatingVariables && globalObfuscationMap.kind == "variable":
-		# Check if we are obfuscating inside an @export declaration
-		if before.contains("@export var"):
-			_exportVariableNames.append(symbol)
-			return symbol
-
 		# Don't obfuscate property access (dot notation)
 		# Example: json.data - 'data' here is a property, not our local variable
 		if prevChar == ".":
@@ -753,11 +745,6 @@ static func ExtractEnumValuesWithIndices(content: String) -> Dictionary:
 				current_ordinal += 1
 				continue
 
-			# Skip built-in Godot class names used as enum values
-			if IsBuiltInClass(val_name):
-				current_ordinal += 1
-				continue
-
 			if explicit_val != "" and explicit_val.is_valid_int():
 				current_ordinal = explicit_val.to_int()
 
@@ -767,6 +754,11 @@ static func ExtractEnumValuesWithIndices(content: String) -> Dictionary:
 			if enum_name != "":
 				result[enum_name + "." + val_name] = ordinal_str
 			else:
+				# Skip built-in Godot class names for anonymous enums only
+				# (bare keys like "JSON" would collide with the built-in class)
+				if IsBuiltInClass(val_name):
+					current_ordinal += 1
+					continue
 				# Only add bare references for anonymous enums (no qualified form available)
 				# Named enum values are too likely to collide with unrelated identifiers
 				# (class names, signal params, keywords) when replaced globally
@@ -911,11 +903,11 @@ static func ObfuscateDirectory(path: String, autoloads : Array) -> void:
 	var sceneFilters := ["tscn"]
 	var sceneFiles := FileHelper.GetFilesRecursive(path, sceneFilters, _skipDirectories)
 
-	if _isObfuscatingFunctions:
-		# Function obfuscation enabled: Update scene file method references to match obfuscated names
+	if _isObfuscatingFunctions or _isObfuscatingVariables:
+		# Function/variable obfuscation enabled: Update scene file references to match obfuscated names
 		ObfuscateSceneFiles(sceneFiles, globalObfuscationMap)
 	else:
-		# Function obfuscation disabled: Copy scene files as-is to preserve original method names
+		# No function/variable obfuscation: Copy scene files as-is to preserve original names
 		for scenePath in sceneFiles:
 			var content := FileAccess.get_file_as_string(scenePath)
 			if content == null or content == "":
@@ -1023,7 +1015,10 @@ static func RestoreSpecialStrings(contentPayload : ContentPayload) -> void:
 # Note: Supports has_method and all call() variants.
 static func PreserveSpecialStrings(contentPayload : ContentPayload) -> void:
 	var stringRegex := RegEx.new()
-	stringRegex.compile(r'(?:has_method|call(?:_deferred|_thread_safe|v)?)\s*\(\s*"([^"\\]*)"\s*')
+	# Match string args that reference symbol names:
+	# - call("method"), call_deferred("method"), has_method("method") — 1st arg
+	# - tween_property(obj, "property", ...), tween_method(obj, "method", ...) — 2nd arg
+	stringRegex.compile(r'(?:has_method|call(?:_deferred|_thread_safe|v)?)\s*\(\s*"([^"\\]*)"|(?:tween_property|tween_method)\s*\([^,]*,\s*"([^"\\]*)"')
 	var stringMatches := stringRegex.search_all(contentPayload.GetContent())
 
 	var preservedStrings := {}
@@ -1062,11 +1057,6 @@ static func ObfuscateAllFiles(allFiles : Array, globalObfuscationMap : Dictionar
 		if _isInliningConstants:
 			InlineConstants(contentPayload)
 			RemoveConstantDeclarations(contentPayload)
-
-		# Reset export var tracking per file. Anytime
-		# we come across and @export var, we need to ignore
-		# all other matches in the same file.
-		_exportVariableNames.clear()
 
 		# Extract local names (function params + local vars) to prevent
 		# collision with global function names of the same name
@@ -1125,6 +1115,22 @@ static func ObfuscateSceneFiles(sceneFiles: Array, globalObfuscationMap: Diction
 							newLine = line.replace('method="' + methodName + '"', 'method="' + obfuscatedMethod + '"')
 							modified = true
 
+			# Property assignment lines in [node] and [sub_resource] sections
+			# Format: "property_name = value" (no leading whitespace, no [ prefix)
+			# Renames @export variable properties to match obfuscated names in .gd files
+			elif _isObfuscatingVariables and not line.begins_with("[") and not line.is_empty():
+				var eq_pos := line.find(" = ")
+				if eq_pos > 0:
+					var prop_name := line.substr(0, eq_pos).strip_edges()
+					# Skip path-based properties (theme_override_*, metadata/*, etc.)
+					if "/" not in prop_name and globalObfuscationMap.has(prop_name):
+						var entry: Dictionary = globalObfuscationMap[prop_name]
+						if entry.get("kind") == "variable":
+							var obfuscated: String = entry.get("replacement", "")
+							if obfuscated != "":
+								newLine = obfuscated + line.substr(eq_pos)
+								modified = true
+
 			result += newLine + "\n"
 
 		# Write modified scene file to output directory
@@ -1154,17 +1160,60 @@ static func ObfuscateSceneFiles(sceneFiles: Array, globalObfuscationMap: Diction
 			else:
 				printerr("Failed to copy scene file: ", outputPath)
 
+# Processes scene file content in-memory — replaces signal method names and variable property names
+# Returns the modified content (or original if no changes needed)
+static func ObfuscateSceneContent(sceneContent: String, globalObfuscationMap: Dictionary) -> String:
+	var lines := sceneContent.split("\n")
+	var result := ""
+
+	for line in lines:
+		var newLine := line
+
+		# Signal connection lines
+		if line.begins_with("[connection "):
+			var methodRegex := RegEx.new()
+			methodRegex.compile('method="([^"]+)"')
+			var match := methodRegex.search(line)
+			if match:
+				var methodName := match.get_string(1)
+				if globalObfuscationMap.has(methodName):
+					var obfuscatedMethod: String = globalObfuscationMap[methodName].get("replacement", "")
+					if obfuscatedMethod != "":
+						newLine = line.replace('method="' + methodName + '"', 'method="' + obfuscatedMethod + '"')
+
+		# Property assignment lines (variable obfuscation)
+		elif _isObfuscatingVariables and not line.begins_with("[") and not line.is_empty():
+			var eq_pos := line.find(" = ")
+			if eq_pos > 0:
+				var prop_name := line.substr(0, eq_pos).strip_edges()
+				if "/" not in prop_name and globalObfuscationMap.has(prop_name):
+					var entry: Dictionary = globalObfuscationMap[prop_name]
+					if entry.get("kind") == "variable":
+						var obfuscated: String = entry.get("replacement", "")
+						if obfuscated != "":
+							newLine = obfuscated + line.substr(eq_pos)
+
+		result += newLine + "\n"
+
+	return result.trim_suffix("\n")
+
 static func RemoveCommentsFromCode(contentPayload: ContentPayload) -> void:
 	var result := ""
 	var in_string := false
 	var current_string_char := ""
 	var lines := contentPayload.GetContent().split("\n")
-	
+
 	for line in lines:
 		var new_line := ""
 		var i := 0
 		while i < line.length():
 			var current_char := line[i]
+
+			# Handle escape sequences inside strings — skip the next character
+			if in_string and current_char == "\\" and i + 1 < line.length():
+				new_line += current_char + line[i + 1]
+				i += 2
+				continue
 
 			if not in_string and (current_char == '"' or current_char == "'"):
 				in_string = true
@@ -1177,9 +1226,9 @@ static func RemoveCommentsFromCode(contentPayload: ContentPayload) -> void:
 
 			new_line += current_char
 			i += 1
-		
+
 		result += new_line.rstrip("") + "\n"
-	
+
 	contentPayload.SetContent(result)
 
 # TODO: 
