@@ -124,6 +124,20 @@ focus_mode = 0
 mouse_default_cursor_shape = 2
 text = "Obfuscate Comments"
 
+[node name="InjectDeadCodeCheckBox" type="CheckBox" parent="BackgroundPanel/MainMargin/MainVBox/ObfuscationCard/CardContent/CardBody/CheckboxVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "Inject Dead Code"
+
+[node name="EncryptStringsCheckBox" type="CheckBox" parent="BackgroundPanel/MainMargin/MainVBox/ObfuscationCard/CardContent/CardBody/CheckboxVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "Encrypt Strings"
+
 [node name="SourceFiltersCard" type="PanelContainer" parent="BackgroundPanel/MainMargin/MainVBox"]
 unique_name_in_owner = true
 layout_mode = 2

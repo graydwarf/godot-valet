@@ -76,6 +76,9 @@ static var _constantMap : Dictionary = {}  # original_name -> literal_value
 static var _constantExcludeList : Array[String] = []
 static var _skipDirectories : Array[String] = []
 static var _dotAccessedProperties : Dictionary = {}  # Properties accessed via obj.property across files
+static var _isInjectingDeadCode := false
+static var _isEncryptingStrings := false
+static var _encryptionKey : PackedByteArray = []
 
 # GDScript reserved keywords — must NEVER be obfuscated or inlined
 const _gdscriptReservedKeywords := [
@@ -375,13 +378,17 @@ static func IsBuiltInMethod(name: String) -> bool:
 static func IsBuiltInClass(name: String) -> bool:
 	return name in _godotBuiltInClasses or _runtimeBuiltInClasses.has(name)
 
-static func ObfuscateScripts(inputDir: String, outputDir: String, isObfuscatingFunctions : bool, isObfuscatingVariables : bool, isObfuscatingComments : bool, isInliningConstants := false):
+static func ObfuscateScripts(inputDir: String, outputDir: String, isObfuscatingFunctions : bool, isObfuscatingVariables : bool, isObfuscatingComments : bool, isInliningConstants := false, isInjectingDeadCode := false, isEncryptingStrings := false):
 	_inputDir = inputDir
 	_outputDir = outputDir
 	_isObfuscatingFunctions = isObfuscatingFunctions
 	_isObfuscatingVariables = isObfuscatingVariables
 	_isObfuscatingComments = isObfuscatingComments
 	_isInliningConstants = isInliningConstants
+	_isInjectingDeadCode = isInjectingDeadCode
+	_isEncryptingStrings = isEncryptingStrings
+	if _isEncryptingStrings:
+		_encryptionKey = GenerateEncryptionKey()
 
 	# Build runtime built-in sets from ClassDB (first call only)
 	BuildBuiltInSetsFromClassDB()
@@ -880,18 +887,32 @@ static func RemoveConstantDeclarations(contentPayload: ContentPayload) -> void:
 	var lines := content.split("\n")
 	var result_lines := []
 
+	# First pass: find constants still referenced in un-inlineable contexts
+	# (function default params, annotations, etc.)
+	var still_referenced := {}
+	for line in lines:
+		var stripped := line.strip_edges()
+		if stripped.begins_with("const "):
+			continue
+		# Only check function signatures (default parameter values can't be inlined)
+		if stripped.begins_with("func ") or stripped.begins_with("static func "):
+			for const_name in _constantMap.keys():
+				if const_name in stripped:
+					still_referenced[const_name] = true
+
 	for line in lines:
 		var stripped := line.strip_edges()
 
 		# Remove const lines with literal values (only those we inlined)
+		# BUT keep constants that are still referenced (e.g. in default parameter values)
 		if stripped.begins_with("const "):
 			var const_regex := RegEx.new()
 			const_regex.compile(r"const\s+(\w+)")
 			var match := const_regex.search(stripped)
 			if match:
 				var const_name := match.get_string(1)
-				if _constantMap.has(const_name):
-					continue  # Skip this line (remove it)
+				if _constantMap.has(const_name) and not still_referenced.has(const_name):
+					continue  # Safe to remove — fully inlined
 
 		result_lines.append(line)
 
@@ -1071,11 +1092,22 @@ static func ObfuscateAllFiles(allFiles : Array, globalObfuscationMap : Dictionar
 		ApplyBasicObfuscation(contentPayload, globalObfuscationMap)
 
 		RestoreStringLiterals(contentPayload)
-		
+
+		# Dead code injection: append fake functions and inject unreachable calls
+		if _isInjectingDeadCode:
+			var varNames := _get_obfuscated_names_by_kind(globalObfuscationMap, "variable")
+			var result := GenerateDeadFunctions(varNames, randi_range(5, 10))
+			InjectDeadCodeCalls(contentPayload, result.names, varNames)
+			contentPayload.SetContent(contentPayload.GetContent() + "\n" + result.code)
+
+		# String encryption: replace string literals with XOR-encrypted equivalents
+		if _isEncryptingStrings:
+			EncryptStringLiterals(contentPayload)
+
 		# Future obfuscations that are in development:
 		# ObfuscateSignals(contentPayload, autoloads)
 		# Minify(contentPayload)
-		
+
 		var relativePath = fullPath.replace(_inputDir, "")
 		var outputPath = _outputDir + relativePath
 		var outputDir = outputPath.get_base_dir()
@@ -1259,7 +1291,440 @@ static func RemoveCommentsFromCode(contentPayload: ContentPayload) -> void:
 
 	contentPayload.SetContent(result)
 
-# TODO: 
+# --- Dead Code Injection + Opaque Predicates ---
+
+# Extracts obfuscated replacement names from the global map filtered by kind
+static func _get_obfuscated_names_by_kind(globalMap: Dictionary, kind: String) -> Array:
+	var names := []
+	for key in globalMap:
+		if globalMap[key].get("kind", "") == kind and globalMap[key].has("replacement"):
+			names.append(globalMap[key]["replacement"])
+	return names
+
+# Generates an opaque predicate (always-true or always-false condition)
+static func GenerateOpaquePredicate(variables: Array, want_true: bool = true) -> String:
+	var v: String
+	if variables.size() > 0:
+		v = variables[randi() % variables.size()]
+	else:
+		v = str(randi_range(2, 99))
+
+	if want_true:
+		var templates := [
+			"((%s * %s) >= 0)",
+			"((%s * (%s + 1)) %% 2 == 0)",
+			"((%s | %s | 1) != 0)",
+		]
+		var t: String = templates[randi() % templates.size()]
+		return t % [v, v]
+	else:
+		var templates := [
+			"((%s * %s) < 0)",
+			"((%s * %s + 1) < 0)",
+		]
+		var t: String = templates[randi() % templates.size()]
+		return t % [v, v]
+
+# Generates fake functions that blend in with obfuscated code
+# All dead code uses int types to guarantee type-safe math operations
+# Returns { "code": String, "names": Array }
+static func GenerateDeadFunctions(realVariables: Array, count: int) -> Dictionary:
+	var code := ""
+	var names := []
+
+	for i in range(count):
+		var funcName := GenerateObfuscatedName()
+		names.append(funcName)
+
+		var returnType: String = ["int", "void"][randi() % 2]
+
+		code += "\nstatic func %s() -> %s:\n" % [funcName, returnType]
+
+		# Generate 2-4 lines of plausible body
+		var bodyLines := randi_range(2, 4)
+		var localVarName := GenerateObfuscatedName()
+
+		# First line: declare a local int variable
+		code += "\tvar %s: int = %d\n" % [localVarName, randi_range(-100, 100)]
+
+		# Middle lines: int-safe operations
+		var intVars: Array = [localVarName]
+
+		for _j in range(bodyLines - 1):
+			match randi_range(0, 3):
+				0:
+					var predicate := GenerateOpaquePredicate(intVars, true)
+					code += "\tif %s:\n" % predicate
+					code += "\t\t%s = %s\n" % [localVarName, _dead_code_expression(intVars, localVarName)]
+				1:
+					var tmpName := GenerateObfuscatedName()
+					code += "\tvar %s: int = %s\n" % [tmpName, _dead_code_expression(intVars, localVarName)]
+					intVars.append(tmpName)
+				2:
+					code += "\t%s = %s\n" % [localVarName, _dead_code_expression(intVars, localVarName)]
+				3:
+					var predicate := GenerateOpaquePredicate(intVars, false)
+					code += "\tif %s:\n" % predicate
+					code += "\t\tpass\n"
+
+		# Return line
+		if returnType == "void":
+			code += "\tpass\n"
+		else:
+			code += "\treturn %s\n" % localVarName
+
+	return { "code": code, "names": names }
+
+# Generates a plausible expression for dead code bodies
+static func _dead_code_expression(paramNames: Array, localVar: String) -> String:
+	var v: String
+	if paramNames.size() > 0:
+		v = paramNames[randi() % paramNames.size()]
+	else:
+		v = localVar
+
+	var expressions := [
+		"%s + %d" % [v, randi_range(1, 50)],
+		"%s - %d" % [v, randi_range(1, 50)],
+		"%s * %d" % [v, randi_range(2, 10)],
+		"abs(%s)" % v,
+		"%s" % str(randi_range(-100, 100)),
+	]
+	return expressions[randi() % expressions.size()]
+
+# Injects unreachable calls to dead functions into existing function bodies
+# Tracks brace/paren/bracket depth to avoid injecting inside multi-line expressions
+static func InjectDeadCodeCalls(contentPayload: ContentPayload, deadFuncNames: Array, _variables: Array) -> void:
+	if deadFuncNames.is_empty():
+		return
+
+	var lines := contentPayload.GetContent().split("\n")
+	var result := PackedStringArray()
+	var in_func := false
+	var func_line_count := 0
+	var deadFuncIndex := 0
+	var expr_depth := 0  # Tracks nested (, [, { depth
+	var in_match := false  # Inside a match block
+	var match_indent := 0  # Indentation level of the match statement
+
+	for i in range(lines.size()):
+		var line: String = lines[i]
+		result.append(line)
+
+		var stripped := line.strip_edges()
+
+		# Track expression depth across all lines
+		for ch in stripped:
+			if ch == "(" or ch == "[" or ch == "{":
+				expr_depth += 1
+			elif ch == ")" or ch == "]" or ch == "}":
+				expr_depth = max(expr_depth - 1, 0)
+
+		# Track backslash line continuations
+		if stripped.ends_with("\\"):
+			expr_depth = max(expr_depth, 1)  # Force depth > 0 for continuation lines
+
+		# Track match blocks
+		if stripped.begins_with("match ") and stripped.ends_with(":"):
+			in_match = true
+			var tabs := 0
+			for ch in line:
+				if ch == "\t":
+					tabs += 1
+				else:
+					break
+			match_indent = tabs
+
+		# Detect function start
+		if stripped.begins_with("func ") or stripped.begins_with("static func "):
+			in_func = true
+			func_line_count = 0
+			expr_depth = 0
+			in_match = false
+			continue
+
+		if in_func:
+			# End of function: non-empty line with no indentation
+			if stripped != "" and not line.begins_with("\t") and not line.begins_with(" "):
+				in_func = false
+				func_line_count = 0
+				expr_depth = 0
+				in_match = false
+				continue
+
+			# Detect end of match block (line at same or lesser indent than match)
+			if in_match and stripped != "":
+				var tabs := 0
+				for ch in line:
+					if ch == "\t":
+						tabs += 1
+					else:
+						break
+				if tabs <= match_indent and not stripped.begins_with("match "):
+					in_match = false
+
+			func_line_count += 1
+
+			# Never inject inside multi-line expressions or match blocks
+			if expr_depth > 0 or in_match:
+				continue
+
+			# Skip empty lines, comments, block openers
+			if stripped == "" or stripped.begins_with("#") or stripped.ends_with(":"):
+				continue
+
+			# Inject approximately every 15 lines, matching the current line's indent
+			if func_line_count > 0 and func_line_count % 15 == 0:
+				# Use the current line's indentation level
+				var currentIndent := ""
+				for ch in line:
+					if ch == "\t":
+						currentIndent += "\t"
+					else:
+						break
+				var literal := str(randi_range(2, 99))
+				var predicate := GenerateOpaquePredicate([literal], false)
+				var deadFunc: String = deadFuncNames[deadFuncIndex % deadFuncNames.size()]
+				deadFuncIndex += 1
+				result.append(currentIndent + "if %s:" % predicate)
+				result.append(currentIndent + "\t%s()" % deadFunc)
+
+	contentPayload.SetContent("\n".join(result))
+
+# --- String Encryption ---
+
+# Generates a random encryption key
+static func GenerateEncryptionKey(length: int = 32) -> PackedByteArray:
+	var key := PackedByteArray()
+	key.resize(length)
+	for i in range(length):
+		key[i] = randi() % 256
+	return key
+
+# Encrypts string literals in-place, injecting a decrypt helper at the top of the file
+static func EncryptStringLiterals(contentPayload: ContentPayload) -> void:
+	var content := contentPayload.GetContent()
+
+	# Reuse the same regex from PreserveStringLiterals
+	var stringRegex := RegEx.new()
+	var triple_dq := "\"\"\"[\\s\\S]*?\"\"\""
+	var triple_sq := "'''[\\s\\S]*?'''"
+	var regular_dq := "\"([^\"\\\\\\n]|\\\\.)*\""
+	var regular_sq := "'([^'\\\\\\n]|\\\\.)*'"
+	stringRegex.compile(triple_dq + "|" + triple_sq + "|" + regular_dq + "|" + regular_sq)
+
+	var matches := stringRegex.search_all(content)
+	if matches.is_empty():
+		return
+
+	var anyEncrypted := false
+
+	# Replace last-to-first to preserve positions
+	for i in range(matches.size() - 1, -1, -1):
+		var m = matches[i]
+		var matchedStr: String = m.get_string()
+
+		if _should_skip_encryption(content, m.get_start(), matchedStr):
+			continue
+
+		# Strip quotes to get the raw string content
+		var raw: String
+		if matchedStr.begins_with('"""') or matchedStr.begins_with("'''"):
+			raw = matchedStr.substr(3, matchedStr.length() - 6)
+		else:
+			raw = matchedStr.substr(1, matchedStr.length() - 2)
+
+		# Handle escape sequences in the raw string
+		raw = raw.replace("\\n", "\n").replace("\\t", "\t").replace("\\\\", "\\").replace('\\"', '"').replace("\\'", "'")
+
+		var encrypted := _xor_encrypt(raw, _encryptionKey)
+		var byteStrs := []
+		for b in encrypted:
+			byteStrs.append(str(b))
+		var byteStr := ",".join(byteStrs)
+		var replacement := "__d(PackedByteArray([%s]))" % byteStr
+
+		content = content.substr(0, m.get_start()) + replacement + content.substr(m.get_end())
+		anyEncrypted = true
+
+	if anyEncrypted:
+		content = _inject_decrypt_helper(content)
+
+	contentPayload.SetContent(content)
+
+# Determines whether a string match should be skipped for encryption
+static func _should_skip_encryption(content: String, matchStart: int, matchedStr: String) -> bool:
+	# Strip outer quotes for content check
+	var inner: String
+	if matchedStr.begins_with('"""') or matchedStr.begins_with("'''"):
+		inner = matchedStr.substr(3, matchedStr.length() - 6)
+	else:
+		inner = matchedStr.substr(1, matchedStr.length() - 2)
+
+	# Skip empty and single-char strings
+	if inner.length() <= 1:
+		return true
+
+	# Skip resource/user paths
+	if inner.begins_with("res://") or inner.begins_with("user://"):
+		return true
+
+	# Find the line containing this match
+	var lineStart := content.rfind("\n", matchStart)
+	if lineStart == -1:
+		lineStart = 0
+	else:
+		lineStart += 1
+	var lineEnd := content.find("\n", matchStart)
+	if lineEnd == -1:
+		lineEnd = content.length()
+	var line := content.substr(lineStart, lineEnd - lineStart).strip_edges()
+
+	# Skip const declarations (compile-time literal required)
+	# Also check all lines between const start and its closing bracket
+	if line.begins_with("const "):
+		return true
+	# Check if we're inside a multi-line const (scan backwards to find const opener)
+	var scanPos := lineStart - 1
+	var bracket_depth := 0
+	while scanPos >= 0:
+		var scanLineEnd := scanPos
+		var scanLineStart := content.rfind("\n", scanPos - 1)
+		if scanLineStart == -1:
+			scanLineStart = 0
+		else:
+			scanLineStart += 1
+		var scanLine := content.substr(scanLineStart, scanLineEnd - scanLineStart + 1).strip_edges()
+		# Count brackets on this line
+		for ch in scanLine:
+			if ch == "[" or ch == "{":
+				bracket_depth += 1
+			elif ch == "]" or ch == "}":
+				bracket_depth -= 1
+		if scanLine.begins_with("const "):
+			if bracket_depth > 0:
+				return true  # Inside a multi-line const
+			break
+		# Stop scanning at function/class boundaries
+		if scanLine.begins_with("func ") or scanLine.begins_with("static func ") or scanLine.begins_with("class ") or scanLine.begins_with("var "):
+			break
+		scanPos = scanLineStart - 1
+
+	# Skip preload/load (resource paths)
+	if "preload(" in line and matchStart > lineStart:
+		var before := content.substr(lineStart, matchStart - lineStart)
+		if "preload(" in before:
+			return true
+	if "load(" in line and matchStart > lineStart:
+		var before := content.substr(lineStart, matchStart - lineStart)
+		if "load(" in before and not "download" in before:
+			return true
+
+	# Skip all annotations (compile-time literal required)
+	if line.begins_with("@"):
+		return true
+
+	# Skip StringName and NodePath literals (&"name" and ^"path")
+	if matchStart > 0:
+		var charBefore := content[matchStart - 1]
+		if charBefore == "&" or charBefore == "^":
+			return true
+
+	# Skip default parameter values: func name(param = "default")
+	if "func " in line:
+		var before := content.substr(lineStart, matchStart - lineStart)
+		if "=" in before and "(" in before:
+			return true
+
+	# Skip strings in contexts requiring compile-time literals:
+	# - Dictionary keys: {"key": value}
+	var trimmedLine := line.strip_edges()
+
+	# Skip strings in contexts requiring compile-time literals:
+	# - Dictionary keys: {"key": value}
+	# - Match arm patterns: "pattern1", "pattern2":
+	var afterPos := matchStart + matchedStr.length()
+	if afterPos < content.length():
+		var afterStr := content.substr(afterPos).strip_edges()
+		if afterStr.begins_with(":") and not afterStr.begins_with("://"):
+			return true
+	# Match arm lines end with : and contain strings — skip all strings on them
+	if trimmedLine.ends_with(":") and not trimmedLine.begins_with("var ") and not trimmedLine.begins_with("if ") and not trimmedLine.begins_with("func ") and not trimmedLine.begins_with("static func ") and not trimmedLine.begins_with("for ") and not trimmedLine.begins_with("while ") and not trimmedLine.begins_with("elif "):
+		return true
+
+	# Skip standalone string expressions (docstrings / string-only statements)
+	if trimmedLine == matchedStr or trimmedLine == matchedStr + ";":
+		return true
+
+	return false
+
+# XOR encrypts a string with the given key
+static func _xor_encrypt(text: String, key: PackedByteArray) -> PackedByteArray:
+	var bytes := text.to_utf8_buffer()
+	var result := PackedByteArray()
+	result.resize(bytes.size())
+	for i in range(bytes.size()):
+		result[i] = bytes[i] ^ key[i % key.size()]
+	return result
+
+# Builds the decrypt helper code block with a given indentation prefix
+static func _build_decrypt_helper(indent: String, keyName: String) -> String:
+	var keyBytes := []
+	for i in range(_encryptionKey.size()):
+		keyBytes.append(str(_encryptionKey[i]))
+	var keyStr := ",".join(keyBytes)
+
+	var helper := "\n%sstatic var %s:PackedByteArray=PackedByteArray([%s])\n" % [indent, keyName, keyStr]
+	helper += "%sstatic func __d(s:PackedByteArray)->String:\n" % indent
+	helper += "%s\tvar r:=PackedByteArray();r.resize(s.size())\n" % indent
+	helper += "%s\tfor i in range(s.size()):r[i]=s[i]^%s[i%%%s.size()]\n" % [indent, keyName, keyName]
+	helper += "%s\treturn r.get_string_from_utf8()\n" % indent
+	return helper
+
+# Injects the decrypt helper at file top and into any nested classes
+static func _inject_decrypt_helper(content: String) -> String:
+	var keyName := GenerateObfuscatedName()
+
+	var lines := content.split("\n")
+
+	# Find all insertion points: file top + each nested class declaration
+	var insertions := []  # Array of [line_index, indent]
+
+	# File top: after extends/class_name/@tool
+	var topInsert := 0
+	for i in range(min(lines.size(), 10)):
+		var stripped := lines[i].strip_edges()
+		if stripped.begins_with("extends ") or stripped.begins_with("class_name ") or stripped.begins_with("@tool"):
+			topInsert = i + 1
+	insertions.append([topInsert, ""])
+
+	# Find nested class declarations and inject helper after extends line
+	for i in range(lines.size()):
+		var stripped := lines[i].strip_edges()
+		if stripped.begins_with("class ") and ":" in stripped:
+			# Get the indent of the class body (one level deeper than the class line)
+			var classIndent := ""
+			for ch in lines[i]:
+				if ch == "\t":
+					classIndent += "\t"
+				else:
+					break
+			classIndent += "\t"
+			# Insert after the class line (or after its extends if on next line)
+			var insertAt := i + 1
+			if insertAt < lines.size() and lines[insertAt].strip_edges().begins_with("extends "):
+				insertAt += 1
+			insertions.append([insertAt, classIndent])
+
+	# Insert in reverse order to preserve line numbers
+	insertions.reverse()
+	for insertion in insertions:
+		var helper := _build_decrypt_helper(insertion[1], keyName)
+		lines.insert(insertion[0], helper)
+
+	return "\n".join(lines)
+
+# TODO:
 # Need to handle globals (which look just like locals). Wondering
 # if I can detect globals in project file and then match any
 # <globalName>.connect or <globalName>.emit_signal.

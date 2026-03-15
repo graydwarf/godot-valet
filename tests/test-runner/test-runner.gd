@@ -78,6 +78,16 @@ func _register_test_suites():
 	obfuscator_constant_tests.framework = test_framework
 	test_suites.append(obfuscator_constant_tests)
 
+	# Obfuscator Dead Code Injection Tests (15 tests)
+	var obfuscator_deadcode_tests = preload("res://tests/unit/test-obfuscator-deadcode.gd").new()
+	obfuscator_deadcode_tests.framework = test_framework
+	test_suites.append(obfuscator_deadcode_tests)
+
+	# Obfuscator String Encryption Tests (15 tests)
+	var obfuscator_string_encrypt_tests = preload("res://tests/unit/test-obfuscator-strings-encrypt.gd").new()
+	obfuscator_string_encrypt_tests.framework = test_framework
+	test_suites.append(obfuscator_string_encrypt_tests)
+
 func _run_all_tests():
 	var total_results = {}
 

@@ -56,6 +56,8 @@ func _init():
 	var obfuscate_variables: bool = _resolve_flag(args, "variables", config.get("variables", true))
 	var obfuscate_comments: bool = _resolve_flag(args, "comments", config.get("comments", true))
 	var inline_constants: bool = _resolve_flag(args, "constants", config.get("constants", false))
+	var inject_dead_code: bool = _resolve_flag(args, "dead-code", config.get("dead_code", false))
+	var encrypt_strings: bool = _resolve_flag(args, "strings", config.get("strings", false))
 	var skip_addons: bool = _resolve_flag(args, "skip-addons", config.get("skip_addons", true))
 
 	var skip_dirs: Array[String] = [".godot", ".import"]
@@ -102,15 +104,16 @@ func _init():
 			return
 
 	print("Obfuscating: %s -> %s" % [project_dir, output_dir])
-	print("  Functions: %s | Variables: %s | Comments: %s | Constants: %s" % [
-		obfuscate_functions, obfuscate_variables, obfuscate_comments, inline_constants])
+	print("  Functions: %s | Variables: %s | Comments: %s | Constants: %s | Dead Code: %s | Strings: %s" % [
+		obfuscate_functions, obfuscate_variables, obfuscate_comments, inline_constants, inject_dead_code, encrypt_strings])
 	print("  Skip dirs: %s" % [", ".join(skip_dirs)])
 	if not export_preset.is_empty():
 		print("  Export: preset=%s, debug=%s" % [export_preset, is_debug])
 
 	var result: int = ObfuscateHelper.ObfuscateScripts(
 		project_dir, output_dir,
-		obfuscate_functions, obfuscate_variables, obfuscate_comments, inline_constants)
+		obfuscate_functions, obfuscate_variables, obfuscate_comments, inline_constants,
+		inject_dead_code, encrypt_strings)
 
 	if result != OK:
 		printerr("Obfuscation failed with error code: %d" % result)
@@ -169,7 +172,7 @@ static func _parse_args(raw_args: PackedStringArray) -> Dictionary:
 			continue
 
 		# Known boolean flags without values
-		if key in ["functions", "variables", "comments", "constants", "skip-addons", "validate", "debug"]:
+		if key in ["functions", "variables", "comments", "constants", "dead-code", "strings", "skip-addons", "validate", "debug"]:
 			if i + 1 < raw_args.size() and not raw_args[i + 1].begins_with("--"):
 				result[key] = raw_args[i + 1].to_lower() == "true"
 				i += 2

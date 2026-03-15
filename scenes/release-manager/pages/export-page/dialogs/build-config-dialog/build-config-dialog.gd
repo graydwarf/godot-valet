@@ -8,6 +8,8 @@ signal cancelled()
 @onready var _obfuscateFunctionsCheckBox = %ObfuscateFunctionsCheckBox
 @onready var _obfuscateVariablesCheckBox = %ObfuscateVariablesCheckBox
 @onready var _obfuscateCommentsCheckBox = %ObfuscateCommentsCheckBox
+@onready var _injectDeadCodeCheckBox = %InjectDeadCodeCheckBox
+@onready var _encryptStringsCheckBox = %EncryptStringsCheckBox
 @onready var _sourceFiltersLineEdit = %SourceFiltersLineEdit
 @onready var _obfuscationCard = %ObfuscationCard
 @onready var _sourceFiltersCard = %SourceFiltersCard
@@ -64,6 +66,8 @@ func _ready():
 	_obfuscateFunctionsCheckBox.toggled.connect(_onInputChanged.unbind(1))
 	_obfuscateVariablesCheckBox.toggled.connect(_onInputChanged.unbind(1))
 	_obfuscateCommentsCheckBox.toggled.connect(_onInputChanged.unbind(1))
+	_injectDeadCodeCheckBox.toggled.connect(_onInputChanged.unbind(1))
+	_encryptStringsCheckBox.toggled.connect(_onInputChanged.unbind(1))
 	_sourceFiltersLineEdit.text_changed.connect(_onInputChanged.unbind(1))
 
 func _onInputChanged():
@@ -156,6 +160,8 @@ func _loadPlatformConfig():
 		_obfuscateFunctionsCheckBox.button_pressed = config.get("obfuscate_functions", false)
 		_obfuscateVariablesCheckBox.button_pressed = config.get("obfuscate_variables", false)
 		_obfuscateCommentsCheckBox.button_pressed = config.get("obfuscate_comments", false)
+		_injectDeadCodeCheckBox.button_pressed = config.get("dead_code", false)
+		_encryptStringsCheckBox.button_pressed = config.get("encrypt_strings", false)
 
 		# Load function excludes into dynamic list
 		var functionExcludes = config.get("function_excludes", "")
@@ -180,6 +186,8 @@ func _getCurrentConfig() -> Dictionary:
 		"obfuscate_functions": _obfuscateFunctionsCheckBox.button_pressed,
 		"obfuscate_variables": _obfuscateVariablesCheckBox.button_pressed,
 		"obfuscate_comments": _obfuscateCommentsCheckBox.button_pressed,
+		"dead_code": _injectDeadCodeCheckBox.button_pressed,
+		"encrypt_strings": _encryptStringsCheckBox.button_pressed,
 		"function_excludes": _getExcludeListAsString(_functionExcludesList),
 		"variable_excludes": _getExcludeListAsString(_variableExcludesList),
 		"source_filters": _sourceFiltersLineEdit.text
