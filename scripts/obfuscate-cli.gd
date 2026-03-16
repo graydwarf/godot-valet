@@ -74,10 +74,13 @@ func _init():
 	var ext_classes: Array[String] = config.get("external_classes", [] as Array[String])
 	var const_excludes: Array[String] = config.get("constant_excludes", [] as Array[String])
 
+	var extra_methods: Array[String] = _parse_csv(args.get("builtin-methods", config.get("builtin_methods", "")))
+
 	ObfuscateHelper.SetFunctionExcludeList(func_excludes)
 	ObfuscateHelper.SetVariableExcludeList(var_excludes)
 	ObfuscateHelper.SetExternalPluginClasses(ext_classes)
 	ObfuscateHelper.SetConstantExcludeList(const_excludes)
+	ObfuscateHelper.SetExtraBuiltInMethods(extra_methods)
 
 	# Export pipeline flags
 	var export_preset: String = args.get("export", config.get("export_preset", ""))
@@ -107,6 +110,8 @@ func _init():
 	print("  Functions: %s | Variables: %s | Comments: %s | Constants: %s | Dead Code: %s | Strings: %s" % [
 		obfuscate_functions, obfuscate_variables, obfuscate_comments, inline_constants, inject_dead_code, encrypt_strings])
 	print("  Skip dirs: %s" % [", ".join(skip_dirs)])
+	if not extra_methods.is_empty():
+		print("  Extra built-in methods: %d (%s)" % [extra_methods.size(), ", ".join(extra_methods)])
 	if not export_preset.is_empty():
 		print("  Export: preset=%s, debug=%s" % [export_preset, is_debug])
 
@@ -517,7 +522,13 @@ func _print_usage() -> void:
 	print("  --no-constants         Disable constant/enum inlining (default)")
 	print("  --skip-addons          Skip addons/ directory (default)")
 	print("  --no-skip-addons       Include addons/ directory in obfuscation")
+	print("  --dead-code            Enable dead code injection")
+	print("  --no-dead-code         Disable dead code injection (default)")
+	print("  --strings              Enable string encryption")
+	print("  --no-strings           Disable string encryption (default)")
 	print("  --skip-dirs <dirs>     Comma-separated additional directories to skip (e.g. tests,build)")
+	print("  --builtin-methods <m>  Comma-separated GDExtension method names to exclude from obfuscation")
+	print("                         (e.g. query,open_db,close_db for SQLite)")
 	print("  --validate             After obfuscation, run headless validation to count errors")
 	print("")
 	print("Export pipeline (triggers full build after obfuscation):")

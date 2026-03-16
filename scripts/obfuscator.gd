@@ -79,6 +79,7 @@ static var _dotAccessedProperties : Dictionary = {}  # Properties accessed via o
 static var _isInjectingDeadCode := false
 static var _isEncryptingStrings := false
 static var _encryptionKey : PackedByteArray = []
+static var _extraBuiltInMethods : Array[String] = []
 
 # GDScript reserved keywords — must NEVER be obfuscated or inlined
 const _gdscriptReservedKeywords := [
@@ -258,10 +259,6 @@ const _godotBuiltInMethods := [
 	# Common patterns: singleton/factory
 	"get_instance", "instance", "new",
 
-	# SQLite GDExtension methods (not visible in ClassDB when obfuscator runs in a different project)
-	"query", "query_with_bindings", "query_result", "open_db", "close_db",
-	"create_table", "drop_table", "insert_row", "insert_rows", "delete_rows",
-	"select_rows", "update_rows", "import_from_json", "export_to_json",
 ]
 
 # Comprehensive list of built-in Godot class names
@@ -373,7 +370,7 @@ static func BuildBuiltInSetsFromClassDB() -> void:
 				_runtimeBuiltInMethods[signal_name] = true
 
 static func IsBuiltInMethod(name: String) -> bool:
-	return name in _godotBuiltInMethods or _runtimeBuiltInMethods.has(name) or _runtimeBuiltInProperties.has(name)
+	return name in _godotBuiltInMethods or _runtimeBuiltInMethods.has(name) or _runtimeBuiltInProperties.has(name) or name in _extraBuiltInMethods
 
 static func IsBuiltInClass(name: String) -> bool:
 	return name in _godotBuiltInClasses or _runtimeBuiltInClasses.has(name)
@@ -429,6 +426,9 @@ static func SetConstantExcludeList(excludeList: Array[String]) -> void:
 
 static func SetSkipDirectories(dirs: Array[String]) -> void:
 	_skipDirectories = dirs
+
+static func SetExtraBuiltInMethods(methods: Array[String]) -> void:
+	_extraBuiltInMethods = methods
 
 # Extracts enum type names and values from code and adds them to exclusion list
 # Enum type names and values should never be obfuscated as they're runtime constants
@@ -1093,11 +1093,14 @@ static func ObfuscateAllFiles(allFiles : Array, globalObfuscationMap : Dictionar
 
 		RestoreStringLiterals(contentPayload)
 
-		# Dead code injection: append fake functions and inject unreachable calls
+		# Dead code injection: append fake functions at end of file
+		# Note: Inline call injection (InjectDeadCodeCalls) is disabled — it causes
+		# runtime issues with drag-drop and potentially other signal-driven code paths
+		# in Godot, even though the injected branches are provably unreachable.
+		# The appended dead functions still add decompilation noise effectively.
 		if _isInjectingDeadCode:
 			var varNames := _get_obfuscated_names_by_kind(globalObfuscationMap, "variable")
 			var result := GenerateDeadFunctions(varNames, randi_range(5, 10))
-			InjectDeadCodeCalls(contentPayload, result.names, varNames)
 			contentPayload.SetContent(contentPayload.GetContent() + "\n" + result.code)
 
 		# String encryption: replace string literals with XOR-encrypted equivalents
