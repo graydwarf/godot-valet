@@ -102,8 +102,8 @@ The exported build runs from `C:/tmp/`, so worktree detection returns empty — 
 | Phase | Status | Description |
 |-------|--------|-------------|
 | **Uber-Phase 1** | **COMPLETE** | CLI full pipeline (obfuscate → export) |
-| **Uber-Phase 2** | Next | GitHub Actions workflow using the CLI |
-| **Uber-Phase 3** | Later | UI updates — see `godot-valet-ui-obfuscation-plan.md` |
+| **Uber-Phase 2** | **COMPLETE** | GitHub Actions workflow — obfuscation step in suganote release.yml |
+| **Uber-Phase 3** | Next | UI updates — see `godot-valet-ui-obfuscation-plan.md` |
 
 ---
 
@@ -215,10 +215,10 @@ All 5 fixes are **general-purpose** — they affect any Godot project using the 
 - ✅ **`tween_property`/`tween_method` tests added** — 5 tests in `test-obfuscator-strings.gd`
 
 ### Pipeline Improvements
-- **GDExtension method discovery** — Currently SQLite methods are hardcoded in `_godotBuiltInMethods`. Consider scanning target project's `.gdextension` files or adding a `--builtin-methods` CLI flag for project-specific additions
+- ✅ **`--builtin-methods` CLI flag** — SQLite methods moved from hardcoded list to user-configurable flag
+- ✅ **GitHub Actions workflow** — Obfuscation step added to suganote `release.yml`
 
 ### Next Major Milestones
-- **Uber-Phase 2** — GitHub Actions workflow using the CLI
 - **Uber-Phase 3** — UI updates for obfuscation settings (see `godot-valet-ui-obfuscation-plan.md`)
 
 ### Completed (this session)
