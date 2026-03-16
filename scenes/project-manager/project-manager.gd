@@ -17,6 +17,13 @@ var _runProjectThread
 var _editProjectThread
 var _openGodotProjectManagerThread
 var _assetFinder : AssetFinder
+var _current_drop_target = null
+var _last_insert_above := true
+var _drop_indicator: ColorRect = null
+var _drag_scrolling := false
+var _drag_scroll_speed := 0.0
+const DRAG_SCROLL_ZONE := 60.0
+const DRAG_SCROLL_MAX_SPEED := 600.0
 
 func _ready():
 	InitSignals()
@@ -29,6 +36,10 @@ func _ready():
 	UpdateClaudeMonitorButtonVisibility()
 	UpdateRunConsoleButtonVisibility()
 	UpdateEditConsoleButtonVisibility()
+	# Allow drag-drop events in gaps to fall through to project-manager
+	_scrollContainer.mouse_filter = Control.MOUSE_FILTER_PASS
+	_scrollContainer.get_node("MarginContainer").mouse_filter = Control.MOUSE_FILTER_PASS
+	_projectItemContainer.mouse_filter = Control.MOUSE_FILTER_PASS
 	
 func LoadCustomScrollContainerTheme():
 	var customWidth = 20
@@ -268,11 +279,106 @@ func InitSignals():
 	Signals.connect("ShowRunConsoleButtonChanged", _on_show_run_console_button_changed)
 	Signals.connect("ShowEditConsoleButtonChanged", _on_show_edit_console_button_changed)
 	Signals.connect("RemoveProject", RemoveProjectById)
+	Signals.connect("DragStarted", _on_drag_started)
+	Signals.connect("DragHoverUpdate", _on_drag_hover_update)
 
 func HidingProjectItem():
 	ToggleHiddenProjectVisibility()
 
-func ReorderProjectItems(dragged_item, target_item):
+func _process(delta):
+	if not _drag_scrolling:
+		return
+
+	var mouse_pos = get_global_mouse_position()
+	var scroll_rect = _scrollContainer.get_global_rect()
+
+	# Distance into the top/bottom scroll zone (0 = edge of zone, 1 = edge of container)
+	var top_dist = mouse_pos.y - scroll_rect.position.y
+	var bottom_dist = scroll_rect.end.y - mouse_pos.y
+
+	var scrolled = false
+	if top_dist < DRAG_SCROLL_ZONE and top_dist >= 0:
+		var factor = 1.0 - (top_dist / DRAG_SCROLL_ZONE)
+		_scrollContainer.scroll_vertical -= int(DRAG_SCROLL_MAX_SPEED * factor * delta)
+		scrolled = true
+	elif bottom_dist < DRAG_SCROLL_ZONE and bottom_dist >= 0:
+		var factor = 1.0 - (bottom_dist / DRAG_SCROLL_ZONE)
+		_scrollContainer.scroll_vertical += int(DRAG_SCROLL_MAX_SPEED * factor * delta)
+		scrolled = true
+
+	# Reposition the drop indicator after scroll so it tracks the target card
+	if scrolled:
+		_update_drop_indicator_position()
+
+func _on_drag_started():
+	_drag_scrolling = true
+	if _drop_indicator == null:
+		_drop_indicator = ColorRect.new()
+		_drop_indicator.color = Color(0.0, 0.6, 1.0, 0.9)
+		_drop_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_drop_indicator.visible = false
+		_drop_indicator.z_index = 100
+		add_child(_drop_indicator)
+
+# Positions the single overlay drop indicator at the gap midpoint
+func _on_drag_hover_update(target_item, insert_above: bool):
+	_current_drop_target = target_item
+	_last_insert_above = insert_above
+	_update_drop_indicator_position()
+
+# Calculates the drop indicator position at the midpoint of the gap between cards
+func _update_drop_indicator_position():
+	if _drop_indicator == null or _current_drop_target == null or not is_instance_valid(_current_drop_target):
+		return
+
+	var target_rect = _current_drop_target.get_global_rect()
+	var bar_height = 4.0
+	var y_global: float
+	var target_index = _current_drop_target.get_index()
+
+	if _last_insert_above:
+		if target_index > 0:
+			var prev_item = _projectItemContainer.get_child(target_index - 1)
+			var prev_rect = prev_item.get_global_rect()
+			y_global = (prev_rect.end.y + target_rect.position.y) / 2.0 - bar_height / 2.0
+		else:
+			y_global = target_rect.position.y - bar_height / 2.0
+	else:
+		var child_count = _projectItemContainer.get_child_count()
+		if target_index < child_count - 1:
+			var next_item = _projectItemContainer.get_child(target_index + 1)
+			var next_rect = next_item.get_global_rect()
+			y_global = (target_rect.end.y + next_rect.position.y) / 2.0 - bar_height / 2.0
+		else:
+			y_global = target_rect.end.y - bar_height / 2.0
+
+	_drop_indicator.global_position = Vector2(target_rect.position.x, y_global)
+	_drop_indicator.size = Vector2(target_rect.size.x, bar_height)
+	_drop_indicator.visible = true
+
+func _hide_drop_indicator():
+	if _drop_indicator != null:
+		_drop_indicator.visible = false
+
+# Handle drag end notification to clean up
+func _notification(what):
+	if what == NOTIFICATION_DRAG_END:
+		_drag_scrolling = false
+		_hide_drop_indicator()
+		_current_drop_target = null
+		Signals.emit_signal("DragEnded")
+
+# Fallback drop handler for gaps between cards, above first card, below last card
+func _can_drop_data(_at_position, data) -> bool:
+	return _current_drop_target != null and data is Panel and data.has_method("GetProjectId") and data != _current_drop_target
+
+func _drop_data(_at_position, data) -> void:
+	if _current_drop_target != null and data is Panel and data.has_method("GetProjectId"):
+		ReorderProjectItems(data, _current_drop_target, _last_insert_above)
+
+func ReorderProjectItems(dragged_item, target_item, insert_above: bool = true):
+	_hide_drop_indicator()
+
 	var all_items = _projectItemContainer.get_children()
 	var dragged_index = all_items.find(dragged_item)
 	var target_index = all_items.find(target_item)
@@ -280,12 +386,18 @@ func ReorderProjectItems(dragged_item, target_item):
 	if dragged_index == -1 or target_index == -1:
 		return
 
-	_projectItemContainer.move_child(dragged_item, target_index)
+	# Calculate insertion index based on drop position
+	var insert_index = target_index if insert_above else target_index + 1
+	if dragged_index < insert_index:
+		insert_index -= 1
 
+	_projectItemContainer.move_child(dragged_item, insert_index)
+
+	# Save all custom orders silently (no signal/reload per item)
 	all_items = _projectItemContainer.get_children()
 	for i in range(all_items.size()):
 		all_items[i].SetCustomOrder(i)
-		all_items[i].SaveProjectItem()
+		all_items[i].SaveProjectItem(false)
 
 func BackgroundColorChanged(color = null):
 	LoadBackgroundColor(color)

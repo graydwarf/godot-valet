@@ -2,6 +2,7 @@ extends Panel
 @onready var _projectHeader: ProjectHeader = %ProjectHeader
 
 var _selected := false
+static var _global_drag_active := false
 var _windowsChecked := false
 var _linuxChecked := false
 var _webChecked := false
@@ -47,6 +48,8 @@ func _ready():
 
 func InitSignals():
 	Signals.connect("BackgroundColorChanged", BackgroundColorChanged)
+	Signals.connect("DragStarted", _on_drag_started)
+	Signals.connect("DragEnded", _on_drag_ended)
 
 func UpdateProjectItemUi():
 	# Update ProjectHeader (handles name, version, path, thumbnail, and all metadata)
@@ -491,7 +494,7 @@ func UnselectProjectItem():
 func GetProjectSelected():
 	return _selected
 	
-func SaveProjectItem():
+func SaveProjectItem(notify: bool = true):
 	var config = ConfigFile.new()
 	config.set_value("ProjectSettings", "project_name", _projectName)
 	config.set_value("ProjectSettings", "export_path", _exportPath)
@@ -533,7 +536,8 @@ func SaveProjectItem():
 	if err != OK:
 		OS.alert("An error occurred while saving the config file.")
 
-	Signals.emit_signal("ProjectSaved", _projectId)
+	if notify:
+		Signals.emit_signal("ProjectSaved", _projectId)
 
 func HideProjectItem():
 	visible = false
@@ -547,39 +551,105 @@ func _on_gui_input(event):
 		Signals.emit_signal("ToggleProjectItemSelection", self, !_selected)
 
 func _on_mouse_entered():
-	if _selected:
+	if _selected or _global_drag_active:
 		return
-	
+
 	ShowHoverColor()
 
 func _on_mouse_exited():
-	if _selected:
+	if _selected or _global_drag_active:
 		return
 
 	RestoreDefaultColor()
+
+func _on_drag_started():
+	if not _selected:
+		RestoreDefaultColor()
+
+func _on_drag_ended():
+	pass
+
+func _notification(what):
+	if what == NOTIFICATION_DRAG_END:
+		# Delay reset so mouse_entered events fired after drag end are still suppressed
+		await get_tree().process_frame
+		_global_drag_active = false
 
 # Drag and drop functionality for custom ordering
 func _get_drag_data(_at_position):
 	if not _is_custom_sort_enabled():
 		return null
 
-	var preview = Panel.new()
-	var label = Label.new()
-	label.text = _projectName
-	label.add_theme_color_override("font_color", Color.WHITE)
-	preview.add_child(label)
-	preview.custom_minimum_size = Vector2(200, 50)
-	set_drag_preview(preview)
+	_global_drag_active = true
+	Signals.emit_signal("DragStarted")
 
+	# Build a styled mini preview card
+	var preview = PanelContainer.new()
+	preview.custom_minimum_size = Vector2(320, 60)
+	preview.modulate = Color(1, 1, 1, 0.85)
+
+	var style = StyleBoxFlat.new()
+	style.bg_color = AdjustBackgroundColor(0.05)
+	style.border_color = Color(0.0, 0.6, 1.0, 0.8)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(6)
+	style.set_content_margin_all(8)
+	preview.add_theme_stylebox_override("panel", style)
+
+	var hbox = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 8)
+	preview.add_child(hbox)
+
+	# Add thumbnail if available
+	if _thumbnailPath != "" and _thumbnailPath != "res://icon.svg":
+		var tex_rect = TextureRect.new()
+		tex_rect.custom_minimum_size = Vector2(44, 44)
+		tex_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		if _thumbnailPath.begins_with("res://"):
+			var tex = load(_thumbnailPath)
+			if tex:
+				tex_rect.texture = tex
+				hbox.add_child(tex_rect)
+		elif FileAccess.file_exists(_thumbnailPath):
+			var img = Image.load_from_file(_thumbnailPath)
+			if img:
+				tex_rect.texture = ImageTexture.create_from_image(img)
+				hbox.add_child(tex_rect)
+
+	# Add project name and version
+	var vbox = VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.add_child(vbox)
+
+	var name_label = Label.new()
+	name_label.text = _projectName
+	name_label.add_theme_font_size_override("font_size", 16)
+	name_label.add_theme_color_override("font_color", Color.WHITE)
+	vbox.add_child(name_label)
+
+	var version_label = Label.new()
+	version_label.text = _godotVersion
+	version_label.add_theme_font_size_override("font_size", 12)
+	version_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	vbox.add_child(version_label)
+
+	set_drag_preview(preview)
 	return self
 
 # Only allow dropping project items when Custom sort is enabled
-func _can_drop_data(_at_position, data) -> bool:
-	return _is_custom_sort_enabled() and data is Panel and data.has_method("GetProjectId") and data != self
+func _can_drop_data(at_position, data) -> bool:
+	if not (_is_custom_sort_enabled() and data is Panel and data.has_method("GetProjectId") and data != self):
+		return false
+	var insert_above = at_position.y < size.y / 2.0
+	Signals.emit_signal("DragHoverUpdate", self, insert_above)
+	return true
 
-func _drop_data(_at_position, data) -> void:
+func _drop_data(at_position, data) -> void:
 	if data is Panel and data.has_method("GetProjectId"):
-		Signals.emit_signal("ReorderProjectItems", data, self)
+		var insert_above = at_position.y < size.y / 2.0
+		Signals.emit_signal("ReorderProjectItems", data, self, insert_above)
 
 # Check if the current sort mode is Custom
 func _is_custom_sort_enabled() -> bool:
