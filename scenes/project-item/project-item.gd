@@ -583,6 +583,8 @@ func _notification(what):
 		# Delay reset so mouse_entered events fired after drag end are still suppressed
 		await get_tree().process_frame
 		_global_drag_active = false
+		_hide_drop_bar()
+		_is_dragging = false
 
 # Drag and drop functionality for custom ordering
 func _get_drag_data(_at_position):
@@ -646,11 +648,6 @@ func _get_drag_data(_at_position):
 
 	set_drag_preview(preview)
 	return self
-
-func _notification(what):
-	if what == NOTIFICATION_DRAG_END:
-		_hide_drop_bar()
-		_is_dragging = false
 
 # Only allow dropping project items when Custom sort is enabled
 func _can_drop_data(at_position, data) -> bool:
