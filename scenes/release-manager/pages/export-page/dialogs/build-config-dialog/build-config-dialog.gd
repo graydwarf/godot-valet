@@ -8,19 +8,25 @@ signal cancelled()
 @onready var _obfuscateFunctionsCheckBox = %ObfuscateFunctionsCheckBox
 @onready var _obfuscateVariablesCheckBox = %ObfuscateVariablesCheckBox
 @onready var _obfuscateCommentsCheckBox = %ObfuscateCommentsCheckBox
+@onready var _inlineConstantsCheckBox = %InlineConstantsCheckBox
 @onready var _injectDeadCodeCheckBox = %InjectDeadCodeCheckBox
 @onready var _encryptStringsCheckBox = %EncryptStringsCheckBox
 @onready var _sourceFiltersLineEdit = %SourceFiltersLineEdit
+@onready var _builtinMethodsLineEdit = %BuiltinMethodsLineEdit
 @onready var _obfuscationCard = %ObfuscationCard
 @onready var _sourceFiltersCard = %SourceFiltersCard
 @onready var _functionExcludesCard = %FunctionExcludesCard
 @onready var _variableExcludesCard = %VariableExcludesCard
+@onready var _constantExcludesCard = %ConstantExcludesCard
 @onready var _functionExcludesList = %FunctionExcludesList
 @onready var _variableExcludesList = %VariableExcludesList
+@onready var _constantExcludesList = %ConstantExcludesList
 @onready var _addFunctionButton = %AddFunctionButton
 @onready var _addVariableButton = %AddVariableButton
+@onready var _addConstantButton = %AddConstantButton
 @onready var _functionHelpButton = %FunctionHelpButton
 @onready var _variableHelpButton = %VariableHelpButton
+@onready var _constantHelpButton = %ConstantHelpButton
 
 var _currentPlatform: String = ""
 var _allPlatforms: Array[String] = []
@@ -51,6 +57,23 @@ Also exclude variables that are accessed by string name in serialization or conf
 
 Enter exact variable names only - no wildcards supported."""
 
+const CONSTANT_HELP_TEXT = """Add constant names that should NOT be inlined.
+
+When "Inline Constants" is enabled, constant values are replaced with their literal values and the declarations are removed. Use this to preserve constants that:
+  - Are referenced across files via ClassName.CONSTANT
+  - Are used as type identifiers or enum names
+  - Should remain readable in the output
+
+Enter exact constant names only - no wildcards supported."""
+
+const BUILTIN_METHODS_HELP_TEXT = """Add method names from GDExtension plugins that the obfuscator should treat as built-in.
+
+Methods from GDExtension addons (like SQLite) are not visible in Godot's ClassDB when the obfuscator runs. If these method names collide with your function names, they may be incorrectly obfuscated.
+
+Examples: query, query_with_bindings, open_db, close_db
+
+Enter comma-separated method names."""
+
 func _ready():
 	visible = false
 	z_index = 1000  # Above all Release Manager UI (header, breadcrumb, pages, buttons)
@@ -58,24 +81,28 @@ func _ready():
 	_cloneOptionButton.item_selected.connect(_onCloneSelected)
 	_addFunctionButton.pressed.connect(_onAddFunctionPressed)
 	_addVariableButton.pressed.connect(_onAddVariablePressed)
+	_addConstantButton.pressed.connect(_onAddConstantPressed)
 	_functionHelpButton.pressed.connect(_onFunctionHelpPressed)
 	_variableHelpButton.pressed.connect(_onVariableHelpPressed)
+	_constantHelpButton.pressed.connect(_onConstantHelpPressed)
 	_applyCardStyling()
 
 	# Connect all input signals to mark dirty
 	_obfuscateFunctionsCheckBox.toggled.connect(_onInputChanged.unbind(1))
 	_obfuscateVariablesCheckBox.toggled.connect(_onInputChanged.unbind(1))
 	_obfuscateCommentsCheckBox.toggled.connect(_onInputChanged.unbind(1))
+	_inlineConstantsCheckBox.toggled.connect(_onInputChanged.unbind(1))
 	_injectDeadCodeCheckBox.toggled.connect(_onInputChanged.unbind(1))
 	_encryptStringsCheckBox.toggled.connect(_onInputChanged.unbind(1))
 	_sourceFiltersLineEdit.text_changed.connect(_onInputChanged.unbind(1))
+	_builtinMethodsLineEdit.text_changed.connect(_onInputChanged.unbind(1))
 
 func _onInputChanged():
 	_isDirty = true
 
 func _applyCardStyling():
 	# Apply platform card styling to all cards
-	var cards = [_obfuscationCard, _sourceFiltersCard, _functionExcludesCard, _variableExcludesCard]
+	var cards = [_obfuscationCard, _sourceFiltersCard, _functionExcludesCard, _variableExcludesCard, _constantExcludesCard]
 
 	for card in cards:
 		# Outer card panel with rounded edges and border
@@ -154,43 +181,50 @@ func _loadPlatformConfig():
 	# Clear existing exclude lists
 	_clearExcludeList(_functionExcludesList)
 	_clearExcludeList(_variableExcludesList)
+	_clearExcludeList(_constantExcludesList)
 
 	if _currentPlatform in _platformConfigs:
 		var config = _platformConfigs[_currentPlatform]
 		_obfuscateFunctionsCheckBox.button_pressed = config.get("obfuscate_functions", false)
 		_obfuscateVariablesCheckBox.button_pressed = config.get("obfuscate_variables", false)
 		_obfuscateCommentsCheckBox.button_pressed = config.get("obfuscate_comments", false)
+		_inlineConstantsCheckBox.button_pressed = config.get("inline_constants", false)
 		_injectDeadCodeCheckBox.button_pressed = config.get("dead_code", false)
 		_encryptStringsCheckBox.button_pressed = config.get("encrypt_strings", false)
 
-		# Load function excludes into dynamic list
-		var functionExcludes = config.get("function_excludes", "")
-		_populateExcludeList(_functionExcludesList, functionExcludes)
-
-		# Load variable excludes into dynamic list
-		var variableExcludes = config.get("variable_excludes", "")
-		_populateExcludeList(_variableExcludesList, variableExcludes)
+		# Load exclude lists into dynamic lists
+		_populateExcludeList(_functionExcludesList, config.get("function_excludes", ""))
+		_populateExcludeList(_variableExcludesList, config.get("variable_excludes", ""))
+		_populateExcludeList(_constantExcludesList, config.get("constant_excludes", ""))
 
 		# Use saved filters or default if empty
 		var savedFilters = config.get("source_filters", "")
 		_sourceFiltersLineEdit.text = savedFilters if savedFilters != "" else DEFAULT_SOURCE_FILTERS
+		_builtinMethodsLineEdit.text = config.get("builtin_methods", "")
 	else:
 		# Default config with common source filters
 		_obfuscateFunctionsCheckBox.button_pressed = false
 		_obfuscateVariablesCheckBox.button_pressed = false
 		_obfuscateCommentsCheckBox.button_pressed = false
+		_inlineConstantsCheckBox.button_pressed = false
+		_injectDeadCodeCheckBox.button_pressed = false
+		_encryptStringsCheckBox.button_pressed = false
 		_sourceFiltersLineEdit.text = DEFAULT_SOURCE_FILTERS
+		_builtinMethodsLineEdit.text = ""
 
 func _getCurrentConfig() -> Dictionary:
 	return {
 		"obfuscate_functions": _obfuscateFunctionsCheckBox.button_pressed,
 		"obfuscate_variables": _obfuscateVariablesCheckBox.button_pressed,
 		"obfuscate_comments": _obfuscateCommentsCheckBox.button_pressed,
+		"inline_constants": _inlineConstantsCheckBox.button_pressed,
 		"dead_code": _injectDeadCodeCheckBox.button_pressed,
 		"encrypt_strings": _encryptStringsCheckBox.button_pressed,
 		"function_excludes": _getExcludeListAsString(_functionExcludesList),
 		"variable_excludes": _getExcludeListAsString(_variableExcludesList),
-		"source_filters": _sourceFiltersLineEdit.text
+		"constant_excludes": _getExcludeListAsString(_constantExcludesList),
+		"source_filters": _sourceFiltersLineEdit.text,
+		"builtin_methods": _builtinMethodsLineEdit.text
 	}
 
 func _onCloneSelected(index: int):
@@ -206,15 +240,21 @@ func _onCloneSelected(index: int):
 		_obfuscateFunctionsCheckBox.button_pressed = sourceConfig.get("obfuscate_functions", false)
 		_obfuscateVariablesCheckBox.button_pressed = sourceConfig.get("obfuscate_variables", false)
 		_obfuscateCommentsCheckBox.button_pressed = sourceConfig.get("obfuscate_comments", false)
+		_inlineConstantsCheckBox.button_pressed = sourceConfig.get("inline_constants", false)
+		_injectDeadCodeCheckBox.button_pressed = sourceConfig.get("dead_code", false)
+		_encryptStringsCheckBox.button_pressed = sourceConfig.get("encrypt_strings", false)
 		_sourceFiltersLineEdit.text = sourceConfig.get("source_filters", "")
+		_builtinMethodsLineEdit.text = sourceConfig.get("builtin_methods", "")
 
-		# Clone function excludes to dynamic list
+		# Clone exclude lists
 		_clearExcludeList(_functionExcludesList)
 		_populateExcludeList(_functionExcludesList, sourceConfig.get("function_excludes", ""))
 
-		# Clone variable excludes to dynamic list
 		_clearExcludeList(_variableExcludesList)
 		_populateExcludeList(_variableExcludesList, sourceConfig.get("variable_excludes", ""))
+
+		_clearExcludeList(_constantExcludesList)
+		_populateExcludeList(_constantExcludesList, sourceConfig.get("constant_excludes", ""))
 
 		_isDirty = true
 
@@ -248,11 +288,18 @@ func _onAddVariablePressed():
 	_addExcludeEntry(_variableExcludesList, "")
 	_isDirty = true
 
+func _onAddConstantPressed():
+	_addExcludeEntry(_constantExcludesList, "")
+	_isDirty = true
+
 func _onFunctionHelpPressed():
 	_showHelpDialog("Function Excludes", FUNCTION_HELP_TEXT)
 
 func _onVariableHelpPressed():
 	_showHelpDialog("Variable Excludes", VARIABLE_HELP_TEXT)
+
+func _onConstantHelpPressed():
+	_showHelpDialog("Constant Excludes", CONSTANT_HELP_TEXT)
 
 func _showHelpDialog(titleText: String, content: String):
 	# Create card-styled help dialog overlay

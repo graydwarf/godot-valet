@@ -466,11 +466,13 @@ func GetGodotPath(godotVersionId):
 		var fileName = file.trim_suffix(".cfg")
 		if fileName != godotVersionId:
 			continue
-			
+
 		var config = ConfigFile.new()
 		var err = config.load("user://" + App.GetGodotVersionItemFolder() + "/" + fileName + ".cfg")
 		if err == OK:
 			return config.get_value("GodotVersionSettings", "godot_path", "???")
+
+
 
 func GetFormattedProjectPath():
 	return GetProjectPathBaseDir().to_lower()

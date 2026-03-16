@@ -124,6 +124,13 @@ focus_mode = 0
 mouse_default_cursor_shape = 2
 text = "Obfuscate Comments"
 
+[node name="InlineConstantsCheckBox" type="CheckBox" parent="BackgroundPanel/MainMargin/MainVBox/ObfuscationCard/CardContent/CardBody/CheckboxVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "Inline Constants"
+
 [node name="InjectDeadCodeCheckBox" type="CheckBox" parent="BackgroundPanel/MainMargin/MainVBox/ObfuscationCard/CardContent/CardBody/CheckboxVBox"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -158,7 +165,7 @@ theme_override_constants/margin_bottom = 10
 
 [node name="HeaderLabel" type="Label" parent="BackgroundPanel/MainMargin/MainVBox/SourceFiltersCard/CardContent/CardHeader/HeaderMargin"]
 layout_mode = 2
-text = "Source Filters"
+text = "Filters & Built-ins"
 
 [node name="CardBody" type="MarginContainer" parent="BackgroundPanel/MainMargin/MainVBox/SourceFiltersCard/CardContent"]
 layout_mode = 2
@@ -167,22 +174,43 @@ theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 10
 
-[node name="SourceFiltersHBox" type="HBoxContainer" parent="BackgroundPanel/MainMargin/MainVBox/SourceFiltersCard/CardContent/CardBody"]
+[node name="FieldsVBox" type="VBoxContainer" parent="BackgroundPanel/MainMargin/MainVBox/SourceFiltersCard/CardContent/CardBody"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SourceFiltersHBox" type="HBoxContainer" parent="BackgroundPanel/MainMargin/MainVBox/SourceFiltersCard/CardContent/CardBody/FieldsVBox"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="Label" type="Label" parent="BackgroundPanel/MainMargin/MainVBox/SourceFiltersCard/CardContent/CardBody/SourceFiltersHBox"]
+[node name="Label" type="Label" parent="BackgroundPanel/MainMargin/MainVBox/SourceFiltersCard/CardContent/CardBody/FieldsVBox/SourceFiltersHBox"]
 custom_minimum_size = Vector2(130, 0)
 layout_mode = 2
-text = "Exclude Patterns:"
+text = "Skip Directories:"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="SourceFiltersLineEdit" type="LineEdit" parent="BackgroundPanel/MainMargin/MainVBox/SourceFiltersCard/CardContent/CardBody/SourceFiltersHBox"]
+[node name="SourceFiltersLineEdit" type="LineEdit" parent="BackgroundPanel/MainMargin/MainVBox/SourceFiltersCard/CardContent/CardBody/FieldsVBox/SourceFiltersHBox"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "e.g., .git, .godot, exports, builds"
+
+[node name="BuiltinMethodsHBox" type="HBoxContainer" parent="BackgroundPanel/MainMargin/MainVBox/SourceFiltersCard/CardContent/CardBody/FieldsVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="BackgroundPanel/MainMargin/MainVBox/SourceFiltersCard/CardContent/CardBody/FieldsVBox/BuiltinMethodsHBox"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+text = "Built-in Methods:"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="BuiltinMethodsLineEdit" type="LineEdit" parent="BackgroundPanel/MainMargin/MainVBox/SourceFiltersCard/CardContent/CardBody/FieldsVBox/BuiltinMethodsHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "e.g., query, query_with_bindings, open_db"
 
 [node name="ExcludeCardsContainer" type="HBoxContainer" parent="BackgroundPanel/MainMargin/MainVBox"]
 layout_mode = 2
@@ -330,6 +358,77 @@ layout_mode = 2
 focus_mode = 0
 mouse_default_cursor_shape = 2
 text = "+ Add Variable"
+
+[node name="ConstantExcludesCard" type="PanelContainer" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CardContent" type="VBoxContainer" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer/ConstantExcludesCard"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="CardHeader" type="PanelContainer" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer/ConstantExcludesCard/CardContent"]
+layout_mode = 2
+
+[node name="HeaderMargin" type="MarginContainer" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer/ConstantExcludesCard/CardContent/CardHeader"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="HeaderHBox" type="HBoxContainer" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer/ConstantExcludesCard/CardContent/CardHeader/HeaderMargin"]
+layout_mode = 2
+
+[node name="HeaderLabel" type="Label" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer/ConstantExcludesCard/CardContent/CardHeader/HeaderMargin/HeaderHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Constant Excludes"
+
+[node name="ConstantHelpButton" type="Button" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer/ConstantExcludesCard/CardContent/CardHeader/HeaderMargin/HeaderHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "?"
+
+[node name="CardBody" type="MarginContainer" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer/ConstantExcludesCard/CardContent"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="BodyVBox" type="VBoxContainer" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer/ConstantExcludesCard/CardContent/CardBody"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="ScrollContainer" type="ScrollContainer" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer/ConstantExcludesCard/CardContent/CardBody/BodyVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ListMargin" type="MarginContainer" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer/ConstantExcludesCard/CardContent/CardBody/BodyVBox/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_right = 4
+
+[node name="ConstantExcludesList" type="VBoxContainer" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer/ConstantExcludesCard/CardContent/CardBody/BodyVBox/ScrollContainer/ListMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="AddConstantButton" type="Button" parent="BackgroundPanel/MainMargin/MainVBox/ExcludeCardsContainer/ConstantExcludesCard/CardContent/CardBody/BodyVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+text = "+ Add Constant"
 
 [node name="ButtonSection" type="HBoxContainer" parent="BackgroundPanel/MainMargin/MainVBox"]
 layout_mode = 2

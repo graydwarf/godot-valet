@@ -369,11 +369,11 @@ static func BuildBuiltInSetsFromClassDB() -> void:
 			if signal_name.length() > 2:
 				_runtimeBuiltInMethods[signal_name] = true
 
-static func IsBuiltInMethod(name: String) -> bool:
-	return name in _godotBuiltInMethods or _runtimeBuiltInMethods.has(name) or _runtimeBuiltInProperties.has(name) or name in _extraBuiltInMethods
+static func IsBuiltInMethod(symbolName: String) -> bool:
+	return symbolName in _godotBuiltInMethods or _runtimeBuiltInMethods.has(symbolName) or _runtimeBuiltInProperties.has(symbolName) or symbolName in _extraBuiltInMethods
 
-static func IsBuiltInClass(name: String) -> bool:
-	return name in _godotBuiltInClasses or _runtimeBuiltInClasses.has(name)
+static func IsBuiltInClass(symbolName: String) -> bool:
+	return symbolName in _godotBuiltInClasses or _runtimeBuiltInClasses.has(symbolName)
 
 static func ObfuscateScripts(inputDir: String, outputDir: String, isObfuscatingFunctions : bool, isObfuscatingVariables : bool, isObfuscatingComments : bool, isInliningConstants := false, isInjectingDeadCode := false, isEncryptingStrings := false):
 	_inputDir = inputDir
@@ -827,9 +827,9 @@ static func InlineConstants(contentPayload: ContentPayload) -> void:
 			continue
 
 		# Process matches in reverse to preserve indices
-		var content_array := content.split("")
-		var result_parts := []
-		var last_end := content.length()
+		var _content_array := content.split("")
+		var _result_parts := []
+		var _last_end := content.length()
 
 		# Collect matches and filter out declaration-site references
 		var valid_replacements := []
@@ -1331,7 +1331,7 @@ static func GenerateOpaquePredicate(variables: Array, want_true: bool = true) ->
 # Generates fake functions that blend in with obfuscated code
 # All dead code uses int types to guarantee type-safe math operations
 # Returns { "code": String, "names": Array }
-static func GenerateDeadFunctions(realVariables: Array, count: int) -> Dictionary:
+static func GenerateDeadFunctions(_realVariables: Array, count: int) -> Dictionary:
 	var code := ""
 	var names := []
 

@@ -398,7 +398,7 @@ func _flashPreviewRed():
 		return
 
 	# Flash the preview label red briefly
-	var originalColor = _previewLabel.get_theme_color("default_color", "RichTextLabel")
+	var _originalColor = _previewLabel.get_theme_color("default_color", "RichTextLabel")
 	_previewLabel.add_theme_color_override("default_color", Color(1.0, 0.3, 0.3))
 
 	await get_tree().create_timer(0.3).timeout

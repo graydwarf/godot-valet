@@ -47,6 +47,7 @@ var _currentFilenameDialogPlatform: String = ""  # Platform being configured
 var _currentFilenameDialogType: String = ""  # "export" or "archive"
 var _isLoadingData: bool = false  # Suppresses page_modified during _loadPageData()
 var _platformExportOutput: Dictionary = {}  # platform_name -> last export output string
+var _platformRunGodotVersionId: Dictionary = {}  # platform_name -> selected godot version id for running
 
 func _ready():
 	_exportAllButton.pressed.connect(_onExportAllPressed)
@@ -162,11 +163,10 @@ func _loadPlatformSettings():
 			# Restore settings
 			var rootPath = settings.get("exportPath", "")
 
-			# If no root path saved, use project directory + exports as default
+			# If no root path saved, use project directory as default
 			if rootPath.is_empty() and _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
 				# GetProjectDir() handles both path formats (with or without project.godot)
-				var projectDir = _selectedProjectItem.GetProjectDir()
-				rootPath = projectDir.path_join("exports")
+				rootPath = _selectedProjectItem.GetProjectDir()
 
 			_platformRootPaths[platform] = rootPath  # Store root path separately
 
@@ -193,13 +193,12 @@ func _loadPlatformSettings():
 				_platformFilterConfigs[platform] = settings["filterConfig"]
 				_updateIncludeExcludeDisplay(platform, settings["filterConfig"])
 
-			# Restore path template (default: project-path, exports, version, platform)
+			# Restore path template (default: project-path, version, platform)
 			if settings.has("pathTemplate"):
 				_platformPathTemplates[platform] = settings["pathTemplate"]
 			else:
 				_platformPathTemplates[platform] = [
 					{"type": "project-path"},
-					{"type": "custom", "value": "exports"},
 					{"type": "version"},
 					{"type": "platform"}
 				]
@@ -248,14 +247,21 @@ func _loadPlatformSettings():
 			# Keep Export & Run disabled if Zip is selected (can't run a zip file)
 			if isZip and is_instance_valid(data["exportAndRunButton"]):
 				data["exportAndRunButton"].disabled = true
+
+			# Initialize run Godot version to project default if not already set
+			if platform not in _platformRunGodotVersionId:
+				var defaultVersionId = _selectedProjectItem.GetGodotVersionId()
+				if defaultVersionId != null and not (defaultVersionId as String).is_empty():
+					_platformRunGodotVersionId[platform] = defaultVersionId
+			_updateRunGodotLabel(platform)
 		else:
 			# No saved settings - apply defaults for first-time use
 			if _selectedProjectItem != null and is_instance_valid(_selectedProjectItem):
 				# GetProjectDir() handles both path formats (with or without project.godot)
 				var projectDir = _selectedProjectItem.GetProjectDir()
 
-				# Set default root path: project_directory/exports
-				var rootPath = projectDir.path_join("exports")
+				# Set default root path: project_directory
+				var rootPath = projectDir
 				_platformRootPaths[platform] = rootPath
 
 				# Set default filename templates: project name only
@@ -267,16 +273,21 @@ func _loadPlatformSettings():
 				_updateExportFilenameDisplay(platform)
 				_updateArchiveFilenameDisplay(platform)
 
-				# Set default path template: project-path, exports, version, platform
+				# Set default path template: project-path, version, platform
 				_platformPathTemplates[platform] = [
 					{"type": "project-path"},
-					{"type": "custom", "value": "exports"},
 					{"type": "version"},
 					{"type": "platform"}
 				]
 
 				# Update display to show full path with defaults
 				_updateExportPathDisplay(platform)
+
+			# Initialize run Godot version to project default
+			var defaultVersionId = _selectedProjectItem.GetGodotVersionId()
+			if defaultVersionId != null and not (defaultVersionId as String).is_empty():
+				_platformRunGodotVersionId[platform] = defaultVersionId
+			_updateRunGodotLabel(platform)
 
 	# Check if any existing platforms need path template migration
 	_checkPathTemplateMigration()
@@ -529,6 +540,16 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 
 	detailsVBox.add_child(obfuscationRow)
 
+	# Obfuscation hint label (shown when obfuscation is enabled)
+	var obfuscationHint = Label.new()
+	obfuscationHint.text = "Use Export & Run with godot_console to troubleshoot obfuscation issues"
+	obfuscationHint.add_theme_font_size_override("font_size", 11)
+	obfuscationHint.add_theme_color_override("font_color", Color(0.65, 0.65, 0.65))
+	obfuscationHint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	obfuscationHint.name = "ObfuscationHint"
+	obfuscationHint.visible = false
+	detailsVBox.add_child(obfuscationHint)
+
 	# Include/Exclude Row
 	var includeExcludeRow = HBoxContainer.new()
 	includeExcludeRow.add_theme_constant_override("separation", 5)
@@ -684,6 +705,27 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 	exportActionsSpacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	exportActionsRow.add_child(exportActionsSpacer)
 
+	# Label showing selected Godot version
+	var runGodotLabel = Label.new()
+	runGodotLabel.add_theme_font_size_override("font_size", 10)
+	runGodotLabel.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	runGodotLabel.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	runGodotLabel.text = ""
+	runGodotLabel.name = "RunGodotLabel"
+	exportActionsRow.add_child(runGodotLabel)
+
+	# Cog button to select Godot version (applies to all export actions)
+	var runGodotCog = Button.new()
+	runGodotCog.icon = ICON_SETTINGS
+	runGodotCog.expand_icon = true
+	runGodotCog.custom_minimum_size = Vector2(32, 31)
+	runGodotCog.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	runGodotCog.tooltip_text = "Select Godot version for export actions"
+	runGodotCog.focus_mode = Control.FOCUS_NONE
+	runGodotCog.pressed.connect(_onRunGodotCogPressed.bind(platform))
+	runGodotCog.name = "RunGodotCog"
+	exportActionsRow.add_child(runGodotCog)
+
 	# Export & Debug button (all platforms, only visible when Debug type selected)
 	var exportAndDebugButton = Button.new()
 	exportAndDebugButton.text = "Export & Debug"
@@ -807,6 +849,7 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 		"archiveContainer": archiveContainer,  # Inline archive container (all platforms)
 		"obfuscationDisplay": obfuscationDisplay,
 		"configButton": configButton,
+		"obfuscationHint": obfuscationHint,
 		"includeExcludeDisplay": includeExcludeDisplay,
 		"includeExcludeConfigButton": includeExcludeConfigButton,
 		"exportTypeOption": exportTypeOption,
@@ -816,6 +859,8 @@ func _createPlatformCard(platform: String) -> PanelContainer:
 		"button": exportButton,
 		"exportAndDebugButton": exportAndDebugButton,
 		"exportAndRunButton": exportAndRunButton,
+		"runGodotLabel": runGodotLabel,
+		"runGodotCog": runGodotCog,
 		"exportAndEditButton": exportAndEditButton,  # Only exists for Source platform
 		"exportAndOpenButton": exportAndOpenButton,
 		"outputLogToggle": outputLogToggle,
@@ -1109,10 +1154,9 @@ func _onBuildConfigSaved(platform: String, config: Dictionary):
 	# page_modified.emit()
 
 func _onPathSettingsPressed(platform: String):
-	# Get current path template for this platform (default: project-path, exports, version, platform)
+	# Get current path template for this platform (default: project-path, version, platform)
 	var currentTemplate = _platformPathTemplates.get(platform, [
 		{"type": "project-path"},
-		{"type": "custom", "value": "exports"},
 		{"type": "version"},
 		{"type": "platform"}
 	])
@@ -1459,7 +1503,6 @@ func _getExportRootFromTemplate(platform: String, projectDir: String) -> String:
 	var rootPath = ""
 	var template = _platformPathTemplates.get(platform, [
 		{"type": "project-path"},
-		{"type": "custom", "value": "exports"},
 		{"type": "version"},
 		{"type": "platform"}
 	])
@@ -1493,7 +1536,6 @@ func _buildExportPathFromTemplate(platform: String, projectDir: String, version:
 	var fullPath = ""
 	var template = _platformPathTemplates.get(platform, [
 		{"type": "project-path"},
-		{"type": "custom", "value": "exports"},
 		{"type": "version"},
 		{"type": "platform"}
 	])
@@ -1577,8 +1619,11 @@ func _onExportAndRunPressed(platform: String):
 	# Capture godot path for Source platform before await (may become invalid)
 	var godotPath = ""
 	if platform == "Source":
-		var godotVersionId = _selectedProjectItem.GetGodotVersionId()
-		godotPath = _selectedProjectItem.GetGodotPath(godotVersionId)
+		# Use picker selection if available, otherwise fall back to project default
+		godotPath = _getRunGodotPath(platform)
+		if godotPath.is_empty():
+			var godotVersionId = _selectedProjectItem.GetGodotVersionId()
+			godotPath = _selectedProjectItem.GetGodotPath(godotVersionId)
 		if godotPath == null or godotPath == "???" or godotPath.is_empty():
 			godotPath = "C:/dad/apps/godot/godot-4.5-stable/Godot_v4.5-stable_win64.exe"
 
@@ -1637,6 +1682,94 @@ func _onExportAndDebugPressed(platform: String):
 	if data != null:
 		_storeExportOutput(platform, existingOutput + debugInfo, debugRunFailed)
 
+# Opens a picker dialog to select which Godot version to use for Export & Run
+func _onRunGodotCogPressed(platform: String):
+	var versions = _getAllGodotVersions()
+	if versions.is_empty():
+		print("No Godot versions configured. Add versions in Settings > Godot Version Manager.")
+		return
+
+	var currentVersionId = _platformRunGodotVersionId.get(platform, "")
+
+	var popup = PopupMenu.new()
+	popup.name = "RunGodotPicker"
+
+	for idx in versions.size():
+		var ver = versions[idx]
+		popup.add_item(ver["version"] + "  —  " + ver["path"].get_file(), idx)
+		if ver["id"] == currentVersionId:
+			popup.set_item_checked(popup.get_item_index(idx), true)
+
+	popup.id_pressed.connect(func(id):
+		if id < versions.size():
+			_platformRunGodotVersionId[platform] = versions[id]["id"]
+			_updateRunGodotLabel(platform)
+		popup.queue_free()
+	)
+
+	popup.popup_hide.connect(func(): popup.queue_free())
+
+	add_child(popup)
+	var cogButton = _platformRows[platform]["runGodotCog"]
+	popup.popup(Rect2i(cogButton.global_position + Vector2(0, cogButton.size.y), Vector2i(300, 0)))
+
+# Returns all registered Godot versions as an array of {id, version, path, console_path}
+func _getAllGodotVersions() -> Array:
+	var versions: Array = []
+	var folder = "user://" + App.GetGodotVersionItemFolder()
+	var files = FileHelper.GetFilesFromPath(folder, false, false)
+	for file in files:
+		if !file.ends_with(".cfg"):
+			continue
+		var fileName = file.trim_suffix(".cfg")
+		var config = ConfigFile.new()
+		var err = config.load(folder + "/" + file)
+		if err == OK:
+			versions.append({
+				"id": fileName,
+				"version": config.get_value("GodotVersionSettings", "godot_version", ""),
+				"path": config.get_value("GodotVersionSettings", "godot_path", ""),
+				"console_path": config.get_value("GodotVersionSettings", "console_path", ""),
+				"sort_order": config.get_value("GodotVersionSettings", "sort_order", 0)
+			})
+	versions.sort_custom(func(a, b): return a["sort_order"] < b["sort_order"])
+	return versions
+
+# Updates the label above Export & Run showing which Godot is selected
+func _updateRunGodotLabel(platform: String):
+	var data = _platformRows.get(platform)
+	if data == null:
+		return
+	var label = data["runGodotLabel"]
+	var versionId = _platformRunGodotVersionId.get(platform, "")
+
+	if versionId.is_empty():
+		label.text = ""
+		return
+
+	var versions = _getAllGodotVersions()
+	for ver in versions:
+		if ver["id"] == versionId:
+			label.text = ver["version"]
+			return
+	label.text = ""
+
+# Returns the Godot path to use for Export & Run based on the picker selection
+func _getRunGodotPath(platform: String) -> String:
+	var versionId = _platformRunGodotVersionId.get(platform, "")
+
+	if versionId.is_empty() and _selectedProjectItem != null:
+		versionId = _selectedProjectItem.GetGodotVersionId()
+
+	if versionId == null or versionId is not String or (versionId as String).is_empty():
+		return ""
+
+	if _selectedProjectItem != null:
+		var godotPath = _selectedProjectItem.GetGodotPath(versionId)
+		if godotPath != null and godotPath != "???":
+			return godotPath
+	return ""
+
 # Exports and then opens the export folder (Source only)
 func _onExportAndEditPressed(platform: String):
 	if _selectedProjectItem == null or not is_instance_valid(_selectedProjectItem):
@@ -1645,8 +1778,10 @@ func _onExportAndEditPressed(platform: String):
 
 	# CRITICAL: Capture paths BEFORE await, as _selectedProjectItem may become invalid
 	var exportedFilePath = _getExportedFilePath(platform)
-	var godotVersionId = _selectedProjectItem.GetGodotVersionId()
-	var godotPath = _selectedProjectItem.GetGodotPath(godotVersionId)
+	var godotPath = _getRunGodotPath(platform)
+	if godotPath.is_empty():
+		var godotVersionId = _selectedProjectItem.GetGodotVersionId()
+		godotPath = _selectedProjectItem.GetGodotPath(godotVersionId)
 	if godotPath == null or godotPath == "???" or godotPath.is_empty():
 		godotPath = "C:/dad/apps/godot/godot-4.5-stable/Godot_v4.5-stable_win64.exe"
 
@@ -1666,6 +1801,7 @@ func _onExportAndEditPressed(platform: String):
 
 	# Open in Godot Editor (using pre-captured godotPath)
 	var args = ["--editor", "--path", exportPath]
+	print("Opening in Godot Editor: %s %s" % [godotPath, " ".join(args)])
 	var pid = OS.create_process(godotPath, args)
 	if pid == -1:
 		print("Error: Failed to open exported source in Godot Editor")
@@ -1847,7 +1983,7 @@ func _prepareExportContext(platform: String, runAfterExport: bool, godotPathForR
 	var obfuscationEnabled = false
 	if platform in _platformBuildConfigs:
 		var config = _platformBuildConfigs[platform]
-		obfuscationEnabled = config.get("obfuscate_functions", false) or config.get("obfuscate_variables", false) or config.get("obfuscate_comments", false)
+		obfuscationEnabled = config.get("obfuscate_functions", false) or config.get("obfuscate_variables", false) or config.get("obfuscate_comments", false) or config.get("inline_constants", false) or config.get("dead_code", false) or config.get("encrypt_strings", false)
 
 	# Validate export path and filename
 	if exportPath.is_empty() or exportFilename.is_empty():
@@ -2107,12 +2243,14 @@ func _runExportedApplication(ctx: Dictionary):
 		else:
 			print("Error: Exported file not found for run: ", executablePath)
 	else:
+		var godotRunPath = ctx["godot_path_for_run"]
+		var isConsole = godotRunPath.contains("_console")
 		var args = ["--path", exportDestPath]
-		var runPid = OS.create_process(ctx["godot_path_for_run"], args)
+		var runPid = OS.create_process(godotRunPath, args, isConsole)
 		if runPid == -1:
-			print("Error: Failed to run exported source project")
+			print("Error: Failed to run exported source project: ", godotRunPath)
 		else:
-			print("Running exported source project: ", exportDestPath)
+			print("Running exported source project%s: %s" % [" (console)" if isConsole else "", godotRunPath])
 
 # Cleans up export state and updates final status
 func _finalizeExport(ctx: Dictionary, data: Dictionary, success: bool):
@@ -2415,19 +2553,35 @@ func _runObfuscation(projectDir: String, platform: String, data: Dictionary) -> 
 	var obfuscateFunctions = buildConfig.get("obfuscate_functions", false)
 	var obfuscateVariables = buildConfig.get("obfuscate_variables", false)
 	var obfuscateComments = buildConfig.get("obfuscate_comments", false)
+	var inlineConstants = buildConfig.get("inline_constants", false)
+	var injectDeadCode = buildConfig.get("dead_code", false)
+	var encryptStrings = buildConfig.get("encrypt_strings", false)
 
 	# Parse exclude lists (comma-separated to array)
 	var functionExcludes = _parseExcludeList(buildConfig.get("function_excludes", ""))
 	var variableExcludes = _parseExcludeList(buildConfig.get("variable_excludes", ""))
+	var constantExcludes = _parseExcludeList(buildConfig.get("constant_excludes", ""))
+	var builtinMethods = _parseExcludeList(buildConfig.get("builtin_methods", ""))
 
 	# Set exclude lists in obfuscator
 	ObfuscateHelper.SetFunctionExcludeList(functionExcludes)
 	ObfuscateHelper.SetVariableExcludeList(variableExcludes)
+	ObfuscateHelper.SetConstantExcludeList(constantExcludes)
+	ObfuscateHelper.SetExtraBuiltInMethods(builtinMethods)
+
+	# Set skip directories from source filters
+	var sourceFilters = buildConfig.get("source_filters", "")
+	if not sourceFilters.is_empty():
+		var skipDirs: Array[String] = [".godot", ".import", "addons"]
+		for skipDir in _parseExcludeList(sourceFilters):
+			if skipDir not in skipDirs:
+				skipDirs.append(skipDir)
+		ObfuscateHelper.SetSkipDirectories(skipDirs)
 
 	# Run obfuscation on temp directory
 	_updateStatus(data, "Processing scripts...")
 	await get_tree().process_frame
-	ObfuscateHelper.ObfuscateScripts(tempDirGlobal, tempDirGlobal, obfuscateFunctions, obfuscateVariables, obfuscateComments)
+	ObfuscateHelper.ObfuscateScripts(tempDirGlobal, tempDirGlobal, obfuscateFunctions, obfuscateVariables, obfuscateComments, inlineConstants, injectDeadCode, encryptStrings)
 
 	# Allow UI to update
 	await get_tree().process_frame
@@ -2723,13 +2877,22 @@ func _updateObfuscationDisplay(platform: String, config: Dictionary):
 		options.append("Variables")
 	if config.get("obfuscate_comments", false):
 		options.append("Comments")
+	if config.get("inline_constants", false):
+		options.append("Constants")
+	if config.get("dead_code", false):
+		options.append("Dead Code")
+	if config.get("encrypt_strings", false):
+		options.append("Strings")
 
+	var hint = _platformRows[platform]["obfuscationHint"]
 	if options.is_empty():
 		display.text = ""
 		display.placeholder_text = "None"
+		hint.visible = false
 	else:
 		display.text = ", ".join(options)
 		display.placeholder_text = ""
+		hint.visible = true
 
 func _updateIncludeExcludeDisplay(platform: String, config: Dictionary):
 	if platform not in _platformRows:
@@ -3338,8 +3501,6 @@ func _getMigrationExamplePaths() -> Dictionary:
 				# Build actual path with new template (simulated)
 				var newTemplate: Array = []
 				newTemplate.append({"type": "project-path"})
-				if not _templateHasExportsSegment(template):
-					newTemplate.append({"type": "custom", "value": "exports"})
 				newTemplate.append_array(template)
 
 				# Temporarily swap template to calculate new path
@@ -3679,11 +3840,6 @@ func _onMigrationAccepted():
 				# Build new template
 				var newTemplate: Array = []
 				newTemplate.append({"type": "project-path"})
-
-				# Only add exports if not already present in template
-				if not _templateHasExportsSegment(template):
-					newTemplate.append({"type": "custom", "value": "exports"})
-
 				newTemplate.append_array(template)
 
 				settings["pathTemplate"] = newTemplate
