@@ -11,6 +11,9 @@ signal LoadOpenGodotButtons
 signal HidingProjectItem
 signal ReorderProjectItems
 signal RemoveProject(project_id: String)
+signal DragStarted
+signal DragEnded
+signal DragHoverUpdate
 
 # Godot Version Management
 signal NewGodotVersionAdded

@@ -134,6 +134,8 @@ func SaveNewProjectItem():
 	queue_free()
 
 func AutoExtractProjectName():
+	if _projectNameLineEdit.text.strip_edges() != "":
+		return
 	var linesInProjectFile = FileHelper.GetLinesFromFile(_projectPathLineEdit.text)
 	for line in linesInProjectFile:
 		var projectNameFilter = "config/name"
